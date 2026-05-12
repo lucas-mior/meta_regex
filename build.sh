@@ -71,5 +71,5 @@ trace_on
 $CC $CPPFLAGS $CFLAGS gen/main_processed.c -o bin/regex_test $LDFLAGS
 trace_off
 
-# printf "\nRunning Tests:\n"
-# ./bin/regex_test
+printf "\nRunning Tests:\n"
+./bin/regex_test

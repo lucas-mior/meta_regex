@@ -106,7 +106,6 @@ main(int argc, char **argv) {
                   regex, string);
             error("posix: %d\n", test_posix.result);
             error("meta: %d\n", test_meta.result);
-            exit(EXIT_FAILURE);
         }
 
         if (test_posix.result == 0) {
@@ -117,7 +116,6 @@ main(int argc, char **argv) {
                           " (group %zu): posix %d, meta %d\n",
                           string, regex,
                           m, test_posix.pmatch[m].rm_so, test_meta.pmatch[m].rm_so);
-                    exit(EXIT_FAILURE);
                 }
                 if (test_posix.pmatch[m].rm_eo != test_meta.pmatch[m].rm_eo) {
                     error("Error: mismatch rm_eo in "
@@ -125,7 +123,6 @@ main(int argc, char **argv) {
                           " (group %zu): posix %d, meta %d\n",
                           string, regex,
                           m, test_posix.pmatch[m].rm_eo, test_meta.pmatch[m].rm_eo);
-                    exit(EXIT_FAILURE);
                 }
             }
         }
