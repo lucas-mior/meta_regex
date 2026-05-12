@@ -32,11 +32,14 @@ static RegexTest regex_tests[] = {
 
 int
 main(int argc, char **argv) {
+    struct timespec t0;
+    struct timespec t1;
     RegexTest *tests_posix = xmemdup(regex_tests, SIZEOF(regex_tests));
     RegexTest *tests_meta = xmemdup(regex_tests, SIZEOF(regex_tests));
     (void)argc;
     (void)argv;
 
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
     for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
         regex_t compiled_regex;
         char *string = tests_posix[i].string;
@@ -59,7 +62,10 @@ main(int argc, char **argv) {
 
         regfree(&compiled_regex);
     }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+    PRINT_TIMINGS(LENGTH(regex_tests), t0, t1, "posix tests");
 
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
     for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
         char *string = tests_meta[i].string;
         MetaRegex meta_regex = tests_meta[i].meta_regex;
@@ -73,6 +79,8 @@ main(int argc, char **argv) {
             error("meta: %d\n", tests_meta[i].result);
         }
     }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+    PRINT_TIMINGS(LENGTH(regex_tests), t0, t1, "meta tests");
 
     printf("\nEverything works!\n");
     exit(EXIT_SUCCESS);
