@@ -50,6 +50,7 @@ main(int argc, char **argv) {
         char *paren_end;
         char regex_string[256] = {0};
         char op_buffer[2048] = {0};
+        char *op_ptr = op_buffer;
         int32 space = SIZEOF(op_buffer);
         int32 prefix_length;
         int32 has_start = 0;
@@ -101,42 +102,65 @@ main(int argc, char **argv) {
                 }
             }
             if (regex_string[regex_index] == '.') {
-                space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_ANY, 0}, ");
+                int32 w = snprintf2(op_ptr, space, "{META_OP_ANY, 0}, ");
+                op_ptr += w;
+                space -= w;
                 regex_index += 1;
                 continue;
             }
             if (regex_string[regex_index] == '[') {
                 if (strncmp(&regex_string[regex_index], "[0-9]", 5) == 0) {
-                    space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_DIGIT, 0}, ");
+                    int32 w = snprintf2(op_ptr, space, "{META_OP_DIGIT, 0}, ");
+                    op_ptr += w;
+                    space -= w;
                     regex_index += 5;
                     continue;
                 }
                 if (strncmp(&regex_string[regex_index], "[a-z]", 5) == 0) {
-                    space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_ALPHA_LOWER, 0}, ");
+                    int32 w = snprintf2(op_ptr, space, "{META_OP_ALPHA_LOWER, 0}, ");
+                    op_ptr += w;
+                    space -= w;
                     regex_index += 5;
                     continue;
                 }
                 if (strncmp(&regex_string[regex_index], "[A-Z]", 5) == 0) {
-                    space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_ALPHA_UPPER, 0}, ");
+                    int32 w = snprintf2(op_ptr, space, "{META_OP_ALPHA_UPPER, 0}, ");
+                    op_ptr += w;
+                    space -= w;
                     regex_index += 5;
                     continue;
                 }
-                space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
-                regex_index += 1;
+                {
+                    int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
+                    op_ptr += w;
+                    space -= w;
+                    regex_index += 1;
+                }
                 continue;
             }
             if (regex_string[regex_index] == '\\') {
                 regex_index += 1;
                 if (regex_string[regex_index] != '\0') {
-                    space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
+                    int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
+                    op_ptr += w;
+                    space -= w;
                     regex_index += 1;
                 }
                 continue;
             }
-            space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
-            regex_index += 1;
+            {
+                int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
+                op_ptr += w;
+                space -= w;
+                regex_index += 1;
+            }
         }
-        space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_END, 0}");
+        
+        {
+            int32 w = snprintf2(op_ptr, space, "{META_OP_END, 0}");
+            op_ptr += w;
+            space -= w;
+        }
 
         paren_end = strchr(quote_end, ')');
         original_string_length = (int32)(quote_end - quote_start) + 1;
