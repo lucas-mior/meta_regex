@@ -10,6 +10,7 @@
 typedef struct RegexTest {
     char *string;
     MetaRegex meta_regex;
+    int result;
 } RegexTest;
 
 static RegexTest regex_tests[] = {
@@ -31,33 +32,46 @@ static RegexTest regex_tests[] = {
 
 int
 main(int argc, char **argv) {
+    RegexTest *tests_posix = xmemdup(regex_tests, SIZEOF(regex_tests));
+    RegexTest *tests_meta = xmemdup(regex_tests, SIZEOF(regex_tests));
     (void)argc;
     (void)argv;
 
     for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
         regex_t compiled_regex;
-        char *string = regex_tests[i].string;
-        char *regex = regex_tests[i].meta_regex.string;
-        MetaRegex meta_regex = regex_tests[i].meta_regex;
+        char *string = tests_posix[i].string;
+        char *regex = tests_posix[i].meta_regex.string;
         int compile_status;
-        int posix_match_status;
-        int meta_match_status = REG_NOMATCH;
+        int match;
 
         compile_status = regcomp(&compiled_regex, regex, REG_EXTENDED);
         
         if (compile_status != 0) {
             char error_message[256];
-            regerror(compile_status, &compiled_regex, error_message, sizeof(error_message));
+            regerror(compile_status, &compiled_regex,
+                     error_message, sizeof(error_message));
             error("Regex compilation failed: %s\n", error_message);
             exit(EXIT_FAILURE);
         }
 
-        printf("Testing string: '%s' against regex: '%s'\n", string, regex);
-        posix_match_status = regexec(&compiled_regex, string, 0, NULL, 0);
-        meta_match_status = meta_regex_match(meta_regex, string);
-        assert(posix_match_status == meta_match_status);
+        match = regexec(&compiled_regex, string, 0, NULL, 0);
+        tests_posix[i].result = match;
 
         regfree(&compiled_regex);
+    }
+
+    for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
+        char *string = tests_meta[i].string;
+        MetaRegex meta_regex = tests_meta[i].meta_regex;
+        int match;
+
+        match = meta_regex_match(meta_regex, string);
+        tests_meta[i].result = match;
+        if (tests_posix[i].result != tests_meta[i].result) {
+            error("Error: regex '%s'\n", tests_meta[i].meta_regex.string);
+            error("posix: %d\n", tests_posix[i].result);
+            error("meta: %d\n", tests_meta[i].result);
+        }
     }
 
     printf("\nEverything works!\n");
