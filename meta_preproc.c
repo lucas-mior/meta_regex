@@ -51,6 +51,7 @@ main(int argc, char **argv) {
                 int32 has_end = 0;
                 char operations_buffer[2048] = {0};
                 int32 regex_index = 0;
+                int32 original_string_length;
 
                 strncpy(regex_string, quote_start + 1, quote_end - quote_start - 1);
 
@@ -111,8 +112,10 @@ main(int argc, char **argv) {
                     end_of_line = quote_end + 1;
                 }
 
-                printf("%.*s{ .ops = { %s }, .has_start_anchor = %d, .has_end_anchor = %d }%s",
-                       prefix_length, buffer, operations_buffer, has_start, has_end, end_of_line);
+                original_string_length = (int32)(quote_end - quote_start) + 1;
+
+                printf("%.*s{ .string = %.*s, .ops = { %s }, .has_start_anchor = %d, .has_end_anchor = %d }%s",
+                       prefix_length, buffer, original_string_length, quote_start, operations_buffer, has_start, has_end, end_of_line);
                 continue;
             }
         }

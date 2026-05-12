@@ -18,11 +18,12 @@ typedef struct MetaOp {
 } MetaOp;
 
 typedef struct MetaRegex {
+    char *string;
     MetaOp ops[32];
     int32 has_start_anchor;
     int32 has_end_anchor;
 } MetaRegex;
 
-#define META_REGEX(...) __VA_ARGS__
+#define META_REGEX(...) { .string = __VA_ARGS__ }
 
 #endif /* META_REGEX_H */
