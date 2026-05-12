@@ -70,6 +70,18 @@ static RegexTest regex_tests[] = {
     {"a",            META_REGEX("[]abc]")},
     {"]",            META_REGEX("[^]abc]")},
     {"x",            META_REGEX("[^]abc]")},
+    {"a{3}b",        META_REGEX("a\\{3\\}b")},
+    {"aaab",         META_REGEX("a{3}b")},
+    {"aab",          META_REGEX("a{3}b")},
+    {"aaaab",        META_REGEX("a{3}b")},
+    {"aab",          META_REGEX("a{2,4}b")},
+    {"aaab",         META_REGEX("a{2,4}b")},
+    {"aaaab",        META_REGEX("a{2,4}b")},
+    {"aaaaab",       META_REGEX("a{2,4}b")},
+    {"ab",           META_REGEX("a{2,4}b")},
+    {"aab",          META_REGEX("a{2,}b")},
+    {"aaaaaaab",     META_REGEX("a{2,}b")},
+    {"ab",           META_REGEX("a{2,}b")},
 };
 
 int

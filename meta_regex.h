@@ -13,12 +13,15 @@ enum MetaOpType {
     META_OP_STAR,
     META_OP_PLUS,
     META_OP_OPTIONAL,
-    META_OP_ALTERNATION
+    META_OP_ALTERNATION,
+    META_OP_BOUNDED
 };
 
 typedef struct MetaOp {
     enum MetaOpType type;
     int32 value;
+    int32 min;
+    int32 max;
     unsigned int mask[8];
 } MetaOp;
 

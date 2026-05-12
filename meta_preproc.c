@@ -134,28 +134,65 @@ main(int argc, char **argv) {
                 }
             }
             if (regex_string[regex_index] == '*') {
-                int32 w = snprintf2(op_ptr, space, "{META_OP_STAR, 0, {0}}, ");
+                int32 w = snprintf2(op_ptr, space, "{META_OP_STAR, 0, 0, 0, {0}}, ");
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
                 continue;
             }
             if (regex_string[regex_index] == '+') {
-                int32 w = snprintf2(op_ptr, space, "{META_OP_PLUS, 0, {0}}, ");
+                int32 w = snprintf2(op_ptr, space, "{META_OP_PLUS, 0, 0, 0, {0}}, ");
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
                 continue;
             }
             if (regex_string[regex_index] == '?') {
-                int32 w = snprintf2(op_ptr, space, "{META_OP_OPTIONAL, 0, {0}}, ");
+                int32 w = snprintf2(op_ptr, space, "{META_OP_OPTIONAL, 0, 0, 0, {0}}, ");
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
                 continue;
             }
+            if (regex_string[regex_index] == '{') {
+                int32 temp_idx = regex_index + 1;
+                int32 m = 0, n = -1;
+                int32 has_m = 0;
+                int32 valid = 0;
+
+                while (regex_string[temp_idx] >= '0' && regex_string[temp_idx] <= '9') {
+                    m = m * 10 + (regex_string[temp_idx] - '0');
+                    has_m = 1;
+                    temp_idx += 1;
+                }
+                if (regex_string[temp_idx] == ',') {
+                    temp_idx += 1;
+                    if (regex_string[temp_idx] >= '0' && regex_string[temp_idx] <= '9') {
+                        n = 0;
+                        while (regex_string[temp_idx] >= '0' && regex_string[temp_idx] <= '9') {
+                            n = n * 10 + (regex_string[temp_idx] - '0');
+                            temp_idx += 1;
+                        }
+                    }
+                } else {
+                    n = m;
+                }
+
+                if (regex_string[temp_idx] == '}' && has_m) {
+                    valid = 1;
+                    temp_idx += 1;
+                }
+
+                if (valid) {
+                    int32 w = snprintf2(op_ptr, space, "{META_OP_BOUNDED, 0, %d, %d, {0}}, ", m, n);
+                    op_ptr += w;
+                    space -= w;
+                    regex_index = temp_idx;
+                    continue;
+                }
+            }
             if (regex_string[regex_index] == '|') {
-                int32 w = snprintf2(op_ptr, space, "{META_OP_ALTERNATION, 0, {0}}, ");
+                int32 w = snprintf2(op_ptr, space, "{META_OP_ALTERNATION, 0, 0, 0, {0}}, ");
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
@@ -166,7 +203,7 @@ main(int argc, char **argv) {
 
                 group_stack[group_stack_ptr] = group_counter;
                 group_stack_ptr += 1;
-                w = snprintf2(op_ptr, space, "{META_OP_GROUP_START, %d, {0}}, ", group_counter);
+                w = snprintf2(op_ptr, space, "{META_OP_GROUP_START, %d, 0, 0, {0}}, ", group_counter);
                 op_ptr += w;
                 space -= w;
                 group_counter += 1;
@@ -179,14 +216,14 @@ main(int argc, char **argv) {
 
                 group_stack_ptr -= 1;
                 current_group = group_stack[group_stack_ptr];
-                w = snprintf2(op_ptr, space, "{META_OP_GROUP_END, %d, {0}}, ", current_group);
+                w = snprintf2(op_ptr, space, "{META_OP_GROUP_END, %d, 0, 0, {0}}, ", current_group);
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
                 continue;
             }
             if (regex_string[regex_index] == '.') {
-                int32 w = snprintf2(op_ptr, space, "{META_OP_ANY, 0, {0}}, ");
+                int32 w = snprintf2(op_ptr, space, "{META_OP_ANY, 0, 0, 0, {0}}, ");
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
@@ -236,7 +273,7 @@ main(int argc, char **argv) {
                     }
                 }
 
-                int32 w = snprintf2(op_ptr, space, "{META_OP_CLASS, 0, {%uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu}}, ",
+                int32 w = snprintf2(op_ptr, space, "{META_OP_CLASS, 0, 0, 0, {%uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu}}, ",
                                     mask[0], mask[1], mask[2], mask[3], mask[4], mask[5], mask[6], mask[7]);
                 op_ptr += w;
                 space -= w;
@@ -245,7 +282,7 @@ main(int argc, char **argv) {
             if (regex_string[regex_index] == '\\') {
                 regex_index += 1;
                 if (regex_string[regex_index] != '\0') {
-                    int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d, {0}}, ", regex_string[regex_index]);
+                    int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d, 0, 0, {0}}, ", regex_string[regex_index]);
                     op_ptr += w;
                     space -= w;
                     regex_index += 1;
@@ -253,7 +290,7 @@ main(int argc, char **argv) {
                 continue;
             }
             {
-                int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d, {0}}, ", regex_string[regex_index]);
+                int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d, 0, 0, {0}}, ", regex_string[regex_index]);
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
@@ -261,7 +298,7 @@ main(int argc, char **argv) {
         }
         
         {
-            int32 w = snprintf2(op_ptr, space, "{META_OP_END, 0, {0}}");
+            int32 w = snprintf2(op_ptr, space, "{META_OP_END, 0, 0, 0, {0}}");
             op_ptr += w;
             space -= w;
         }

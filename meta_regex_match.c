@@ -166,33 +166,43 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string, siz
     }
 
     {
-        int32 is_star = (ops[1].type == META_OP_STAR);
-        int32 is_plus = (ops[1].type == META_OP_PLUS);
-        int32 is_opt  = (ops[1].type == META_OP_OPTIONAL);
+        int32 is_star  = (ops[1].type == META_OP_STAR);
+        int32 is_plus  = (ops[1].type == META_OP_PLUS);
+        int32 is_opt   = (ops[1].type == META_OP_OPTIONAL);
+        int32 is_bound = (ops[1].type == META_OP_BOUNDED);
 
-        if (is_star || is_plus || is_opt) {
+        if (is_star || is_plus || is_opt || is_bound) {
             MetaOp token = ops[0];
             MetaOp *next_ops = ops + 2;
             char *s = current_string;
             char *max_s;
             regmatch_t pmatch_backup[32];
+            int32 min_req = 0;
+            int32 max_req = -1;
 
-            if (is_plus) {
+            if (is_star) {
+                min_req = 0; max_req = -1;
+            } else if (is_plus) {
+                min_req = 1; max_req = -1;
+            } else if (is_opt) {
+                min_req = 0; max_req = 1;
+            } else if (is_bound) {
+                min_req = ops[1].min; max_req = ops[1].max;
+            }
+
+            int32 count = 0;
+            while (count < min_req) {
                 if (!matches_char(token, *s)) {
                     return -1;
                 }
                 s += 1;
+                count += 1;
             }
 
             max_s = s;
-            if (!is_opt) {
-                while (matches_char(token, *max_s)) {
-                    max_s += 1;
-                }
-            } else {
-                if (matches_char(token, *max_s)) {
-                    max_s += 1;
-                }
+            while ((max_req == -1 || count < max_req) && matches_char(token, *max_s)) {
+                max_s += 1;
+                count += 1;
             }
 
             if (pmatch != NULL) {
