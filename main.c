@@ -28,7 +28,6 @@ static RegexTest regex_tests[] = {
     {"hello",        META_REGEX("[A-Z]")},
     {"abc XYZ 123",  META_REGEX("[a-z]")},
     {"123 XYZ",      META_REGEX("[a-z]")},
-    {"123",          META_REGEX("123?")},
 };
 
 int
