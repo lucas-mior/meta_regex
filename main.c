@@ -70,11 +70,13 @@ main(int argc, char **argv) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
     for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
         char *string = tests_meta[i].string;
+        char *regex = tests_meta[i].meta_regex.string;
         MetaRegex meta_regex = tests_meta[i].meta_regex;
         int match;
 
         match = meta_regex_match(meta_regex, string);
         tests_meta[i].result = match;
+        printf(RED("%15s")" against "BLUE("%10s")": %d\n", string, regex, match);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
     PRINT_TIMINGS(LENGTH(regex_tests), t0, t1, "meta tests");
