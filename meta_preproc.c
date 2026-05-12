@@ -49,7 +49,8 @@ main(int argc, char **argv) {
         char *quote_end;
         char *paren_end;
         char regex_string[256] = {0};
-        char operations_buffer[2048] = {0};
+        char op_buffer[2048] = {0};
+        int32 space = SIZEOF(op_buffer);
         int32 prefix_length;
         int32 has_start = 0;
         int32 has_end = 0;
@@ -67,7 +68,7 @@ main(int argc, char **argv) {
         quote_start = strchr(found_macro, '"');
         if (quote_start == NULL) {
             printf("%s", macro_start);
-            cursor = found_macro + strlen(macro_start);
+            cursor = found_macro + strlen32(macro_start);
             continue;
         }
 
@@ -100,48 +101,48 @@ main(int argc, char **argv) {
                 }
             }
             if (regex_string[regex_index] == '.') {
-                sprintf(operations_buffer + strlen(operations_buffer), "{META_OP_ANY, 0}, ");
+                space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_ANY, 0}, ");
                 regex_index += 1;
                 continue;
             }
             if (regex_string[regex_index] == '[') {
                 if (strncmp(&regex_string[regex_index], "[0-9]", 5) == 0) {
-                    sprintf(operations_buffer + strlen(operations_buffer), "{META_OP_DIGIT, 0}, ");
+                    space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_DIGIT, 0}, ");
                     regex_index += 5;
                     continue;
                 }
                 if (strncmp(&regex_string[regex_index], "[a-z]", 5) == 0) {
-                    sprintf(operations_buffer + strlen(operations_buffer), "{META_OP_ALPHA_LOWER, 0}, ");
+                    space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_ALPHA_LOWER, 0}, ");
                     regex_index += 5;
                     continue;
                 }
                 if (strncmp(&regex_string[regex_index], "[A-Z]", 5) == 0) {
-                    sprintf(operations_buffer + strlen(operations_buffer), "{META_OP_ALPHA_UPPER, 0}, ");
+                    space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_ALPHA_UPPER, 0}, ");
                     regex_index += 5;
                     continue;
                 }
-                sprintf(operations_buffer + strlen(operations_buffer), "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
+                space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
                 regex_index += 1;
                 continue;
             }
             if (regex_string[regex_index] == '\\') {
                 regex_index += 1;
                 if (regex_string[regex_index] != '\0') {
-                    sprintf(operations_buffer + strlen(operations_buffer), "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
+                    space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
                     regex_index += 1;
                 }
                 continue;
             }
-            sprintf(operations_buffer + strlen(operations_buffer), "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
+            space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
             regex_index += 1;
         }
-        sprintf(operations_buffer + strlen(operations_buffer), "{META_OP_END, 0}");
+        space -= snprintf2(op_buffer + strlen32(op_buffer), space, "{META_OP_END, 0}");
 
         paren_end = strchr(quote_end, ')');
         original_string_length = (int32)(quote_end - quote_start) + 1;
 
         printf("{ .string = %.*s, .ops = { %s }, .has_start_anchor = %d, .has_end_anchor = %d }",
-               original_string_length, quote_start, operations_buffer, has_start, has_end);
+               original_string_length, quote_start, op_buffer, has_start, has_end);
 
         if (paren_end != NULL) {
             cursor = paren_end + 1;
