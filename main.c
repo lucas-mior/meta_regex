@@ -5,6 +5,7 @@
 
 #include "util.c"
 #include "meta_regex.h"
+#include "meta_regex_match.c"
 
 typedef struct RegexTest {
     char *string;
@@ -40,22 +41,11 @@ main(int argc, char **argv) {
             error("Regex compilation failed: %s\n", error_message);
             exit(EXIT_FAILURE);
         }
+
         printf("Testing string: '%s'\n", string);
         posix_match_status = regexec(&compiled_regex, string, 0, NULL, 0);
-
-        {
-            if (meta_regex.type == META_REGEX_DIGIT) {
-                for (int32 j = 0; string[j] != '\0'; j += 1) {
-                    if (string[j] >= '0') {
-                        if (string[j] <= '9') {
-                            meta_match_status = 0;
-                            break;
-                        }
-                    }
-                }
-            }
-            assert(posix_match_status == meta_match_status);
-        }
+        meta_match_status = meta_regex_match(meta_regex, string);
+        assert(posix_match_status == meta_match_status);
 
         regfree(&compiled_regex);
     }
