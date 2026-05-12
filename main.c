@@ -28,10 +28,11 @@ main(int argc, char **argv) {
         char *string = regex_tests[i].string;
         char *regex = regex_tests[i].regex;
         MetaRegex meta_regex = regex_tests[i].meta_regex;
-        int compile_status = regcomp(&compiled_regex, regex, REG_EXTENDED);
-        char *input = string;
+        int compile_status;
         int posix_match_status;
         int meta_match_status = REG_NOMATCH;
+
+        compile_status = regcomp(&compiled_regex, regex, REG_EXTENDED);
         
         if (compile_status != 0) {
             char error_message[256];
@@ -39,14 +40,14 @@ main(int argc, char **argv) {
             error("Regex compilation failed: %s\n", error_message);
             exit(EXIT_FAILURE);
         }
-        printf("Testing string: '%s'\n", input);
-        posix_match_status = regexec(&compiled_regex, input, 0, NULL, 0);
+        printf("Testing string: '%s'\n", string);
+        posix_match_status = regexec(&compiled_regex, string, 0, NULL, 0);
 
         {
             if (meta_regex.type == META_REGEX_DIGIT) {
-                for (int32 j = 0; input[j] != '\0'; j += 1) {
-                    if (input[j] >= '0') {
-                        if (input[j] <= '9') {
+                for (int32 j = 0; string[j] != '\0'; j += 1) {
+                    if (string[j] >= '0') {
+                        if (string[j] <= '9') {
                             meta_match_status = 0;
                             break;
                         }
