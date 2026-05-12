@@ -11,6 +11,7 @@ mkdir -p bin
 
 CFLAGS="$CFLAGS -std=c11"
 CFLAGS="$CFLAGS -Wextra -Wall"
+CFLAGS="$CFLAGS -Werror"
 CFLAGS="$CFLAGS -Wno-unused-macros -Wno-unused-function"
 CFLAGS="$CFLAGS -Wno-unknown-pragmas"
 CFLAGS="$CFLAGS -Wfatal-errors"

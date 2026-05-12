@@ -34,7 +34,7 @@ main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    if (fread(buffer, 1, file_size, input_file) != (size_t)file_size) {
+    if (fread64(buffer, 1, file_size, input_file) != file_size) {
         fprintf(stderr, "Error reading file.\n");
         exit(EXIT_FAILURE);
     }
