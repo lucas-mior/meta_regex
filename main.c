@@ -5,7 +5,6 @@
 
 #include "util.c"
 #include "meta_regex.h"
-#define META_REGEX(...) MetaRegex regex_meta = {0};
 
 int
 main(int argc, char **argv) {
