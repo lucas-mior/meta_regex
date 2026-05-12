@@ -78,13 +78,18 @@ main(int argc, char **argv) {
     PRINT_TIMINGS(LENGTH(regex_tests), t0, t1, "meta tests");
 
     for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
-        if (tests_posix[i].result != tests_meta[i].result) {
-            error("Error: regex '%s'\n", tests_meta[i].meta_regex.string);
+        int result_posix = tests_posix[i].result;
+        int result_meta = tests_meta[i].result;
+        char *regex = regex_tests[i].meta_regex.string;
+        char *string = regex_tests[i].string;
+
+        if (result_posix != result_meta) {
+            error("Error: regex '%s' against '%s'\n", regex, string);
             error("posix: %d\n", tests_posix[i].result);
             error("meta: %d\n", tests_meta[i].result);
         }
     }
 
-    printf("\nEverything works!\n");
+    error("End of tests.\n");
     exit(EXIT_SUCCESS);
 }
