@@ -28,6 +28,7 @@ static RegexTest regex_tests[] = {
     {"hello",        META_REGEX("[A-Z]")},
     {"abc XYZ 123",  META_REGEX("[a-z]")},
     {"123 XYZ",      META_REGEX("[a-z]")},
+    {"123",          META_REGEX("456")},
 };
 
 int
@@ -58,6 +59,7 @@ main(int argc, char **argv) {
         }
 
         match = regexec(&compiled_regex, string, 0, NULL, 0);
+        printf(RED("%15s")" against "BLUE("%10s")": %d\n", string, regex, match);
         tests_posix[i].result = match;
 
         regfree(&compiled_regex);
