@@ -14,7 +14,8 @@ enum MetaOpType {
     META_OP_GROUP_END,
     META_OP_STAR,
     META_OP_PLUS,
-    META_OP_OPTIONAL
+    META_OP_OPTIONAL,
+    META_OP_ALTERNATION
 };
 
 typedef struct MetaOp {

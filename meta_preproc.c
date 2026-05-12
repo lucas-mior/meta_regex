@@ -154,6 +154,13 @@ main(int argc, char **argv) {
                 regex_index += 1;
                 continue;
             }
+            if (regex_string[regex_index] == '|') {
+                int32 w = snprintf2(op_ptr, space, "{META_OP_ALTERNATION, 0}, ");
+                op_ptr += w;
+                space -= w;
+                regex_index += 1;
+                continue;
+            }
             if (regex_string[regex_index] == '(') {
                 int32 w;
 

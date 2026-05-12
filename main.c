@@ -45,6 +45,19 @@ static RegexTest regex_tests[] = {
     {"a123b",        META_REGEX("a[0-9]+b")},
     {"aXXXb",        META_REGEX("a.+b")},
     {"ab",           META_REGEX("a.*b")},
+    {"a",            META_REGEX("a|b")},
+    {"b",            META_REGEX("a|b")},
+    {"c",            META_REGEX("a|b")},
+    {"foo",          META_REGEX("foo|bar")},
+    {"bar",          META_REGEX("foo|bar")},
+    {"baz",          META_REGEX("foo|bar")},
+    {"abc",          META_REGEX("a(b|c|d)c")},
+    {"acc",          META_REGEX("a(b|c|d)c")},
+    {"adc",          META_REGEX("a(b|c|d)c")},
+    {"aec",          META_REGEX("a(b|c|d)c")},
+    {"123 foo",      META_REGEX("([0-9]+) (foo|bar)")},
+    {"456 bar",      META_REGEX("([0-9]+) (foo|bar)")},
+    {"789 baz",      META_REGEX("([0-9]+) (foo|bar)")},
 };
 
 int
@@ -77,7 +90,7 @@ main(int argc, char **argv) {
         }
 
         match = regexec(&compiled_regex, string, MAX_MATCHES, tests_posix[i].pmatch, 0);
-        printf(RED("%15s")" against "BLUE("%12s")": %d\n", string, regex, match);
+        printf(RED("%15s")" against "BLUE("%18s")": %d\n", string, regex, match);
         tests_posix[i].result = match;
 
         regfree(&compiled_regex);
