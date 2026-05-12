@@ -14,9 +14,20 @@ typedef struct RegexTest {
 } RegexTest;
 
 static RegexTest regex_tests[] = {
-    {"abc5def",      META_REGEX("[0-9]")},
-    {"hello world",  META_REGEX("[0-9]")},
-    {"2hello world", META_REGEX("[0-9]")},
+    {"abc5def",      "[0-9]",       META_REGEX("[0-9]")},
+    {"hello world",  "[0-9]",       META_REGEX("[0-9]")},
+    {"2hello world", "^[0-9]",      META_REGEX("^[0-9]")},
+    {"hello 2",      "^[0-9]",      META_REGEX("^[0-9]")},
+    {"test end5",    "[0-9]$",      META_REGEX("[0-9]$")},
+    {"test 5end",    "[0-9]$",      META_REGEX("[0-9]$")},
+    {"a.c",          "a.c",         META_REGEX("a.c")},
+    {"abc",          "a.c",         META_REGEX("a.c")},
+    {"abc",          "^abc$",       META_REGEX("^abc$")},
+    {"abcd",         "^abc$",       META_REGEX("^abc$")},
+    {"HELLO",        "[A-Z]",       META_REGEX("[A-Z]")},
+    {"hello",        "[A-Z]",       META_REGEX("[A-Z]")},
+    {"abc XYZ 123",  "[a-z]",       META_REGEX("[a-z]")},
+    {"123 XYZ",      "[a-z]",       META_REGEX("[a-z]")},
 };
 
 int
@@ -42,7 +53,7 @@ main(int argc, char **argv) {
             exit(EXIT_FAILURE);
         }
 
-        printf("Testing string: '%s'\n", string);
+        printf("Testing string: '%s' against regex: '%s'\n", string, regex);
         posix_match_status = regexec(&compiled_regex, string, 0, NULL, 0);
         meta_match_status = meta_regex_match(meta_regex, string);
         assert(posix_match_status == meta_match_status);
