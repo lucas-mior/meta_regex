@@ -15,6 +15,8 @@ CFLAGS="$CFLAGS -Wno-unused-macros -Wno-unused-function"
 CFLAGS="$CFLAGS -Wno-unknown-pragmas"
 CFLAGS="$CFLAGS -Wfatal-errors"
 CFLAGS="$CFLAGS -Wno-gnu-union-cast"
+CFLAGS="$CFLAGS -Wno-missing-field-initializers"
+
 CPPFLAGS="$CPPFLAGS -D_DEFAULT_SOURCE"
 CPPFLAGS="$CPPFLAGS -I "$dir/$cbase" -I "$dir""
 LDFLAGS="$LDFLAGS -lmagic -lm"
@@ -47,6 +49,11 @@ if [ "$CC" = "clang" ]; then
     CFLAGS="$CFLAGS -Wno-float-equal"
     CFLAGS="$CFLAGS -Wno-padded"
 fi
+
+trace_on
+ctags --kinds-C=+l+d cbase/*.c cbase/*.h ./*.h ./*.c 2> /dev/null || true
+vtags.sed tags > .tags.vim       2> /dev/null || true
+trace_off
 
 printf "\nBuilding preprocessor...\n"
 trace_on
