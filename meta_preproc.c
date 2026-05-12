@@ -28,7 +28,7 @@ main(int argc, char **argv) {
     file_size = ftell(input_file);
     fseek(input_file, 0, SEEK_SET);
 
-    buffer = malloc(file_size + 1);
+    buffer = malloc2(file_size + 1);
     if (buffer == NULL) {
         fprintf(stderr, "Error allocating memory.\n");
         exit(EXIT_FAILURE);
@@ -151,6 +151,6 @@ main(int argc, char **argv) {
     }
 
     printf("%s", cursor);
-    free(buffer);
+    free2(buffer, file_size + 1);
     exit(EXIT_SUCCESS);
 }
