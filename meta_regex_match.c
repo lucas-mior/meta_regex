@@ -178,7 +178,7 @@ meta_regex_match(MetaRegex regex, char *string, size_t nmatch, regmatch_t pmatch
         return REG_NOMATCH;
     }
 
-    for (int32 j = 0; string[j] != '\0'; j += 1) {
+    for (int32 j = 0; ; j += 1) {
         int32 match_len;
 
         if (pmatch != NULL) {
@@ -189,18 +189,27 @@ meta_regex_match(MetaRegex regex, char *string, size_t nmatch, regmatch_t pmatch
         }
         match_len = match_at_recursive(regex.ops, string, &string[j], nmatch, pmatch);
         if (match_len >= 0) {
+            int32 is_valid = 1;
+
             if (regex.has_end_anchor) {
-                if (string[j + match_len] != '\0') {
-                    continue;
+                if (string[match_len] != '\0') {
+                    is_valid = 0;
                 }
             }
-            if (pmatch != NULL) {
-                if (nmatch > 0) {
-                    pmatch[0].rm_so = j;
-                    pmatch[0].rm_eo = j + match_len;
+            
+            if (is_valid) {
+                if (pmatch != NULL) {
+                    if (nmatch > 0) {
+                        pmatch[0].rm_so = j;
+                        pmatch[0].rm_eo = match_len;
+                    }
                 }
+                return 0;
             }
-            return 0;
+        }
+
+        if (string[j] == '\0') {
+            break;
         }
     }
     return REG_NOMATCH;
