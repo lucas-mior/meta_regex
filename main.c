@@ -32,14 +32,13 @@ main(int argc, char **argv) {
 
     for (int32 t = 0; t < num_tests; t += 1) {
         char *input = test_strings[t];
-        int match_status;
+        int posix_match_status;
+        int meta_match_status = REG_NOMATCH;
         
-        printf("\nTesting string: '%s'\n", input);
-        match_status = regexec(&compiled_regex, input, 0, NULL, 0);
+        printf("Testing string: '%s'\n", input);
+        posix_match_status = regexec(&compiled_regex, input, 0, NULL, 0);
 
         {
-            int meta_match_status = REG_NOMATCH;
-
             if (regex_meta.type == META_REGEX_DIGIT) {
                 for (int32 i = 0; input[i] != '\0'; i += 1) {
                     if (input[i] >= '0') {
@@ -50,16 +49,7 @@ main(int argc, char **argv) {
                     }
                 }
             }
-            assert(match_status == meta_match_status);
-        }
-
-        if (match_status == 0) {
-            printf("Match found in target.\n");
-        } else if (match_status == REG_NOMATCH) {
-            printf("No match found in target.\n");
-        } else {
-            error("Regex execution error.\n");
-            exit(EXIT_FAILURE);
+            assert(posix_match_status == meta_match_status);
         }
     }
 
