@@ -48,6 +48,7 @@ main(int argc, char **argv) {
         char *quote_start;
         char *quote_end;
         char *paren_end;
+        char raw_string[256] = {0};
         char regex_string[256] = {0};
         char op_buffer[2048] = {0};
         char *op_ptr = op_buffer;
@@ -57,6 +58,9 @@ main(int argc, char **argv) {
         int32 has_end = 0;
         int32 regex_index = 0;
         int32 original_string_length;
+        int32 group_counter = 1;
+        int32 group_stack[32] = {0};
+        int32 group_stack_ptr = 0;
 
         found_macro = strstr(cursor, macro_start);
         if (found_macro == NULL) {
@@ -87,7 +91,35 @@ main(int argc, char **argv) {
             quote_end += 1;
         }
 
-        strncpy32(regex_string, quote_start + 1, quote_end - quote_start - 1);
+        strncpy32(raw_string, quote_start + 1, quote_end - quote_start - 1);
+
+        {
+            int32 u_idx = 0;
+            for (int32 i = 0; raw_string[i] != '\0'; i += 1) {
+                if (raw_string[i] == '\\') {
+                    if (raw_string[i + 1] != '\0') {
+                        i += 1;
+                        if (raw_string[i] == 'n') {
+                            regex_string[u_idx] = '\n';
+                        } else if (raw_string[i] == 't') {
+                            regex_string[u_idx] = '\t';
+                        } else if (raw_string[i] == 'r') {
+                            regex_string[u_idx] = '\r';
+                        } else if (raw_string[i] == '\\') {
+                            regex_string[u_idx] = '\\';
+                        } else if (raw_string[i] == '"') {
+                            regex_string[u_idx] = '"';
+                        } else {
+                            regex_string[u_idx] = raw_string[i];
+                        }
+                        u_idx += 1;
+                    }
+                } else {
+                    regex_string[u_idx] = raw_string[i];
+                    u_idx += 1;
+                }
+            }
+        }
 
         if (regex_string[regex_index] == '^') {
             has_start = 1;
@@ -100,6 +132,30 @@ main(int argc, char **argv) {
                     has_end = 1;
                     break;
                 }
+            }
+            if (regex_string[regex_index] == '(') {
+                int32 w;
+
+                group_stack[group_stack_ptr] = group_counter;
+                group_stack_ptr += 1;
+                w = snprintf2(op_ptr, space, "{META_OP_GROUP_START, %d}, ", group_counter);
+                op_ptr += w;
+                space -= w;
+                group_counter += 1;
+                regex_index += 1;
+                continue;
+            }
+            if (regex_string[regex_index] == ')') {
+                int32 w;
+                int32 current_group;
+
+                group_stack_ptr -= 1;
+                current_group = group_stack[group_stack_ptr];
+                w = snprintf2(op_ptr, space, "{META_OP_GROUP_END, %d}, ", current_group);
+                op_ptr += w;
+                space -= w;
+                regex_index += 1;
+                continue;
             }
             if (regex_string[regex_index] == '.') {
                 int32 w = snprintf2(op_ptr, space, "{META_OP_ANY, 0}, ");
@@ -131,7 +187,7 @@ main(int argc, char **argv) {
                     continue;
                 }
                 {
-                    int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
+                    int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d}, ", regex_string[regex_index]);
                     op_ptr += w;
                     space -= w;
                     regex_index += 1;
@@ -141,7 +197,7 @@ main(int argc, char **argv) {
             if (regex_string[regex_index] == '\\') {
                 regex_index += 1;
                 if (regex_string[regex_index] != '\0') {
-                    int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
+                    int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d}, ", regex_string[regex_index]);
                     op_ptr += w;
                     space -= w;
                     regex_index += 1;
@@ -149,7 +205,7 @@ main(int argc, char **argv) {
                 continue;
             }
             {
-                int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, '%c'}, ", regex_string[regex_index]);
+                int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d}, ", regex_string[regex_index]);
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
