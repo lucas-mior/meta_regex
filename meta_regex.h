@@ -7,9 +7,7 @@ enum MetaOpType {
     META_OP_END,
     META_OP_LITERAL,
     META_OP_ANY,
-    META_OP_DIGIT,
-    META_OP_ALPHA_LOWER,
-    META_OP_ALPHA_UPPER,
+    META_OP_CLASS,
     META_OP_GROUP_START,
     META_OP_GROUP_END,
     META_OP_STAR,
@@ -21,6 +19,7 @@ enum MetaOpType {
 typedef struct MetaOp {
     enum MetaOpType type;
     int32 value;
+    unsigned int mask[8];
 } MetaOp;
 
 typedef struct MetaRegex {

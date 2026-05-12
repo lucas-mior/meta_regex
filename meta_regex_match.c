@@ -16,23 +16,10 @@ matches_char(MetaOp op, char c) {
         if (c == op.value) {
             return 1;
         }
-    } else if (op.type == META_OP_DIGIT) {
-        if (c >= '0') {
-            if (c <= '9') {
-                return 1;
-            }
-        }
-    } else if (op.type == META_OP_ALPHA_LOWER) {
-        if (c >= 'a') {
-            if (c <= 'z') {
-                return 1;
-            }
-        }
-    } else if (op.type == META_OP_ALPHA_UPPER) {
-        if (c >= 'A') {
-            if (c <= 'Z') {
-                return 1;
-            }
+    } else if (op.type == META_OP_CLASS) {
+        unsigned char uc = (unsigned char)c;
+        if (op.mask[uc / 32] & (1u << (uc % 32))) {
+            return 1;
         }
     }
     return 0;
