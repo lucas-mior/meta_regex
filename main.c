@@ -6,43 +6,47 @@
 #include "util.c"
 #include "meta_regex.h"
 
+typedef struct RegexTest {
+    char *string;
+    char *regex;
+    MetaRegex meta_regex;
+} RegexTest;
+
+static RegexTest regex_tests[] = {
+    {"abc5def",      META_REGEX("[0-9]")},
+    {"hello world",  META_REGEX("[0-9]")},
+    {"2hello world", META_REGEX("[0-9]")},
+};
+
 int
 main(int argc, char **argv) {
-    char *regex_string = "[0-9]";
-    regex_t compiled_regex;
-    int compile_status;
-    char *test_strings[] = {
-        "abc5def",
-        "hello world"
-    };
-    int32 num_tests = 2;
-    META_REGEX(regex_meta, "[0-9]");
-
     (void)argc;
     (void)argv;
 
-    compile_status = regcomp(&compiled_regex, regex_string, REG_EXTENDED);
-
-    if (compile_status != 0) {
-        char error_message[256];
-        regerror(compile_status, &compiled_regex, error_message, sizeof(error_message));
-        error("Regex compilation failed: %s\n", error_message);
-        exit(EXIT_FAILURE);
-    }
-
-    for (int32 t = 0; t < num_tests; t += 1) {
-        char *input = test_strings[t];
+    for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
+        regex_t compiled_regex;
+        char *string = regex_tests[i].string;
+        char *regex = regex_tests[i].regex;
+        MetaRegex meta_regex = regex_tests[i].meta_regex;
+        int compile_status = regcomp(&compiled_regex, regex, REG_EXTENDED);
+        char *input = string;
         int posix_match_status;
         int meta_match_status = REG_NOMATCH;
         
+        if (compile_status != 0) {
+            char error_message[256];
+            regerror(compile_status, &compiled_regex, error_message, sizeof(error_message));
+            error("Regex compilation failed: %s\n", error_message);
+            exit(EXIT_FAILURE);
+        }
         printf("Testing string: '%s'\n", input);
         posix_match_status = regexec(&compiled_regex, input, 0, NULL, 0);
 
         {
-            if (regex_meta.type == META_REGEX_DIGIT) {
-                for (int32 i = 0; input[i] != '\0'; i += 1) {
-                    if (input[i] >= '0') {
-                        if (input[i] <= '9') {
+            if (meta_regex.type == META_REGEX_DIGIT) {
+                for (int32 j = 0; input[j] != '\0'; j += 1) {
+                    if (input[j] >= '0') {
+                        if (input[j] <= '9') {
                             meta_match_status = 0;
                             break;
                         }
@@ -51,9 +55,10 @@ main(int argc, char **argv) {
             }
             assert(posix_match_status == meta_match_status);
         }
+
+        regfree(&compiled_regex);
     }
 
-    regfree(&compiled_regex);
     printf("\nEverything works!\n");
     exit(EXIT_SUCCESS);
 }

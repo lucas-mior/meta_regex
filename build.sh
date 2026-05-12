@@ -45,6 +45,7 @@ if [ "$CC" = "clang" ]; then
     CFLAGS="$CFLAGS -Wno-constant-logical-operand"
     CFLAGS="$CFLAGS -Wno-cast-function-type-strict"
     CFLAGS="$CFLAGS -Wno-float-equal"
+    CFLAGS="$CFLAGS -Wno-padded"
 fi
 
 printf "\nBuilding preprocessor...\n"
