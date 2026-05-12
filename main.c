@@ -73,14 +73,17 @@ main(int argc, char **argv) {
 
         match = meta_regex_match(meta_regex, string);
         tests_meta[i].result = match;
+    }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+    PRINT_TIMINGS(LENGTH(regex_tests), t0, t1, "meta tests");
+
+    for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
         if (tests_posix[i].result != tests_meta[i].result) {
             error("Error: regex '%s'\n", tests_meta[i].meta_regex.string);
             error("posix: %d\n", tests_posix[i].result);
             error("meta: %d\n", tests_meta[i].result);
         }
     }
-    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
-    PRINT_TIMINGS(LENGTH(regex_tests), t0, t1, "meta tests");
 
     printf("\nEverything works!\n");
     exit(EXIT_SUCCESS);
