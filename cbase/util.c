@@ -1533,7 +1533,7 @@ print_timings(char *file, int32 line, char *func,
     double micros_per = 1e6*(total_seconds / (double)nitems);
 
     printf("\ntime elapsed %s:%d:%s\n", file, line, func);
-    printf("%gs = %gus per item.\n\n", total_seconds, micros_per);
+    printf("%gs = %gus per item.\n", total_seconds, micros_per);
     return;
 }
 
