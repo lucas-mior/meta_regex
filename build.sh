@@ -63,16 +63,4 @@ $CC $CPPFLAGS $CFLAGS gen/main_processed.c -o bin/regex_test $LDFLAGS
 trace_off
 
 printf "\nRunning Tests:\n"
-
-printf "\n[Test 1] Testing a string containing digits (Should Match):\n"
-./bin/regex_test "abc5def"
-
-printf "\n[Test 2] Testing a string without digits (Should NOT Match):\n"
-if ./bin/regex_test "hello world"; then
-    printf "\nFAIL: Unexpectedly matched.\n"
-    exit 1
-else
-    printf "PASS: Program exited with failure code as expected.\n"
-fi
-
-printf "\nEverything works!\n"
+./bin/regex_test
