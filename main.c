@@ -31,10 +31,20 @@ static RegexTest regex_tests[] = {
     {"hello",        META_REGEX("[A-Z]")},
     {"abc XYZ 123",  META_REGEX("[a-z]")},
     {"123 XYZ",      META_REGEX("[a-z]")},
-    {"foo (bar)",    META_REGEX("\\([a-z]\\)")},
+    {"foo (bar)",    META_REGEX("\\([a-z]+\\)")},
     {"foo bar",      META_REGEX("(foo) (bar)")},
     {"a1b2",         META_REGEX("([a-z])([0-9])")},
     {"nested",       META_REGEX("n(e(s)t)ed")},
+    {"abbbc",        META_REGEX("ab*c")},
+    {"ac",           META_REGEX("ab*c")},
+    {"ac",           META_REGEX("ab+c")},
+    {"abc",          META_REGEX("ab+c")},
+    {"abc",          META_REGEX("ab?c")},
+    {"ac",           META_REGEX("ab?c")},
+    {"abbc",         META_REGEX("ab?c")},
+    {"a123b",        META_REGEX("a[0-9]+b")},
+    {"aXXXb",        META_REGEX("a.+b")},
+    {"ab",           META_REGEX("a.*b")},
 };
 
 int
@@ -67,7 +77,7 @@ main(int argc, char **argv) {
         }
 
         match = regexec(&compiled_regex, string, MAX_MATCHES, tests_posix[i].pmatch, 0);
-        printf(RED("%15s")" against "BLUE("%10s")": %d\n", string, regex, match);
+        printf(RED("%15s")" against "BLUE("%12s")": %d\n", string, regex, match);
         tests_posix[i].result = match;
 
         regfree(&compiled_regex);
@@ -86,29 +96,35 @@ main(int argc, char **argv) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
     for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
-        int result_posix = tests_posix[i].result;
-        int result_meta = tests_meta[i].result;
+        RegexTest test_posix = tests_posix[i];
+        RegexTest test_meta = tests_meta[i];
         char *regex = regex_tests[i].meta_regex.string;
         char *string = regex_tests[i].string;
 
-        if (result_posix != result_meta) {
+        if (test_posix.result != test_meta.result) {
             error("Error: regex "RED("\"%s\"")" against "BLUE("\"%s\"")"'\n",
                   regex, string);
-            error("posix: %d\n", tests_posix[i].result);
-            error("meta: %d\n", tests_meta[i].result);
+            error("posix: %d\n", test_posix.result);
+            error("meta: %d\n", test_meta.result);
             exit(EXIT_FAILURE);
         }
 
-        if (result_posix == 0) {
+        if (test_posix.result == 0) {
             for (size_t m = 0; m < MAX_MATCHES; m += 1) {
-                if (tests_posix[i].pmatch[m].rm_so != tests_meta[i].pmatch[m].rm_so) {
-                    error("Error: mismatch rm_so in %s against %s (group %zu): posix %d, meta %d\n",
-                          string, regex, m, tests_posix[i].pmatch[m].rm_so, tests_meta[i].pmatch[m].rm_so);
+                if (test_posix.pmatch[m].rm_so != test_meta.pmatch[m].rm_so) {
+                    error("Error: mismatch rm_so in "
+                          RED("\"%s\"")" against "BLUE("\"%s\"")
+                          " (group %zu): posix %d, meta %d\n",
+                          string, regex,
+                          m, test_posix.pmatch[m].rm_so, test_meta.pmatch[m].rm_so);
                     exit(EXIT_FAILURE);
                 }
-                if (tests_posix[i].pmatch[m].rm_eo != tests_meta[i].pmatch[m].rm_eo) {
-                    error("Error: mismatch rm_eo in %s against %s (group %zu): posix %d, meta %d\n",
-                          string, regex, m, tests_posix[i].pmatch[m].rm_eo, tests_meta[i].pmatch[m].rm_eo);
+                if (test_posix.pmatch[m].rm_eo != test_meta.pmatch[m].rm_eo) {
+                    error("Error: mismatch rm_eo in "
+                          RED("\"%s\"")" against "BLUE("\"%s\"")
+                          " (group %zu): posix %d, meta %d\n",
+                          string, regex,
+                          m, test_posix.pmatch[m].rm_eo, test_meta.pmatch[m].rm_eo);
                     exit(EXIT_FAILURE);
                 }
             }

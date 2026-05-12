@@ -133,6 +133,27 @@ main(int argc, char **argv) {
                     break;
                 }
             }
+            if (regex_string[regex_index] == '*') {
+                int32 w = snprintf2(op_ptr, space, "{META_OP_STAR, 0}, ");
+                op_ptr += w;
+                space -= w;
+                regex_index += 1;
+                continue;
+            }
+            if (regex_string[regex_index] == '+') {
+                int32 w = snprintf2(op_ptr, space, "{META_OP_PLUS, 0}, ");
+                op_ptr += w;
+                space -= w;
+                regex_index += 1;
+                continue;
+            }
+            if (regex_string[regex_index] == '?') {
+                int32 w = snprintf2(op_ptr, space, "{META_OP_OPTIONAL, 0}, ");
+                op_ptr += w;
+                space -= w;
+                regex_index += 1;
+                continue;
+            }
             if (regex_string[regex_index] == '(') {
                 int32 w;
 

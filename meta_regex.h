@@ -11,7 +11,10 @@ enum MetaOpType {
     META_OP_ALPHA_LOWER,
     META_OP_ALPHA_UPPER,
     META_OP_GROUP_START,
-    META_OP_GROUP_END
+    META_OP_GROUP_END,
+    META_OP_STAR,
+    META_OP_PLUS,
+    META_OP_OPTIONAL
 };
 
 typedef struct MetaOp {
