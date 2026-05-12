@@ -28,7 +28,7 @@ static RegexTest regex_tests[] = {
     {"hello",        META_REGEX("[A-Z]")},
     {"abc XYZ 123",  META_REGEX("[a-z]")},
     {"123 XYZ",      META_REGEX("[a-z]")},
-    {"123",          META_REGEX("456")},
+    {"123",          META_REGEX("123?")},
 };
 
 int
@@ -88,7 +88,8 @@ main(int argc, char **argv) {
         char *string = regex_tests[i].string;
 
         if (result_posix != result_meta) {
-            error("Error: regex '%s' against '%s'\n", regex, string);
+            error("Error: regex "RED("\"%s\"")" against "BLUE("\"%s\"")"'\n",
+                  regex, string);
             error("posix: %d\n", tests_posix[i].result);
             error("meta: %d\n", tests_meta[i].result);
         }
