@@ -85,7 +85,7 @@ main(int argc, char **argv) {
             quote_end += 1;
         }
 
-        strncpy(regex_string, quote_start + 1, quote_end - quote_start - 1);
+        strncpy32(regex_string, quote_start + 1, quote_end - quote_start - 1);
 
         if (regex_string[regex_index] == '^') {
             has_start = 1;

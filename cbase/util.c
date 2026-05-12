@@ -214,6 +214,22 @@ strlen32(char *string) {
     return length;
 }
 
+INLINE char *
+strncpy32(char *dest, char *source, int64 space) {
+    if (DEBUGGING) {
+        if (space <= 0) {
+            error("Error: string (%.*s ...) is too long.\n", 50, source);
+            fatal(EXIT_FAILURE);
+        }
+        if ((ullong)space >= SIZE_MAX) {
+            error("Error: space is too large.\n");
+            fatal(EXIT_FAILURE);
+        }
+    }
+
+    return strncpy(dest, source, (size_t)space);
+}
+
 INLINE int
 strncmp32(char *left, char *right, int64 size) {
     int result;
