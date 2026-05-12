@@ -1,0 +1,78 @@
+#!/bin/sh -e
+
+set -e
+alias trace_on='set -x'
+alias trace_off='{ set +x; } 2>/dev/null'
+
+dir="$(readlink -f "$(dirname "$0")")"
+cbase="cbase"
+
+mkdir -p bin
+
+CFLAGS="$CFLAGS -std=c11"
+CFLAGS="$CFLAGS -Wextra -Wall"
+CFLAGS="$CFLAGS -Wno-unused-macros -Wno-unused-function"
+CFLAGS="$CFLAGS -Wno-unknown-pragmas"
+CFLAGS="$CFLAGS -Wfatal-errors"
+CFLAGS="$CFLAGS -Wno-gnu-union-cast"
+CPPFLAGS="$CPPFLAGS -D_DEFAULT_SOURCE"
+CPPFLAGS="$CPPFLAGS -I "$dir/$cbase" -I "$dir""
+LDFLAGS="$LDFLAGS -lmagic -lm"
+
+OS=$(uname -a)
+
+if echo "$OS" | grep -q "Linux"; then
+    if echo "$OS" | grep -q "GNU"; then
+        GNUSOURCE="-D_GNU_SOURCE"
+    fi
+fi
+
+CC=${CC:-cc}
+
+CFLAGS="$CFLAGS -g $GNUSOURCE -DDEBUGGING=1"
+
+if [ "$CC" = "clang" ]; then
+    CFLAGS="$CFLAGS -Weverything"
+    CFLAGS="$CFLAGS -Wno-unsafe-buffer-usage"
+    CFLAGS="$CFLAGS -Wno-format-nonliteral"
+    CFLAGS="$CFLAGS -Wno-format-pedantic"
+    CFLAGS="$CFLAGS -Wno-pre-c11-compat"
+    CFLAGS="$CFLAGS -Wno-disabled-macro-expansion"
+    CFLAGS="$CFLAGS -Wno-c++-keyword"
+    CFLAGS="$CFLAGS -Wno-covered-switch-default"
+    CFLAGS="$CFLAGS -Wno-implicit-void-ptr-cast"
+    CFLAGS="$CFLAGS -Wno-cast-qual"
+    CFLAGS="$CFLAGS -Wno-constant-logical-operand"
+    CFLAGS="$CFLAGS -Wno-cast-function-type-strict"
+    CFLAGS="$CFLAGS -Wno-float-equal"
+fi
+
+printf "\nBuilding preprocessor...\n"
+trace_on
+$CC $CPPFLAGS $CFLAGS meta_preproc.c -o bin/meta_preproc $LDFLAGS
+trace_off
+
+printf "\nPreprocessing main.c...\n"
+trace_on
+./bin/meta_preproc main.c > gen/main_processed.c
+trace_off
+
+printf "\nBuilding target program...\n"
+trace_on
+$CC $CPPFLAGS $CFLAGS gen/main_processed.c -o bin/regex_test $LDFLAGS
+trace_off
+
+printf "\nRunning Tests:\n"
+
+printf "\n[Test 1] Testing a string containing digits (Should Match):\n"
+./bin/regex_test "abc5def"
+
+printf "\n[Test 2] Testing a string without digits (Should NOT Match):\n"
+if ./bin/regex_test "hello world"; then
+    printf "\nFAIL: Unexpectedly matched.\n"
+    exit 1
+else
+    printf "PASS: Program exited with failure code as expected.\n"
+fi
+
+printf "\nEverything works!\n"
