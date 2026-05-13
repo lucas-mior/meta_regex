@@ -228,8 +228,6 @@ main(int argc, char **argv) {
     {
         int32 fuzzy_iterations = 1000;
         char *fuzzy_buffer = malloc2(4097);
-        uint64 posix_total_ns = 0;
-        uint64 meta_total_ns = 0;
 
         for (int32 i = 0; i < fuzzy_iterations; i += 1) {
             int32 length = 1 + (rand() % 4096);
@@ -239,8 +237,6 @@ main(int argc, char **argv) {
             regex_t posix_pattern;
             regmatch_t posix_pmatch[MAX_MATCHES];
             regmatch_t meta_pmatch[MAX_MATCHES];
-            struct timespec ts0;
-            struct timespec ts1;
             int posix_res;
             int meta_res;
 
@@ -248,18 +244,11 @@ main(int argc, char **argv) {
 
             regcomp(&posix_pattern, pattern_string, REG_EXTENDED);
             
-            clock_gettime(CLOCK_MONOTONIC_RAW, &ts0);
             posix_res = regexec(&posix_pattern, fuzzy_buffer, MAX_MATCHES, posix_pmatch, 0);
-            clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
-            posix_total_ns += (ts1.tv_sec - ts0.tv_sec) * 1000000000ULL + (ts1.tv_nsec - ts0.tv_nsec);
-
-            clock_gettime(CLOCK_MONOTONIC_RAW, &ts0);
             meta_res = meta_regex_match(meta_pattern, fuzzy_buffer, MAX_MATCHES, meta_pmatch);
-            clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
-            meta_total_ns += (ts1.tv_sec - ts0.tv_sec) * 1000000000ULL + (ts1.tv_nsec - ts0.tv_nsec);
 
             if (posix_res != meta_res) {
-                error("Fuzzy failure (result) at iteration %d\nPattern: %s\nString length: %d\n", i, pattern_string, length);
+                error("Fuzzy failure (result) at iteration %d\nPattern: %s\n", i, pattern_string);
             } else if (posix_res == 0) {
                 for (int32 m = 0; m < MAX_MATCHES; m += 1) {
                     if (posix_pmatch[m].rm_so != meta_pmatch[m].rm_so || posix_pmatch[m].rm_eo != meta_pmatch[m].rm_eo) {
@@ -271,10 +260,6 @@ main(int argc, char **argv) {
 
             regfree(&posix_pattern);
         }
-
-        printf("Fuzzy POSIX avg: %llu ns\n", (llong)(posix_total_ns / fuzzy_iterations));
-        printf("Fuzzy Meta avg:  %llu ns\n", (llong)(meta_total_ns / fuzzy_iterations));
-        printf("Fuzzy Speedup:   %.2fx\n", (double)posix_total_ns / (double)meta_total_ns);
 
         free2(fuzzy_buffer, 4097);
     }
