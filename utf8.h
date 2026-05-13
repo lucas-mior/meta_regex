@@ -1,6 +1,7 @@
 #if !defined(UTF8_H)
 #define UTF8_H
 
+#include <stdlib.h>
 #include "primitives.h"
 
 static int32
