@@ -324,6 +324,9 @@ main(void) {
                       posix_match ? "MATCH" : "NOMATCH",
                       meta_match  ? "MATCH" : "NOMATCH",
                       grep_match  ? "MATCH" : "NOMATCH");
+                if (meta_match != grep_match) {
+                    exit(EXIT_FAILURE);
+                }
                 break;
             }
         }
