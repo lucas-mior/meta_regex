@@ -43,4 +43,43 @@ utf8_decode(char *s, int32 *consumed) {
     return cp;
 }
 
+static void
+utf8_random_string(char *buffer, int32 max_bytes) {
+    int32 current_byte = 0;
+    while (current_byte < max_bytes - 4) {
+        int32 choice = rand() % 100;
+        if (choice < 70) {
+            buffer[current_byte] = (char)(32 + (rand() % 95));
+            current_byte += 1;
+        } else if (choice < 85) {
+            buffer[current_byte] = (char)(0xC2 + (rand() % 30));
+            buffer[current_byte + 1] = (char)(0x80 | (rand() % 64));
+            current_byte += 2;
+        } else if (choice < 95) {
+            char b1 = (char)(0xE0 | (rand() % 16));
+            char b2 = (char)(0x80 | (rand() % 64));
+            char b3 = (char)(0x80 | (rand() % 64));
+            if (b1 == (char)0xE0 && b2 < (char)0xA0) b2 |= (char)0xA0;
+            if (b1 == (char)0xED && b2 > (char)0x9F) b2 &= (char)0x9F;
+            buffer[current_byte] = b1;
+            buffer[current_byte + 1] = b2;
+            buffer[current_byte + 2] = b3;
+            current_byte += 3;
+        } else {
+            char b1 = (char)(0xF0 | (rand() % 5));
+            char b2 = (char)(0x80 | (rand() % 64));
+            char b3 = (char)(0x80 | (rand() % 64));
+            char b4 = (char)(0x80 | (rand() % 64));
+            if (b1 == (char)0xF0 && b2 < (char)0x90) b2 |= (char)0x90;
+            if (b1 == (char)0xF4 && b2 > (char)0x8F) b2 &= (char)0x8F;
+            buffer[current_byte] = b1;
+            buffer[current_byte + 1] = b2;
+            buffer[current_byte + 2] = b3;
+            buffer[current_byte + 3] = b4;
+            current_byte += 4;
+        }
+    }
+    buffer[current_byte] = '\0';
+}
+
 #endif
