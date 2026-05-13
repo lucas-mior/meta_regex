@@ -262,31 +262,11 @@ main(int argc, char **argv) {
                                 regex_index = colon_idx + 2; first_char = 0; continue;
                             }
                         }
-                        if (regex_string[regex_index] == '[' && (regex_string[regex_index + 1] == '.' || regex_string[regex_index + 1] == '=')) {
-                            char type = regex_string[regex_index + 1];
-                            int32 end_idx = regex_index + 2;
-                            int32 found_end = 0;
-                            while (regex_string[end_idx] != '\0') {
-                                if (regex_string[end_idx] == type && regex_string[end_idx + 1] == ']') { found_end = 1; break; }
-                                end_idx += 1;
-                            }
-                            if (found_end) {
-                                int32 c_consumed = 0;
-                                int32 c_cp = utf8_decode(&regex_string[regex_index + 2], &c_consumed);
-                                if (c_cp < 256) mask[c_cp / 32] |= (1u << (c_cp % 32));
-                                else if (high_count < 16) { high_cps[high_count] = c_cp; high_count += 1; }
-                                if (type == '=') {
-                                    if (c_cp == 'e') {
-                                        int32 extra[] = {232, 233, 234, 235, 200, 201, 202, 203};
-                                        for (int i = 0; i < 8; i += 1) mask[extra[i] / 32] |= (1u << (extra[i] % 32));
-                                        if (high_count < 16) { high_cps[high_count] = 7869; high_count += 1; }
-                                    } else if (c_cp == 'a') {
-                                        int32 extra[] = {224, 225, 226, 227, 228, 229, 192, 193, 194, 195, 196, 197};
-                                        for (int i = 0; i < 12; i += 1) mask[extra[i] / 32] |= (1u << (extra[i] % 32));
-                                    }
-                                }
-                                regex_index = end_idx + 2; first_char = 0; continue;
-                            }
+                        if (regex_string[regex_index] == '['
+                                && (regex_string[regex_index + 1] == '.'
+                                    || regex_string[regex_index + 1] == '=')) {
+                            fprintf(stderr, "Error: POSIX bracket extensions [[. .]] and [[= =]] are no longer supported.\n");
+                            exit(EXIT_FAILURE);
                         }
                         int32 c1_consumed = 0;
                         int32 c1 = utf8_decode(&regex_string[regex_index], &c1_consumed);

@@ -106,16 +106,7 @@ static RegexTest regex_tests[] = {
     {"a1 B",         META_REGEX("^[[:lower:][:digit:]]+[[:space:]][[:upper:]]$")},
     {"!@#$%&*()-+=", META_REGEX("^[[:punct:]]+$")},
     {" ",            META_REGEX("^[^[:alnum:][:punct:]]$")},
-    {"aàà",          META_REGEX("[[.a.]]")},
-    {"b",            META_REGEX("[[.a.]]")},
     {"e",            META_REGEX("^é$")},
-    {"eéèêẽë",       META_REGEX("^[[=e=]]+$")},
-    {"aáàâãä",       META_REGEX("^[[=e=]]+$")},
-    {"aáàâãä",       META_REGEX("^[[=a=]]+$")},
-    {"f",            META_REGEX("[[=e=]]")},
-    {"a",            META_REGEX("[[=a=][.b.]]")},
-    {"b",            META_REGEX("[[=a=][.b.]]")},
-    {"c",            META_REGEX("[[=a=][.b.]]")},
 };
 
 static void
