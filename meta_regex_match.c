@@ -157,28 +157,45 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string, siz
 }
 
 static int
-meta_regex_match(MetaRegex regex, char *string, size_t nmatch, regmatch_t pmatch[]) {
-    if (regex.has_start_anchor) {
-        if (pmatch != NULL) for (size_t k = 0; k < nmatch; k += 1) { pmatch[k].rm_so = -1; pmatch[k].rm_eo = -1; }
-        int32 match_len = eval_choice_point(regex.ops, string, string, nmatch, pmatch);
+meta_regex_match(MetaRegex *regex, char *string, size_t nmatch, regmatch_t pmatch[]) {
+    if (regex->has_start_anchor) {
+        if (pmatch != NULL) {
+            for (size_t k = 0; k < nmatch; k += 1) { 
+                pmatch[k].rm_so = -1; 
+                pmatch[k].rm_eo = -1; 
+            }
+        }
+        int32 match_len = eval_choice_point(regex->ops, string, string, nmatch, pmatch);
         if (match_len >= 0) {
-            if (regex.has_end_anchor && string[match_len] != '\0') return REG_NOMATCH;
-            if (pmatch != NULL && nmatch > 0) { pmatch[0].rm_so = 0; pmatch[0].rm_eo = match_len; }
+            if (regex->has_end_anchor && string[match_len] != '\0') return REG_NOMATCH;
+            if (pmatch != NULL && nmatch > 0) { 
+                pmatch[0].rm_so = 0; 
+                pmatch[0].rm_eo = match_len; 
+            }
             return 0;
         }
         return REG_NOMATCH;
     }
     for (int32 j = 0; ; ) {
-        if (pmatch != NULL) for (size_t k = 0; k < nmatch; k += 1) { pmatch[k].rm_so = -1; pmatch[k].rm_eo = -1; }
-        int32 match_len = eval_choice_point(regex.ops, string, &string[j], nmatch, pmatch);
+        if (pmatch != NULL) {
+            for (size_t k = 0; k < nmatch; k += 1) { 
+                pmatch[k].rm_so = -1; 
+                pmatch[k].rm_eo = -1; 
+            }
+        }
+        int32 match_len = eval_choice_point(regex->ops, string, &string[j], nmatch, pmatch);
         if (match_len >= 0) {
-            if (!regex.has_end_anchor || string[match_len] == '\0') {
-                if (pmatch != NULL && nmatch > 0) { pmatch[0].rm_so = j; pmatch[0].rm_eo = match_len; }
+            if (!regex->has_end_anchor || string[match_len] == '\0') {
+                if (pmatch != NULL && nmatch > 0) { 
+                    pmatch[0].rm_so = j; 
+                    pmatch[0].rm_eo = match_len; 
+                }
                 return 0;
             }
         }
         if (string[j] == '\0') break;
-        int32 consumed = 0; utf8_decode(&string[j], &consumed);
+        int32 consumed = 0; 
+        utf8_decode(&string[j], &consumed);
         j += (consumed > 0) ? consumed : 1;
     }
     return REG_NOMATCH;

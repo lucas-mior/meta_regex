@@ -59,7 +59,7 @@ main(void) {
         MetaRegex meta_regex = tests_meta[i].meta_regex;
 
         tests_meta[i].result
-            = meta_regex_match(meta_regex, string,
+            = meta_regex_match(&meta_regex, string,
                                MAX_MATCHES, tests_meta[i].pmatch);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
@@ -132,7 +132,7 @@ main(void) {
             meta_pattern = regex_tests[fuzzy_cases[i].regex_idx].meta_regex;
 
             fuzzy_cases[i].result_meta
-                = meta_regex_match(meta_pattern,
+                = meta_regex_match(&meta_pattern,
                                    fuzzy_cases[i].string,
                                    MAX_MATCHES,
                                    fuzzy_cases[i].pmatch_meta);
