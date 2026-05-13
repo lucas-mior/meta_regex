@@ -26,7 +26,7 @@ typedef struct RegexTest {
 typedef struct FuzzyTest {
     char *string;
     int32 string_size;
-    int32 pattern_index;
+    int32 regex_idx;
     int32 result_posix;
     regmatch_t pmatch_posix[MAX_MATCHES];
     int32 result_meta;
@@ -246,7 +246,7 @@ main(int argc, char **argv) {
             fuzzy_cases[i].string_size = length + 1;
             fuzzy_cases[i].string = malloc2(fuzzy_cases[i].string_size);
             generate_random_utf8_string(fuzzy_cases[i].string, length);
-            fuzzy_cases[i].pattern_index = rand() % LENGTH(regex_tests);
+            fuzzy_cases[i].regex_idx = rand() % LENGTH(regex_tests);
         }
 
         /* Batch POSIX */
@@ -256,7 +256,7 @@ main(int argc, char **argv) {
             int32 comp_error;
             char *pattern_str;
 
-            pattern_str = regex_tests[fuzzy_cases[i].pattern_index].meta_regex.string;
+            pattern_str = regex_tests[fuzzy_cases[i].regex_idx].meta_regex.string;
             if ((comp_error = regcomp(&compiled, pattern_str, REG_EXTENDED))) {
                 error("Error compiling %s: %s.\n", pattern_str, strerror(errno));
                 fatal(EXIT_FAILURE);
@@ -272,7 +272,7 @@ main(int argc, char **argv) {
         for (int32 i = 0; i < NFUZZY; i += 1) {
             MetaRegex meta_pattern;
 
-            meta_pattern = regex_tests[fuzzy_cases[i].pattern_index].meta_regex;
+            meta_pattern = regex_tests[fuzzy_cases[i].regex_idx].meta_regex;
 
             fuzzy_cases[i].result_meta
                 = meta_regex_match(meta_pattern,
@@ -288,7 +288,7 @@ main(int argc, char **argv) {
         for (int32 i = 0; i < NFUZZY; i += 1) {
             if (fuzzy_cases[i].result_posix != fuzzy_cases[i].result_meta) {
                 char *string = fuzzy_cases[i].string;
-                char *regex = regex_tests[fuzzy_cases[i].pattern_index].meta_regex.string;
+                char *regex = regex_tests[fuzzy_cases[i].regex_idx].meta_regex.string;
 
                 FILE *tmp_in = fopen(".tmp_in", "w");
                 fputs(string, tmp_in);
