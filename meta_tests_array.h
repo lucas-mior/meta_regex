@@ -46,7 +46,9 @@ static RegexTest regex_tests[] = {
     {"456 bar",      R("([0-9]+) (foo|bar)")},
     {"789 baz",      R("([0-9]+) (foo|bar)")},
     {"a",            R("[abc]")},
+    {"é",            R("é")},
     {"é",            R("[é]")},
+    {"e",            R("^é$")},
     {"d",            R("[abc]")},
     {"x",            R("[^abc]")},
     {"a",            R("[^abc]")},
@@ -79,7 +81,6 @@ static RegexTest regex_tests[] = {
     {"a1 B",         R("^[[:lower:][:digit:]]+[[:space:]][[:upper:]]$")},
     {"!@#$%&*()-+=", R("^[[:punct:]]+$")},
     {" ",            R("^[^[:alnum:][:punct:]]$")},
-    {"e",            R("^é$")},
 };
 
 #endif /* META_TESTS_ARRAY_H */
