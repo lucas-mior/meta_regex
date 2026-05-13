@@ -63,12 +63,12 @@ trace_off
 
 printf "\nPreprocessing main.c...\n"
 trace_on
-./bin/meta_preproc main.c > gen/main_processed.c
+./bin/meta_preproc main.c > gen/main2.c
 trace_off
 
 printf "\nBuilding target program...\n"
 trace_on
-$CC $CPPFLAGS -O2 -flto $CFLAGS gen/main_processed.c -o bin/regex_test $LDFLAGS
+$CC $CPPFLAGS -O2 -flto $CFLAGS gen/main2.c -o bin/regex_test $LDFLAGS
 trace_off
 
 printf "\nRunning Tests:\n"

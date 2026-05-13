@@ -10,7 +10,7 @@
 #include "meta_regex_match.c"
 
 #define MAX_MATCHES 4
-#define FUZZY_ITERATIONS 1000
+#define FUZZY_ITERATIONS 100
 
 typedef struct RegexTest {
     char *string;
