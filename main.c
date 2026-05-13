@@ -257,8 +257,6 @@ main(int argc, char **argv) {
             char *string = fuzzy_cases[i].string;
             char *regex = regex_tests[fuzzy_cases[i].pattern_index].meta_regex.string;
 
-            printf(RED("%15s")" against "BLUE("%18s")": %d\n", string, regex, fuzzy_cases[i].result_posix);
-            
             if (fuzzy_cases[i].result_posix != fuzzy_cases[i].result_meta) {
                 error("Error: result mismatch for regex "RED("\"%s\"")" against "BLUE("\"%s\"")"\n", regex, string);
             }
