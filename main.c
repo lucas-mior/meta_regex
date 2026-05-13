@@ -107,6 +107,7 @@ static RegexTest regex_tests[] = {
     {" ",            META_REGEX("^[^[:alnum:][:punct:]]$")},
     {"aàà",          META_REGEX("[[.a.]]")},
     {"b",            META_REGEX("[[.a.]]")},
+    {"e",            META_REGEX("^é$")},
     {"eéèêẽë",       META_REGEX("^[[=e=]]+$")},
     {"aáàâãä",       META_REGEX("^[[=e=]]+$")},
     {"aáàâãä",       META_REGEX("^[[=a=]]+$")},
@@ -114,6 +115,18 @@ static RegexTest regex_tests[] = {
     {"a",            META_REGEX("[[=a=][.b.]]")},
     {"b",            META_REGEX("[[=a=][.b.]]")},
     {"c",            META_REGEX("[[=a=][.b.]]")},
+    {"ʸ",            META_REGEX("[a-z]")},
+    {"ý",            META_REGEX("[a-z]")},
+    {"ÿ",            META_REGEX("[a-z]")},
+    {"ŷ",            META_REGEX("[a-z]")},
+    {"ȳ",            META_REGEX("[a-z]")},
+    {"ʸ",            META_REGEX("[a-z]")},
+    {"ẏ",            META_REGEX("[a-z]")},
+    {"ẙ",            META_REGEX("[a-z]")},
+    {"ỳ",            META_REGEX("[a-z]")},
+    {"ỵ",            META_REGEX("[a-z]")},
+    {"ỷ",            META_REGEX("[a-z]")},
+    {"ỹ",            META_REGEX("[a-z]")},
 };
 
 static void
@@ -215,6 +228,7 @@ main(void) {
             error("Error: result mismatch for regex "
                   RED("\"%s\"")" against "BLUE("\"%s\"")"\n", regex, string);
             error("posix: %d, meta: %d\n", test_posix.result, test_meta.result);
+            exit(EXIT_FAILURE);
         }
         if (test_posix.result == 0) {
             for (int32 m = 0; m < MAX_MATCHES; m += 1) {
