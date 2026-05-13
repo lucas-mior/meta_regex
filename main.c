@@ -82,6 +82,15 @@ static RegexTest regex_tests[] = {
     {"aab",          META_REGEX("a{2,}b")},
     {"aaaaaaab",     META_REGEX("a{2,}b")},
     {"ab",           META_REGEX("a{2,}b")},
+    {"123a",         META_REGEX("[[:digit:]]+")},
+    {"123",          META_REGEX("^[[:digit:]]+$")},
+    {"abc",          META_REGEX("^[[:alpha:]]+$")},
+    {"a1B",          META_REGEX("^[[:alnum:]]+$")},
+    {" \t\n",        META_REGEX("^[[:space:]]+$")},
+    {"a B",          META_REGEX("^[[:lower:]][[:space:]][[:upper:]]$")},
+    {"a1 B",         META_REGEX("^[[:lower:][:digit:]]+[[:space:]][[:upper:]]$")},
+    {"!",            META_REGEX("^[[:punct:]]$")},
+    {" ",            META_REGEX("^[^[:alnum:][:punct:]]$")},
 };
 
 int
@@ -114,7 +123,6 @@ main(int argc, char **argv) {
         }
 
         match = regexec(&compiled_regex, string, MAX_MATCHES, tests_posix[i].pmatch, 0);
-        printf(RED("%15s")" against "BLUE("%18s")": %d\n", string, regex, match);
         tests_posix[i].result = match;
 
         regfree(&compiled_regex);

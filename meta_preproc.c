@@ -280,6 +280,67 @@ main(int argc, char **argv) {
                             break;
                         }
 
+                        if (regex_string[regex_index] == '[' && regex_string[regex_index + 1] == ':') {
+                            int32 colon_idx = regex_index + 2;
+                            int32 found_end = 0;
+
+                            while (regex_string[colon_idx] != '\0') {
+                                if (regex_string[colon_idx] == ':') {
+                                    if (regex_string[colon_idx + 1] == ']') {
+                                        found_end = 1;
+                                        break;
+                                    }
+                                }
+                                colon_idx += 1;
+                            }
+
+                            if (found_end) {
+                                char class_name[32] = {0};
+                                int32 name_len = colon_idx - (regex_index + 2);
+
+                                if (name_len < 32) {
+                                    strncpy32(class_name, &regex_string[regex_index + 2], name_len);
+                                    
+                                    for (int32 c = 0; c < 256; c += 1) {
+                                        int32 match = 0;
+
+                                        if (strcmp(class_name, "alnum") == 0) {
+                                            match = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'));
+                                        } else if (strcmp(class_name, "alpha") == 0) {
+                                            match = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
+                                        } else if (strcmp(class_name, "blank") == 0) {
+                                            match = (c == ' ' || c == '\t');
+                                        } else if (strcmp(class_name, "cntrl") == 0) {
+                                            match = ((c >= 0 && c <= 31) || c == 127);
+                                        } else if (strcmp(class_name, "digit") == 0) {
+                                            match = (c >= '0' && c <= '9');
+                                        } else if (strcmp(class_name, "graph") == 0) {
+                                            match = (c >= 33 && c <= 126);
+                                        } else if (strcmp(class_name, "lower") == 0) {
+                                            match = (c >= 'a' && c <= 'z');
+                                        } else if (strcmp(class_name, "print") == 0) {
+                                            match = (c >= 32 && c <= 126);
+                                        } else if (strcmp(class_name, "punct") == 0) {
+                                            match = ((c >= 33 && c <= 126) && !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')));
+                                        } else if (strcmp(class_name, "space") == 0) {
+                                            match = (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f');
+                                        } else if (strcmp(class_name, "upper") == 0) {
+                                            match = (c >= 'A' && c <= 'Z');
+                                        } else if (strcmp(class_name, "xdigit") == 0) {
+                                            match = ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
+                                        }
+
+                                        if (match) {
+                                            mask[c / 32] |= (1u << (c % 32));
+                                        }
+                                    }
+                                }
+                                regex_index = colon_idx + 2;
+                                first_char = 0;
+                                continue;
+                            }
+                        }
+
                         start_char = regex_string[regex_index];
                         end_char = start_char;
 
