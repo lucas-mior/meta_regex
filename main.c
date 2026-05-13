@@ -156,55 +156,16 @@ main(void) {
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1_fuzzy_meta);
 
         for (int32 i = 0; i < NFUZZY; i += 1) {
-            if (fuzzy_cases[i].result_posix != fuzzy_cases[i].result_meta) {
+            int32 result_posix = fuzzy_cases[i].result_posix;
+            int32 result_meta = fuzzy_cases[i].result_meta;
+            if (result_posix != result_meta) {
                 char *string = fuzzy_cases[i].string;
                 char *regex = regex_tests[fuzzy_cases[i].regex_idx].meta_regex.string;
-                int grep_match;
-                int meta_match;
-                int posix_match;
-                char *tmp_inputs = "/tmp/inputs.txt";
-                char *tmp_regex = "/tmp/regex.txt";
-                FILE *tmp_in;
-                FILE *tmp_re;
-                int32 argc = 0;
-                char *argv[16];
 
-                if ((tmp_in = fopen(tmp_inputs, "w")) == NULL) {
-                    error("Error opening %s: %s.\n",
-                          tmp_inputs, strerror(errno));
-                    fatal(EXIT_FAILURE);
-                }
-                fputs(string, tmp_in);
-                fclose(tmp_in);
-
-                if ((tmp_re = fopen(tmp_regex, "w")) == NULL) {
-                    error("Error opening %s: %s.\n",
-                          tmp_regex, strerror(errno));
-                    fatal(EXIT_FAILURE);
-                }
-                fputs(regex, tmp_re);
-                fclose(tmp_re);
-
-                argv[argc++] = "grep";
-                argv[argc++] = "-qE";
-                argv[argc++] = "-f";
-                argv[argc++] = tmp_regex;
-                argv[argc++] = tmp_inputs;
-                argv[argc++] = NULL;
-
-                grep_match = (util_command(argc, argv) == 0);
-                meta_match = (fuzzy_cases[i].result_meta == 0);
-                posix_match = (fuzzy_cases[i].result_posix == 0);
-
-                error("Mismatch at %d: /%s/ against \"%s\"\n", i, regex, string);
-                error("\nPOSIX says: %s\nMeta says: %s\nGrep says: %s\n", 
-                      posix_match ? "MATCH" : "NOMATCH",
-                      meta_match  ? "MATCH" : "NOMATCH",
-                      grep_match  ? "MATCH" : "NOMATCH");
-                if (meta_match != grep_match) {
-                    exit(EXIT_FAILURE);
-                }
-                break;
+                error("Error: result mismatch for regex "
+                      RED("\"%s\"")" against "BLUE("\"%s\"")"\n", regex, string);
+                error("posix: %d, meta: %d\n", result_posix, result_meta);
+                exit(EXIT_FAILURE);
             }
         }
 
