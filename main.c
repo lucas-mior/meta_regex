@@ -295,6 +295,7 @@ main(void) {
                 if ((tmp_in = fopen(tmp_inputs, "w")) == NULL) {
                     error("Error opening %s: %s.\n",
                           tmp_inputs, strerror(errno));
+                    fatal(EXIT_FAILURE);
                 }
                 fputs(string, tmp_in);
                 fclose(tmp_in);
@@ -302,6 +303,7 @@ main(void) {
                 if ((tmp_re = fopen(tmp_regex, "w")) == NULL) {
                     error("Error opening %s: %s.\n",
                           tmp_regex, strerror(errno));
+                    fatal(EXIT_FAILURE);
                 }
                 fputs(regex, tmp_re);
                 fclose(tmp_re);
