@@ -94,7 +94,7 @@ static RegexTest regex_tests[] = {
     {" ",            META_REGEX("^[^[:alnum:][:punct:]]$")},
     {"aàà",          META_REGEX("[[.a.]]")},
     {"b",            META_REGEX("[[.a.]]")},
-    {"é",            META_REGEX("[[=e=]]")},
+    {"eéèêẽë",       META_REGEX("^[[=e=]]+$")},
     {"f",            META_REGEX("[[=e=]]")},
     {"a",            META_REGEX("[[=a=][.b.]]")},
     {"b",            META_REGEX("[[=a=][.b.]]")},

@@ -32,6 +32,10 @@ utf8_decode(char *s, int32 *consumed) {
     }
 
     for (int32 i = 1; i < len; i += 1) {
+        if ((u[i] & 0xC0) != 0x80) {
+            *consumed = 1;
+            return u[0];
+        }
         cp = (cp << 6) | (u[i] & 0x3F);
     }
 

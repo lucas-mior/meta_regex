@@ -101,12 +101,12 @@ main(int argc, char **argv) {
                     if (raw_string[i + 1] != '\0') {
                         i += 1;
                         switch (raw_string[i]) {
-                            case 'n':  regex_string[u_idx] = '\n';          break;
-                            case 't':  regex_string[u_idx] = '\t';          break;
-                            case 'r':  regex_string[u_idx] = '\r';          break;
-                            case '\\': regex_string[u_idx] = '\\';          break;
-                            case '"':  regex_string[u_idx] = '"';           break;
-                            default:   regex_string[u_idx] = raw_string[i]; break;
+                            case 'n': regex_string[u_idx] = '\n'; break;
+                            case 't': regex_string[u_idx] = '\t'; break;
+                            case 'r': regex_string[u_idx] = '\r'; break;
+                            case '\\': regex_string[u_idx] = '\\'; break;
+                            case '"': regex_string[u_idx] = '"'; break;
+                            default: regex_string[u_idx] = raw_string[i]; break;
                         }
                         u_idx += 1;
                     }
@@ -134,8 +134,7 @@ main(int argc, char **argv) {
                         break;
                     }
                     int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d, 0, 0, {0}}, ", cp);
-                    op_ptr += w;
-                    space -= w;
+                    op_ptr += w; space -= w;
                     regex_index += 1;
                     break;
                 }
@@ -238,7 +237,15 @@ main(int argc, char **argv) {
                                         if (strcmp(class_name, "alnum") == 0) match = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'));
                                         else if (strcmp(class_name, "alpha") == 0) match = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
                                         else if (strcmp(class_name, "digit") == 0) match = (c >= '0' && c <= '9');
-                                        else if (strcmp(class_name, "space") == 0) match = (c == ' ' || c == '\t' || c == '\n' || c == '\r');
+                                        else if (strcmp(class_name, "space") == 0) match = (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f');
+                                        else if (strcmp(class_name, "lower") == 0) match = (c >= 'a' && c <= 'z');
+                                        else if (strcmp(class_name, "upper") == 0) match = (c >= 'A' && c <= 'Z');
+                                        else if (strcmp(class_name, "punct") == 0) match = ((c >= 33 && c <= 47) || (c >= 58 && c <= 64) || (c >= 91 && c <= 96) || (c >= 123 && c <= 126));
+                                        else if (strcmp(class_name, "xdigit") == 0) match = ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
+                                        else if (strcmp(class_name, "print") == 0) match = (c >= 32 && c <= 126);
+                                        else if (strcmp(class_name, "graph") == 0) match = (c >= 33 && c <= 126);
+                                        else if (strcmp(class_name, "blank") == 0) match = (c == ' ' || c == '\t');
+                                        else if (strcmp(class_name, "cntrl") == 0) match = ((c >= 0 && c <= 31) || (c == 127));
                                         if (match) mask[c / 32] |= (1u << (c % 32));
                                     }
                                 }
@@ -257,7 +264,10 @@ main(int argc, char **argv) {
                                 if (type == '=') {
                                     if (c_cp == 'e') {
                                         int32 extra[] = {232, 233, 234, 235, 200, 201, 202, 203};
-                                        for (int i = 0; i < 8; i++) mask[extra[i] / 32] |= (1u << (extra[i] % 32));
+                                        for (int i = 0; i < 8; i += 1) mask[extra[i] / 32] |= (1u << (extra[i] % 32));
+                                    } else if (c_cp == 'a') {
+                                        int32 extra[] = {224, 225, 226, 227, 228, 229, 192, 193, 194, 195, 196, 197};
+                                        for (int i = 0; i < 12; i += 1) mask[extra[i] / 32] |= (1u << (extra[i] % 32));
                                     }
                                 }
                                 regex_index = end_idx + 2; first_char = 0; continue;
@@ -274,7 +284,7 @@ main(int argc, char **argv) {
                     }
                     if (regex_string[regex_index] == ']') regex_index += 1;
                     if (is_negated) for (int32 i = 0; i < 8; i += 1) mask[i] = ~mask[i];
-                    int w = snprintf2(op_ptr, space, "{META_OP_CLASS, 0, 0, 0, {%uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu}}, ",
+                    int32 w = snprintf2(op_ptr, space, "{META_OP_CLASS, 0, 0, 0, {%uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu}}, ",
                                       mask[0], mask[1], mask[2], mask[3], mask[4], mask[5], mask[6], mask[7]);
                     op_ptr += w; space -= w;
                     break;
