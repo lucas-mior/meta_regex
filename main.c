@@ -303,7 +303,7 @@ main(int argc, char **argv) {
                 int posix_match = (fuzzy_cases[i].result_posix == 0);
 
                 error("Mismatch at %d: /%s/ against \"%s\"\n", i, regex, string);
-                error("POSIX says: %s, Meta says: %s, Grep says: %s\n", 
+                error("POSIX says: %s\nMeta says: %s\nGrep says: %s\n", 
                       posix_match ? "MATCH" : "NOMATCH",
                       meta_match  ? "MATCH" : "NOMATCH",
                       grep_match  ? "MATCH" : "NOMATCH");
