@@ -217,13 +217,13 @@ main(void) {
             error("posix: %d, meta: %d\n", test_posix.result, test_meta.result);
         }
         if (test_posix.result == 0) {
-            for (size_t m = 0; m < MAX_MATCHES; m += 1) {
+            for (int32 m = 0; m < MAX_MATCHES; m += 1) {
                 if (test_posix.pmatch[m].rm_so != test_meta.pmatch[m].rm_so) {
-                    error("Error: mismatch rm_so in %s (group %zu)\n",
+                    error("Error: mismatch rm_so in %s (group %d)\n",
                           string, m);
                 }
                 if (test_posix.pmatch[m].rm_eo != test_meta.pmatch[m].rm_eo) {
-                    error("Error: mismatch rm_eo in %s (group %zu)\n",
+                    error("Error: mismatch rm_eo in %s (group %d)\n",
                           string, m);
                 }
             }
