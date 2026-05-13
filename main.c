@@ -9,6 +9,9 @@
 #include "meta_regex.h"
 #include "meta_regex_match.c"
 
+#define FILE_REGEXES "0regexes.txt"
+#define FILE_INPUTS "0inputs.txt"
+
 #define MAX_MATCHES 4
 #define NFUZZY 1000
 
@@ -306,7 +309,8 @@ main(int argc, char **argv) {
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1_fuzzy_meta);
 
         /* Phase 4: Compare results using the same format as static tests */
-        FILE *file = fopen("problems.txt", "w");
+        FILE *inputs  = fopen(FILE_INPUTS, "w");
+        FILE *regexes = fopen(FILE_REGEXES, "w");
         for (int32 i = 0; i < NFUZZY; i += 1) {
             char *string = fuzzy_cases[i].string;
             char *regex;
@@ -318,7 +322,8 @@ main(int argc, char **argv) {
                       RED("\"%s\"")" against "BLUE("\"%s\"")"\n", regex, string);
                 error("posix: %d, meta: %d\n",
                       fuzzy_cases[i].result_posix, fuzzy_cases[i].result_meta);
-                fprintf(file, "%s against %s\n", regex, string);
+                fprintf(inputs,  "%s\n", string);
+                fprintf(regexes, "%s\n", regex);
             }
             
             /* if (fuzzy_cases[i].result_posix == 0) { */
@@ -336,7 +341,8 @@ main(int argc, char **argv) {
             /*     } */
             /* } */
         }
-        fclose(file);
+        fclose(inputs);
+        fclose(regexes);
 
         PRINT_TIMINGS(NFUZZY, t0_fuzzy_posix, t1_fuzzy_posix, "fuzzy posix tests");
         PRINT_TIMINGS(NFUZZY, t0_fuzzy_meta, t1_fuzzy_meta, "fuzzy meta tests");
