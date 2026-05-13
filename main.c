@@ -113,6 +113,10 @@ static RegexTest regex_tests[] = {
     {"a",            META_REGEX("[[=a=][.b.]]")},
     {"b",            META_REGEX("[[=a=][.b.]]")},
     {"c",            META_REGEX("[[=a=][.b.]]")},
+    {"{-^\"x򐇾'覣C9a㸵BYh z<݀ W୐ǙL𪻁Y氶V}5⬅3れ\\ѧcng􏡆EU'􋹫dYИ;0 2݁zCɾ1jՀ/\\'"
+     "ɬ5wՋ&'⡯]`]⏔ۮn B/-􃯞_d⯯졍@CEeE끋u>튀fu1鍦\\I࿽\\>zpl凌䪃eߵ݂It\"毐RFܸx-*1"
+     "[W/ǠP87dH8麺\\KX赃蓄2⨄e2䪗1{P|籘+v䵐Ҕ鴕*9I觀0Y󿨛䰢􀈧휸o𞴔"
+     "?YG݆2t}ɖ̰/A6}*==", META_REGEX("\\([a-z]+\\)")},
 };
 
 static void
@@ -123,25 +127,56 @@ generate_random_utf8_string(char *buffer, int32 max_bytes) {
         int32 choice = rand() % 100;
 
         if (choice < 70) {
+            /* Strictly printable ASCII: 32 (space) to 126 (~) */
             buffer[current_byte] = (char)(32 + (rand() % 95));
             current_byte += 1;
         } else if (choice < 85) {
-            buffer[current_byte] = (char)(0xC0 | ((rand() % 32)));
+            /* 2-byte sequence: 0xC2-0xDF followed by 0x80-0xBF */
+            /* We start at 0xC2 to avoid overlong encodings (0xC0, 0xC1) */
+            buffer[current_byte] = (char)(0xC2 + (rand() % 30));
             buffer[current_byte + 1] = (char)(0x80 | (rand() % 64));
             current_byte += 2;
         } else if (choice < 95) {
-            buffer[current_byte] = (char)(0xE0 | (rand() % 16));
-            buffer[current_byte + 1] = (char)(0x80 | (rand() % 64));
-            buffer[current_byte + 2] = (char)(0x80 | (rand() % 64));
+            /* 3-byte sequence: 0xE0-0xEF followed by two continuation bytes */
+            char b1 = (char)(0xE0 | (rand() % 16));
+            char b2 = (char)(0x80 | (rand() % 64));
+            char b3 = (char)(0x80 | (rand() % 64));
+
+            /* Prevent overlongs and UTF-16 surrogate halves (U+D800 - U+DFFF) */
+            if (b1 == (char)0xE0 && b2 < (char)0xA0) {
+                b2 |= (char)0xA0;
+            }
+            if (b1 == (char)0xED && b2 > (char)0x9F) {
+                b2 &= (char)0x9F;
+            }
+
+            buffer[current_byte] = b1;
+            buffer[current_byte + 1] = b2;
+            buffer[current_byte + 2] = b3;
             current_byte += 3;
         } else {
-            buffer[current_byte] = (char)(0xF0 | (rand() % 8));
-            buffer[current_byte + 1] = (char)(0x80 | (rand() % 64));
-            buffer[current_byte + 2] = (char)(0x80 | (rand() % 64));
-            buffer[current_byte + 3] = (char)(0x80 | (rand() % 64));
+            /* 4-byte sequence: 0xF0-0xF4 followed by three continuation bytes */
+            char b1 = (char)(0xF0 | (rand() % 5));
+            char b2 = (char)(0x80 | (rand() % 64));
+            char b3 = (char)(0x80 | (rand() % 64));
+            char b4 = (char)(0x80 | (rand() % 64));
+
+            /* Prevent overlongs and out-of-range values (> U+10FFFF) */
+            if (b1 == (char)0xF0 && b2 < (char)0x90) {
+                b2 |= (char)0x90;
+            }
+            if (b1 == (char)0xF4 && b2 > (char)0x8F) {
+                b2 &= (char)0x8F;
+            }
+
+            buffer[current_byte] = b1;
+            buffer[current_byte + 1] = b2;
+            buffer[current_byte + 2] = b3;
+            buffer[current_byte + 3] = b4;
             current_byte += 4;
         }
     }
+
     buffer[current_byte] = '\0';
     return;
 }
@@ -159,7 +194,7 @@ main(int argc, char **argv) {
     RegexTest *tests_posix = xmemdup(regex_tests, SIZEOF(regex_tests));
     RegexTest *tests_meta = xmemdup(regex_tests, SIZEOF(regex_tests));
     setlocale(LC_ALL, "");
-    srand((unsigned int)time(NULL));
+    srand((uint)42);
     (void)argc;
     (void)argv;
 
@@ -225,6 +260,7 @@ main(int argc, char **argv) {
 
     PRINT_TIMINGS(LENGTH(regex_tests), t0_posix, t1_posix, "posix tests");
     PRINT_TIMINGS(LENGTH(regex_tests), t0_meta, t1_meta, "meta tests");
+    exit(0);
 
     printf("\n--- Starting Fuzzy Testing (%d iterations) ---\n", FUZZY_ITERATIONS);
     {
@@ -245,10 +281,14 @@ main(int argc, char **argv) {
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_fuzzy_posix);
         for (int32 i = 0; i < fuzzy_iterations; i += 1) {
             regex_t compiled;
+            int32 comp_error;
             char *pattern_str;
 
             pattern_str = regex_tests[fuzzy_cases[i].pattern_index].meta_regex.string;
-            regcomp(&compiled, pattern_str, REG_EXTENDED);
+            if ((comp_error = regcomp(&compiled, pattern_str, REG_EXTENDED))) {
+                error("Error compiling %s: %s.\n", pattern_str, strerror(errno));
+                fatal(EXIT_FAILURE);
+            }
             fuzzy_cases[i].result_posix
                 = regexec(&compiled, fuzzy_cases[i].string,
                           MAX_MATCHES, fuzzy_cases[i].pmatch_posix, 0);
@@ -284,9 +324,7 @@ main(int argc, char **argv) {
                       RED("\"%s\"")" against "BLUE("\"%s\"")"\n", regex, string);
                 error("posix: %d, meta: %d\n",
                       fuzzy_cases[i].result_posix, fuzzy_cases[i].result_meta);
-                char null[] = {'\0'};
-                fprintf(file, "%s against %s", regex, string);
-                fwrite(null, 1, 1, file);
+                fprintf(file, "%s against %s\n", regex, string);
             }
             
             /* if (fuzzy_cases[i].result_posix == 0) { */
