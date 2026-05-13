@@ -222,7 +222,7 @@ main(int argc, char **argv) {
         int32 fuzzy_iterations = FUZZY_ITERATIONS;
 
         /* Phase 1: Create the fuzzy data and the pattern index to match */
-        fuzzy_cases = malloc2(SIZEOF(FuzzyTest) * fuzzy_iterations);
+        fuzzy_cases = malloc2(SIZEOF(FuzzyTest)*fuzzy_iterations);
         for (int32 i = 0; i < fuzzy_iterations; i += 1) {
             int32 length = 1 + (rand() % 4096);
             fuzzy_cases[i].string_size = length + 1;
@@ -252,16 +252,24 @@ main(int argc, char **argv) {
         }
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1_fuzzy_meta);
 
-        /* Phase 4: Compare results */
+        /* Phase 4: Compare results using the same format as static tests */
         for (int32 i = 0; i < fuzzy_iterations; i += 1) {
+            char *string = fuzzy_cases[i].string;
+            char *regex = regex_tests[fuzzy_cases[i].pattern_index].meta_regex.string;
+
+            printf(RED("%15s")" against "BLUE("%18s")": %d\n", string, regex, fuzzy_cases[i].result_posix);
+            
             if (fuzzy_cases[i].result_posix != fuzzy_cases[i].result_meta) {
-                error("Fuzzy failure (result) at iteration %d\n", i);
-            } else if (fuzzy_cases[i].result_posix == 0) {
-                for (int32 m = 0; m < MAX_MATCHES; m += 1) {
-                    if (fuzzy_cases[i].pmatch_posix[m].rm_so != fuzzy_cases[i].pmatch_meta[m].rm_so || 
-                        fuzzy_cases[i].pmatch_posix[m].rm_eo != fuzzy_cases[i].pmatch_meta[m].rm_eo) {
-                        error("Fuzzy failure (match groups) at iteration %d\n", i);
-                        break;
+                error("Error: result mismatch for regex "RED("\"%s\"")" against "BLUE("\"%s\"")"\n", regex, string);
+            }
+            
+            if (fuzzy_cases[i].result_posix == 0) {
+                for (size_t m = 0; m < MAX_MATCHES; m += 1) {
+                    if (fuzzy_cases[i].pmatch_posix[m].rm_so != fuzzy_cases[i].pmatch_meta[m].rm_so) {
+                        error("Error: mismatch rm_so in %s (group %zu)\n", string, m);
+                    }
+                    if (fuzzy_cases[i].pmatch_posix[m].rm_eo != fuzzy_cases[i].pmatch_meta[m].rm_eo) {
+                        error("Error: mismatch rm_eo in %s (group %zu)\n", string, m);
                     }
                 }
             }
