@@ -4,17 +4,40 @@
 #include <regex.h>
 #include "meta_regex.h"
 #include "util.c"
-
 #include "utf8.h"
 
 static int
 matches_char(MetaOp op, char *s, int32 *consumed) {
-    int32 cp = utf8_decode(s, consumed);
-    if (*consumed == 0) return 0;
-    if (op.type == META_OP_ANY) return 1;
-    if (op.type == META_OP_LITERAL) return (cp == op.value);
-    if (op.type == META_OP_CLASS) {
-        if (cp >= 0 && cp < 256) return (op.mask[cp / 32] & (1u << (cp % 32)));
+    int32 cp;
+
+    cp = utf8_decode(s, consumed);
+    if (*consumed == 0) {
+        return 0;
+    }
+
+    if (op.type == META_OP_ANY) {
+        return 1;
+    } 
+    
+    if (op.type == META_OP_LITERAL) {
+        if (cp == op.value) {
+            return 1;
+        }
+    } else if (op.type == META_OP_CLASS) {
+        if (cp < 256) {
+            if (op.mask[cp / 32] & (1u << (cp % 32))) {
+                return 1;
+            }
+        } else {
+            for (int32 i = 0; i < 16; i += 1) {
+                if (op.high_codepoints[i] == 0) {
+                    break;
+                }
+                if (op.high_codepoints[i] == cp) {
+                    return 1;
+                }
+            }
+        }
     }
     return 0;
 }
