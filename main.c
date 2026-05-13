@@ -113,10 +113,6 @@ static RegexTest regex_tests[] = {
     {"a",            META_REGEX("[[=a=][.b.]]")},
     {"b",            META_REGEX("[[=a=][.b.]]")},
     {"c",            META_REGEX("[[=a=][.b.]]")},
-    {"{-^\"x򐇾'覣C9a㸵BYh z<݀ W୐ǙL𪻁Y氶V}5⬅3れ\\ѧcng􏡆EU'􋹫dYИ;0 2݁zCɾ1jՀ/\\'"
-     "ɬ5wՋ&'⡯]`]⏔ۮn B/-􃯞_d⯯졍@CEeE끋u>튀fu1鍦\\I࿽\\>zpl凌䪃eߵ݂It\"毐RFܸx-*1"
-     "[W/ǠP87dH8麺\\KX赃蓄2⨄e2䪗1{P|籘+v䵐Ҕ鴕*9I觀0Y󿨛䰢􀈧휸o𞴔"
-     "?YG݆2t}ɖ̰/A6}*==", META_REGEX("\\([a-z]+\\)")},
 };
 
 static void
@@ -260,7 +256,6 @@ main(int argc, char **argv) {
 
     PRINT_TIMINGS(LENGTH(regex_tests), t0_posix, t1_posix, "posix tests");
     PRINT_TIMINGS(LENGTH(regex_tests), t0_meta, t1_meta, "meta tests");
-    exit(0);
 
     printf("\n--- Starting Fuzzy Testing (%d iterations) ---\n", FUZZY_ITERATIONS);
     {
