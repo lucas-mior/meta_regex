@@ -23,7 +23,7 @@ main(void) {
     struct timespec t1_meta;
     RegexTest *tests_posix = xmemdup(regex_tests, SIZEOF(regex_tests));
     RegexTest *tests_meta = xmemdup(regex_tests, SIZEOF(regex_tests));
-    setlocale(LC_ALL, "en_US.UTF-8");
+    setlocale(LC_ALL, "");
     srand((uint)42);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
@@ -75,14 +75,23 @@ main(void) {
         }
         if (test_posix.result == 0) {
             for (int32 m = 0; m < MAX_MATCHES; m += 1) {
-                if (test_posix.pmatch[m].rm_so != test_meta.pmatch[m].rm_so) {
-                    error("Error: mismatch rm_so in %s (group %d)\n",
-                          string, m);
+                regmatch_t posix_match = test_posix.pmatch[m];
+                regmatch_t meta_match = test_meta.pmatch[m];
+
+                if (posix_match.rm_so == meta_match.rm_so) {
+                    if (posix_match.rm_eo == meta_match.rm_eo) {
+                        continue;
+                    }
                 }
-                if (test_posix.pmatch[m].rm_eo != test_meta.pmatch[m].rm_eo) {
-                    error("Error: mismatch rm_eo in %s (group %d)\n",
-                          string, m);
-                }
+
+                error("Error: mismatch in "
+                      RED("%s")" against "BLUE("%s")" (group %d)\n",
+                      string, regex, m);
+
+                error("posix: rm_so=%d, rm_eo=%d\n",
+                      posix_match.rm_so, posix_match.rm_eo);
+                error("meta: rm_so=%d, rm_eo=%d\n",
+                      meta_match.rm_so, meta_match.rm_eo);
             }
         }
     }
