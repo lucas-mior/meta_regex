@@ -84,6 +84,9 @@ static RegexTest regex_tests[] = {
     {"😀",           R("a")},
     {"😀",           R("😀")},
     {"👪",           R("👪")},
+    {"🇩🇪",         R("🇩🇪")},
+    {"🇩🇪",         R("🇩")},
+    {"🇩🇪",         R("a")},
 };
 
 #endif /* META_TESTS_ARRAY_H */
