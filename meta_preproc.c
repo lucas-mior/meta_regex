@@ -341,6 +341,54 @@ main(int argc, char **argv) {
                             }
                         }
 
+                        if (regex_string[regex_index] == '[' && regex_string[regex_index + 1] == '.') {
+                            int32 dot_idx = regex_index + 2;
+                            int32 found_end = 0;
+
+                            while (regex_string[dot_idx] != '\0') {
+                                if (regex_string[dot_idx] == '.') {
+                                    if (regex_string[dot_idx + 1] == ']') {
+                                        found_end = 1;
+                                        break;
+                                    }
+                                }
+                                dot_idx += 1;
+                            }
+
+                            if (found_end) {
+                                unsigned char c = (unsigned char)regex_string[regex_index + 2];
+
+                                mask[c / 32] |= (1u << (c % 32));
+                                regex_index = dot_idx + 2;
+                                first_char = 0;
+                                continue;
+                            }
+                        }
+
+                        if (regex_string[regex_index] == '[' && regex_string[regex_index + 1] == '=') {
+                            int32 eq_idx = regex_index + 2;
+                            int32 found_end = 0;
+
+                            while (regex_string[eq_idx] != '\0') {
+                                if (regex_string[eq_idx] == '=') {
+                                    if (regex_string[eq_idx + 1] == ']') {
+                                        found_end = 1;
+                                        break;
+                                    }
+                                }
+                                eq_idx += 1;
+                            }
+
+                            if (found_end) {
+                                unsigned char c = (unsigned char)regex_string[regex_index + 2];
+
+                                mask[c / 32] |= (1u << (c % 32));
+                                regex_index = eq_idx + 2;
+                                first_char = 0;
+                                continue;
+                            }
+                        }
+
                         start_char = regex_string[regex_index];
                         end_char = start_char;
 

@@ -72,4 +72,4 @@ $CC $CPPFLAGS -O2 $CFLAGS gen/main_processed.c -o bin/regex_test $LDFLAGS
 trace_off
 
 printf "\nRunning Tests:\n"
-LC_ALL=C ./bin/regex_test
+./bin/regex_test

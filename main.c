@@ -2,6 +2,7 @@
 #include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <locale.h>
 
 #include "util.c"
 #include "meta_regex.h"
@@ -91,6 +92,13 @@ static RegexTest regex_tests[] = {
     {"a1 B",         META_REGEX("^[[:lower:][:digit:]]+[[:space:]][[:upper:]]$")},
     {"!",            META_REGEX("^[[:punct:]]$")},
     {" ",            META_REGEX("^[^[:alnum:][:punct:]]$")},
+    {"aàà",          META_REGEX("[[.a.]]")},
+    {"b",            META_REGEX("[[.a.]]")},
+    {"é",            META_REGEX("[[=e=]]")},
+    {"f",            META_REGEX("[[=e=]]")},
+    {"a",            META_REGEX("[[=a=][.b.]]")},
+    {"b",            META_REGEX("[[=a=][.b.]]")},
+    {"c",            META_REGEX("[[=a=][.b.]]")},
 };
 
 int
@@ -101,6 +109,7 @@ main(int argc, char **argv) {
     struct timespec t1_meta;
     RegexTest *tests_posix = xmemdup(regex_tests, SIZEOF(regex_tests));
     RegexTest *tests_meta = xmemdup(regex_tests, SIZEOF(regex_tests));
+    setlocale(LC_ALL, "");
     (void)argc;
     (void)argv;
 
@@ -145,6 +154,9 @@ main(int argc, char **argv) {
         RegexTest test_meta = tests_meta[i];
         char *regex = regex_tests[i].meta_regex.string;
         char *string = regex_tests[i].string;
+
+        printf(RED("%15s")" against "BLUE("%18s")": %d\n",
+               string, regex, test_posix.result);
 
         if (test_posix.result != test_meta.result) {
             error("Error: regex "RED("\"%s\"")" against "BLUE("\"%s\"")"'\n",
