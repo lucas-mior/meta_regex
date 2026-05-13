@@ -10,9 +10,6 @@
 #include "meta_regex.h"
 #include "meta_regex_match.c"
 
-#define FILE_REGEXES "0regexes.txt"
-#define FILE_INPUTS "0inputs.txt"
-
 #define MAX_MATCHES 4
 #define NFUZZY 1000
 
@@ -241,6 +238,7 @@ main(int argc, char **argv) {
     printf("\n--- Starting Fuzzy Testing (%d iterations) ---\n", NFUZZY);
     {
         FuzzyTest *fuzzy_cases = malloc2(SIZEOF(FuzzyTest)*NFUZZY);
+
         for (int32 i = 0; i < NFUZZY; i += 1) {
             int32 length = 1 + (rand() % 4096);
             fuzzy_cases[i].string_size = length + 1;
@@ -282,39 +280,36 @@ main(int argc, char **argv) {
         }
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1_fuzzy_meta);
 
-        FILE *f_inputs = fopen(FILE_INPUTS, "w");
-        FILE *f_regex  = fopen(FILE_REGEXES, "w");
-
         for (int32 i = 0; i < NFUZZY; i += 1) {
             if (fuzzy_cases[i].result_posix != fuzzy_cases[i].result_meta) {
                 char *string = fuzzy_cases[i].string;
                 char *regex = regex_tests[fuzzy_cases[i].regex_idx].meta_regex.string;
+                FILE *tmp_in;
+                FILE *tmp_re;
+                int grep_match;
+                int meta_match;
+                int posix_match;
 
-                FILE *tmp_in = fopen(".tmp_in", "w");
+                tmp_in = fopen(".tmp_in", "w");
                 fputs(string, tmp_in);
                 fclose(tmp_in);
 
-                FILE *tmp_re = fopen(".tmp_re", "w");
+                tmp_re = fopen(".tmp_re", "w");
                 fputs(regex, tmp_re);
                 fclose(tmp_re);
 
-                int grep_match = system("grep -qE -f .tmp_re .tmp_in");
-                int meta_match = (fuzzy_cases[i].result_meta == 0);
-                int posix_match = (fuzzy_cases[i].result_posix == 0);
+                grep_match = system("grep -qE -f .tmp_re .tmp_in");
+                meta_match = (fuzzy_cases[i].result_meta == 0);
+                posix_match = (fuzzy_cases[i].result_posix == 0);
 
                 error("Mismatch at %d: /%s/ against \"%s\"\n", i, regex, string);
                 error("POSIX says: %s\nMeta says: %s\nGrep says: %s\n", 
                       posix_match ? "MATCH" : "NOMATCH",
                       meta_match  ? "MATCH" : "NOMATCH",
                       grep_match  ? "MATCH" : "NOMATCH");
-
-                fprintf(f_inputs, "%s\n", string);
-                fprintf(f_regex, "%s\n", regex);
                 break;
             }
         }
-        fclose(f_inputs);
-        fclose(f_regex);
 
         PRINT_TIMINGS(NFUZZY, t0_fuzzy_posix, t1_fuzzy_posix, "fuzzy posix tests");
         PRINT_TIMINGS(NFUZZY, t0_fuzzy_meta, t1_fuzzy_meta, "fuzzy meta tests");
