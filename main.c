@@ -315,7 +315,7 @@ main(void) {
                 argv[argc++] = tmp_inputs;
                 argv[argc++] = NULL;
 
-                grep_match = util_command(argc, argv);
+                grep_match = (util_command(argc, argv) == 0);
                 meta_match = (fuzzy_cases[i].result_meta == 0);
                 posix_match = (fuzzy_cases[i].result_posix == 0);
 

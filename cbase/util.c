@@ -782,6 +782,12 @@ util_command(int argc, char **argv) {
     int status;
     (void)argc;
 
+    if (DEBUGGING) {
+        char cmd[4096];
+        STRING_FROM_ARRAY(cmd, " ", argv, argc);
+        error("Executing\n%s\n", cmd);
+    }
+
     switch (child = fork()) {
     case 0:
         if (!freopen("/dev/tty", "r", stdin)) {
