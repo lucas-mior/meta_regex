@@ -103,7 +103,7 @@ static RegexTest regex_tests[] = {
     {" \t\n",        META_REGEX("^[[:space:]]+$")},
     {"a B",          META_REGEX("^[[:lower:]][[:space:]][[:upper:]]$")},
     {"a1 B",         META_REGEX("^[[:lower:][:digit:]]+[[:space:]][[:upper:]]$")},
-    {"!",            META_REGEX("^[[:punct:]]$")},
+    {"!@#$%&*()-+=", META_REGEX("^[[:punct:]]+$")},
     {" ",            META_REGEX("^[^[:alnum:][:punct:]]$")},
     {"aàà",          META_REGEX("[[.a.]]")},
     {"b",            META_REGEX("[[.a.]]")},
@@ -115,18 +115,17 @@ static RegexTest regex_tests[] = {
     {"a",            META_REGEX("[[=a=][.b.]]")},
     {"b",            META_REGEX("[[=a=][.b.]]")},
     {"c",            META_REGEX("[[=a=][.b.]]")},
-    {"ʸ",            META_REGEX("[a-z]")},
-    {"ý",            META_REGEX("[a-z]")},
-    {"ÿ",            META_REGEX("[a-z]")},
-    {"ŷ",            META_REGEX("[a-z]")},
-    {"ȳ",            META_REGEX("[a-z]")},
-    {"ʸ",            META_REGEX("[a-z]")},
-    {"ẏ",            META_REGEX("[a-z]")},
-    {"ẙ",            META_REGEX("[a-z]")},
-    {"ỳ",            META_REGEX("[a-z]")},
-    {"ỵ",            META_REGEX("[a-z]")},
-    {"ỷ",            META_REGEX("[a-z]")},
-    {"ỹ",            META_REGEX("[a-z]")},
+    {"ý",            META_REGEX("[[=y=]]")},
+    {"ÿ",            META_REGEX("[[=y=]]")},
+    {"ŷ",            META_REGEX("[[=y=]]")},
+    {"ȳ",            META_REGEX("[[=y=]]")},
+    {"ẏ",            META_REGEX("[[=y=]]")},
+    {"ẙ",            META_REGEX("[[=y=]]")},
+    {"ỳ",            META_REGEX("[[=y=]]")},
+    {"ỵ",            META_REGEX("[[=y=]]")},
+    {"ỷ",            META_REGEX("[[=y=]]")},
+    {"ỹ",            META_REGEX("[[=y=]]")},
+    {"ʸ",            META_REGEX("[[=y=]]")},
 };
 
 static void
@@ -180,7 +179,7 @@ main(void) {
     struct timespec t1_fuzzy_meta;
     RegexTest *tests_posix = xmemdup(regex_tests, SIZEOF(regex_tests));
     RegexTest *tests_meta = xmemdup(regex_tests, SIZEOF(regex_tests));
-    setlocale(LC_ALL, "");
+    setlocale(LC_ALL, "en_US.UTF-8");
     srand((uint)42);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
