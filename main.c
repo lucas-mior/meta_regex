@@ -11,7 +11,6 @@
 #include "meta_regex_match.c"
 
 #define NFUZZY 1000
-#define MAX_MATCHES 4
 
 #include "meta_tests.h"
 #include "gen/meta_tests_array2.h"

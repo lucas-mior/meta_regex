@@ -1,6 +1,10 @@
 #if !defined(META_TESTS_H)
 #define META_TESTS_H
 
+#include "meta_regex.h"
+#include <regex.h>
+#define MAX_MATCHES 10
+
 typedef struct RegexTest {
     char *string;
     MetaRegex meta_regex;
