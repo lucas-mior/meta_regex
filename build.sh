@@ -63,7 +63,8 @@ trace_off
 
 printf "\nPreprocessing main.c...\n"
 trace_on
-./bin/meta_preproc main.c > gen/main2.c
+./bin/meta_preproc main.c             > gen/main2.c
+./bin/meta_preproc meta_tests_array.h > gen/meta_tests_array2.h
 trace_off
 
 printf "\nBuilding target program...\n"
