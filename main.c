@@ -156,7 +156,7 @@ generate_random_utf8_string(char *buffer, int32 max_bytes) {
 }
 
 int
-main(int argc, char **argv) {
+main(void) {
     struct timespec t0_posix;
     struct timespec t1_posix;
     struct timespec t0_meta;
@@ -169,8 +169,6 @@ main(int argc, char **argv) {
     RegexTest *tests_meta = xmemdup(regex_tests, SIZEOF(regex_tests));
     setlocale(LC_ALL, "");
     srand((uint)42);
-    (void)argc;
-    (void)argv;
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
     for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
