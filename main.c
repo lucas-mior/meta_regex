@@ -10,13 +10,24 @@
 #include "meta_regex_match.c"
 
 #define MAX_MATCHES 4
+#define FUZZY_ITERATIONS 1000
 
 typedef struct RegexTest {
     char *string;
     MetaRegex meta_regex;
-    int result;
+    int32 result;
     regmatch_t pmatch[MAX_MATCHES];
 } RegexTest;
+
+typedef struct FuzzyTest {
+    char *string;
+    int32 string_size;
+    int32 pattern_index;
+    int32 result_posix;
+    regmatch_t pmatch_posix[MAX_MATCHES];
+    int32 result_meta;
+    regmatch_t pmatch_meta[MAX_MATCHES];
+} FuzzyTest;
 
 static RegexTest regex_tests[] = {
     {"abc5def",      META_REGEX("[0-9]")},
@@ -141,6 +152,10 @@ main(int argc, char **argv) {
     struct timespec t1_posix;
     struct timespec t0_meta;
     struct timespec t1_meta;
+    struct timespec t0_fuzzy_posix;
+    struct timespec t1_fuzzy_posix;
+    struct timespec t0_fuzzy_meta;
+    struct timespec t1_fuzzy_meta;
     RegexTest *tests_posix = xmemdup(regex_tests, SIZEOF(regex_tests));
     RegexTest *tests_meta = xmemdup(regex_tests, SIZEOF(regex_tests));
     setlocale(LC_ALL, "");
@@ -153,22 +168,16 @@ main(int argc, char **argv) {
         regex_t compiled_regex;
         char *string = tests_posix[i].string;
         char *regex = tests_posix[i].meta_regex.string;
-        int compile_status;
-        int match;
+        int32 compile_status;
 
         compile_status = regcomp(&compiled_regex, regex, REG_EXTENDED);
-        
         if (compile_status != 0) {
             char error_message[256];
-            regerror(compile_status, &compiled_regex,
-                     error_message, sizeof(error_message));
+            regerror(compile_status, &compiled_regex, error_message, sizeof(error_message));
             error("Regex compilation failed: %s\n", error_message);
             exit(EXIT_FAILURE);
         }
-
-        match = regexec(&compiled_regex, string, MAX_MATCHES, tests_posix[i].pmatch, 0);
-        tests_posix[i].result = match;
-
+        tests_posix[i].result = regexec(&compiled_regex, string, MAX_MATCHES, tests_posix[i].pmatch, 0);
         regfree(&compiled_regex);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
@@ -177,10 +186,8 @@ main(int argc, char **argv) {
     for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
         char *string = tests_meta[i].string;
         MetaRegex meta_regex = tests_meta[i].meta_regex;
-        int match;
 
-        match = meta_regex_match(meta_regex, string, MAX_MATCHES, tests_meta[i].pmatch);
-        tests_meta[i].result = match;
+        tests_meta[i].result = meta_regex_match(meta_regex, string, MAX_MATCHES, tests_meta[i].pmatch);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
@@ -190,31 +197,17 @@ main(int argc, char **argv) {
         char *regex = regex_tests[i].meta_regex.string;
         char *string = regex_tests[i].string;
 
-        printf(RED("%15s")"against"BLUE("%18s")": %d\n",
-               string, regex, test_posix.result);
-
+        printf(RED("%15s")" against "BLUE("%18s")": %d\n", string, regex, test_posix.result);
         if (test_posix.result != test_meta.result) {
-            error("Error: regex "RED("\"%s\"")" against "BLUE("\"%s\"")"'\n",
-                  regex, string);
-            error("posix: %d\n", test_posix.result);
-            error("meta: %d\n", test_meta.result);
+            error("Error: result mismatch for regex "RED("\"%s\"")" against "BLUE("\"%s\"")"\n", regex, string);
         }
-
         if (test_posix.result == 0) {
             for (size_t m = 0; m < MAX_MATCHES; m += 1) {
                 if (test_posix.pmatch[m].rm_so != test_meta.pmatch[m].rm_so) {
-                    error("Error: mismatch rm_so in "
-                          RED("\"%s\"")" against "BLUE("\"%s\"")
-                          " (group %zu): posix %d, meta %d\n",
-                          string, regex,
-                          m, test_posix.pmatch[m].rm_so, test_meta.pmatch[m].rm_so);
+                    error("Error: mismatch rm_so in %s (group %zu)\n", string, m);
                 }
                 if (test_posix.pmatch[m].rm_eo != test_meta.pmatch[m].rm_eo) {
-                    error("Error: mismatch rm_eo in "
-                          RED("\"%s\"")" against "BLUE("\"%s\"")
-                          " (group %zu): posix %d, meta %d\n",
-                          string, regex,
-                          m, test_posix.pmatch[m].rm_eo, test_meta.pmatch[m].rm_eo);
+                    error("Error: mismatch rm_eo in %s (group %zu)\n", string, m);
                 }
             }
         }
@@ -223,47 +216,70 @@ main(int argc, char **argv) {
     PRINT_TIMINGS(LENGTH(regex_tests), t0_posix, t1_posix, "posix tests");
     PRINT_TIMINGS(LENGTH(regex_tests), t0_meta, t1_meta, "meta tests");
 
-    printf("\n--- Starting Fuzzy Testing (1000 iterations) ---\n");
-
+    printf("\n--- Starting Fuzzy Testing (%d iterations) ---\n", FUZZY_ITERATIONS);
     {
-        int32 fuzzy_iterations = 1000;
-        char *fuzzy_buffer = malloc2(4097);
+        FuzzyTest *fuzzy_cases;
+        int32 fuzzy_iterations = FUZZY_ITERATIONS;
 
+        /* Phase 1: Create the fuzzy data and the pattern index to match */
+        fuzzy_cases = malloc2(sizeof(FuzzyTest) * fuzzy_iterations);
         for (int32 i = 0; i < fuzzy_iterations; i += 1) {
             int32 length = 1 + (rand() % 4096);
-            int32 pattern_index = rand() % LENGTH(regex_tests);
-            char *pattern_string = regex_tests[pattern_index].meta_regex.string;
-            MetaRegex meta_pattern = regex_tests[pattern_index].meta_regex;
-            regex_t posix_pattern;
-            regmatch_t posix_pmatch[MAX_MATCHES];
-            regmatch_t meta_pmatch[MAX_MATCHES];
-            int posix_res;
-            int meta_res;
+            fuzzy_cases[i].string_size = length + 1;
+            fuzzy_cases[i].string = malloc2(fuzzy_cases[i].string_size);
+            generate_random_utf8_string(fuzzy_cases[i].string, length);
+            fuzzy_cases[i].pattern_index = rand() % LENGTH(regex_tests);
+        }
 
-            generate_random_utf8_string(fuzzy_buffer, length);
+        /* Phase 2: Test the fuzzy data on posix regexes */
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t0_fuzzy_posix);
+        for (int32 i = 0; i < fuzzy_iterations; i += 1) {
+            regex_t compiled;
+            char *pattern_str = regex_tests[fuzzy_cases[i].pattern_index].meta_regex.string;
 
-            regcomp(&posix_pattern, pattern_string, REG_EXTENDED);
-            
-            posix_res = regexec(&posix_pattern, fuzzy_buffer, MAX_MATCHES, posix_pmatch, 0);
-            meta_res = meta_regex_match(meta_pattern, fuzzy_buffer, MAX_MATCHES, meta_pmatch);
+            regcomp(&compiled, pattern_str, REG_EXTENDED);
+            fuzzy_cases[i].result_posix = regexec(&compiled, fuzzy_cases[i].string, MAX_MATCHES, fuzzy_cases[i].pmatch_posix, 0);
+            regfree(&compiled);
+        }
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t1_fuzzy_posix);
 
-            if (posix_res != meta_res) {
-                error("Fuzzy failure: "RED("\"%s\"")" against "BLUE("\"%s\"")"\n",
-                      fuzzy_buffer, pattern_string);
-            } else if (posix_res == 0) {
+        /* Phase 3: Test the same fuzzy data on meta regexes */
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t0_fuzzy_meta);
+        for (int32 i = 0; i < fuzzy_iterations; i += 1) {
+            MetaRegex meta_pattern = regex_tests[fuzzy_cases[i].pattern_index].meta_regex;
+
+            fuzzy_cases[i].result_meta = meta_regex_match(meta_pattern, fuzzy_cases[i].string, MAX_MATCHES, fuzzy_cases[i].pmatch_meta);
+        }
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t1_fuzzy_meta);
+
+        /* Phase 4: Compare results */
+        for (int32 i = 0; i < fuzzy_iterations; i += 1) {
+            if (fuzzy_cases[i].result_posix != fuzzy_cases[i].result_meta) {
+                error("Fuzzy failure (result) at iteration %d\n", i);
+            } else if (fuzzy_cases[i].result_posix == 0) {
                 for (int32 m = 0; m < MAX_MATCHES; m += 1) {
-                    if (posix_pmatch[m].rm_so != meta_pmatch[m].rm_so || posix_pmatch[m].rm_eo != meta_pmatch[m].rm_eo) {
-                        error("Fuzzy failure (match groups) at iteration %d\nPattern: %s\n", i, pattern_string);
+                    if (fuzzy_cases[i].pmatch_posix[m].rm_so != fuzzy_cases[i].pmatch_meta[m].rm_so || 
+                        fuzzy_cases[i].pmatch_posix[m].rm_eo != fuzzy_cases[i].pmatch_meta[m].rm_eo) {
+                        error("Fuzzy failure (match groups) at iteration %d\n", i);
                         break;
                     }
                 }
             }
-
-            regfree(&posix_pattern);
         }
 
-        free2(fuzzy_buffer, 4097);
+        PRINT_TIMINGS(fuzzy_iterations, t0_fuzzy_posix, t1_fuzzy_posix, "fuzzy posix tests");
+        PRINT_TIMINGS(fuzzy_iterations, t0_fuzzy_meta, t1_fuzzy_meta, "fuzzy meta tests");
+
+        /* Cleanup fuzzy data */
+        for (int32 i = 0; i < fuzzy_iterations; i += 1) {
+            free2(fuzzy_cases[i].string, fuzzy_cases[i].string_size);
+        }
+        free2(fuzzy_cases, sizeof(FuzzyTest) * fuzzy_iterations);
     }
+
+    /* Cleanup static test copies */
+    free2(tests_posix, SIZEOF(regex_tests));
+    free2(tests_meta, SIZEOF(regex_tests));
 
     exit(EXIT_SUCCESS);
 }
