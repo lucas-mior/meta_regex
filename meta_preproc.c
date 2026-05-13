@@ -12,7 +12,7 @@ main(int argc, char **argv) {
     int64 file_size;
     char *buffer;
     char *cursor;
-    char *macro_start = "META_REGEX(";
+    char *macro_start = "R(";
 
     if (argc < 2) {
         fprintf(stderr, "Usage: preprocessor <file.c>\n");

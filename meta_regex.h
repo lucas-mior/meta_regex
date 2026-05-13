@@ -33,6 +33,6 @@ typedef struct MetaRegex {
     int32 has_end_anchor;
 } MetaRegex;
 
-#define META_REGEX(...) { .string = __VA_ARGS__ }
+#define R(...) { .string = __VA_ARGS__ }
 
 #endif /* META_REGEX_H */
