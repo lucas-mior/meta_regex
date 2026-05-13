@@ -347,7 +347,6 @@ main(int argc, char **argv) {
         free2(fuzzy_cases, SIZEOF(FuzzyTest)*NFUZZY);
     }
 
-    /* Cleanup static test copies */
     free2(tests_posix, SIZEOF(regex_tests));
     free2(tests_meta, SIZEOF(regex_tests));
 
