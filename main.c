@@ -248,7 +248,8 @@ main(int argc, char **argv) {
             meta_res = meta_regex_match(meta_pattern, fuzzy_buffer, MAX_MATCHES, meta_pmatch);
 
             if (posix_res != meta_res) {
-                error("Fuzzy failure (result) at iteration %d\nPattern: %s\n", i, pattern_string);
+                error("Fuzzy failure: "RED("\"%s\"")" against "BLUE("\"%s\"")"\n",
+                      fuzzy_buffer, pattern_string);
             } else if (posix_res == 0) {
                 for (int32 m = 0; m < MAX_MATCHES; m += 1) {
                     if (posix_pmatch[m].rm_so != meta_pmatch[m].rm_so || posix_pmatch[m].rm_eo != meta_pmatch[m].rm_eo) {
