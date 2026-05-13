@@ -222,7 +222,7 @@ main(int argc, char **argv) {
         int32 fuzzy_iterations = FUZZY_ITERATIONS;
 
         /* Phase 1: Create the fuzzy data and the pattern index to match */
-        fuzzy_cases = malloc2(sizeof(FuzzyTest) * fuzzy_iterations);
+        fuzzy_cases = malloc2(SIZEOF(FuzzyTest) * fuzzy_iterations);
         for (int32 i = 0; i < fuzzy_iterations; i += 1) {
             int32 length = 1 + (rand() % 4096);
             fuzzy_cases[i].string_size = length + 1;
@@ -274,7 +274,7 @@ main(int argc, char **argv) {
         for (int32 i = 0; i < fuzzy_iterations; i += 1) {
             free2(fuzzy_cases[i].string, fuzzy_cases[i].string_size);
         }
-        free2(fuzzy_cases, sizeof(FuzzyTest) * fuzzy_iterations);
+        free2(fuzzy_cases, SIZEOF(FuzzyTest)*fuzzy_iterations);
     }
 
     /* Cleanup static test copies */
