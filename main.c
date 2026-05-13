@@ -342,7 +342,6 @@ main(int argc, char **argv) {
         PRINT_TIMINGS(fuzzy_iterations, t0_fuzzy_posix, t1_fuzzy_posix, "fuzzy posix tests");
         PRINT_TIMINGS(fuzzy_iterations, t0_fuzzy_meta, t1_fuzzy_meta, "fuzzy meta tests");
 
-        /* Cleanup fuzzy data */
         for (int32 i = 0; i < fuzzy_iterations; i += 1) {
             free2(fuzzy_cases[i].string, fuzzy_cases[i].string_size);
         }
