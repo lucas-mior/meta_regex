@@ -72,4 +72,4 @@ $CC $CPPFLAGS -O2 $CFLAGS gen/main_processed.c -o bin/regex_test $LDFLAGS
 trace_off
 
 printf "\nRunning Tests:\n"
-./bin/regex_test
+./bin/regex_test 2>&1 | sed -E 's/\[[0-9;]*[mK]//g; s/: [01]$//' | xsel -b

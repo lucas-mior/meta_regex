@@ -5,21 +5,30 @@
 #include "meta_regex.h"
 #include "util.c"
 
+#include "utf8.h"
+
 static int
-matches_char(MetaOp op, char c) {
-    if (c == '\0') {
+matches_char(MetaOp op, char *s, int32 *consumed) {
+    int32 cp;
+
+    cp = utf8_decode(s, consumed);
+    if (*consumed == 0) {
         return 0;
     }
+
     if (op.type == META_OP_ANY) {
         return 1;
-    } else if (op.type == META_OP_LITERAL) {
-        if (c == op.value) {
+    }
+    
+    if (op.type == META_OP_LITERAL) {
+        if (cp == op.value) {
             return 1;
         }
     } else if (op.type == META_OP_CLASS) {
-        unsigned char uc = (unsigned char)c;
-        if (op.mask[uc / 32] & (1u << (uc % 32))) {
-            return 1;
+        if (cp >= 0 && cp < 256) {
+            if (op.mask[cp / 32] & (1u << (cp % 32))) {
+                return 1;
+            }
         }
     }
     return 0;
@@ -179,6 +188,7 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string, siz
             regmatch_t pmatch_backup[32];
             int32 min_req = 0;
             int32 max_req = -1;
+            int32 consumed = 0;
 
             if (is_star) {
                 min_req = 0; max_req = -1;
@@ -192,16 +202,16 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string, siz
 
             int32 count = 0;
             while (count < min_req) {
-                if (!matches_char(token, *s)) {
+                if (!matches_char(token, s, &consumed)) {
                     return -1;
                 }
-                s += 1;
+                s += consumed;
                 count += 1;
             }
 
             max_s = s;
-            while ((max_req == -1 || count < max_req) && matches_char(token, *max_s)) {
-                max_s += 1;
+            while ((max_req == -1 || count < max_req) && matches_char(token, max_s, &consumed)) {
+                max_s += consumed;
                 count += 1;
             }
 
@@ -229,14 +239,28 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string, siz
                         pmatch[i] = pmatch_backup[i];
                     }
                 }
-                max_s -= 1;
+                
+                if (max_s == s) {
+                    break;
+                }
+
+                {
+                    char *prev = max_s - 1;
+                    while (prev > s && (*(unsigned char *)prev & 0xC0) == 0x80) {
+                        prev -= 1;
+                    }
+                    max_s = prev;
+                }
             }
             return -1;
         }
     }
 
-    if (matches_char(ops[0], *current_string)) {
-        return match_at_recursive(ops + 1, original_string, current_string + 1, nmatch, pmatch);
+    {
+        int32 consumed = 0;
+        if (matches_char(ops[0], current_string, &consumed)) {
+            return match_at_recursive(ops + 1, original_string, current_string + consumed, nmatch, pmatch);
+        }
     }
 
     return -1;
@@ -271,7 +295,7 @@ meta_regex_match(MetaRegex regex, char *string, size_t nmatch, regmatch_t pmatch
         return REG_NOMATCH;
     }
 
-    for (int32 j = 0; ; j += 1) {
+    for (int32 j = 0; ; ) {
         int32 match_len;
 
         if (pmatch != NULL) {
@@ -303,6 +327,12 @@ meta_regex_match(MetaRegex regex, char *string, size_t nmatch, regmatch_t pmatch
 
         if (string[j] == '\0') {
             break;
+        }
+
+        {
+            int32 consumed = 0;
+            utf8_decode(&string[j], &consumed);
+            j += consumed;
         }
     }
     return REG_NOMATCH;
