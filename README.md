@@ -1,15 +1,20 @@
 # meta_regex
-Compile time regex for C.
+Compile time regexes for C.
 
-## Current status
-The plan is to completely support posix extended regular expressions.
-Currently only a subset of it is supported.
+## Which regular expressions does it support?
+A subset of posix extended.
+See `meta_tests_array.h` to check which patterns are being tested.
+
+### Not supported
+- collating elements like `[[=a=]]` and `[[.a.]]` are not
+- locale settings: This tool always assume text is UTF-8 encoded
 
 ## Getting started
 ```sh
 git clone https://github.com/lucas-mior/meta_regex
 cd meta_regex
 
+# This builds and runs `main.c`
 ./build.sh
 ```
 
