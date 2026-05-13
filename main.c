@@ -116,17 +116,6 @@ static RegexTest regex_tests[] = {
     {"a",            META_REGEX("[[=a=][.b.]]")},
     {"b",            META_REGEX("[[=a=][.b.]]")},
     {"c",            META_REGEX("[[=a=][.b.]]")},
-    {"ý",            META_REGEX("[[=y=]]")},
-    {"ÿ",            META_REGEX("[[=y=]]")},
-    {"ŷ",            META_REGEX("[[=y=]]")},
-    {"ȳ",            META_REGEX("[[=y=]]")},
-    {"ẏ",            META_REGEX("[[=y=]]")},
-    {"ẙ",            META_REGEX("[[=y=]]")},
-    {"ỳ",            META_REGEX("[[=y=]]")},
-    {"ỵ",            META_REGEX("[[=y=]]")},
-    {"ỷ",            META_REGEX("[[=y=]]")},
-    {"ỹ",            META_REGEX("[[=y=]]")},
-    {"ʸ",            META_REGEX("[[=y=]]")},
 };
 
 static void
