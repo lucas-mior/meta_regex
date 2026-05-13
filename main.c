@@ -73,6 +73,7 @@ static RegexTest regex_tests[] = {
     {"456 bar",      META_REGEX("([0-9]+) (foo|bar)")},
     {"789 baz",      META_REGEX("([0-9]+) (foo|bar)")},
     {"a",            META_REGEX("[abc]")},
+    {"é",            META_REGEX("[é]")},
     {"d",            META_REGEX("[abc]")},
     {"x",            META_REGEX("[^abc]")},
     {"a",            META_REGEX("[^abc]")},
