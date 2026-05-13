@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
+#include <time.h>
 
 #include "util.c"
 #include "meta_regex.h"
@@ -103,6 +104,37 @@ static RegexTest regex_tests[] = {
     {"c",            META_REGEX("[[=a=][.b.]]")},
 };
 
+static void
+generate_random_utf8_string(char *buffer, int32 max_bytes) {
+    int32 current_byte = 0;
+
+    while (current_byte < max_bytes - 4) {
+        int32 choice = rand() % 100;
+
+        if (choice < 70) {
+            buffer[current_byte] = (char)(32 + (rand() % 95));
+            current_byte += 1;
+        } else if (choice < 85) {
+            buffer[current_byte] = (char)(0xC0 | ((rand() % 32)));
+            buffer[current_byte + 1] = (char)(0x80 | (rand() % 64));
+            current_byte += 2;
+        } else if (choice < 95) {
+            buffer[current_byte] = (char)(0xE0 | (rand() % 16));
+            buffer[current_byte + 1] = (char)(0x80 | (rand() % 64));
+            buffer[current_byte + 2] = (char)(0x80 | (rand() % 64));
+            current_byte += 3;
+        } else {
+            buffer[current_byte] = (char)(0xF0 | (rand() % 8));
+            buffer[current_byte + 1] = (char)(0x80 | (rand() % 64));
+            buffer[current_byte + 2] = (char)(0x80 | (rand() % 64));
+            buffer[current_byte + 3] = (char)(0x80 | (rand() % 64));
+            current_byte += 4;
+        }
+    }
+    buffer[current_byte] = '\0';
+    return;
+}
+
 int
 main(int argc, char **argv) {
     struct timespec t0_posix;
@@ -112,6 +144,7 @@ main(int argc, char **argv) {
     RegexTest *tests_posix = xmemdup(regex_tests, SIZEOF(regex_tests));
     RegexTest *tests_meta = xmemdup(regex_tests, SIZEOF(regex_tests));
     setlocale(LC_ALL, "");
+    srand((unsigned int)time(NULL));
     (void)argc;
     (void)argv;
 
@@ -189,5 +222,62 @@ main(int argc, char **argv) {
 
     PRINT_TIMINGS(LENGTH(regex_tests), t0_posix, t1_posix, "posix tests");
     PRINT_TIMINGS(LENGTH(regex_tests), t0_meta, t1_meta, "meta tests");
+
+    printf("\n--- Starting Fuzzy Testing (1000 iterations) ---\n");
+
+    {
+        int32 fuzzy_iterations = 1000;
+        char *fuzzy_buffer = malloc2(4097);
+        uint64 posix_total_ns = 0;
+        uint64 meta_total_ns = 0;
+
+        for (int32 i = 0; i < fuzzy_iterations; i += 1) {
+            int32 length = 1 + (rand() % 4096);
+            int32 pattern_index = rand() % LENGTH(regex_tests);
+            char *pattern_string = regex_tests[pattern_index].meta_regex.string;
+            MetaRegex meta_pattern = regex_tests[pattern_index].meta_regex;
+            regex_t posix_pattern;
+            regmatch_t posix_pmatch[MAX_MATCHES];
+            regmatch_t meta_pmatch[MAX_MATCHES];
+            struct timespec ts0;
+            struct timespec ts1;
+            int posix_res;
+            int meta_res;
+
+            generate_random_utf8_string(fuzzy_buffer, length);
+
+            regcomp(&posix_pattern, pattern_string, REG_EXTENDED);
+            
+            clock_gettime(CLOCK_MONOTONIC_RAW, &ts0);
+            posix_res = regexec(&posix_pattern, fuzzy_buffer, MAX_MATCHES, posix_pmatch, 0);
+            clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
+            posix_total_ns += (ts1.tv_sec - ts0.tv_sec) * 1000000000ULL + (ts1.tv_nsec - ts0.tv_nsec);
+
+            clock_gettime(CLOCK_MONOTONIC_RAW, &ts0);
+            meta_res = meta_regex_match(meta_pattern, fuzzy_buffer, MAX_MATCHES, meta_pmatch);
+            clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
+            meta_total_ns += (ts1.tv_sec - ts0.tv_sec) * 1000000000ULL + (ts1.tv_nsec - ts0.tv_nsec);
+
+            if (posix_res != meta_res) {
+                error("Fuzzy failure (result) at iteration %d\nPattern: %s\nString length: %d\n", i, pattern_string, length);
+            } else if (posix_res == 0) {
+                for (int32 m = 0; m < MAX_MATCHES; m += 1) {
+                    if (posix_pmatch[m].rm_so != meta_pmatch[m].rm_so || posix_pmatch[m].rm_eo != meta_pmatch[m].rm_eo) {
+                        error("Fuzzy failure (match groups) at iteration %d\nPattern: %s\n", i, pattern_string);
+                        break;
+                    }
+                }
+            }
+
+            regfree(&posix_pattern);
+        }
+
+        printf("Fuzzy POSIX avg: %llu ns\n", (llong)(posix_total_ns / fuzzy_iterations));
+        printf("Fuzzy Meta avg:  %llu ns\n", (llong)(meta_total_ns / fuzzy_iterations));
+        printf("Fuzzy Speedup:   %.2fx\n", (double)posix_total_ns / (double)meta_total_ns);
+
+        free2(fuzzy_buffer, 4097);
+    }
+
     exit(EXIT_SUCCESS);
 }
