@@ -13,23 +13,7 @@
 #define NFUZZY 1000
 #define MAX_MATCHES 4
 
-typedef struct RegexTest {
-    char *string;
-    MetaRegex meta_regex;
-    int32 result;
-    regmatch_t pmatch[MAX_MATCHES];
-} RegexTest;
-
-typedef struct FuzzyTest {
-    char *string;
-    int32 string_size;
-    int32 regex_idx;
-    int32 result_posix;
-    regmatch_t pmatch_posix[MAX_MATCHES];
-    int32 result_meta;
-    regmatch_t pmatch_meta[MAX_MATCHES];
-} FuzzyTest;
-
+#include "meta_tests.h"
 #include "gen/meta_tests_array2.h"
 
 int

@@ -1,6 +1,8 @@
 #if !defined(META_TESTS_ARRAY_H)
 #define META_TESTS_ARRAY_H
 
+#include "meta_tests.h"
+
 static RegexTest regex_tests[] = {
     {"abc5def",      R("[0-9]")},
     {"hello world",  R("[0-9]")},
