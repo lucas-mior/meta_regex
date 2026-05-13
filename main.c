@@ -22,10 +22,6 @@ main(void) {
     struct timespec t1_posix;
     struct timespec t0_meta;
     struct timespec t1_meta;
-    struct timespec t0_fuzzy_posix;
-    struct timespec t1_fuzzy_posix;
-    struct timespec t0_fuzzy_meta;
-    struct timespec t1_fuzzy_meta;
     RegexTest *tests_posix = xmemdup(regex_tests, SIZEOF(regex_tests));
     RegexTest *tests_meta = xmemdup(regex_tests, SIZEOF(regex_tests));
     setlocale(LC_ALL, "en_US.UTF-8");
@@ -107,7 +103,7 @@ main(void) {
             fuzzy_cases[i].regex_idx = rand() % LENGTH(regex_tests);
         }
 
-        clock_gettime(CLOCK_MONOTONIC_RAW, &t0_fuzzy_posix);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
         for (int32 i = 0; i < NFUZZY; i += 1) {
             regex_t compiled;
             int32 comp_error;
@@ -123,9 +119,9 @@ main(void) {
                           MAX_MATCHES, fuzzy_cases[i].pmatch_posix, 0);
             regfree(&compiled);
         }
-        clock_gettime(CLOCK_MONOTONIC_RAW, &t1_fuzzy_posix);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
 
-        clock_gettime(CLOCK_MONOTONIC_RAW, &t0_fuzzy_meta);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
         for (int32 i = 0; i < NFUZZY; i += 1) {
             MetaRegex meta_pattern;
 
@@ -137,7 +133,7 @@ main(void) {
                                    MAX_MATCHES,
                                    fuzzy_cases[i].pmatch_meta);
         }
-        clock_gettime(CLOCK_MONOTONIC_RAW, &t1_fuzzy_meta);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
         for (int32 i = 0; i < NFUZZY; i += 1) {
             int32 result_posix = fuzzy_cases[i].result_posix;
@@ -153,8 +149,8 @@ main(void) {
             }
         }
 
-        PRINT_TIMINGS(NFUZZY, t0_fuzzy_posix, t1_fuzzy_posix, "fuzzy posix tests");
-        PRINT_TIMINGS(NFUZZY, t0_fuzzy_meta, t1_fuzzy_meta, "fuzzy meta tests");
+        PRINT_TIMINGS(NFUZZY, t0_posix, t1_posix, "fuzzy posix tests");
+        PRINT_TIMINGS(NFUZZY, t0_meta, t1_meta, "fuzzy meta tests");
 
         for (int32 i = 0; i < NFUZZY; i += 1) {
             free2(fuzzy_cases[i].string, fuzzy_cases[i].string_size);
