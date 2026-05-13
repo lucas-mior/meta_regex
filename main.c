@@ -123,7 +123,6 @@ main(void) {
             fuzzy_cases[i].regex_idx = rand() % LENGTH(regex_tests);
         }
 
-        /* Batch POSIX */
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_fuzzy_posix);
         for (int32 i = 0; i < NFUZZY; i += 1) {
             regex_t compiled;
