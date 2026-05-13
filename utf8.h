@@ -49,14 +49,14 @@ utf8_random_string(char *buffer, int32 max_bytes) {
     int32 current_byte = 0;
     while (current_byte < max_bytes - 4) {
         int32 choice = rand() % 100;
-        if (choice < 70) {
+        if (choice < 25) {
             buffer[current_byte] = (char)(32 + (rand() % 95));
             current_byte += 1;
-        } else if (choice < 85) {
+        } else if (choice < 50) {
             buffer[current_byte] = (char)(0xC2 + (rand() % 30));
             buffer[current_byte + 1] = (char)(0x80 | (rand() % 64));
             current_byte += 2;
-        } else if (choice < 95) {
+        } else if (choice < 75) {
             char b1 = (char)(0xE0 | (rand() % 16));
             char b2 = (char)(0x80 | (rand() % 64));
             char b3 = (char)(0x80 | (rand() % 64));

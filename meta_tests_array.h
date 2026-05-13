@@ -81,6 +81,9 @@ static RegexTest regex_tests[] = {
     {"a1 B",         R("^[[:lower:][:digit:]]+[[:space:]][[:upper:]]$")},
     {"!@#$%&*()-+=", R("^[[:punct:]]+$")},
     {" ",            R("^[^[:alnum:][:punct:]]$")},
+    {"😀",           R("a")},
+    {"😀",           R("😀")},
+    {"👪",           R("👪")},
 };
 
 #endif /* META_TESTS_ARRAY_H */
