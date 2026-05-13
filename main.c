@@ -260,11 +260,10 @@ main(int argc, char **argv) {
     printf("\n--- Starting Fuzzy Testing (%d iterations) ---\n", FUZZY_ITERATIONS);
     {
         FuzzyTest *fuzzy_cases;
-        int32 fuzzy_iterations = FUZZY_ITERATIONS;
 
         /* Phase 1: Create the fuzzy data and the pattern index to match */
-        fuzzy_cases = malloc2(SIZEOF(FuzzyTest)*fuzzy_iterations);
-        for (int32 i = 0; i < fuzzy_iterations; i += 1) {
+        fuzzy_cases = malloc2(SIZEOF(FuzzyTest)*FUZZY_ITERATIONS);
+        for (int32 i = 0; i < FUZZY_ITERATIONS; i += 1) {
             int32 length = 1 + (rand() % 4096);
             fuzzy_cases[i].string_size = length + 1;
             fuzzy_cases[i].string = malloc2(fuzzy_cases[i].string_size);
@@ -274,7 +273,7 @@ main(int argc, char **argv) {
 
         /* Phase 2: Test the fuzzy data on posix regexes */
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_fuzzy_posix);
-        for (int32 i = 0; i < fuzzy_iterations; i += 1) {
+        for (int32 i = 0; i < FUZZY_ITERATIONS; i += 1) {
             regex_t compiled;
             int32 comp_error;
             char *pattern_str;
@@ -293,7 +292,7 @@ main(int argc, char **argv) {
 
         /* Phase 3: Test the same fuzzy data on meta regexes */
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_fuzzy_meta);
-        for (int32 i = 0; i < fuzzy_iterations; i += 1) {
+        for (int32 i = 0; i < FUZZY_ITERATIONS; i += 1) {
             MetaRegex meta_pattern;
 
             meta_pattern = regex_tests[fuzzy_cases[i].pattern_index].meta_regex;
@@ -308,7 +307,7 @@ main(int argc, char **argv) {
 
         /* Phase 4: Compare results using the same format as static tests */
         FILE *file = fopen("problems.txt", "w");
-        for (int32 i = 0; i < fuzzy_iterations; i += 1) {
+        for (int32 i = 0; i < FUZZY_ITERATIONS; i += 1) {
             char *string = fuzzy_cases[i].string;
             char *regex;
 
@@ -339,13 +338,13 @@ main(int argc, char **argv) {
         }
         fclose(file);
 
-        PRINT_TIMINGS(fuzzy_iterations, t0_fuzzy_posix, t1_fuzzy_posix, "fuzzy posix tests");
-        PRINT_TIMINGS(fuzzy_iterations, t0_fuzzy_meta, t1_fuzzy_meta, "fuzzy meta tests");
+        PRINT_TIMINGS(FUZZY_ITERATIONS, t0_fuzzy_posix, t1_fuzzy_posix, "fuzzy posix tests");
+        PRINT_TIMINGS(FUZZY_ITERATIONS, t0_fuzzy_meta, t1_fuzzy_meta, "fuzzy meta tests");
 
-        for (int32 i = 0; i < fuzzy_iterations; i += 1) {
+        for (int32 i = 0; i < FUZZY_ITERATIONS; i += 1) {
             free2(fuzzy_cases[i].string, fuzzy_cases[i].string_size);
         }
-        free2(fuzzy_cases, SIZEOF(FuzzyTest)*fuzzy_iterations);
+        free2(fuzzy_cases, SIZEOF(FuzzyTest)*FUZZY_ITERATIONS);
     }
 
     /* Cleanup static test copies */
