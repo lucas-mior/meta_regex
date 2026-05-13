@@ -95,6 +95,8 @@ static RegexTest regex_tests[] = {
     {"aàà",          META_REGEX("[[.a.]]")},
     {"b",            META_REGEX("[[.a.]]")},
     {"eéèêẽë",       META_REGEX("^[[=e=]]+$")},
+    {"aáàâãä",       META_REGEX("^[[=e=]]+$")},
+    {"aáàâãä",       META_REGEX("^[[=a=]]+$")},
     {"f",            META_REGEX("[[=e=]]")},
     {"a",            META_REGEX("[[=a=][.b.]]")},
     {"b",            META_REGEX("[[=a=][.b.]]")},
@@ -155,7 +157,7 @@ main(int argc, char **argv) {
         char *regex = regex_tests[i].meta_regex.string;
         char *string = regex_tests[i].string;
 
-        printf(RED("%15s")" against "BLUE("%18s")": %d\n",
+        printf(RED("%15s")"against"BLUE("%18s")": %d\n",
                string, regex, test_posix.result);
 
         if (test_posix.result != test_meta.result) {
