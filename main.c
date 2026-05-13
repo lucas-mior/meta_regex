@@ -284,26 +284,43 @@ main(int argc, char **argv) {
             if (fuzzy_cases[i].result_posix != fuzzy_cases[i].result_meta) {
                 char *string = fuzzy_cases[i].string;
                 char *regex = regex_tests[fuzzy_cases[i].regex_idx].meta_regex.string;
-                FILE *tmp_in;
-                FILE *tmp_re;
                 int grep_match;
                 int meta_match;
                 int posix_match;
+                char *tmp_inputs = "/tmp/inputs.txt";
+                char *tmp_regex = "/tmp/regex.txt";
+                FILE *tmp_in;
+                FILE *tmp_re;
+                int32 argc = 0;
+                char *argv[16];
 
-                tmp_in = fopen(".tmp_in", "w");
+                if ((tmp_in = fopen(tmp_inputs, "w")) == NULL) {
+                    error("Error opening %s: %s.\n",
+                          tmp_inputs, strerror(errno));
+                }
                 fputs(string, tmp_in);
                 fclose(tmp_in);
 
-                tmp_re = fopen(".tmp_re", "w");
+                if ((tmp_re = fopen(tmp_regex, "w")) == NULL) {
+                    error("Error opening %s: %s.\n",
+                          tmp_regex, strerror(errno));
+                }
                 fputs(regex, tmp_re);
                 fclose(tmp_re);
 
-                grep_match = system("grep -qE -f .tmp_re .tmp_in");
+                argv[argc++] = "grep";
+                argv[argc++] = "-qE";
+                argv[argc++] = "-f";
+                argv[argc++] = tmp_regex;
+                argv[argc++] = tmp_inputs;
+                argv[argc++] = NULL;
+
+                grep_match = util_command(argc, argv);
                 meta_match = (fuzzy_cases[i].result_meta == 0);
                 posix_match = (fuzzy_cases[i].result_posix == 0);
 
                 error("Mismatch at %d: /%s/ against \"%s\"\n", i, regex, string);
-                error("POSIX says: %s\nMeta says: %s\nGrep says: %s\n", 
+                error("\nPOSIX says: %s\nMeta says: %s\nGrep says: %s\n", 
                       posix_match ? "MATCH" : "NOMATCH",
                       meta_match  ? "MATCH" : "NOMATCH",
                       grep_match  ? "MATCH" : "NOMATCH");
