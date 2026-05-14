@@ -190,7 +190,7 @@ typedef regoff_t Idx;
 typedef __re_size_t re_hashval_t;
 
 /* An integer used to represent a set of bits.  It must be unsigned,
-   and must be at least as wide as uint.  */
+   and must be at least as wide as uint32.  */
 typedef ulong int bitset_word_t;
 /* All bits set in a bitset_word_t.  */
 #define BITSET_WORD_MAX ULONG_MAX
@@ -316,7 +316,7 @@ typedef struct
   wctype_t *char_classes;
 
   /* If this character set is the non-matching list.  */
-  uint non_match : 1;
+  uint32 non_match : 1;
 
   /* # of multibyte characters.  */
   Idx nmbchars;
@@ -352,16 +352,16 @@ typedef struct
 #else
   re_token_type_t type;
 #endif
-  uint constraint : 10;	/* context constraint */
-  uint duplicated : 1;
-  uint opt_subexp : 1;
+  uint32 constraint : 10;	/* context constraint */
+  uint32 duplicated : 1;
+  uint32 opt_subexp : 1;
 #ifdef RE_ENABLE_I18N
-  uint accept_mb : 1;
+  uint32 accept_mb : 1;
   /* These 2 bits can be moved into the union if needed (e.g. if running out
      of bits; move opr.c to opr.c.c and move the flags to opr.c.flags).  */
-  uint mb_partial : 1;
+  uint32 mb_partial : 1;
 #endif
-  uint word_char : 1;
+  uint32 word_char : 1;
 } re_token_t;
 
 #define IS_EPSILON_NODE(type) ((type) & EPSILON_BIT)
@@ -406,7 +406,7 @@ struct re_string_t
   /* The context of mbs[0].  We store the context independently, since
      the context of mbs[0] may be different from raw_mbs[0], which is
      the beginning of the input string.  */
-  uint tip_context;
+  uint32 tip_context;
   /* The translation passed as a part of an argument of re_compile_pattern.  */
   RE_TRANSLATE_TYPE trans;
   /* Copy of re_dfa_t's word_char.  */
@@ -526,15 +526,15 @@ struct re_dfastate_t
   re_node_set inveclosure;
   re_node_set *entrance_nodes;
   struct re_dfastate_t **trtable, **word_trtable;
-  uint context : 4;
-  uint halt : 1;
+  uint32 context : 4;
+  uint32 halt : 1;
   /* If this state can accept "multi byte".
      Note that we refer to multibyte characters, and multi character
      collating elements as "multi byte".  */
-  uint accept_mb : 1;
+  uint32 accept_mb : 1;
   /* If this state has backreference node(s).  */
-  uint has_backref : 1;
-  uint has_constraint : 1;
+  uint32 has_backref : 1;
+  uint32 has_constraint : 1;
 };
 typedef struct re_dfastate_t re_dfastate_t;
 
@@ -663,14 +663,14 @@ struct re_dfa_t
   bitset_word_t used_bkref_map;
   bitset_word_t completed_bkref_map;
 
-  uint has_plural_match : 1;
+  uint32 has_plural_match : 1;
   /* If this dfa has "multibyte node", which is a backreference or
      a node which can accept multibyte character or multi character
      collating element.  */
-  uint has_mb_node : 1;
-  uint is_utf8 : 1;
-  uint map_notascii : 1;
-  uint word_ops_used : 1;
+  uint32 has_mb_node : 1;
+  uint32 is_utf8 : 1;
+  uint32 map_notascii : 1;
+  uint32 word_ops_used : 1;
   int mb_cur_max;
   bitset_t word_char;
   reg_syntax_t syntax;
