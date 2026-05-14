@@ -172,7 +172,7 @@
 # endif
 #endif
 
-/* The type of indexes into strings.  This is signed, not size_t,
+/* The type of indexes into strings.  This is signed, not int64,
    since the API requires indexes to fit in regoff_t anyway, and using
    signed integers makes the code a bit smaller and presumably faster.
    The traditional GNU regex implementation uses int for indexes.
@@ -637,8 +637,8 @@ struct re_fail_stack_t
 struct re_dfa_t
 {
   re_token_t *nodes;
-  size_t nodes_alloc;
-  size_t nodes_len;
+  int64 nodes_alloc;
+  int64 nodes_len;
   Idx *nexts;
   Idx *org_indices;
   re_node_set *edests;

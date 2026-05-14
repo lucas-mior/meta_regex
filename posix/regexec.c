@@ -33,7 +33,7 @@ static void sift_ctx_init(re_sift_context_t *sctx, re_dfastate_t **sifted_sts,
                           Idx last_str_idx);
 static reg_errcode_t re_search_internal(regex_t *preg, char *string,
                                         Idx length, Idx start, Idx last_start,
-                                        Idx stop, size_t nmatch,
+                                        Idx stop, int64 nmatch,
                                         regmatch_t pmatch[], int eflags);
 static regoff_t re_search_2_stub(struct re_pattern_buffer *bufp,
                                  char *string1, Idx length1,
@@ -59,7 +59,7 @@ static reg_errcode_t push_fail_stack(struct re_fail_stack_t *fs, Idx str_idx,
                                      regmatch_t *prevregs,
                                      re_node_set *eps_via_nodes);
 static reg_errcode_t set_regs(regex_t *preg,
-                              re_match_context_t *mctx, size_t nmatch,
+                              re_match_context_t *mctx, int64 nmatch,
                               regmatch_t *pmatch, bool fl_backtrack);
 static reg_errcode_t free_fail_stack_return(struct re_fail_stack_t *fs);
 
@@ -152,7 +152,7 @@ static int check_node_accept_bytes(re_dfa_t *dfa, Idx node_idx,
                                    re_string_t *input, Idx idx);
 #ifdef _LIBC
 static uint find_collation_sequence_value(uchar *mbs,
-                                                  size_t name_len);
+                                                  int64 name_len);
 #endif /* _LIBC */
 #endif /* RE_ENABLE_I18N */
 static Idx group_nodes_into_DFAstates(re_dfa_t *dfa,
@@ -182,7 +182,7 @@ static reg_errcode_t extend_buffers(re_match_context_t *mctx, int min_len);
 
 int
 regexec(regex_t *__restrict preg, char *__restrict string,
-        size_t nmatch, regmatch_t pmatch[_REGEX_NELTS(nmatch)], int eflags) {
+        int64 nmatch, regmatch_t pmatch[_REGEX_NELTS(nmatch)], int eflags) {
     reg_errcode_t err;
     Idx start, length;
     re_dfa_t *dfa = preg->buffer;
@@ -222,7 +222,7 @@ __typeof__(__regexec) __compat_regexec;
 
 int attribute_compat_text_section
 __compat_regexec(regex_t *__restrict preg, char *__restrict string,
-                 size_t nmatch, regmatch_t pmatch[_REGEX_NELTS(nmatch)],
+                 int64 nmatch, regmatch_t pmatch[_REGEX_NELTS(nmatch)],
                  int eflags) {
     return regexec(preg, string, nmatch, pmatch,
                    eflags & (REG_NOTBOL | REG_NOTEOL));
@@ -554,7 +554,7 @@ weak_alias(__re_set_registers, re_set_registers)
 
 static reg_errcode_t __attribute_warn_unused_result__
 re_search_internal(regex_t *preg, char *string, Idx length,
-                   Idx start, Idx last_start, Idx stop, size_t nmatch,
+                   Idx start, Idx last_start, Idx stop, int64 nmatch,
                    regmatch_t pmatch[], int eflags) {
     reg_errcode_t err;
     re_dfa_t *dfa = preg->buffer;
@@ -1328,7 +1328,7 @@ pop_fail_stack(struct re_fail_stack_t *fs, Idx *pidx, Idx nregs,
    pmatch[i].rm_so == pmatch[i].rm_eo == -1 for 0 < i < nmatch.  */
 
 static reg_errcode_t __attribute_warn_unused_result__
-set_regs(regex_t *preg, re_match_context_t *mctx, size_t nmatch,
+set_regs(regex_t *preg, re_match_context_t *mctx, int64 nmatch,
          regmatch_t *pmatch, bool fl_backtrack) {
     re_dfa_t *dfa = preg->buffer;
     Idx idx, cur_node;
@@ -3700,7 +3700,7 @@ check_node_accept_bytes(re_dfa_t *dfa, Idx node_idx,
                 int32_t rule = idx >> 24;
                 idx &= 0xffffff;
                 if (idx > 0) {
-                    size_t weight_len = weights[idx];
+                    int64 weight_len = weights[idx];
                     for (i = 0; i < cset->nequiv_classes; ++i) {
                         int32_t equiv_class_idx = cset->equiv_classes[i];
                         int32_t equiv_class_rule = equiv_class_idx >> 24;
@@ -3743,7 +3743,7 @@ check_node_accept_bytes(re_dfa_t *dfa, Idx node_idx,
 
 #ifdef _LIBC
 static uint
-find_collation_sequence_value(uchar *mbs, size_t mbs_len) {
+find_collation_sequence_value(uchar *mbs, int64 mbs_len) {
     uint32_t nrules = _NL_CURRENT_WORD(LC_COLLATE, _NL_COLLATE_NRULES);
     if (nrules == 0) {
         if (mbs_len == 1) {
@@ -3921,7 +3921,7 @@ match_ctx_init(re_match_context_t *mctx, int eflags, Idx n) {
     mctx->match_last = -1;
     if (n > 0) {
         /* Avoid overflow.  */
-        size_t max_object_size = MAX(sizeof(struct re_backref_cache_entry),
+        int64 max_object_size = MAX(sizeof(struct re_backref_cache_entry),
                                      sizeof(re_sub_match_top_t *));
         if (__glibc_unlikely(MIN(IDX_MAX, SIZE_MAX / max_object_size) < n)) {
             return REG_ESPACE;

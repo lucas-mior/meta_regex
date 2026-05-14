@@ -137,7 +137,7 @@ re_string_realloc_buffers(re_string_t *pstr, Idx new_buf_len) {
         wint_t *new_wcs;
 
         /* Avoid overflow in realloc.  */
-        size_t max_object_size = MAX(sizeof(wint_t), sizeof(Idx));
+        int64 max_object_size = MAX(sizeof(wint_t), sizeof(Idx));
         if (__glibc_unlikely(MIN(IDX_MAX, SIZE_MAX / max_object_size)
                              < new_buf_len)) {
             return REG_ESPACE;
@@ -209,7 +209,7 @@ build_wcs_buffer(re_string_t *pstr) {
 #endif
     mbstate_t prev_st;
     Idx byte_idx, end_idx, remain_len;
-    size_t mbclen;
+    int64 mbclen;
 
     /* Build the buffers from pstr->valid_len to either pstr->len or
        pstr->bufs_len.  */
@@ -234,8 +234,8 @@ build_wcs_buffer(re_string_t *pstr) {
         }
         mbclen = __mbrtowc(&wc, p, remain_len, &pstr->cur_state);
         if (__glibc_unlikely(
-                mbclen == (size_t)-1 || mbclen == 0
-                || (mbclen == (size_t)-2 && pstr->bufs_len >= pstr->len))) {
+                mbclen == (int64)-1 || mbclen == 0
+                || (mbclen == (int64)-2 && pstr->bufs_len >= pstr->len))) {
             /* We treat these cases as a singlebyte character.  */
             mbclen = 1;
             wc = (wchar_t)pstr->raw_mbs[pstr->raw_mbs_idx + byte_idx];
@@ -243,7 +243,7 @@ build_wcs_buffer(re_string_t *pstr) {
                 wc = pstr->trans[wc];
             }
             pstr->cur_state = prev_st;
-        } else if (__glibc_unlikely(mbclen == (size_t)-2)) {
+        } else if (__glibc_unlikely(mbclen == (int64)-2)) {
             /* The buffer doesn't have enough space, finish to build.  */
             pstr->cur_state = prev_st;
             break;
@@ -267,7 +267,7 @@ static reg_errcode_t __attribute_warn_unused_result__
 build_wcs_upper_buffer(re_string_t *pstr) {
     mbstate_t prev_st;
     Idx src_idx, byte_idx, end_idx, remain_len;
-    size_t mbclen;
+    int64 mbclen;
 #ifdef _LIBC
     char buf[MB_LEN_MAX];
     DEBUG_ASSERT(pstr->mb_cur_max <= MB_LEN_MAX);
@@ -303,10 +303,10 @@ build_wcs_upper_buffer(re_string_t *pstr) {
                 &wc,
                 ((char *)pstr->raw_mbs + pstr->raw_mbs_idx + byte_idx),
                 remain_len, &pstr->cur_state);
-            if (__glibc_likely(0 < mbclen && mbclen < (size_t)-2)) {
+            if (__glibc_likely(0 < mbclen && mbclen < (int64)-2)) {
                 wchar_t wcu = __towupper(wc);
                 if (wcu != wc) {
-                    size_t mbcdlen;
+                    int64 mbcdlen;
 
                     mbcdlen = __wcrtomb(buf, wcu, &prev_st);
                     if (__glibc_likely(mbclen == mbcdlen)) {
@@ -326,15 +326,15 @@ build_wcs_upper_buffer(re_string_t *pstr) {
                      byte_idx < remain_len;) {
                     pstr->wcs[byte_idx++] = WEOF;
                 }
-            } else if (mbclen == (size_t)-1 || mbclen == 0
-                       || (mbclen == (size_t)-2
+            } else if (mbclen == (int64)-1 || mbclen == 0
+                       || (mbclen == (int64)-2
                            && pstr->bufs_len >= pstr->len)) {
                 /* It is an invalid character, an incomplete character
                    at the end of the string, or '\0'.  Just use the byte.  */
                 pstr->mbs[byte_idx] = ch;
                 /* And also cast it to wide char.  */
                 pstr->wcs[byte_idx++] = (wchar_t)ch;
-                if (__glibc_unlikely(mbclen == (size_t)-1)) {
+                if (__glibc_unlikely(mbclen == (int64)-1)) {
                     pstr->cur_state = prev_st;
                 }
             } else {
@@ -365,16 +365,16 @@ build_wcs_upper_buffer(re_string_t *pstr) {
                 p = (char *)pstr->raw_mbs + pstr->raw_mbs_idx + src_idx;
             }
             mbclen = __mbrtowc(&wc, p, remain_len, &pstr->cur_state);
-            if (__glibc_likely(0 < mbclen && mbclen < (size_t)-2)) {
+            if (__glibc_likely(0 < mbclen && mbclen < (int64)-2)) {
                 wchar_t wcu = __towupper(wc);
                 if (wcu != wc) {
-                    size_t mbcdlen;
+                    int64 mbcdlen;
 
                     mbcdlen = __wcrtomb((char *)buf, wcu, &prev_st);
                     if (__glibc_likely(mbclen == mbcdlen)) {
                         memcpy(pstr->mbs + byte_idx, buf, mbclen);
-                    } else if (mbcdlen != (size_t)-1) {
-                        size_t i;
+                    } else if (mbcdlen != (int64)-1) {
+                        int64 i;
 
                         if (byte_idx + mbcdlen > pstr->bufs_len) {
                             pstr->cur_state = prev_st;
@@ -389,7 +389,7 @@ build_wcs_upper_buffer(re_string_t *pstr) {
                             }
                         }
                         if (!pstr->offsets_needed) {
-                            for (i = 0; i < (size_t)byte_idx; ++i) {
+                            for (i = 0; i < (int64)byte_idx; ++i) {
                                 pstr->offsets[i] = i;
                             }
                             pstr->offsets_needed = 1;
@@ -420,7 +420,7 @@ build_wcs_upper_buffer(re_string_t *pstr) {
                 }
 
                 if (__glibc_unlikely(pstr->offsets_needed != 0)) {
-                    size_t i;
+                    int64 i;
                     for (i = 0; i < mbclen; ++i) {
                         pstr->offsets[byte_idx + i] = src_idx + i;
                     }
@@ -433,8 +433,8 @@ build_wcs_upper_buffer(re_string_t *pstr) {
                      byte_idx < remain_len;) {
                     pstr->wcs[byte_idx++] = WEOF;
                 }
-            } else if (mbclen == (size_t)-1 || mbclen == 0
-                       || (mbclen == (size_t)-2
+            } else if (mbclen == (int64)-1 || mbclen == 0
+                       || (mbclen == (int64)-2
                            && pstr->bufs_len >= pstr->len)) {
                 /* It is an invalid character or '\0'.  Just use the byte.  */
                 int ch = pstr->raw_mbs[pstr->raw_mbs_idx + src_idx];
@@ -451,7 +451,7 @@ build_wcs_upper_buffer(re_string_t *pstr) {
 
                 /* And also cast it to wide char.  */
                 pstr->wcs[byte_idx++] = (wchar_t)ch;
-                if (__glibc_unlikely(mbclen == (size_t)-1)) {
+                if (__glibc_unlikely(mbclen == (int64)-1)) {
                     pstr->cur_state = prev_st;
                 }
             } else {
@@ -473,7 +473,7 @@ static Idx
 re_string_skip_chars(re_string_t *pstr, Idx new_raw_idx, wint_t *last_wc) {
     mbstate_t prev_st;
     Idx rawbuf_idx;
-    size_t mbclen;
+    int64 mbclen;
     wint_t wc = WEOF;
 
     /* Skip the characters which are not necessary to check.  */
@@ -484,7 +484,7 @@ re_string_skip_chars(re_string_t *pstr, Idx new_raw_idx, wint_t *last_wc) {
         prev_st = pstr->cur_state;
         mbclen = __mbrtowc(&wc2, (char *)pstr->raw_mbs + rawbuf_idx,
                            remain_len, &pstr->cur_state);
-        if (__glibc_unlikely(mbclen == (size_t)-2 || mbclen == (size_t)-1
+        if (__glibc_unlikely(mbclen == (int64)-2 || mbclen == (int64)-1
                              || mbclen == 0)) {
             /* We treat these cases as a single byte character.  */
             if (mbclen == 0 || remain_len == 0) {
@@ -700,7 +700,7 @@ re_string_reconstruct(re_string_t *pstr, Idx idx, int eflags) {
                                 wchar_t wc2;
                                 Idx mlen = raw + pstr->len - p;
                                 uchar buf[6];
-                                size_t mbclen;
+                                int64 mbclen;
 
                                 uchar *pp = p;
                                 if (__glibc_unlikely(pstr->trans != NULL)) {
@@ -716,7 +716,7 @@ re_string_reconstruct(re_string_t *pstr, Idx idx, int eflags) {
                                 mbclen = __mbrtowc(&wc2, (char *)pp, mlen,
                                                    &cur_state);
                                 if (raw + offset - p <= mbclen
-                                    && mbclen < (size_t)-2) {
+                                    && mbclen < (int64)-2) {
                                     memset(&pstr->cur_state, '\0',
                                            sizeof(mbstate_t));
                                     pstr->valid_len
@@ -1348,13 +1348,13 @@ re_node_set_remove_at(re_node_set *set, Idx idx) {
 static Idx
 re_dfa_add_node(re_dfa_t *dfa, re_token_t token) {
     if (__glibc_unlikely(dfa->nodes_len >= dfa->nodes_alloc)) {
-        size_t new_nodes_alloc = dfa->nodes_alloc * 2;
+        int64 new_nodes_alloc = dfa->nodes_alloc * 2;
         Idx *new_nexts, *new_indices;
         re_node_set *new_edests, *new_eclosures;
         re_token_t *new_nodes;
 
         /* Avoid overflows in realloc.  */
-        size_t max_object_size
+        int64 max_object_size
             = MAX(sizeof(re_token_t), MAX(sizeof(re_node_set), sizeof(Idx)));
         if (__glibc_unlikely(MIN(IDX_MAX, SIZE_MAX / max_object_size)
                              < new_nodes_alloc)) {

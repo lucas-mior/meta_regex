@@ -42,11 +42,11 @@ extern "C" {
    _REGEX_LARGE_OFFSETS.  */
 
 /* The type of object sizes.  */
-typedef size_t __re_size_t;
+typedef int64 __re_size_t;
 
 /* The type of object sizes, in places where the traditional code
    uses ulong int.  */
-typedef size_t __re_long_size_t;
+typedef int64 __re_long_size_t;
 
 #else
 
@@ -59,7 +59,7 @@ typedef ulong int __re_long_size_t;
 
 /* The following two types have to be signed and unsigned integer type
    wide enough to hold a value of a pointer.  For most ANSI compilers
-   ptrdiff_t and size_t should be likely OK.  Still size of these two
+   ptrdiff_t and int64 should be likely OK.  Still size of these two
    types is 2 for Microsoft C.  Ugh... */
 typedef long int s_reg_t;
 typedef ulong int active_reg_t;
@@ -434,7 +434,7 @@ struct re_pattern_buffer
   __RE_TRANSLATE_TYPE __REPB_PREFIX(translate);
 
   /* Number of subexpressions found by the compiler.  */
-  size_t re_nsub;
+  int64 re_nsub;
 
   /* Zero if this pattern cannot match the empty string, one else.
      Well, in truth it's used only in 're_search_2', to see whether or
@@ -553,7 +553,7 @@ extern reg_syntax_t re_set_syntax (reg_syntax_t __syntax);
    Note that the translate table must either have been initialized by
    'regcomp', with a malloc'ed value, or set to NULL before calling
    'regfree'.  */
-extern char *re_compile_pattern (char *__pattern, size_t __length,
+extern char *re_compile_pattern (char *__pattern, int64 __length,
 				       struct re_pattern_buffer *__buffer)
     _Attr_access_ ((__read_only__, 1, 2));
 
@@ -669,13 +669,13 @@ extern int regcomp (regex_t *_Restrict_ __preg,
 		    int __cflags);
 
 extern int regexec (regex_t *_Restrict_ __preg,
-		    char *_Restrict_ __String, size_t __nmatch,
+		    char *_Restrict_ __String, int64 __nmatch,
 		    regmatch_t __pmatch[_Restrict_arr_
 					_REGEX_NELTS (__nmatch)],
 		    int __eflags);
 
-extern size_t regerror (int __errcode, regex_t *_Restrict_ __preg,
-			char *_Restrict_ __errbuf, size_t __errbuf_size)
+extern int64 regerror (int __errcode, regex_t *_Restrict_ __preg,
+			char *_Restrict_ __errbuf, int64 __errbuf_size)
     _Attr_access_ ((__write_only__, 3, 4));
 
 extern void regfree (regex_t *__preg);

@@ -22,11 +22,11 @@
 #endif
 
 static reg_errcode_t re_compile_internal(regex_t *preg, char *pattern,
-                                         size_t length, reg_syntax_t syntax);
+                                         int64 length, reg_syntax_t syntax);
 static void re_compile_fastmap_iter(regex_t *bufp,
                                     re_dfastate_t *init_state,
                                     char *fastmap);
-static reg_errcode_t init_dfa(re_dfa_t *dfa, size_t pat_len);
+static reg_errcode_t init_dfa(re_dfa_t *dfa, int64 pat_len);
 #ifdef RE_ENABLE_I18N
 static void free_charset(re_charset_t *cset);
 #endif /* RE_ENABLE_I18N */
@@ -175,7 +175,7 @@ static char __re_error_msgid[] = {
     gettext_noop("Unmatched ) or \\)") /* REG_ERPAREN */
 };
 
-static size_t __re_error_msgid_idx[]
+static int64 __re_error_msgid_idx[]
     = {REG_NOERROR_IDX, REG_NOMATCH_IDX, REG_BADPAT_IDX,  REG_ECOLLATE_IDX,
        REG_ECTYPE_IDX,  REG_EESCAPE_IDX, REG_ESUBREG_IDX, REG_EBRACK_IDX,
        REG_EPAREN_IDX,  REG_EBRACE_IDX,  REG_BADBR_IDX,   REG_ERANGE_IDX,
@@ -192,7 +192,7 @@ static size_t __re_error_msgid_idx[]
    are set in BUFP on entry.  */
 
 char *
-re_compile_pattern(char *pattern, size_t length,
+re_compile_pattern(char *pattern, int64 length,
                    struct re_pattern_buffer *bufp) {
     reg_errcode_t ret;
 
@@ -297,7 +297,7 @@ re_compile_fastmap_iter(regex_t *bufp, re_dfastate_t *init_state,
                 if (__mbrtowc(&wc, (char *)buf, p - buf, &state)
                         == p - buf
                     && (__wcrtomb((char *)buf, __towlower(wc), &state)
-                        != (size_t)-1)) {
+                        != (int64)-1)) {
                     re_set_fastmap(fastmap, false, buf[0]);
                 }
             }
@@ -352,7 +352,7 @@ re_compile_fastmap_iter(regex_t *bufp, re_dfastate_t *init_state,
                 do {
                     mbstate_t mbs;
                     memset(&mbs, 0, sizeof(mbs));
-                    if (__mbrtowc(NULL, (char *)&c, 1, &mbs) == (size_t)-2) {
+                    if (__mbrtowc(NULL, (char *)&c, 1, &mbs) == (int64)-2) {
                         re_set_fastmap(fastmap, false, (int)c);
                     }
                 } while (++c != 0);
@@ -365,12 +365,12 @@ re_compile_fastmap_iter(regex_t *bufp, re_dfastate_t *init_state,
                     mbstate_t state;
                     memset(&state, '\0', sizeof(state));
                     if (__wcrtomb(buf, cset->mbchars[i], &state)
-                        != (size_t)-1) {
+                        != (int64)-1) {
                         re_set_fastmap(fastmap, icase, *(uchar *)buf);
                     }
                     if ((bufp->syntax & RE_ICASE) && dfa->mb_cur_max > 1) {
                         if (__wcrtomb(buf, __towlower(cset->mbchars[i]), &state)
-                            != (size_t)-1) {
+                            != (int64)-1) {
                             re_set_fastmap(fastmap, false,
                                            *(uchar *)buf);
                         }
@@ -486,10 +486,10 @@ libc_hidden_def(__regcomp) weak_alias(__regcomp, regcomp)
     /* Returns a message corresponding to an error code, ERRCODE, returned
        from either regcomp or regexec.   We don't use PREG here.  */
 
-    size_t regerror(int errcode, regex_t *__restrict preg,
-                    char *__restrict errbuf, size_t errbuf_size) {
+    int64 regerror(int errcode, regex_t *__restrict preg,
+                    char *__restrict errbuf, int64 errbuf_size) {
     char *msg;
-    size_t msg_size;
+    int64 msg_size;
     int nerrcodes
         = sizeof __re_error_msgid_idx / sizeof __re_error_msgid_idx[0];
 
@@ -506,7 +506,7 @@ libc_hidden_def(__regcomp) weak_alias(__regcomp, regcomp)
     msg_size = strlen(msg) + 1; /* Includes the null.  */
 
     if (__glibc_likely(errbuf_size != 0)) {
-        size_t cpy_size = msg_size;
+        int64 cpy_size = msg_size;
         if (__glibc_unlikely(msg_size > errbuf_size)) {
             cpy_size = errbuf_size - 1;
             errbuf[cpy_size] = '\0';
@@ -687,7 +687,7 @@ __libc_regcomp_freemem(void) {
    SYNTAX indicate regular expression's syntax.  */
 
 static reg_errcode_t
-re_compile_internal(regex_t *preg, char *pattern, size_t length,
+re_compile_internal(regex_t *preg, char *pattern, int64 length,
                     reg_syntax_t syntax) {
     reg_errcode_t err = REG_NOERROR;
     re_dfa_t *dfa;
@@ -788,17 +788,17 @@ re_compile_internal(regex_t *preg, char *pattern, size_t length,
    as the initial length of some arrays.  */
 
 static reg_errcode_t
-init_dfa(re_dfa_t *dfa, size_t pat_len) {
+init_dfa(re_dfa_t *dfa, int64 pat_len) {
     __re_size_t table_size;
 #ifndef _LIBC
     char *codeset_name;
 #endif
 #ifdef RE_ENABLE_I18N
-    size_t max_i18n_object_size = MAX(sizeof(wchar_t), sizeof(wctype_t));
+    int64 max_i18n_object_size = MAX(sizeof(wchar_t), sizeof(wctype_t));
 #else
-    size_t max_i18n_object_size = 0;
+    int64 max_i18n_object_size = 0;
 #endif
-    size_t max_object_size
+    int64 max_object_size
         = MAX(sizeof(struct re_state_table_entry),
               MAX(sizeof(re_token_t),
                   MAX(sizeof(re_node_set),
@@ -2413,7 +2413,7 @@ parse_sub_exp(re_string_t *regexp, regex_t *preg, re_token_t *token,
               reg_syntax_t syntax, Idx nest, reg_errcode_t *err) {
     re_dfa_t *dfa = preg->buffer;
     bin_tree_t *tree;
-    size_t cur_nsub;
+    int64 cur_nsub;
     cur_nsub = preg->re_nsub++;
 
     fetch_token(token, regexp, syntax | RE_CARET_ANCHORS_HERE);
@@ -2754,7 +2754,7 @@ build_collating_symbol(bitset_t sbcset, re_charset_t *mbcset,
 build_collating_symbol(bitset_t sbcset, uchar *name)
 #endif /* not RE_ENABLE_I18N */
 {
-    size_t name_len = strlen((char *)name);
+    int64 name_len = strlen((char *)name);
     if (__glibc_unlikely(name_len != 1)) {
         return REG_ECOLLATE;
     } else {
@@ -2771,7 +2771,7 @@ build_collating_symbol(bitset_t sbcset, uchar *name)
    or -1 if not found.  */
 
 static inline int32_t __attribute__((always_inline))
-seek_collating_symbol_entry(uchar *name, size_t name_len,
+seek_collating_symbol_entry(uchar *name, int64 name_len,
                             int32_t *symb_table, int32_t table_size,
                             uchar *extra) {
     int32_t elem;
@@ -2816,7 +2816,7 @@ lookup_collation_sequence_value(bracket_elem_t *br_elem, uint32_t nrules,
             return __collseq_table_lookup(collseqwc, br_elem->opr.wch);
         }
     } else if (br_elem->type == COLL_SYM) {
-        size_t sym_name_len = strlen((char *)br_elem->opr.name);
+        int64 sym_name_len = strlen((char *)br_elem->opr.name);
         if (nrules != 0) {
             int32_t elem, idx;
             elem = seek_collating_symbol_entry(br_elem->opr.name, sym_name_len,
@@ -2952,7 +2952,7 @@ build_collating_symbol(bitset_t sbcset, re_charset_t *mbcset,
                        uint32_t nrules, int32_t table_size,
                        int32_t *symb_table, uchar *extra) {
     int32_t elem, idx;
-    size_t name_len = strlen((char *)name);
+    int64 name_len = strlen((char *)name);
     if (nrules != 0) {
         elem = seek_collating_symbol_entry(name, name_len, symb_table,
                                            table_size, extra);
@@ -3420,7 +3420,7 @@ build_equiv_class(bitset_t sbcset, uchar *name)
         uchar char_buf[2];
         int32_t idx1, idx2;
         uint ch;
-        size_t len;
+        int64 len;
         /* Calculate the index for equivalence class.  */
         cp = name;
         table = (int32_t *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_TABLEMB);
