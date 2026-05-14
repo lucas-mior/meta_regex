@@ -190,8 +190,8 @@ typedef regoff_t Idx;
 typedef __re_size_t re_hashval_t;
 
 /* An integer used to represent a set of bits.  It must be unsigned,
-   and must be at least as wide as unsigned int.  */
-typedef unsigned long int bitset_word_t;
+   and must be at least as wide as uint.  */
+typedef ulong int bitset_word_t;
 /* All bits set in a bitset_word_t.  */
 #define BITSET_WORD_MAX ULONG_MAX
 /* Number of bits in a bitset_word_t.  */
@@ -295,18 +295,18 @@ typedef struct
 
   /* Collating symbols.  */
 # ifdef _LIBC
-  int32_t *coll_syms;
+  int32 *coll_syms;
 # endif
 
   /* Equivalence classes. */
 # ifdef _LIBC
-  int32_t *equiv_classes;
+  int32 *equiv_classes;
 # endif
 
   /* Range expressions. */
 # ifdef _LIBC
-  uint32_t *range_starts;
-  uint32_t *range_ends;
+  uint32 *range_starts;
+  uint32 *range_ends;
 # else /* not _LIBC */
   wchar_t *range_starts;
   wchar_t *range_ends;
@@ -316,7 +316,7 @@ typedef struct
   wctype_t *char_classes;
 
   /* If this character set is the non-matching list.  */
-  unsigned int non_match : 1;
+  uint non_match : 1;
 
   /* # of multibyte characters.  */
   Idx nmbchars;
@@ -339,7 +339,7 @@ typedef struct
 {
   union
   {
-    unsigned char c;		/* for CHARACTER */
+    uchar c;		/* for CHARACTER */
     re_bitset_ptr_t sbcset;	/* for SIMPLE_BRACKET */
 #ifdef RE_ENABLE_I18N
     re_charset_t *mbcset;	/* for COMPLEX_BRACKET */
@@ -352,16 +352,16 @@ typedef struct
 #else
   re_token_type_t type;
 #endif
-  unsigned int constraint : 10;	/* context constraint */
-  unsigned int duplicated : 1;
-  unsigned int opt_subexp : 1;
+  uint constraint : 10;	/* context constraint */
+  uint duplicated : 1;
+  uint opt_subexp : 1;
 #ifdef RE_ENABLE_I18N
-  unsigned int accept_mb : 1;
+  uint accept_mb : 1;
   /* These 2 bits can be moved into the union if needed (e.g. if running out
      of bits; move opr.c to opr.c.c and move the flags to opr.c.flags).  */
-  unsigned int mb_partial : 1;
+  uint mb_partial : 1;
 #endif
-  unsigned int word_char : 1;
+  uint word_char : 1;
 } re_token_t;
 
 #define IS_EPSILON_NODE(type) ((type) & EPSILON_BIT)
@@ -370,11 +370,11 @@ struct re_string_t
 {
   /* Indicate the raw buffer which is the original string passed as an
      argument of regexec(), re_search(), etc..  */
-  unsigned char *raw_mbs;
+  uchar *raw_mbs;
   /* Store the multibyte string.  In case of "case insensitive mode" like
      REG_ICASE, upper cases of the string are stored, otherwise MBS points
      the same address that RAW_MBS points.  */
-  unsigned char *mbs;
+  uchar *mbs;
 #ifdef RE_ENABLE_I18N
   /* Store the wide character string which is corresponding to MBS.  */
   wint_t *wcs;
@@ -406,19 +406,19 @@ struct re_string_t
   /* The context of mbs[0].  We store the context independently, since
      the context of mbs[0] may be different from raw_mbs[0], which is
      the beginning of the input string.  */
-  unsigned int tip_context;
+  uint tip_context;
   /* The translation passed as a part of an argument of re_compile_pattern.  */
   RE_TRANSLATE_TYPE trans;
   /* Copy of re_dfa_t's word_char.  */
   re_const_bitset_ptr_t word_char;
   /* true if REG_ICASE.  */
-  unsigned char icase;
-  unsigned char is_utf8;
-  unsigned char map_notascii;
-  unsigned char mbs_allocated;
-  unsigned char offsets_needed;
-  unsigned char newline_anchor;
-  unsigned char word_ops_used;
+  uchar icase;
+  uchar is_utf8;
+  uchar map_notascii;
+  uchar mbs_allocated;
+  uchar offsets_needed;
+  uchar newline_anchor;
+  uchar word_ops_used;
   int mb_cur_max;
 };
 typedef struct re_string_t re_string_t;
@@ -526,15 +526,15 @@ struct re_dfastate_t
   re_node_set inveclosure;
   re_node_set *entrance_nodes;
   struct re_dfastate_t **trtable, **word_trtable;
-  unsigned int context : 4;
-  unsigned int halt : 1;
+  uint context : 4;
+  uint halt : 1;
   /* If this state can accept "multi byte".
      Note that we refer to multibyte characters, and multi character
      collating elements as "multi byte".  */
-  unsigned int accept_mb : 1;
+  uint accept_mb : 1;
   /* If this state has backreference node(s).  */
-  unsigned int has_backref : 1;
-  unsigned int has_constraint : 1;
+  uint has_backref : 1;
+  uint has_constraint : 1;
 };
 typedef struct re_dfastate_t re_dfastate_t;
 
@@ -663,14 +663,14 @@ struct re_dfa_t
   bitset_word_t used_bkref_map;
   bitset_word_t completed_bkref_map;
 
-  unsigned int has_plural_match : 1;
+  uint has_plural_match : 1;
   /* If this dfa has "multibyte node", which is a backreference or
      a node which can accept multibyte character or multi character
      collating element.  */
-  unsigned int has_mb_node : 1;
-  unsigned int is_utf8 : 1;
-  unsigned int map_notascii : 1;
-  unsigned int word_ops_used : 1;
+  uint has_mb_node : 1;
+  uint is_utf8 : 1;
+  uint map_notascii : 1;
+  uint word_ops_used : 1;
   int mb_cur_max;
   bitset_t word_char;
   reg_syntax_t syntax;
@@ -701,8 +701,8 @@ typedef struct
   bracket_elem_type type;
   union
   {
-    unsigned char ch;
-    unsigned char *name;
+    uchar ch;
+    uchar *name;
     wchar_t wch;
   } opr;
 } bracket_elem_t;
@@ -809,16 +809,16 @@ __attribute__ ((pure, unused))
 re_string_elem_size_at (re_string_t *pstr, Idx idx)
 {
 # ifdef _LIBC
-  unsigned char *p, *extra;
-  int32_t *table, *indirect;
-  uint32_t nrules = _NL_CURRENT_WORD (LC_COLLATE, _NL_COLLATE_NRULES);
+  uchar *p, *extra;
+  int32 *table, *indirect;
+  uint32 nrules = _NL_CURRENT_WORD (LC_COLLATE, _NL_COLLATE_NRULES);
 
   if (nrules != 0)
     {
-      table = (int32_t *) _NL_CURRENT (LC_COLLATE, _NL_COLLATE_TABLEMB);
-      extra = (unsigned char *)
+      table = (int32 *) _NL_CURRENT (LC_COLLATE, _NL_COLLATE_TABLEMB);
+      extra = (uchar *)
 	_NL_CURRENT (LC_COLLATE, _NL_COLLATE_EXTRAMB);
-      indirect = (int32_t *) _NL_CURRENT (LC_COLLATE,
+      indirect = (int32 *) _NL_CURRENT (LC_COLLATE,
 						_NL_COLLATE_INDIRECTMB);
       p = pstr->mbs + idx;
       findidx (table, indirect, extra, &p, pstr->len - idx);
