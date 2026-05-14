@@ -23,7 +23,7 @@ main(void) {
     struct timespec t1_meta;
     RegexTest *tests_posix = xmemdup(regex_tests, SIZEOF(regex_tests));
     RegexTest *tests_meta = xmemdup(regex_tests, SIZEOF(regex_tests));
-    /* setlocale(LC_ALL, ""); */
+    setlocale(LC_ALL, "");
     srand((uint)42);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
