@@ -101,7 +101,7 @@ main(void) {
     free2(tests_posix, SIZEOF(regex_tests));
     free2(tests_meta, SIZEOF(regex_tests));
 
-    printf("\n--- Starting Fuzzy Testing (ASCII) ---\n");
+    printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
     {
         int32 fuzzy_len = 1000;
         FuzzyTest *fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
@@ -174,7 +174,7 @@ main(void) {
         fclose(mismatches);
     }
 
-    printf("\n--- Starting Fuzzy Testing (UTF-8)---\n");
+    printf("\n----- Starting Fuzzy Testing (UTF-8 input) -----\n");
     {
         int32 fuzzy_len = 100;
         FuzzyTest *fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
