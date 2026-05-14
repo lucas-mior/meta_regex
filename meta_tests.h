@@ -10,6 +10,7 @@ typedef struct RegexTest {
     MetaRegex *meta_regex;
     int32 result;
     regmatch_t pmatch[MAX_MATCHES];
+    bool expected;
 } RegexTest;
 
 typedef struct FuzzyTest {
