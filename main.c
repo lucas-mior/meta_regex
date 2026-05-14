@@ -19,9 +19,11 @@ main(void) {
     struct timespec t1_posix;
     struct timespec t0_meta;
     struct timespec t1_meta;
+
     RegexTest *tests_posix = xmemdup(ascii_tests, SIZEOF(ascii_tests));
     RegexTest *tests_meta = xmemdup(ascii_tests, SIZEOF(ascii_tests));
-    setlocale(LC_ALL, "C");
+
+    setlocale(LC_ALL, "C");  // Only test against this kind of posix regex
     srand((uint)42);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
