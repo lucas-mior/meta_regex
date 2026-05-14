@@ -81,6 +81,45 @@ static RegexTest ascii_tests[] = {
     {"a1 B",         R("^[[:lower:][:digit:]]+[[:space:]][[:upper:]]$")},
     {"!@#$%&*()-+=", R("^[[:punct:]]+$")},
     {" ",            R("^[^[:alnum:][:punct:]]$")},
+
+    {"aaa",          R("a*a")},
+    {"aaaaa",        R("a+a")},
+    {"abc123xyz",    R(".*[0-9]+.*")},
+    {"abc123xyz",    R("^.*[0-9]+$")},
+    {"123",          R("^.*[0-9]+$")},
+    {"abc",          R("^.*[0-9]+$")},
+
+    {"apple",        R("(apple|orange|banana)")},
+    {"banana",       R("(apple|orange|banana)")},
+    {"cherry",       R("(apple|orange|banana)")},
+    {"ab",           R("(a|ab)b")},
+    {"abb",          R("(a|ab)b")},
+    {"abc",          R("((a|b)|c)c")},
+    {"acc",          R("((a|b)|c)c")},
+    {"abc",          R("a(b|)c")}, /* Empty alternative */
+    {"ac",           R("a(b|)c")},
+
+    {"ababab",       R("(ab){3}")},
+    {"abab",         R("(ab){3}")},
+    {"abababab",     R("(ab){3}")},
+    {"aaaaaa",       R("(a{2}){3}")},
+
+    {"*",            R("\\*")},
+    {"\\",           R("\\\\")},
+    {"?",            R("\\?")},
+    {"(a)",          R("\\(a\\)")},
+    {"[a]",          R("\\[a\\]")},
+
+    {"5",            R("[[:alpha:]5]")},
+    {"a",            R("[[:alpha:]5]")},
+    {"!",            R("[[:alpha:]5]")},
+    {"a1B",          R("^[[:alnum:]_]+$")}, /* POSIX with literal underscore */
+    {"a_B",          R("^[[:alnum:]_]+$")},
+
+    {"a",            R("é")},    /* Multibyte in regex should fail to match ASCII 'a' */
+    {"é",            R("a")},    /* ASCII in regex should fail to match multibyte 'é' */
+    {"abc",          R("a.c")},  /* Dot should match middle char */
+    {"aé c",         R("a.c")},  /* Dot should handle UTF-8 if current j is at 'é' */
 };
 
 #endif /* META_TESTS_ARRAY_H */
