@@ -8,11 +8,11 @@
 
 static int
 matches_char(MetaOp op, char *s, int32 *consumed, int32 is_regex_ascii) {
-    unsigned char first_byte;
+    uchar first_byte;
     int32 cp;
     int32 is_match;
 
-    first_byte = (unsigned char)s[0];
+    first_byte = (uchar)s[0];
     if (first_byte == '\0') {
         *consumed = 0;
         return 0;

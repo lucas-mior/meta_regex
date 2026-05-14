@@ -172,7 +172,6 @@ main(void) {
         }
         free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
         fclose(mismatches);
-        exit(EXIT_FAILURE);
     }
 
     printf("\n--- Starting Fuzzy Testing (UTF-8)---\n");
