@@ -3,7 +3,7 @@
 
 #include "meta_tests.h"
 
-static RegexTest regex_tests[] = {
+static RegexTest ascii_tests[] = {
     {"abc5def",      R("[0-9]")},
     {"hello world",  R("[0-9]")},
     {"2hello world", R("^[0-9]")},
