@@ -96,8 +96,6 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
         int32 result = meta_regex_match(meta_regex, input, MAX_MATCHES, tests[i].pmatch);
         bool success = (result == 0);
 
-        /* Note: In your array definition, expected is the 3rd initialized field.
-           In your struct, result is the 3rd field. We use tests[i].result as the expected boolean. */
         bool expected = (bool)tests[i].result;
 
         if (success != expected) {
