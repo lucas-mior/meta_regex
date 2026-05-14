@@ -14,7 +14,7 @@ typedef struct RegexTest {
 
 typedef struct FuzzyTest {
     char *string;
-    int32 string_size;
+    int32 string_len;
     int32 regex_idx;
     int32 result_posix;
     regmatch_t pmatch_posix[MAX_MATCHES];

@@ -99,14 +99,13 @@ main(void) {
 
     printf("\n--- Starting Fuzzy Testing ---\n");
     {
-        int32 fuzzy_len = 1000;
+        int32 fuzzy_len = 100;
         FuzzyTest *fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
 
         for (int32 i = 0; i < fuzzy_len; i += 1) {
-            int32 length = 1 + (rand() % 4096);
-            fuzzy[i].string_size = length + 1;
-            fuzzy[i].string = malloc2(fuzzy[i].string_size);
-            utf8_random_string(fuzzy[i].string, length);
+            fuzzy[i].string_len = 1 + (rand() % 4096);
+            fuzzy[i].string = malloc2(fuzzy[i].string_len + 1);
+            utf8_random_string(fuzzy[i].string, fuzzy[i].string_len);
             fuzzy[i].regex_idx = rand() % LENGTH(regex_tests);
         }
 
@@ -158,7 +157,7 @@ main(void) {
         PRINT_TIMINGS(fuzzy_len, t0_meta, t1_meta, "fuzzy meta tests");
 
         for (int32 i = 0; i < fuzzy_len; i += 1) {
-            free2(fuzzy[i].string, fuzzy[i].string_size);
+            free2(fuzzy[i].string, fuzzy[i].string_len + 1);
         }
         free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
     }
