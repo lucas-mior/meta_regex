@@ -64,10 +64,11 @@ main(void) {
         char *string = regex_tests[i].string;
 
         printf(RED("%15s")" against "BLUE("%18s")": %d\n",
-                string, regex, test_posix.result);
+               string, regex, test_posix.result);
         if (test_posix.result != test_meta.result) {
-            error("Error: result mismatch for regex "
-                  RED("\"%s\"")" against "BLUE("\"%s\"")"\n", regex, string);
+            error("Error: result mismatch for string "
+                  RED("\"%s\"")" against regex "BLUE("\"%s\"")"\n",
+                  string, string);
             error("posix: %d, meta: %d\n", test_posix.result, test_meta.result);
             exit(EXIT_FAILURE);
         }
@@ -82,8 +83,8 @@ main(void) {
                     }
                 }
 
-                error("Error: mismatch in "
-                      RED("%s")" against "BLUE("%s")" (group %d)\n",
+                error("Mismatch:\n"
+                      "string "RED("%s")" against regex "BLUE("%s")" (group %d)\n",
                       string, regex, m);
 
                 error("posix: rm_so=%d, rm_eo=%d\n",
@@ -149,8 +150,9 @@ main(void) {
                 char *string = fuzzy[i].string;
                 char *regex = regex_tests[fuzzy[i].regex_idx].meta_regex->string;
 
-                error("Error: result mismatch for regex "
-                      RED("\"%s\"")" against "BLUE("\"%s\"")"\n", regex, string);
+                error("Mismatch:\n"
+                      "string "RED("\"%s\"")" against regex "BLUE("\"%s\"")"\n",
+                      string, regex);
                 error("posix: %d, meta: %d\n", result_posix, result_meta);
                 exit(EXIT_FAILURE);
             }
@@ -214,8 +216,9 @@ main(void) {
                 char *string = fuzzy[i].string;
                 char *regex = regex_tests[fuzzy[i].regex_idx].meta_regex->string;
 
-                error("Error: result mismatch for regex "
-                      RED("\"%s\"")" against "BLUE("\"%s\"")"\n", regex, string);
+                error("Mismatch:\n"
+                      "string "RED("\"%s\"")" against regex "BLUE("\"%s\"")"\n",
+                      string, regex);
                 error("posix: %d, meta: %d\n", result_posix, result_meta);
                 /* exit(EXIT_FAILURE); */
             }
