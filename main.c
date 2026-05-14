@@ -14,6 +14,10 @@
 #include "meta_tests.h"
 #include "gen/meta_tests_array2.h"
 
+#if !defined(error2)
+#define error2(...) fprintf(stderr, __VA_ARGS__)
+#endif
+
 static void
 run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
     struct timespec t0_posix;
@@ -63,21 +67,21 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
         char *input = tests[i].input;
 
         if (tp.result != tm.result) {
-            error("Error: result mismatch for input "
-                  RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n",
-                  input, regex);
-            error("posix: %d, meta: %d\n", tp.result, tm.result);
+            error2("Error: result mismatch for input "
+                   RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n",
+                   input, regex);
+            error2("posix: %d, meta: %d\n", tp.result, tm.result);
         } else if (tp.result == 0) {
             for (int32 m = 0; m < MAX_MATCHES; m += 1) {
                 regmatch_t p_m = tp.pmatch[m];
                 regmatch_t m_m = tm.pmatch[m];
 
                 if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
-                    error("Mismatch in capture group %d:\ninput "
+                    error2("Mismatch in capture group %d:\ninput "
                           RED("%s") " against regex " BLUE("%s") "\n",
                           m, input, regex);
-                    error("posix: rm_so=%d, rm_eo=%d\n", p_m.rm_so, p_m.rm_eo);
-                    error("meta:  rm_so=%d, rm_eo=%d\n", m_m.rm_so, m_m.rm_eo);
+                    error2("posix: rm_so=%d, rm_eo=%d\n", p_m.rm_so, p_m.rm_eo);
+                    error2("meta:  rm_so=%d, rm_eo=%d\n", m_m.rm_so, m_m.rm_eo);
                 }
             }
         }
@@ -110,8 +114,8 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
         bool expected = (bool)tests[i].result;
 
         if (matched != expected) {
-            error("Error: expectation mismatch for input " RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n", input, meta_regex->string);
-            error("expected: %s, got: %s\n", expected ? "MATCH" : "NOMATCH", matched ? "MATCH" : "NOMATCH");
+            error2("Error: expectation mismatch for input " RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n", input, meta_regex->string);
+            error2("expected: %s, got: %s\n", expected ? "MATCH" : "NOMATCH", matched ? "MATCH" : "NOMATCH");
         } else {
             printf(RED("%15s") " against " BLUE("%18s") ": %s (OK)\n",
                    input, meta_regex->string, matched ? "MATCH" : "NOMATCH");
