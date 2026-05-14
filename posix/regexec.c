@@ -512,7 +512,7 @@ re_copy_regs(struct re_registers *regs, regmatch_t *pmatch, Idx nregs,
 
 void
 re_set_registers(struct re_pattern_buffer *bufp, struct re_registers *regs,
-                 __re_size_t num_regs, regoff_t *starts, regoff_t *ends) {
+                 int64 num_regs, regoff_t *starts, regoff_t *ends) {
     if (num_regs) {
         bufp->regs_allocated = REGS_REALLOCATE;
         regs->num_regs = num_regs;
@@ -716,9 +716,9 @@ re_search_internal(regex_t *preg, char *string, Idx length,
             for (;;) {
                 /* If MATCH_FIRST is out of the valid range, reconstruct the
                    buffers.  */
-                __re_size_t offset = match_first - mctx.input.raw_mbs_idx;
+                int64 offset = match_first - mctx.input.raw_mbs_idx;
                 if (__glibc_unlikely(
-                        offset >= (__re_size_t)mctx.input.valid_raw_len)) {
+                        offset >= (int64)mctx.input.valid_raw_len)) {
                     err = re_string_reconstruct(&mctx.input, match_first,
                                                 eflags);
                     if (__glibc_unlikely(err != REG_NOERROR)) {

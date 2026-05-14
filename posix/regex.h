@@ -42,7 +42,7 @@ extern "C" {
    _REGEX_LARGE_OFFSETS.  */
 
 /* The type of object sizes.  */
-typedef int64 __re_size_t;
+typedef int64 int64;
 
 /* The type of object sizes, in places where the traditional code
    uses ulong int.  */
@@ -52,7 +52,7 @@ typedef int64 __re_long_size_t;
 
 /* The traditional GNU regex implementation mishandles strings longer
    than INT_MAX.  */
-typedef uint __re_size_t;
+typedef uint int64;
 typedef ulong int __re_long_size_t;
 
 #endif
@@ -492,7 +492,7 @@ typedef int regoff_t;
    regex.texinfo for a full description of what registers match.  */
 struct re_registers
 {
-  __re_size_t num_regs;
+  int64 num_regs;
   regoff_t *start;
   regoff_t *end;
 };
@@ -614,7 +614,7 @@ extern regoff_t re_match_2 (struct re_pattern_buffer *__buffer,
    freeing the old data.  */
 extern void re_set_registers (struct re_pattern_buffer *__buffer,
 			      struct re_registers *__regs,
-			      __re_size_t __num_regs,
+			      int64 __num_regs,
 			      regoff_t *__starts, regoff_t *__ends);
 #endif	/* Use GNU */
 

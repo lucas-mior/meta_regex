@@ -1312,7 +1312,7 @@ re_node_set_compare(re_node_set *set1, re_node_set *set2) {
 
 static Idx __attribute__((pure))
 re_node_set_contains(re_node_set *set, Idx elem) {
-    __re_size_t idx, right, mid;
+    int64 idx, right, mid;
     if (set->nelem <= 0) {
         return 0;
     }

@@ -187,7 +187,7 @@ typedef regoff_t Idx;
 #endif
 
 /* A hash value, suitable for computing hash tables.  */
-typedef __re_size_t re_hashval_t;
+typedef int64 re_hashval_t;
 
 /* An integer used to represent a set of bits.  It must be unsigned,
    and must be at least as wide as uint32.  */

@@ -789,7 +789,7 @@ re_compile_internal(regex_t *preg, char *pattern, int64 length,
 
 static reg_errcode_t
 init_dfa(re_dfa_t *dfa, int64 pat_len) {
-    __re_size_t table_size;
+    int64 table_size;
 #ifndef _LIBC
     char *codeset_name;
 #endif
