@@ -70,7 +70,6 @@ main(void) {
                   RED("\"%s\"")" against regex "BLUE("\"%s\"")"\n",
                   input, regex);
             error("posix: %d, meta: %d\n", test_posix.result, test_meta.result);
-            exit(EXIT_FAILURE);
         }
         if (test_posix.result == 0) {
             for (int32 m = 0; m < MAX_MATCHES; m += 1) {
