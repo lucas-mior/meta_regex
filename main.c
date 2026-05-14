@@ -100,7 +100,7 @@ main(void) {
     printf("\n--- Starting Fuzzy Testing ---\n");
     {
         int32 fuzzy_len = 1000;
-        FuzzyTest *fuzzy = malloc2(SIZEOF(FuzzyTest)*fuzzy_len);
+        FuzzyTest *fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
 
         for (int32 i = 0; i < fuzzy_len; i += 1) {
             int32 length = 1 + (rand() % 4096);
@@ -160,7 +160,7 @@ main(void) {
         for (int32 i = 0; i < fuzzy_len; i += 1) {
             free2(fuzzy[i].string, fuzzy[i].string_size);
         }
-        free2(fuzzy, SIZEOF(FuzzyTest)*fuzzy_len);
+        free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
     }
 
     free2(tests_posix, SIZEOF(regex_tests));
