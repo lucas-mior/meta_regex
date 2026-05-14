@@ -5,6 +5,14 @@
 #include "cbase/util.c"
 #include "meta_regex.h"
 
+typedef struct ParsedOp {
+    enum MetaOpType type;
+    int32 value;
+    int32 min;
+    int32 max;
+    unsigned int mask[8];
+} ParsedOp;
+
 int
 main(int argc, char **argv) {
     FILE *input_file;
@@ -62,6 +70,8 @@ main(int argc, char **argv) {
         int32 group_stack[32] = {0};
         int32 group_stack_ptr = 0;
         int32 has_alternation = 0;
+        ParsedOp temp_ops[1024] = {0};
+        int32 temp_ops_count = 0;
 
         found_macro = strstr(cursor, macro_start);
         if (found_macro == NULL) {
@@ -140,34 +150,27 @@ main(int argc, char **argv) {
                     regex_index += 1;
                     break;
                 }
-                int32 w = snprintf2(op_ptr, space, 
-                                    "{META_OP_LITERAL, %d, 0, 0, {0}},\n", cp);
-                op_ptr += w;
-                space -= w;
+                temp_ops[temp_ops_count].type = META_OP_LITERAL;
+                temp_ops[temp_ops_count].value = cp;
+                temp_ops_count += 1;
                 regex_index += 1;
                 break;
             }
             case '*': {
-                int32 w = snprintf2(op_ptr, space, 
-                                    "{META_OP_STAR, 0, 0, 0, {0}},\n");
-                op_ptr += w;
-                space -= w;
+                temp_ops[temp_ops_count].type = META_OP_STAR;
+                temp_ops_count += 1;
                 regex_index += 1;
                 break;
             }
             case '+': {
-                int32 w = snprintf2(op_ptr, space, 
-                                    "{META_OP_PLUS, 0, 0, 0, {0}},\n");
-                op_ptr += w;
-                space -= w;
+                temp_ops[temp_ops_count].type = META_OP_PLUS;
+                temp_ops_count += 1;
                 regex_index += 1;
                 break;
             }
             case '?': {
-                int32 w = snprintf2(op_ptr, space, 
-                                    "{META_OP_OPTIONAL, 0, 0, 0, {0}},\n");
-                op_ptr += w;
-                space -= w;
+                temp_ops[temp_ops_count].type = META_OP_OPTIONAL;
+                temp_ops_count += 1;
                 regex_index += 1;
                 break;
             }
@@ -202,58 +205,80 @@ main(int argc, char **argv) {
                     temp_idx += 1;
                 }
                 if (valid) {
-                    int32 w = snprintf2(op_ptr, space, 
-                                        "{META_OP_BOUNDED, 0, %d, %d, {0}},\n", 
-                                        m, n);
-                    op_ptr += w;
-                    space -= w;
+                    int32 target_start = temp_ops_count - 1;
+                    int32 is_group = 0;
+                    if (temp_ops[target_start].type == META_OP_GROUP_END) {
+                        int32 depth = 0;
+                        is_group = 1;
+                        for (int32 i = target_start; i >= 0; i -= 1) {
+                            if (temp_ops[i].type == META_OP_GROUP_END) {
+                                depth += 1;
+                            } else if (temp_ops[i].type == META_OP_GROUP_START) {
+                                depth -= 1;
+                                if (depth == 0) {
+                                    target_start = i;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (is_group && m == n && m > 0) {
+                        int32 target_len = temp_ops_count - target_start;
+                        for (int32 k = 1; k < m; k += 1) {
+                            for (int32 i = 0; i < target_len; i += 1) {
+                                temp_ops[temp_ops_count] = temp_ops[target_start + i];
+                                temp_ops_count += 1;
+                            }
+                        }
+                    } else if (is_group && m == 0 && n == 0) {
+                        temp_ops_count = target_start;
+                    } else {
+                        temp_ops[temp_ops_count].type = META_OP_BOUNDED;
+                        temp_ops[temp_ops_count].min = m;
+                        temp_ops[temp_ops_count].max = n;
+                        temp_ops_count += 1;
+                    }
+
                     regex_index = temp_idx;
                     break;
                 }
-                int32 w = snprintf2(op_ptr, space, 
-                                    "{META_OP_LITERAL, %d, 0, 0, {0}},\n", cp);
-                op_ptr += w;
-                space -= w;
+                temp_ops[temp_ops_count].type = META_OP_LITERAL;
+                temp_ops[temp_ops_count].value = cp;
+                temp_ops_count += 1;
                 regex_index += 1;
                 break;
             }
             case '|': {
-                int32 w = snprintf2(op_ptr, space, 
-                                    "{META_OP_ALTERNATION, 0, 0, 0, {0}},\n");
+                temp_ops[temp_ops_count].type = META_OP_ALTERNATION;
+                temp_ops_count += 1;
                 has_alternation = 1;
-                op_ptr += w;
-                space -= w;
                 regex_index += 1;
                 break;
             }
             case '(': {
                 group_stack[group_stack_ptr] = group_counter;
                 group_stack_ptr += 1;
-                int32 w = snprintf2(op_ptr, space, 
-                                    "{META_OP_GROUP_START, %d, 0, 0, {0}},\n", 
-                                    group_counter);
-                op_ptr += w;
-                space -= w;
+                temp_ops[temp_ops_count].type = META_OP_GROUP_START;
+                temp_ops[temp_ops_count].value = group_counter;
+                temp_ops_count += 1;
                 group_counter += 1;
                 regex_index += 1;
                 break;
             }
             case ')': {
+                int32 current_group;
                 group_stack_ptr -= 1;
-                int32 current_group = group_stack[group_stack_ptr];
-                int32 w = snprintf2(op_ptr, space, 
-                                    "{META_OP_GROUP_END, %d, 0, 0, {0}},\n", 
-                                    current_group);
-                op_ptr += w;
-                space -= w;
+                current_group = group_stack[group_stack_ptr];
+                temp_ops[temp_ops_count].type = META_OP_GROUP_END;
+                temp_ops[temp_ops_count].value = current_group;
+                temp_ops_count += 1;
                 regex_index += 1;
                 break;
             }
             case '.': {
-                int32 w = snprintf2(op_ptr, space, 
-                                    "{META_OP_ANY, 0, 0, 0, {0}},\n");
-                op_ptr += w;
-                space -= w;
+                temp_ops[temp_ops_count].type = META_OP_ANY;
+                temp_ops_count += 1;
                 regex_index += 1;
                 break;
             }
@@ -353,41 +378,64 @@ main(int argc, char **argv) {
                         mask[i] = ~mask[i];
                     }
                 }
-                int32 w = snprintf2(op_ptr, space, 
-                                    "{META_OP_CLASS, 0, 0, 0, {%u, %u, %u, %u, "
-                                    "%u, %u, %u, %u}},\n", 
-                                    mask[0], mask[1], mask[2], mask[3], mask[4], 
-                                    mask[5], mask[6], mask[7]);
-                op_ptr += w;
-                space -= w;
+                temp_ops[temp_ops_count].type = META_OP_CLASS;
+                for (int32 i = 0; i < 8; i += 1) {
+                    temp_ops[temp_ops_count].mask[i] = mask[i];
+                }
+                temp_ops_count += 1;
                 break;
             }
             case '\\': {
                 regex_index += 1;
                 if (regex_string[regex_index] != '\0') {
                     int32 c_cp = (unsigned char)regex_string[regex_index];
-                    int32 w = snprintf2(op_ptr, space, 
-                                        "{META_OP_LITERAL, %d, 0, 0, {0}},\n", 
-                                        c_cp);
-                    op_ptr += w;
-                    space -= w;
+                    temp_ops[temp_ops_count].type = META_OP_LITERAL;
+                    temp_ops[temp_ops_count].value = c_cp;
+                    temp_ops_count += 1;
                     regex_index += 1;
                 }
                 break;
             }
             default: {
-                int32 w = snprintf2(op_ptr, space, 
-                                    "{META_OP_LITERAL, %d, 0, 0, {0}},\n", cp);
-                op_ptr += w;
-                space -= w;
+                temp_ops[temp_ops_count].type = META_OP_LITERAL;
+                temp_ops[temp_ops_count].value = cp;
+                temp_ops_count += 1;
                 regex_index += 1;
                 break;
             }
             }
         }
-        int32 w = snprintf2(op_ptr, space, "{META_OP_END, 0, 0, 0, {0}}\n");
-        op_ptr += w;
-        space -= w;
+
+        for (int32 i = 0; i <= temp_ops_count; i += 1) {
+            int32 w = 0;
+            if (i == temp_ops_count) {
+                w = snprintf2(op_ptr, space, "{META_OP_END, 0, 0, 0, {0}}\n");
+            } else if (temp_ops[i].type == META_OP_LITERAL) {
+                w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d, 0, 0, {0}},\n", temp_ops[i].value);
+            } else if (temp_ops[i].type == META_OP_CLASS) {
+                w = snprintf2(op_ptr, space, "{META_OP_CLASS, 0, 0, 0, {%u, %u, %u, %u, %u, %u, %u, %u}},\n", 
+                              temp_ops[i].mask[0], temp_ops[i].mask[1], temp_ops[i].mask[2], temp_ops[i].mask[3], 
+                              temp_ops[i].mask[4], temp_ops[i].mask[5], temp_ops[i].mask[6], temp_ops[i].mask[7]);
+            } else if (temp_ops[i].type == META_OP_BOUNDED) {
+                w = snprintf2(op_ptr, space, "{META_OP_BOUNDED, 0, %d, %d, {0}},\n", temp_ops[i].min, temp_ops[i].max);
+            } else if (temp_ops[i].type == META_OP_GROUP_START) {
+                w = snprintf2(op_ptr, space, "{META_OP_GROUP_START, %d, 0, 0, {0}},\n", temp_ops[i].value);
+            } else if (temp_ops[i].type == META_OP_GROUP_END) {
+                w = snprintf2(op_ptr, space, "{META_OP_GROUP_END, %d, 0, 0, {0}},\n", temp_ops[i].value);
+            } else {
+                char *type_str = "META_OP_UNKNOWN";
+                if (temp_ops[i].type == META_OP_STAR) type_str = "META_OP_STAR";
+                else if (temp_ops[i].type == META_OP_PLUS) type_str = "META_OP_PLUS";
+                else if (temp_ops[i].type == META_OP_OPTIONAL) type_str = "META_OP_OPTIONAL";
+                else if (temp_ops[i].type == META_OP_ALTERNATION) type_str = "META_OP_ALTERNATION";
+                else if (temp_ops[i].type == META_OP_ANY) type_str = "META_OP_ANY";
+                
+                w = snprintf2(op_ptr, space, "{%s, 0, 0, 0, {0}},\n", type_str);
+            }
+            op_ptr += w;
+            space -= w;
+        }
+
         paren_end = strchr(quote_end, ')');
         original_string_length = (int32)(quote_end - quote_start) + 1;
         printf("&(MetaRegex){ .string = %.*s, .ops = { %s }, "

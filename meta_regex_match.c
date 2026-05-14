@@ -43,26 +43,34 @@ eval_choice_point(MetaOp *ops, char *orig, char *curr,
                   size_t nmatch, regmatch_t pmatch[]) {
     MetaOp *alt_start;
     regmatch_t pmatch_backup[32];
+    regmatch_t best_pmatch[32];
     size_t copy_size;
+    int32 longest_match;
     int32 res;
     int32 depth;
 
     alt_start = ops;
+    longest_match = -1;
+    copy_size = (nmatch > 32) ? 32 : nmatch;
+
     while (1) {
         if (pmatch != NULL) {
-            copy_size = (nmatch > 32) ? 32 : nmatch;
             for (size_t i = 0; i < copy_size; i += 1) {
                 pmatch_backup[i] = pmatch[i];
             }
         }
 
         res = match_at_recursive(alt_start, orig, curr, nmatch, pmatch);
-        if (res >= 0) {
-            return res;
+        if (res > longest_match) {
+            longest_match = res;
+            if (pmatch != NULL) {
+                for (size_t i = 0; i < copy_size; i += 1) {
+                    best_pmatch[i] = pmatch[i];
+                }
+            }
         }
 
         if (pmatch != NULL) {
-            copy_size = (nmatch > 32) ? 32 : nmatch;
             for (size_t i = 0; i < copy_size; i += 1) {
                 pmatch[i] = pmatch_backup[i];
             }
@@ -86,9 +94,17 @@ eval_choice_point(MetaOp *ops, char *orig, char *curr,
         if (alt_start->type == META_OP_ALTERNATION && depth == 0) {
             alt_start += 1;
         } else {
-            return -1;
+            break;
         }
     }
+
+    if (longest_match >= 0 && pmatch != NULL) {
+        for (size_t i = 0; i < copy_size; i += 1) {
+            pmatch[i] = best_pmatch[i];
+        }
+    }
+
+    return longest_match;
 }
 
 static int
@@ -99,6 +115,7 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
     MetaOp token;
     MetaOp *next_ops;
     regmatch_t pmatch_backup[32];
+    regmatch_t best_pmatch[32];
     char *s;
     char *max_s;
     int32 depth;
@@ -106,6 +123,7 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
     int32 old_so;
     int32 old_eo;
     int32 res;
+    int32 longest_match;
     int32 is_star;
     int32 is_plus;
     int32 is_opt;
@@ -244,22 +262,28 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
             count += 1;
         }
 
-        if (pmatch != NULL) {
-            copy_size = (nmatch > 32) ? 32 : nmatch;
-            for (size_t i = 0; i < copy_size; i += 1) {
-                pmatch_backup[i] = pmatch[i];
-            }
-        }
+        longest_match = -1;
+        copy_size = (nmatch > 32) ? 32 : nmatch;
 
         while (max_s >= s) {
+            if (pmatch != NULL) {
+                for (size_t i = 0; i < copy_size; i += 1) {
+                    pmatch_backup[i] = pmatch[i];
+                }
+            }
+
             res = match_at_recursive(next_ops, original_string, max_s, 
                                      nmatch, pmatch);
-            if (res >= 0) {
-                return res;
+            if (res > longest_match) {
+                longest_match = res;
+                if (pmatch != NULL) {
+                    for (size_t i = 0; i < copy_size; i += 1) {
+                        best_pmatch[i] = pmatch[i];
+                    }
+                }
             }
 
             if (pmatch != NULL) {
-                copy_size = (nmatch > 32) ? 32 : nmatch;
                 for (size_t i = 0; i < copy_size; i += 1) {
                     pmatch[i] = pmatch_backup[i];
                 }
@@ -271,7 +295,14 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
 
             max_s -= 1;
         }
-        return -1;
+
+        if (longest_match >= 0 && pmatch != NULL) {
+            for (size_t i = 0; i < copy_size; i += 1) {
+                pmatch[i] = best_pmatch[i];
+            }
+        }
+
+        return longest_match;
     }
 
     consumed = 0;
