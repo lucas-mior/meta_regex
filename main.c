@@ -33,8 +33,7 @@ main(void) {
         char *regex = tests_posix[i].meta_regex->string;
         int32 compiled;
 
-        compiled = regcomp(&compiled_regex, regex, REG_EXTENDED);
-        if (compiled != 0) {
+        if ((compiled = regcomp(&compiled_regex, regex, REG_EXTENDED))) {
             char error_message[256];
             regerror(compiled, &compiled_regex,
                      error_message, sizeof(error_message));
