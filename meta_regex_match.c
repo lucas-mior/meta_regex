@@ -158,6 +158,10 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string, siz
 
 static int
 meta_regex_match(MetaRegex *regex, char *string, size_t nmatch, regmatch_t pmatch[]) {
+    if (regex == NULL) {
+        return REG_NOMATCH;
+    }
+
     if (regex->has_start_anchor) {
         if (pmatch != NULL) {
             for (size_t k = 0; k < nmatch; k += 1) { 

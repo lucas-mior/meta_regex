@@ -7,7 +7,7 @@
 
 typedef struct RegexTest {
     char *string;
-    MetaRegex meta_regex;
+    MetaRegex *meta_regex;
     int32 result;
     regmatch_t pmatch[MAX_MATCHES];
 } RegexTest;

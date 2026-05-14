@@ -73,7 +73,7 @@ main(int argc, char **argv) {
 
         /* Check for R(NULL) specifically before looking for quotes */
         if (found_macro[2] == 'N' && found_macro[3] == 'U' && found_macro[4] == 'L' && found_macro[5] == 'L' && found_macro[6] == ')') {
-            printf("{ .string = NULL }");
+            printf("NULL");
             cursor = found_macro + 7;
             continue;
         }
@@ -411,7 +411,7 @@ main(int argc, char **argv) {
         space -= w;
         paren_end = strchr(quote_end, ')');
         original_string_length = (int32)(quote_end - quote_start) + 1;
-        printf("{ .string = %.*s, .ops = { %s }, .has_start_anchor = %d, "
+        printf("&(MetaRegex){ .string = %.*s, .ops = { %s }, .has_start_anchor = %d, "
                ".has_end_anchor = %d }",
                original_string_length, quote_start, op_buffer, has_start, has_end);
         cursor = (paren_end != NULL) ? paren_end + 1 : quote_end + 1;

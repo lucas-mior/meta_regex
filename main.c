@@ -30,7 +30,7 @@ main(void) {
     for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
         regex_t compiled_regex;
         char *string = tests_posix[i].string;
-        char *regex = tests_posix[i].meta_regex.string;
+        char *regex = tests_posix[i].meta_regex->string;
         int32 compile_status;
 
         compile_status = regcomp(&compiled_regex, regex, REG_EXTENDED);
@@ -51,10 +51,10 @@ main(void) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
     for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
         char *string = tests_meta[i].string;
-        MetaRegex meta_regex = tests_meta[i].meta_regex;
+        MetaRegex *meta_regex = tests_meta[i].meta_regex;
 
         tests_meta[i].result
-            = meta_regex_match(&meta_regex, string,
+            = meta_regex_match(meta_regex, string,
                                MAX_MATCHES, tests_meta[i].pmatch);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
@@ -62,11 +62,11 @@ main(void) {
     for (int32 i = 0; i < LENGTH(regex_tests); i += 1) {
         RegexTest test_posix = tests_posix[i];
         RegexTest test_meta = tests_meta[i];
-        char *regex = regex_tests[i].meta_regex.string;
+        char *regex = regex_tests[i].meta_regex->string;
         char *string = regex_tests[i].string;
 
         printf(RED("%15s")" against "BLUE("%18s")": %d\n",
-               string, regex, test_posix.result);
+                string, regex, test_posix.result);
         if (test_posix.result != test_meta.result) {
             error("Error: result mismatch for regex "
                   RED("\"%s\"")" against "BLUE("\"%s\"")"\n", regex, string);
@@ -117,7 +117,7 @@ main(void) {
             int32 comp_error;
             char *pattern_str;
 
-            pattern_str = regex_tests[fuzzy_cases[i].regex_idx].meta_regex.string;
+            pattern_str = regex_tests[fuzzy_cases[i].regex_idx].meta_regex->string;
             if ((comp_error = regcomp(&compiled, pattern_str, REG_EXTENDED))) {
                 error("Error compiling %s: %s.\n", pattern_str, strerror(errno));
                 fatal(EXIT_FAILURE);
@@ -131,12 +131,10 @@ main(void) {
 
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
         for (int32 i = 0; i < NFUZZY; i += 1) {
-            MetaRegex meta_pattern;
-
-            meta_pattern = regex_tests[fuzzy_cases[i].regex_idx].meta_regex;
+            MetaRegex *meta_pattern = regex_tests[fuzzy_cases[i].regex_idx].meta_regex;
 
             fuzzy_cases[i].result_meta
-                = meta_regex_match(&meta_pattern,
+                = meta_regex_match(meta_pattern,
                                    fuzzy_cases[i].string,
                                    MAX_MATCHES,
                                    fuzzy_cases[i].pmatch_meta);
@@ -148,7 +146,7 @@ main(void) {
             int32 result_meta = fuzzy_cases[i].result_meta;
             if (result_posix != result_meta) {
                 char *string = fuzzy_cases[i].string;
-                char *regex = regex_tests[fuzzy_cases[i].regex_idx].meta_regex.string;
+                char *regex = regex_tests[fuzzy_cases[i].regex_idx].meta_regex->string;
 
                 error("Error: result mismatch for regex "
                       RED("\"%s\"")" against "BLUE("\"%s\"")"\n", regex, string);
