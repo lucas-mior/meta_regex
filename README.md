@@ -6,8 +6,8 @@ A subset of posix extended.
 See `meta_tests_array.h` to check which patterns are being tested.
 
 ### Not supported
-- collating elements like `[[=a=]]` and `[[.a.]]` are not
-- locale settings: This tool always assume text is UTF-8 encoded
+- collating elements like `[[=a=]]` and `[[.a.]]` will give an error
+- locale settings: they are completely ignored.
 
 ## Getting started
 ```sh
