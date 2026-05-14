@@ -24,7 +24,7 @@ matches_char(MetaOp op, char *s, int32 *consumed, int32 is_regex_ascii) {
             return 1;
         }
         if (op.type == META_OP_LITERAL) {
-            is_match = (first_byte == (unsigned char)op.value);
+            is_match = (op.value < 128 && (int32)first_byte == op.value);
             return is_match;
         }
         if (op.type == META_OP_CLASS) {
@@ -43,7 +43,6 @@ matches_char(MetaOp op, char *s, int32 *consumed, int32 is_regex_ascii) {
         return 1;
     }
 
-    /* If regex is marked ASCII-only, it cannot match a multibyte UTF-8 char */
     if (is_regex_ascii) {
         return 0;
     }
@@ -53,13 +52,11 @@ matches_char(MetaOp op, char *s, int32 *consumed, int32 is_regex_ascii) {
             return 1;
         }
     } else if (op.type == META_OP_CLASS) {
-        /* Check the bitmask for Extended ASCII/Latin-1 range (128-255) */
         if (cp < 256) {
             is_match = ((op.mask[cp / 32] & (1u << (cp % 32))) != 0);
             return is_match;
         }
         
-        /* Check the high codepoints for everything else */
         for (int32 i = 0; i < 16; i += 1) {
             if (op.high_codepoints[i] == 0) {
                 break;

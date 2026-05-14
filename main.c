@@ -103,8 +103,14 @@ main(void) {
 
     printf("\n--- Starting Fuzzy Testing (ASCII) ---\n");
     {
-        int32 fuzzy_len = 100;
+        int32 fuzzy_len = 1000;
         FuzzyTest *fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
+        FILE *mismatches;
+
+        if ((mismatches = fopen("mismatches_ascii.txt", "w")) == NULL) {
+            error("Error opening file: %s.\n", strerror(errno));
+            exit(EXIT_FAILURE);
+        }
 
         for (int32 i = 0; i < fuzzy_len; i += 1) {
             fuzzy[i].string_len = 1 + (rand() % 4096);
@@ -154,10 +160,10 @@ main(void) {
                       "string "RED("\"%s\"")" against regex "BLUE("\"%s\"")"\n",
                       string, regex);
                 error("posix: %d, meta: %d\n", result_posix, result_meta);
-                exit(EXIT_FAILURE);
+                fprintf(mismatches, "%s against %s [posix=%d][meta=%d]\n",
+                                    string, regex, result_posix, result_meta);
             }
         }
-
         PRINT_TIMINGS(fuzzy_len, t0_posix, t1_posix, "fuzzy ascii posix");
         PRINT_TIMINGS(fuzzy_len, t0_meta, t1_meta, "fuzzy ascii meta");
 
@@ -165,6 +171,8 @@ main(void) {
             free2(fuzzy[i].string, fuzzy[i].string_len + 1);
         }
         free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
+        fclose(mismatches);
+        exit(EXIT_FAILURE);
     }
 
     printf("\n--- Starting Fuzzy Testing (UTF-8)---\n");
