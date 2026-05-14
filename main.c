@@ -13,6 +13,7 @@
 
 #include "meta_tests.h"
 #include "gen/meta_tests_array2.h"
+#include "utf8.h"
 
 #if !defined(error2)
 #define error2(...) fprintf(stderr, __VA_ARGS__)

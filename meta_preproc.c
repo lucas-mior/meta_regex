@@ -4,7 +4,6 @@
 
 #include "cbase/util.c"
 #include "meta_regex.h"
-#include "utf8.h"
 
 int
 main(int argc, char **argv) {
@@ -62,7 +61,6 @@ main(int argc, char **argv) {
         int32 group_counter = 1;
         int32 group_stack[32] = {0};
         int32 group_stack_ptr = 0;
-        int32 is_ascii = 1;
         int32 has_alternation = 0;
 
         found_macro = strstr(cursor, macro_start);
@@ -73,7 +71,9 @@ main(int argc, char **argv) {
         prefix_length = (int32)(found_macro - cursor);
         printf("%.*s", prefix_length, cursor);
 
-        if (found_macro[2] == 'N' && found_macro[3] == 'U' && found_macro[4] == 'L' && found_macro[5] == 'L' && found_macro[6] == ')') {
+        if (found_macro[2] == 'N' && found_macro[3] == 'U' && 
+            found_macro[4] == 'L' && found_macro[5] == 'L' && 
+            found_macro[6] == ')') {
             printf("NULL");
             cursor = found_macro + 7;
             continue;
@@ -131,8 +131,7 @@ main(int argc, char **argv) {
         }
 
         while (regex_string[regex_index] != '\0') {
-            int32 consumed = 0;
-            int32 cp = utf8_decode(&regex_string[regex_index], &consumed);
+            int32 cp = (unsigned char)regex_string[regex_index];
 
             switch (cp) {
             case '$': {
@@ -141,28 +140,32 @@ main(int argc, char **argv) {
                     regex_index += 1;
                     break;
                 }
-                int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d, 0, 0, {0}, {0}},\n", cp);
+                int32 w = snprintf2(op_ptr, space, 
+                                    "{META_OP_LITERAL, %d, 0, 0, {0}},\n", cp);
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
                 break;
             }
             case '*': {
-                int32 w = snprintf2(op_ptr, space, "{META_OP_STAR, 0, 0, 0, {0}, {0}},\n");
+                int32 w = snprintf2(op_ptr, space, 
+                                    "{META_OP_STAR, 0, 0, 0, {0}},\n");
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
                 break;
             }
             case '+': {
-                int32 w = snprintf2(op_ptr, space, "{META_OP_PLUS, 0, 0, 0, {0}, {0}},\n");
+                int32 w = snprintf2(op_ptr, space, 
+                                    "{META_OP_PLUS, 0, 0, 0, {0}},\n");
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
                 break;
             }
             case '?': {
-                int32 w = snprintf2(op_ptr, space, "{META_OP_OPTIONAL, 0, 0, 0, {0}, {0}},\n");
+                int32 w = snprintf2(op_ptr, space, 
+                                    "{META_OP_OPTIONAL, 0, 0, 0, {0}},\n");
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
@@ -174,16 +177,19 @@ main(int argc, char **argv) {
                 int32 n = -1;
                 int32 has_m = 0;
                 int32 valid = 0;
-                while (regex_string[temp_idx] >= '0' && regex_string[temp_idx] <= '9') {
+                while (regex_string[temp_idx] >= '0' && 
+                       regex_string[temp_idx] <= '9') {
                     m = m * 10 + (regex_string[temp_idx] - '0');
                     has_m = 1;
                     temp_idx += 1;
                 }
                 if (regex_string[temp_idx] == ',') {
                     temp_idx += 1;
-                    if (regex_string[temp_idx] >= '0' && regex_string[temp_idx] <= '9') {
+                    if (regex_string[temp_idx] >= '0' && 
+                        regex_string[temp_idx] <= '9') {
                         n = 0;
-                        while (regex_string[temp_idx] >= '0' && regex_string[temp_idx] <= '9') {
+                        while (regex_string[temp_idx] >= '0' && 
+                               regex_string[temp_idx] <= '9') {
                             n = n * 10 + (regex_string[temp_idx] - '0');
                             temp_idx += 1;
                         }
@@ -196,20 +202,24 @@ main(int argc, char **argv) {
                     temp_idx += 1;
                 }
                 if (valid) {
-                    int32 w = snprintf2(op_ptr, space, "{META_OP_BOUNDED, 0, %d, %d, {0}, {0}},\n", m, n);
+                    int32 w = snprintf2(op_ptr, space, 
+                                        "{META_OP_BOUNDED, 0, %d, %d, {0}},\n", 
+                                        m, n);
                     op_ptr += w;
                     space -= w;
                     regex_index = temp_idx;
                     break;
                 }
-                int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d, 0, 0, {0}, {0}},\n", cp);
+                int32 w = snprintf2(op_ptr, space, 
+                                    "{META_OP_LITERAL, %d, 0, 0, {0}},\n", cp);
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
                 break;
             }
             case '|': {
-                int32 w = snprintf2(op_ptr, space, "{META_OP_ALTERNATION, 0, 0, 0, {0}, {0}},\n");
+                int32 w = snprintf2(op_ptr, space, 
+                                    "{META_OP_ALTERNATION, 0, 0, 0, {0}},\n");
                 has_alternation = 1;
                 op_ptr += w;
                 space -= w;
@@ -219,7 +229,9 @@ main(int argc, char **argv) {
             case '(': {
                 group_stack[group_stack_ptr] = group_counter;
                 group_stack_ptr += 1;
-                int32 w = snprintf2(op_ptr, space, "{META_OP_GROUP_START, %d, 0, 0, {0}, {0}},\n", group_counter);
+                int32 w = snprintf2(op_ptr, space, 
+                                    "{META_OP_GROUP_START, %d, 0, 0, {0}},\n", 
+                                    group_counter);
                 op_ptr += w;
                 space -= w;
                 group_counter += 1;
@@ -229,25 +241,25 @@ main(int argc, char **argv) {
             case ')': {
                 group_stack_ptr -= 1;
                 int32 current_group = group_stack[group_stack_ptr];
-                int32 w = snprintf2(op_ptr, space, "{META_OP_GROUP_END, %d, 0, 0, {0}, {0}},\n", current_group);
+                int32 w = snprintf2(op_ptr, space, 
+                                    "{META_OP_GROUP_END, %d, 0, 0, {0}},\n", 
+                                    current_group);
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
                 break;
             }
             case '.': {
-                int32 w = snprintf2(op_ptr, space, "{META_OP_ANY, 0, 0, 0, {0}, {0}},\n");
+                int32 w = snprintf2(op_ptr, space, 
+                                    "{META_OP_ANY, 0, 0, 0, {0}},\n");
                 op_ptr += w;
                 space -= w;
-                is_ascii = 0;
                 regex_index += 1;
                 break;
             }
             case '[': {
                 int32 is_negated = 0;
                 unsigned int mask[8] = {0};
-                int32 high_cps[16] = {0};
-                int32 high_count = 0;
                 int32 first_char = 1;
                 regex_index += 1;
                 if (regex_string[regex_index] == '^') {
@@ -256,11 +268,13 @@ main(int argc, char **argv) {
                 }
                 while (regex_string[regex_index] != '\0') {
                     if (!first_char && regex_string[regex_index] == ']') break;
-                    if (regex_string[regex_index] == '[' && regex_string[regex_index + 1] == ':') {
+                    if (regex_string[regex_index] == '[' && 
+                        regex_string[regex_index + 1] == ':') {
                         int32 colon_idx = regex_index + 2;
                         int32 found_end = 0;
                         while (regex_string[colon_idx] != '\0') {
-                            if (regex_string[colon_idx] == ':' && regex_string[colon_idx + 1] == ']') {
+                            if (regex_string[colon_idx] == ':' && 
+                                regex_string[colon_idx + 1] == ']') {
                                 found_end = 1;
                                 break;
                             }
@@ -270,21 +284,47 @@ main(int argc, char **argv) {
                             char class_name[32] = {0};
                             int32 name_len = colon_idx - (regex_index + 2);
                             if (name_len < 32) {
-                                strncpy32(class_name, &regex_string[regex_index + 2], name_len);
+                                strncpy32(class_name, 
+                                          &regex_string[regex_index + 2], 
+                                          name_len);
                                 for (int32 c = 0; c < 256; c += 1) {
                                     int32 match = 0;
-                                    if (strcmp(class_name, "alnum") == 0) match = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'));
-                                    else if (strcmp(class_name, "alpha") == 0) match = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
-                                    else if (strcmp(class_name, "digit") == 0) match = (c >= '0' && c <= '9');
-                                    else if (strcmp(class_name, "space") == 0) match = (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f');
-                                    else if (strcmp(class_name, "lower") == 0) match = (c >= 'a' && c <= 'z');
-                                    else if (strcmp(class_name, "upper") == 0) match = (c >= 'A' && c <= 'Z');
-                                    else if (strcmp(class_name, "punct") == 0) match = ((c >= 33 && c <= 47) || (c >= 58 && c <= 64) || (c >= 91 && c <= 96) || (c >= 123 && c <= 126));
-                                    else if (strcmp(class_name, "xdigit") == 0) match = ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
-                                    else if (strcmp(class_name, "print") == 0) match = (c >= 32 && c <= 126);
-                                    else if (strcmp(class_name, "graph") == 0) match = (c >= 33 && c <= 126);
-                                    else if (strcmp(class_name, "blank") == 0) match = (c == ' ' || c == '\t');
-                                    else if (strcmp(class_name, "cntrl") == 0) match = ((c >= 0 && c <= 31) || (c == 127));
+                                    if (strcmp(class_name, "alnum") == 0) {
+                                        match = ((c >= 'a' && c <= 'z') || 
+                                                 (c >= 'A' && c <= 'Z') || 
+                                                 (c >= '0' && c <= '9'));
+                                    } else if (strcmp(class_name, "alpha") == 0) {
+                                        match = ((c >= 'a' && c <= 'z') || 
+                                                 (c >= 'A' && c <= 'Z'));
+                                    } else if (strcmp(class_name, "digit") == 0) {
+                                        match = (c >= '0' && c <= '9');
+                                    } else if (strcmp(class_name, "space") == 0) {
+                                        match = (c == ' ' || c == '\t' || 
+                                                 c == '\n' || c == '\r' || 
+                                                 c == '\v' || c == '\f');
+                                    } else if (strcmp(class_name, "lower") == 0) {
+                                        match = (c >= 'a' && c <= 'z');
+                                    } else if (strcmp(class_name, "upper") == 0) {
+                                        match = (c >= 'A' && c <= 'Z');
+                                    } else if (strcmp(class_name, "punct") == 0) {
+                                        match = ((c >= 33 && c <= 47) || 
+                                                 (c >= 58 && c <= 64) || 
+                                                 (c >= 91 && c <= 96) || 
+                                                 (c >= 123 && c <= 126));
+                                    } else if (strcmp(class_name, "xdigit") == 0) {
+                                        match = ((c >= '0' && c <= '9') || 
+                                                 (c >= 'a' && c <= 'f') || 
+                                                 (c >= 'A' && c <= 'F'));
+                                    } else if (strcmp(class_name, "print") == 0) {
+                                        match = (c >= 32 && c <= 126);
+                                    } else if (strcmp(class_name, "graph") == 0) {
+                                        match = (c >= 33 && c <= 126);
+                                    } else if (strcmp(class_name, "blank") == 0) {
+                                        match = (c == ' ' || c == '\t');
+                                    } else if (strcmp(class_name, "cntrl") == 0) {
+                                        match = ((c >= 0 && c <= 31) || 
+                                                 (c == 127));
+                                    }
                                     if (match) mask[c / 32] |= (1u << (c % 32));
                                 }
                             }
@@ -293,36 +333,31 @@ main(int argc, char **argv) {
                             continue;
                         }
                     }
-                    int32 c1_consumed = 0;
-                    int32 c1 = utf8_decode(&regex_string[regex_index], &c1_consumed);
+                    int32 c1 = (unsigned char)regex_string[regex_index];
                     int32 c2 = c1;
-                    regex_index += c1_consumed;
-                    if (regex_string[regex_index] == '-' && regex_string[regex_index + 1] != ']' && regex_string[regex_index + 1] != '\0') {
-                        int32 c2_consumed = 0;
-                        c2 = utf8_decode(&regex_string[regex_index + 1], &c2_consumed);
-                        regex_index += 1 + c2_consumed;
+                    regex_index += 1;
+                    if (regex_string[regex_index] == '-' && 
+                        regex_string[regex_index + 1] != ']' && 
+                        regex_string[regex_index + 1] != '\0') {
+                        c2 = (unsigned char)regex_string[regex_index + 1];
+                        regex_index += 2;
                     }
                     for (int32 c = c1; c <= c2; c += 1) {
-                        if (c > 127) {
-                            is_ascii = 0;
-                        }
-
-                        if (c < 256) {
-                            mask[c / 32] |= (1u << (c % 32));
-                        } else if (high_count < 16) {
-                            high_cps[high_count] = c;
-                            high_count += 1;
-                        }
+                        mask[c / 32] |= (1u << (c % 32));
                     }
                     first_char = 0;
                 }
                 if (regex_string[regex_index] == ']') regex_index += 1;
-                if (is_negated) for (int32 i = 0; i < 8; i += 1) mask[i] = ~mask[i];
-                if (high_count > 0) is_ascii = 0;
-                int32 w = snprintf2(op_ptr, space, "{META_OP_CLASS, 0, 0, 0, {%u, %u, %u, %u, %u, %u, %u, %u}, {%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d}},\n",
-                                    mask[0], mask[1], mask[2], mask[3], mask[4], mask[5], mask[6], mask[7], 
-                                    high_cps[0], high_cps[1], high_cps[2], high_cps[3], high_cps[4], high_cps[5], high_cps[6], high_cps[7],
-                                    high_cps[8], high_cps[9], high_cps[10], high_cps[11], high_cps[12], high_cps[13], high_cps[14], high_cps[15]);
+                if (is_negated) {
+                    for (int32 i = 0; i < 8; i += 1) {
+                        mask[i] = ~mask[i];
+                    }
+                }
+                int32 w = snprintf2(op_ptr, space, 
+                                    "{META_OP_CLASS, 0, 0, 0, {%u, %u, %u, %u, "
+                                    "%u, %u, %u, %u}},\n", 
+                                    mask[0], mask[1], mask[2], mask[3], mask[4], 
+                                    mask[5], mask[6], mask[7]);
                 op_ptr += w;
                 space -= w;
                 break;
@@ -330,33 +365,36 @@ main(int argc, char **argv) {
             case '\\': {
                 regex_index += 1;
                 if (regex_string[regex_index] != '\0') {
-                    int32 c_consumed = 0;
-                    int32 c_cp = utf8_decode(&regex_string[regex_index], &c_consumed);
-                    if (c_cp > 127) is_ascii = 0;
-                    int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d, 0, 0, {0}, {0}},\n", c_cp);
+                    int32 c_cp = (unsigned char)regex_string[regex_index];
+                    int32 w = snprintf2(op_ptr, space, 
+                                        "{META_OP_LITERAL, %d, 0, 0, {0}},\n", 
+                                        c_cp);
                     op_ptr += w;
                     space -= w;
-                    regex_index += c_consumed;
+                    regex_index += 1;
                 }
                 break;
             }
             default: {
-                if (cp > 127) is_ascii = 0;
-                int32 w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d, 0, 0, {0}, {0}},\n", cp);
+                int32 w = snprintf2(op_ptr, space, 
+                                    "{META_OP_LITERAL, %d, 0, 0, {0}},\n", cp);
                 op_ptr += w;
                 space -= w;
-                regex_index += consumed;
+                regex_index += 1;
                 break;
             }
             }
         }
-        int32 w = snprintf2(op_ptr, space, "{META_OP_END, 0, 0, 0, {0}, {0}}\n");
+        int32 w = snprintf2(op_ptr, space, "{META_OP_END, 0, 0, 0, {0}}\n");
         op_ptr += w;
         space -= w;
         paren_end = strchr(quote_end, ')');
         original_string_length = (int32)(quote_end - quote_start) + 1;
-        printf("&(MetaRegex){ .string = %.*s, .ops = { %s }, .has_start_anchor = %d, .has_end_anchor = %d, .is_ascii = %d, .has_alternation = %d }",
-               original_string_length, quote_start, op_buffer, has_start, has_end, is_ascii, has_alternation);
+        printf("&(MetaRegex){ .string = %.*s, .ops = { %s }, "
+               ".has_start_anchor = %d, .has_end_anchor = %d, "
+               ".has_alternation = %d }",
+               original_string_length, quote_start, op_buffer, has_start, 
+               has_end, has_alternation);
         cursor = (paren_end != NULL) ? paren_end + 1 : quote_end + 1;
     }
     printf("%s", cursor);

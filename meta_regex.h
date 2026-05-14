@@ -23,7 +23,6 @@ typedef struct MetaOp {
     int32 min;
     int32 max;
     uint32 mask[8];
-    int32 high_codepoints[16];
 } MetaOp;
 
 typedef struct MetaRegex {
@@ -31,7 +30,6 @@ typedef struct MetaRegex {
     MetaOp ops[64];
     int32 has_start_anchor;
     int32 has_end_anchor;
-    int32 is_ascii;
     int32 has_alternation;
 } MetaRegex;
 
