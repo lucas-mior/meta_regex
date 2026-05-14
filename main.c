@@ -20,14 +20,14 @@ main(void) {
     struct timespec t0_meta;
     struct timespec t1_meta;
 
-    RegexTest *tests_posix = xmemdup(ascii_tests, SIZEOF(ascii_tests));
-    RegexTest *tests_meta = xmemdup(ascii_tests, SIZEOF(ascii_tests));
+    RegexTest *tests_posix = xmemdup(ascii_against_ascii, SIZEOF(ascii_against_ascii));
+    RegexTest *tests_meta = xmemdup(ascii_against_ascii, SIZEOF(ascii_against_ascii));
 
-    setlocale(LC_ALL, "C");  // Only test against this kind of posix regex
+    setlocale(LC_ALL, "C.UTF-8");  // Only test against this kind of posix regex
     srand((uint)42);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
-    for (int32 i = 0; i < LENGTH(ascii_tests); i += 1) {
+    for (int32 i = 0; i < LENGTH(ascii_against_ascii); i += 1) {
         regex_t compiled_regex;
         char *input = tests_posix[i].input;
         char *regex = tests_posix[i].meta_regex->string;
@@ -47,7 +47,7 @@ main(void) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
-    for (int32 i = 0; i < LENGTH(ascii_tests); i += 1) {
+    for (int32 i = 0; i < LENGTH(ascii_against_ascii); i += 1) {
         char *input = tests_meta[i].input;
         MetaRegex *meta_regex = tests_meta[i].meta_regex;
 
@@ -57,11 +57,11 @@ main(void) {
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
-    for (int32 i = 0; i < LENGTH(ascii_tests); i += 1) {
+    for (int32 i = 0; i < LENGTH(ascii_against_ascii); i += 1) {
         RegexTest test_posix = tests_posix[i];
         RegexTest test_meta = tests_meta[i];
-        char *regex = ascii_tests[i].meta_regex->string;
-        char *input = ascii_tests[i].input;
+        char *regex = ascii_against_ascii[i].meta_regex->string;
+        char *input = ascii_against_ascii[i].input;
 
         printf(RED("%15s")" against "BLUE("%18s")": %d\n",
                input, regex, test_posix.result);
@@ -94,11 +94,11 @@ main(void) {
         }
     }
 
-    PRINT_TIMINGS(LENGTH(ascii_tests), t0_posix, t1_posix, "posix tests");
-    PRINT_TIMINGS(LENGTH(ascii_tests), t0_meta, t1_meta, "meta tests");
+    PRINT_TIMINGS(LENGTH(ascii_against_ascii), t0_posix, t1_posix, "posix tests");
+    PRINT_TIMINGS(LENGTH(ascii_against_ascii), t0_meta, t1_meta, "meta tests");
 
-    free2(tests_posix, SIZEOF(ascii_tests));
-    free2(tests_meta, SIZEOF(ascii_tests));
+    free2(tests_posix, SIZEOF(ascii_against_ascii));
+    free2(tests_meta, SIZEOF(ascii_against_ascii));
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
     {
@@ -115,7 +115,7 @@ main(void) {
             fuzzy[i].string_len = 1 + (rand() % 4096);
             fuzzy[i].input = malloc2(fuzzy[i].string_len + 1);
             ascii_random_string(fuzzy[i].input, fuzzy[i].string_len);
-            fuzzy[i].regex_idx = rand() % LENGTH(ascii_tests);
+            fuzzy[i].regex_idx = rand() % LENGTH(ascii_against_ascii);
         }
 
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
@@ -124,7 +124,7 @@ main(void) {
             int32 comp_error;
             char *pattern_str;
 
-            pattern_str = ascii_tests[fuzzy[i].regex_idx].meta_regex->string;
+            pattern_str = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
             if ((comp_error = regcomp(&compiled, pattern_str, REG_EXTENDED))) {
                 error("Error compiling %s: %s.\n", pattern_str, strerror(errno));
                 fatal(EXIT_FAILURE);
@@ -138,7 +138,7 @@ main(void) {
 
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
         for (int32 i = 0; i < fuzzy_len; i += 1) {
-            MetaRegex *meta_pattern = ascii_tests[fuzzy[i].regex_idx].meta_regex;
+            MetaRegex *meta_pattern = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex;
 
             fuzzy[i].result_meta
                 = meta_regex_match(meta_pattern,
@@ -153,7 +153,7 @@ main(void) {
             int32 result_meta = fuzzy[i].result_meta;
             if (result_posix != result_meta) {
                 char *input = fuzzy[i].input;
-                char *regex = ascii_tests[fuzzy[i].regex_idx].meta_regex->string;
+                char *regex = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
 
                 error("Mismatch:\n"
                       "input "RED("\"%s\"")" against regex "BLUE("\"%s\"")"\n",

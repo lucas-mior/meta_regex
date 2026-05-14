@@ -3,7 +3,7 @@
 
 #include "meta_tests.h"
 
-static RegexTest ascii_tests[] = {
+static RegexTest ascii_against_ascii[] = {
     {"abc5def",      R("[0-9]")},
     {"hello world",  R("[0-9]")},
     {"2hello world", R("^[0-9]")},
@@ -46,9 +46,6 @@ static RegexTest ascii_tests[] = {
     {"456 bar",      R("([0-9]+) (foo|bar)")},
     {"789 baz",      R("([0-9]+) (foo|bar)")},
     {"a",            R("[abc]")},
-    {"é",            R("é")},
-    {"é",            R("[é]")},
-    {"e",            R("^é$")},
     {"d",            R("[abc]")},
     {"x",            R("[^abc]")},
     {"a",            R("[^abc]")},
@@ -96,7 +93,7 @@ static RegexTest ascii_tests[] = {
     {"abb",          R("(a|ab)b")},
     {"abc",          R("((a|b)|c)c")},
     {"acc",          R("((a|b)|c)c")},
-    {"abc",          R("a(b|)c")}, /* Empty alternative */
+    {"abc",          R("a(b|)c")},
     {"ac",           R("a(b|)c")},
 
     {"ababab",       R("(ab){3}")},
@@ -113,13 +110,26 @@ static RegexTest ascii_tests[] = {
     {"5",            R("[[:alpha:]5]")},
     {"a",            R("[[:alpha:]5]")},
     {"!",            R("[[:alpha:]5]")},
-    {"a1B",          R("^[[:alnum:]_]+$")}, /* POSIX with literal underscore */
+    {"a1B",          R("^[[:alnum:]_]+$")},
     {"a_B",          R("^[[:alnum:]_]+$")},
+};
 
-    {"a",            R("é")},    /* Multibyte in regex should fail to match ASCII 'a' */
-    {"é",            R("a")},    /* ASCII in regex should fail to match multibyte 'é' */
-    {"abc",          R("a.c")},  /* Dot should match middle char */
-    {"aé c",         R("a.c")},  /* Dot should handle UTF-8 if current j is at 'é' */
+static RegexTest utf8_against_ascii[] = {
+    {"é",            R("e")},
+    {"é",            R("[e]")},
+    {"é",            R("^e$")},
+    {"a",            R("a")},
+    {"a",            R("a.c")},
+    {"aéc",          R("a.c")},
+};
+
+// dont test groups here
+static RegexTest utf8_against_utf8[] = {
+    {"é",            R("e"),     false},
+    {"é",            R("ê"),     false},
+    {"é",            R("é"),     true},
+    {"é",            R("[é]"),   true},
+    {"é",            R("^[é]$"), true},
 };
 
 #endif /* META_TESTS_ARRAY_H */
