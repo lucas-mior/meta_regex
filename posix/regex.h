@@ -209,7 +209,7 @@ typedef unsigned long int reg_syntax_t;
    stored in the pattern buffer, so changing this does not affect
    already-compiled regexps.  */
 extern reg_syntax_t re_syntax_options;
-
+
 #ifdef __USE_GNU
 /* Define combinations of the above bits for the standard possibilities.
    (The [[[ comments delimit what gets put into the Texinfo file, so
@@ -302,7 +302,6 @@ extern reg_syntax_t re_syntax_options;
 # define RE_DUP_MAX (0x7fff)
 #endif
 
-
 /* POSIX 'cflags' bits (i.e., information for 'regcomp').  */
 
 /* If this bit is set, then use extended regular expression syntax.
@@ -322,7 +321,6 @@ extern reg_syntax_t re_syntax_options;
    If not set, then returns differ between not matching and errors.  */
 #define REG_NOSUB (1 << 3)
 
-
 /* POSIX 'eflags' bits (i.e., information for regexec).  */
 
 /* If this bit is set, then the beginning-of-line operator doesn't match
@@ -338,7 +336,6 @@ extern reg_syntax_t re_syntax_options;
 /* Use PMATCH[0] to delimit the start and end of the search in the
    buffer.  */
 #define REG_STARTEND (1 << 2)
-
 
 /* If any error codes are removed, changed, or added, update the
    '__re_error_msgid' table in regcomp.c.  */
@@ -390,7 +387,7 @@ typedef enum
 #define REG_EEND	_REG_EEND
 #define REG_ESIZE	_REG_ESIZE
 #define REG_ERPAREN	_REG_ERPAREN
-
+
 /* This data structure represents a compiled pattern.  Before calling
    the pattern compiler, the fields 'buffer', 'allocated', 'fastmap',
    and 'translate' can be set.  After the pattern has been compiled,
@@ -476,7 +473,7 @@ struct re_pattern_buffer
 };
 
 typedef struct re_pattern_buffer regex_t;
-
+
 /* Type for byte offsets within the string.  POSIX mandates this.  */
 #ifdef _REGEX_LARGE_OFFSETS
 /* POSIX 1003.1-2008 requires that regoff_t be at least as wide as
@@ -490,7 +487,6 @@ typedef ssize_t regoff_t;
 typedef int regoff_t;
 #endif
 
-
 #ifdef __USE_GNU
 /* This is the structure we store register match data in.  See
    regex.texinfo for a full description of what registers match.  */
@@ -501,7 +497,6 @@ struct re_registers
   regoff_t *end;
 };
 
-
 /* If 'regs_allocated' is REGS_UNALLOCATED in the pattern buffer,
    're_match_2' returns information about at least this many registers
    the first time a 'regs' structure is passed.  */
@@ -509,7 +504,6 @@ struct re_registers
 #  define RE_NREGS 30
 # endif
 #endif
-
 
 /* POSIX specification for registers.  Aside from the different names than
    're_registers', POSIX uses an array of structures, instead of a
@@ -519,7 +513,7 @@ typedef struct
   regoff_t rm_so;  /* Byte offset from string's start to substring's start.  */
   regoff_t rm_eo;  /* Byte offset from string's start to substring's end.  */
 } regmatch_t;
-
+
 /* Declarations for routines.  */
 
 #ifndef _REGEX_NELTS
@@ -563,12 +557,10 @@ extern const char *re_compile_pattern (const char *__pattern, size_t __length,
 				       struct re_pattern_buffer *__buffer)
     _Attr_access_ ((__read_only__, 1, 2));
 
-
 /* Compile a fastmap for the compiled pattern in BUFFER; used to
    accelerate searches.  Return 0 if successful and -2 if was an
    internal error.  */
 extern int re_compile_fastmap (struct re_pattern_buffer *__buffer);
-
 
 /* Search in the string STRING (with length LENGTH) for the pattern
    compiled into BUFFER.  Start searching at position START, for RANGE
@@ -581,7 +573,6 @@ extern regoff_t re_search (struct re_pattern_buffer *__buffer,
 			   struct re_registers *__regs)
     _Attr_access_ ((__read_only__, 2, 3));
 
-
 /* Like 're_search', but search in the concatenation of STRING1 and
    STRING2.  Also, stop searching at index START + STOP.  */
 extern regoff_t re_search_2 (struct re_pattern_buffer *__buffer,
@@ -593,14 +584,12 @@ extern regoff_t re_search_2 (struct re_pattern_buffer *__buffer,
     _Attr_access_ ((__read_only__, 2, 3))
     _Attr_access_ ((__read_only__, 4, 5));
 
-
 /* Like 're_search', but return how many characters in STRING the regexp
    in BUFFER matched, starting at position START.  */
 extern regoff_t re_match (struct re_pattern_buffer *__buffer,
 			  const char *__String, regoff_t __length,
 			  regoff_t __start, struct re_registers *__regs)
     _Attr_access_ ((__read_only__, 2, 3));
-
 
 /* Relates to 're_match' as 're_search_2' relates to 're_search'.  */
 extern regoff_t re_match_2 (struct re_pattern_buffer *__buffer,
@@ -610,7 +599,6 @@ extern regoff_t re_match_2 (struct re_pattern_buffer *__buffer,
 			    regoff_t __stop)
     _Attr_access_ ((__read_only__, 2, 3))
     _Attr_access_ ((__read_only__, 4, 5));
-
 
 /* Set REGS to hold NUM_REGS registers, storing them in STARTS and
    ENDS.  Subsequent matches using BUFFER and REGS will use this memory

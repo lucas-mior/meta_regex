@@ -123,7 +123,7 @@ static bin_tree_t *duplicate_tree (const bin_tree_t *src, re_dfa_t *dfa);
 static void free_token (re_token_t *node);
 static reg_errcode_t free_tree (void *extra, bin_tree_t *node);
 static reg_errcode_t mark_opt_subexp (void *extra, bin_tree_t *node);
-
+
 /* This table gives an error message for each of the error codes listed
    in regex.h.  Obviously the order here has to be same as there.
    POSIX doesn't require that we do anything for REG_NOERROR,
@@ -203,7 +203,7 @@ static const size_t __re_error_msgid_idx[] =
     REG_ESIZE_IDX,
     REG_ERPAREN_IDX
   };
-
+
 /* Entry points for GNU code.  */
 
 /* re_compile_pattern is the GNU regular expression compiler: it
@@ -241,7 +241,6 @@ weak_alias (__re_compile_pattern, re_compile_pattern)
 /* This has no initializer because initialized variables in Emacs
    become read-only after dumping.  */
 reg_syntax_t re_syntax_options;
-
 
 /* Specify the precise syntax of regexps for compilation.  This provides
    for compatibility for various utilities which historically have
@@ -420,7 +419,7 @@ re_compile_fastmap_iter (regex_t *bufp, const re_dfastate_t *init_state,
 	}
     }
 }
-
+
 /* Entry point for POSIX code.  */
 /* regcomp takes a regular expression as a string and compiles it.
 
@@ -549,7 +548,6 @@ regerror (int errcode, const regex_t *__restrict preg, char *__restrict errbuf,
 }
 weak_alias (__regerror, regerror)
 
-
 #ifdef RE_ENABLE_I18N
 /* This static array is used for the map to single-byte characters when
    UTF-8 is used.  Otherwise we would allocate memory just to initialize
@@ -577,7 +575,6 @@ static const bitset_t utf8_sb_map =
 # endif
 };
 #endif
-
 
 static void
 free_dfa_content (re_dfa_t *dfa)
@@ -626,7 +623,6 @@ free_dfa_content (re_dfa_t *dfa)
   re_free (dfa);
 }
 
-
 /* Free dynamically allocated space used by PREG.  */
 
 void
@@ -649,7 +645,7 @@ regfree (regex_t *preg)
 }
 libc_hidden_def (__regfree)
 weak_alias (__regfree, regfree)
-
+
 /* Entry points compatible with 4.2 BSD regex library.  We don't define
    them unless specifically requested.  */
 
@@ -718,7 +714,7 @@ __libc_regcomp_freemem (void)
 #endif
 
 #endif /* _REGEX_RE_COMP */
-
+
 /* Internal entry point.
    Compile the regular expression PATTERN, whose length is LENGTH.
    SYNTAX indicate regular expression's syntax.  */
@@ -1074,7 +1070,7 @@ create_initial_state (re_dfa_t *dfa)
   re_node_set_free (&init_nodes);
   return REG_NOERROR;
 }
-
+
 #ifdef RE_ENABLE_I18N
 /* If it is possible to do searching in single byte encoding instead of UTF-8
    to speed things up, set dfa->mb_cur_max to 1, clear is_utf8 and change
@@ -1156,7 +1152,7 @@ optimize_utf8 (re_dfa_t *dfa)
   dfa->has_mb_node = dfa->nbackref > 0 || has_period;
 }
 #endif
-
+
 /* Analyze the structure tree, and calculate "first", "next", "edest",
    "eclosure", and "inveclosure".  */
 
@@ -1763,7 +1759,7 @@ calc_eclosure_iter (re_node_set *new_set, re_dfa_t *dfa, Idx node, bool root)
   *new_set = eclosure;
   return REG_NOERROR;
 }
-
+
 /* Functions for token which are used in the parser.  */
 
 /* Fetch a token from INPUT.
@@ -2099,7 +2095,7 @@ peek_token_bracket (re_token_t *token, re_string_t *input, reg_syntax_t syntax)
     }
   return 1;
 }
-
+
 /* Functions for parser.  */
 
 /* Entry point of the parser.
@@ -3794,7 +3790,7 @@ fetch_number (re_string_t *input, re_token_t *token, reg_syntax_t syntax)
     }
   return num;
 }
-
+
 #ifdef RE_ENABLE_I18N
 static void
 free_charset (re_charset_t *cset)
@@ -3810,7 +3806,7 @@ free_charset (re_charset_t *cset)
   re_free (cset);
 }
 #endif /* RE_ENABLE_I18N */
-
+
 /* Functions for binary tree operation.  */
 
 /* Create a tree node.  */
@@ -3893,7 +3889,6 @@ free_tree (void *extra, bin_tree_t *node)
   free_token (&node->token);
   return REG_NOERROR;
 }
-
 
 /* Duplicate the node SRC, and return new node.  This is a preorder
    visit similar to the one implemented by the generic visitor, but

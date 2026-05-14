@@ -38,7 +38,7 @@ static void build_upper_buffer (re_string_t *pstr);
 static void re_string_translate_buffer (re_string_t *pstr);
 static unsigned int re_string_context_at (const re_string_t *input, Idx idx,
 					  int eflags) __attribute__ ((pure));
-
+
 /* Functions for string operation.  */
 
 /* This function allocate the buffers.  It is necessary to call
@@ -174,7 +174,6 @@ re_string_realloc_buffers (re_string_t *pstr, Idx new_buf_len)
   pstr->bufs_len = new_buf_len;
   return REG_NOERROR;
 }
-
 
 static void
 re_string_construct_common (const char *str, Idx len, re_string_t *pstr,
@@ -961,7 +960,7 @@ re_string_context_at (const re_string_t *input, Idx idx, int eflags)
       return IS_NEWLINE (c) && input->newline_anchor ? CONTEXT_NEWLINE : 0;
     }
 }
-
+
 /* Functions for set operation.  */
 
 static reg_errcode_t
@@ -1403,7 +1402,6 @@ re_node_set_remove_at (re_node_set *set, Idx idx)
   for (; idx < set->nelem; idx++)
     set->elems[idx] = set->elems[idx + 1];
 }
-
 
 /* Add the token TOKEN to dfa->nodes, and return the index of the token.
    Or return -1 if an error occurred.  */

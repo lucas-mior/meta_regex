@@ -423,7 +423,6 @@ struct re_string_t
 };
 typedef struct re_string_t re_string_t;
 
-
 struct re_dfa_t;
 typedef struct re_dfa_t re_dfa_t;
 
@@ -687,7 +686,6 @@ struct re_dfa_t
   (re_node_set_remove_at (set, re_node_set_contains (set, id) - 1))
 #define re_node_set_empty(p) ((p)->nelem = 0)
 #define re_node_set_free(set) re_free ((set)->elems)
-
 
 typedef enum
 {
@@ -708,7 +706,6 @@ typedef struct
     wchar_t wch;
   } opr;
 } bracket_elem_t;
-
 
 /* Functions for bitset_t operation.  */
 
