@@ -10,8 +10,6 @@
 #include "meta_regex.h"
 #include "meta_regex_match.c"
 
-#define NFUZZY 1000
-
 #include "meta_tests.h"
 #include "gen/meta_tests_array2.h"
 
@@ -99,54 +97,55 @@ main(void) {
     PRINT_TIMINGS(LENGTH(regex_tests), t0_posix, t1_posix, "posix tests");
     PRINT_TIMINGS(LENGTH(regex_tests), t0_meta, t1_meta, "meta tests");
 
-    printf("\n--- Starting Fuzzy Testing (%d iterations) ---\n", NFUZZY);
+    printf("\n--- Starting Fuzzy Testing ---\n");
     {
-        FuzzyTest *fuzzy_cases = malloc2(SIZEOF(FuzzyTest)*NFUZZY);
+        int32 fuzzy_len = 1000;
+        FuzzyTest *fuzzy = malloc2(SIZEOF(FuzzyTest)*fuzzy_len);
 
-        for (int32 i = 0; i < NFUZZY; i += 1) {
+        for (int32 i = 0; i < fuzzy_len; i += 1) {
             int32 length = 1 + (rand() % 4096);
-            fuzzy_cases[i].string_size = length + 1;
-            fuzzy_cases[i].string = malloc2(fuzzy_cases[i].string_size);
-            utf8_random_string(fuzzy_cases[i].string, length);
-            fuzzy_cases[i].regex_idx = rand() % LENGTH(regex_tests);
+            fuzzy[i].string_size = length + 1;
+            fuzzy[i].string = malloc2(fuzzy[i].string_size);
+            utf8_random_string(fuzzy[i].string, length);
+            fuzzy[i].regex_idx = rand() % LENGTH(regex_tests);
         }
 
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
-        for (int32 i = 0; i < NFUZZY; i += 1) {
+        for (int32 i = 0; i < fuzzy_len; i += 1) {
             regex_t compiled;
             int32 comp_error;
             char *pattern_str;
 
-            pattern_str = regex_tests[fuzzy_cases[i].regex_idx].meta_regex->string;
+            pattern_str = regex_tests[fuzzy[i].regex_idx].meta_regex->string;
             if ((comp_error = regcomp(&compiled, pattern_str, REG_EXTENDED))) {
                 error("Error compiling %s: %s.\n", pattern_str, strerror(errno));
                 fatal(EXIT_FAILURE);
             }
-            fuzzy_cases[i].result_posix
-                = regexec(&compiled, fuzzy_cases[i].string,
-                          MAX_MATCHES, fuzzy_cases[i].pmatch_posix, 0);
+            fuzzy[i].result_posix
+                = regexec(&compiled, fuzzy[i].string,
+                          MAX_MATCHES, fuzzy[i].pmatch_posix, 0);
             regfree(&compiled);
         }
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
 
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
-        for (int32 i = 0; i < NFUZZY; i += 1) {
-            MetaRegex *meta_pattern = regex_tests[fuzzy_cases[i].regex_idx].meta_regex;
+        for (int32 i = 0; i < fuzzy_len; i += 1) {
+            MetaRegex *meta_pattern = regex_tests[fuzzy[i].regex_idx].meta_regex;
 
-            fuzzy_cases[i].result_meta
+            fuzzy[i].result_meta
                 = meta_regex_match(meta_pattern,
-                                   fuzzy_cases[i].string,
+                                   fuzzy[i].string,
                                    MAX_MATCHES,
-                                   fuzzy_cases[i].pmatch_meta);
+                                   fuzzy[i].pmatch_meta);
         }
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
-        for (int32 i = 0; i < NFUZZY; i += 1) {
-            int32 result_posix = fuzzy_cases[i].result_posix;
-            int32 result_meta = fuzzy_cases[i].result_meta;
+        for (int32 i = 0; i < fuzzy_len; i += 1) {
+            int32 result_posix = fuzzy[i].result_posix;
+            int32 result_meta = fuzzy[i].result_meta;
             if (result_posix != result_meta) {
-                char *string = fuzzy_cases[i].string;
-                char *regex = regex_tests[fuzzy_cases[i].regex_idx].meta_regex->string;
+                char *string = fuzzy[i].string;
+                char *regex = regex_tests[fuzzy[i].regex_idx].meta_regex->string;
 
                 error("Error: result mismatch for regex "
                       RED("\"%s\"")" against "BLUE("\"%s\"")"\n", regex, string);
@@ -155,13 +154,13 @@ main(void) {
             }
         }
 
-        PRINT_TIMINGS(NFUZZY, t0_posix, t1_posix, "fuzzy posix tests");
-        PRINT_TIMINGS(NFUZZY, t0_meta, t1_meta, "fuzzy meta tests");
+        PRINT_TIMINGS(fuzzy_len, t0_posix, t1_posix, "fuzzy posix tests");
+        PRINT_TIMINGS(fuzzy_len, t0_meta, t1_meta, "fuzzy meta tests");
 
-        for (int32 i = 0; i < NFUZZY; i += 1) {
-            free2(fuzzy_cases[i].string, fuzzy_cases[i].string_size);
+        for (int32 i = 0; i < fuzzy_len; i += 1) {
+            free2(fuzzy[i].string, fuzzy[i].string_size);
         }
-        free2(fuzzy_cases, SIZEOF(FuzzyTest)*NFUZZY);
+        free2(fuzzy, SIZEOF(FuzzyTest)*fuzzy_len);
     }
 
     free2(tests_posix, SIZEOF(regex_tests));
