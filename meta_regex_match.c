@@ -50,14 +50,14 @@ eval_choice_point(MetaOp *ops, char *orig, char *curr,
     int32 res;
     int32 depth;
 
-    alt_start = ops;
-    longest_match = -1;
-
     if (nmatch > 32) {
         copy_size = 32;
     } else {
         copy_size = nmatch;
     }
+
+    alt_start = ops;
+    longest_match = -1;
 
     while (1) {
         pass_pmatch = NULL;
@@ -146,6 +146,12 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
     int32 has_alt;
     size_t copy_size;
 
+    if (nmatch > 32) {
+        copy_size = 32;
+    } else {
+        copy_size = nmatch;
+    }
+
     if (ops[0].type == META_OP_END) {
         return (int32)(current_string - original_string);
     }
@@ -166,6 +172,61 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
         }
         return match_at_recursive(end_op, original_string, current_string, 
                                   nmatch, pmatch);
+    }
+
+    if (ops[0].type == META_OP_SPLIT) {
+        longest_match = -1;
+
+        pass_pmatch = NULL;
+        if (pmatch != NULL) {
+            for (size_t i = 0; i < copy_size; i += 1) {
+                temp_pmatch[i] = pmatch[i];
+            }
+            pass_pmatch = temp_pmatch;
+        }
+        res = match_at_recursive(ops + ops[0].value, original_string, current_string, nmatch, pass_pmatch);
+        if (res >= 0) {
+            if (pmatch == NULL) {
+                return res;
+            }
+            if (res > longest_match) {
+                longest_match = res;
+                for (size_t i = 0; i < copy_size; i += 1) {
+                    best_pmatch[i] = pass_pmatch[i];
+                }
+            }
+        }
+
+        pass_pmatch = NULL;
+        if (pmatch != NULL) {
+            for (size_t i = 0; i < copy_size; i += 1) {
+                temp_pmatch[i] = pmatch[i];
+            }
+            pass_pmatch = temp_pmatch;
+        }
+        res = match_at_recursive(ops + ops[0].min, original_string, current_string, nmatch, pass_pmatch);
+        if (res >= 0) {
+            if (pmatch == NULL) {
+                return res;
+            }
+            if (res > longest_match) {
+                longest_match = res;
+                for (size_t i = 0; i < copy_size; i += 1) {
+                    best_pmatch[i] = pass_pmatch[i];
+                }
+            }
+        }
+
+        if (longest_match >= 0 && pmatch != NULL) {
+            for (size_t i = 0; i < copy_size; i += 1) {
+                pmatch[i] = best_pmatch[i];
+            }
+        }
+        return longest_match;
+    }
+
+    if (ops[0].type == META_OP_JUMP) {
+        return match_at_recursive(ops + ops[0].value, original_string, current_string, nmatch, pmatch);
     }
 
     if (ops[0].type == META_OP_GROUP_START) {
@@ -274,12 +335,6 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
         }
 
         longest_match = -1;
-        
-        if (nmatch > 32) {
-            copy_size = 32;
-        } else {
-            copy_size = nmatch;
-        }
 
         while (max_s >= s) {
             pass_pmatch = NULL;

@@ -14,7 +14,9 @@ enum MetaOpType {
     META_OP_PLUS,
     META_OP_OPTIONAL,
     META_OP_ALTERNATION,
-    META_OP_BOUNDED
+    META_OP_BOUNDED,
+    META_OP_SPLIT,
+    META_OP_JUMP
 };
 
 typedef struct MetaOp {
@@ -27,7 +29,7 @@ typedef struct MetaOp {
 
 typedef struct MetaRegex {
     char *string;
-    MetaOp ops[64];
+    MetaOp ops[512];
     int32 has_start_anchor;
     int32 has_end_anchor;
     int32 has_alternation;

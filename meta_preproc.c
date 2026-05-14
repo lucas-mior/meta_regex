@@ -58,7 +58,7 @@ main(int argc, char **argv) {
         char *paren_end;
         char raw_string[256] = {0};
         char regex_string[256] = {0};
-        char op_buffer[4096] = {0};
+        char op_buffer[16384] = {0};
         char *op_ptr = op_buffer;
         int32 space = SIZEOF(op_buffer);
         int32 prefix_length;
@@ -157,18 +157,105 @@ main(int argc, char **argv) {
                 break;
             }
             case '*': {
+                int32 is_group = (temp_ops_count > 0 && temp_ops[temp_ops_count - 1].type == META_OP_GROUP_END);
+                if (is_group) {
+                    int32 target_start = temp_ops_count - 1;
+                    int32 depth = 0;
+                    for (int32 i = target_start; i >= 0; i -= 1) {
+                        if (temp_ops[i].type == META_OP_GROUP_END) {
+                            depth += 1;
+                        } else if (temp_ops[i].type == META_OP_GROUP_START) {
+                            depth -= 1;
+                            if (depth == 0) {
+                                target_start = i;
+                                break;
+                            }
+                        }
+                    }
+                    int32 group_len = temp_ops_count - target_start;
+
+                    for (int32 i = temp_ops_count - 1; i >= target_start; i -= 1) {
+                        temp_ops[i + 1] = temp_ops[i];
+                    }
+                    temp_ops_count += 1;
+
+                    temp_ops[target_start].type = META_OP_SPLIT;
+                    temp_ops[target_start].value = 1;
+                    temp_ops[target_start].min = group_len + 2;
+
+                    temp_ops[temp_ops_count].type = META_OP_JUMP;
+                    temp_ops[temp_ops_count].value = -(group_len + 1);
+                    temp_ops_count += 1;
+                    regex_index += 1;
+                    break;
+                }
+
                 temp_ops[temp_ops_count].type = META_OP_STAR;
                 temp_ops_count += 1;
                 regex_index += 1;
                 break;
             }
             case '+': {
+                int32 is_group = (temp_ops_count > 0 && temp_ops[temp_ops_count - 1].type == META_OP_GROUP_END);
+                if (is_group) {
+                    int32 target_start = temp_ops_count - 1;
+                    int32 depth = 0;
+                    for (int32 i = target_start; i >= 0; i -= 1) {
+                        if (temp_ops[i].type == META_OP_GROUP_END) {
+                            depth += 1;
+                        } else if (temp_ops[i].type == META_OP_GROUP_START) {
+                            depth -= 1;
+                            if (depth == 0) {
+                                target_start = i;
+                                break;
+                            }
+                        }
+                    }
+                    int32 group_len = temp_ops_count - target_start;
+
+                    temp_ops[temp_ops_count].type = META_OP_SPLIT;
+                    temp_ops[temp_ops_count].value = -group_len;
+                    temp_ops[temp_ops_count].min = 1;
+                    temp_ops_count += 1;
+                    regex_index += 1;
+                    break;
+                }
+
                 temp_ops[temp_ops_count].type = META_OP_PLUS;
                 temp_ops_count += 1;
                 regex_index += 1;
                 break;
             }
             case '?': {
+                int32 is_group = (temp_ops_count > 0 && temp_ops[temp_ops_count - 1].type == META_OP_GROUP_END);
+                if (is_group) {
+                    int32 target_start = temp_ops_count - 1;
+                    int32 depth = 0;
+                    for (int32 i = target_start; i >= 0; i -= 1) {
+                        if (temp_ops[i].type == META_OP_GROUP_END) {
+                            depth += 1;
+                        } else if (temp_ops[i].type == META_OP_GROUP_START) {
+                            depth -= 1;
+                            if (depth == 0) {
+                                target_start = i;
+                                break;
+                            }
+                        }
+                    }
+                    int32 group_len = temp_ops_count - target_start;
+
+                    for (int32 i = temp_ops_count - 1; i >= target_start; i -= 1) {
+                        temp_ops[i + 1] = temp_ops[i];
+                    }
+                    temp_ops_count += 1;
+
+                    temp_ops[target_start].type = META_OP_SPLIT;
+                    temp_ops[target_start].value = 1;
+                    temp_ops[target_start].min = group_len + 1;
+                    regex_index += 1;
+                    break;
+                }
+
                 temp_ops[temp_ops_count].type = META_OP_OPTIONAL;
                 temp_ops_count += 1;
                 regex_index += 1;
@@ -204,12 +291,12 @@ main(int argc, char **argv) {
                     valid = 1;
                     temp_idx += 1;
                 }
+                
                 if (valid) {
-                    int32 target_start = temp_ops_count - 1;
-                    int32 is_group = 0;
-                    if (temp_ops[target_start].type == META_OP_GROUP_END) {
+                    int32 is_group = (temp_ops_count > 0 && temp_ops[temp_ops_count - 1].type == META_OP_GROUP_END);
+                    if (is_group) {
+                        int32 target_start = temp_ops_count - 1;
                         int32 depth = 0;
-                        is_group = 1;
                         for (int32 i = target_start; i >= 0; i -= 1) {
                             if (temp_ops[i].type == META_OP_GROUP_END) {
                                 depth += 1;
@@ -221,28 +308,58 @@ main(int argc, char **argv) {
                                 }
                             }
                         }
-                    }
-
-                    if (is_group && m == n && m > 0) {
-                        int32 target_len = temp_ops_count - target_start;
-                        for (int32 k = 1; k < m; k += 1) {
-                            for (int32 i = 0; i < target_len; i += 1) {
-                                temp_ops[temp_ops_count] = temp_ops[target_start + i];
+                        int32 group_len = temp_ops_count - target_start;
+                        ParsedOp group_buf[256];
+                        
+                        for (int32 i = 0; i < group_len; i += 1) {
+                            group_buf[i] = temp_ops[target_start + i];
+                        }
+                        
+                        temp_ops_count = target_start;
+                        
+                        for (int32 k = 0; k < m; k += 1) {
+                            for (int32 i = 0; i < group_len; i += 1) {
+                                temp_ops[temp_ops_count] = group_buf[i];
                                 temp_ops_count += 1;
                             }
                         }
-                    } else if (is_group && m == 0 && n == 0) {
-                        temp_ops_count = target_start;
+                        
+                        if (n == -1) {
+                            temp_ops[temp_ops_count].type = META_OP_SPLIT;
+                            temp_ops[temp_ops_count].value = 1;
+                            temp_ops[temp_ops_count].min = group_len + 2;
+                            temp_ops_count += 1;
+                            for (int32 i = 0; i < group_len; i += 1) {
+                                temp_ops[temp_ops_count] = group_buf[i];
+                                temp_ops_count += 1;
+                            }
+                            temp_ops[temp_ops_count].type = META_OP_JUMP;
+                            temp_ops[temp_ops_count].value = -(group_len + 1);
+                            temp_ops_count += 1;
+                        } else {
+                            for (int32 k = m; k < n; k += 1) {
+                                temp_ops[temp_ops_count].type = META_OP_SPLIT;
+                                temp_ops[temp_ops_count].value = 1;
+                                temp_ops[temp_ops_count].min = group_len + 1;
+                                temp_ops_count += 1;
+                                for (int32 i = 0; i < group_len; i += 1) {
+                                    temp_ops[temp_ops_count] = group_buf[i];
+                                    temp_ops_count += 1;
+                                }
+                            }
+                        }
+                        regex_index = temp_idx;
+                        break;
                     } else {
                         temp_ops[temp_ops_count].type = META_OP_BOUNDED;
                         temp_ops[temp_ops_count].min = m;
                         temp_ops[temp_ops_count].max = n;
                         temp_ops_count += 1;
+                        regex_index = temp_idx;
+                        break;
                     }
-
-                    regex_index = temp_idx;
-                    break;
                 }
+                
                 temp_ops[temp_ops_count].type = META_OP_LITERAL;
                 temp_ops[temp_ops_count].value = cp;
                 temp_ops_count += 1;
@@ -422,6 +539,10 @@ main(int argc, char **argv) {
                 w = snprintf2(op_ptr, space, "{META_OP_GROUP_START, %d, 0, 0, {0}},\n", temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_GROUP_END) {
                 w = snprintf2(op_ptr, space, "{META_OP_GROUP_END, %d, 0, 0, {0}},\n", temp_ops[i].value);
+            } else if (temp_ops[i].type == META_OP_SPLIT) {
+                w = snprintf2(op_ptr, space, "{META_OP_SPLIT, %d, %d, 0, {0}},\n", temp_ops[i].value, temp_ops[i].min);
+            } else if (temp_ops[i].type == META_OP_JUMP) {
+                w = snprintf2(op_ptr, space, "{META_OP_JUMP, %d, 0, 0, {0}},\n", temp_ops[i].value);
             } else {
                 char *type_str = "META_OP_UNKNOWN";
                 if (temp_ops[i].type == META_OP_STAR) type_str = "META_OP_STAR";
