@@ -202,7 +202,7 @@ typedef unsigned long int bitset_word_t;
 
 typedef bitset_word_t bitset_t[BITSET_WORDS];
 typedef bitset_word_t *re_bitset_ptr_t;
-typedef const bitset_word_t *re_const_bitset_ptr_t;
+typedef bitset_word_t *re_const_bitset_ptr_t;
 
 #define PREV_WORD_CONSTRAINT 0x0001
 #define PREV_NOTWORD_CONSTRAINT 0x0002
@@ -370,7 +370,7 @@ struct re_string_t
 {
   /* Indicate the raw buffer which is the original string passed as an
      argument of regexec(), re_search(), etc..  */
-  const unsigned char *raw_mbs;
+  unsigned char *raw_mbs;
   /* Store the multibyte string.  In case of "case insensitive mode" like
      REG_ICASE, upper cases of the string are stored, otherwise MBS points
      the same address that RAW_MBS points.  */
@@ -591,7 +591,7 @@ typedef struct
 {
   /* The string object corresponding to the input string.  */
   re_string_t input;
-  const re_dfa_t *const dfa;
+  re_dfa_t *dfa;
   /* EFLAGS of the argument of regexec.  */
   int eflags;
   /* Where the matching ends.  */
@@ -722,7 +722,7 @@ bitset_clear (bitset_t set, Idx i)
 }
 
 static inline bool
-bitset_contain (const bitset_t set, Idx i)
+bitset_contain (bitset_t set, Idx i)
 {
   return (set[i / BITSET_WORD_BITS] >> i % BITSET_WORD_BITS) & 1;
 }
@@ -743,7 +743,7 @@ bitset_set_all (bitset_t set)
 }
 
 static inline void
-bitset_copy (bitset_t dest, const bitset_t src)
+bitset_copy (bitset_t dest, bitset_t src)
 {
   memcpy (dest, src, sizeof (bitset_t));
 }
@@ -761,7 +761,7 @@ bitset_not (bitset_t set)
 }
 
 static inline void
-bitset_merge (bitset_t dest, const bitset_t src)
+bitset_merge (bitset_t dest, bitset_t src)
 {
   int bitset_i;
   for (bitset_i = 0; bitset_i < BITSET_WORDS; ++bitset_i)
@@ -769,7 +769,7 @@ bitset_merge (bitset_t dest, const bitset_t src)
 }
 
 static inline void
-bitset_mask (bitset_t dest, const bitset_t src)
+bitset_mask (bitset_t dest, bitset_t src)
 {
   int bitset_i;
   for (bitset_i = 0; bitset_i < BITSET_WORDS; ++bitset_i)
@@ -780,7 +780,7 @@ bitset_mask (bitset_t dest, const bitset_t src)
 /* Functions for re_string.  */
 static int
 __attribute__ ((pure, unused))
-re_string_char_size_at (const re_string_t *pstr, Idx idx)
+re_string_char_size_at (re_string_t *pstr, Idx idx)
 {
   int byte_idx;
   if (pstr->mb_cur_max == 1)
@@ -793,7 +793,7 @@ re_string_char_size_at (const re_string_t *pstr, Idx idx)
 
 static wint_t
 __attribute__ ((pure, unused))
-re_string_wchar_at (const re_string_t *pstr, Idx idx)
+re_string_wchar_at (re_string_t *pstr, Idx idx)
 {
   if (pstr->mb_cur_max == 1)
     return (wint_t) pstr->mbs[idx];
@@ -806,19 +806,19 @@ re_string_wchar_at (const re_string_t *pstr, Idx idx)
 
 static int
 __attribute__ ((pure, unused))
-re_string_elem_size_at (const re_string_t *pstr, Idx idx)
+re_string_elem_size_at (re_string_t *pstr, Idx idx)
 {
 # ifdef _LIBC
-  const unsigned char *p, *extra;
-  const int32_t *table, *indirect;
+  unsigned char *p, *extra;
+  int32_t *table, *indirect;
   uint32_t nrules = _NL_CURRENT_WORD (LC_COLLATE, _NL_COLLATE_NRULES);
 
   if (nrules != 0)
     {
-      table = (const int32_t *) _NL_CURRENT (LC_COLLATE, _NL_COLLATE_TABLEMB);
-      extra = (const unsigned char *)
+      table = (int32_t *) _NL_CURRENT (LC_COLLATE, _NL_COLLATE_TABLEMB);
+      extra = (unsigned char *)
 	_NL_CURRENT (LC_COLLATE, _NL_COLLATE_EXTRAMB);
-      indirect = (const int32_t *) _NL_CURRENT (LC_COLLATE,
+      indirect = (int32_t *) _NL_CURRENT (LC_COLLATE,
 						_NL_COLLATE_INDIRECTMB);
       p = pstr->mbs + idx;
       findidx (table, indirect, extra, &p, pstr->len - idx);

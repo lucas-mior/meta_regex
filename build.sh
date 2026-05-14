@@ -53,7 +53,9 @@ if [ "$CC" = "clang" ]; then
 fi
 
 trace_on
-ctags --kinds-C=+l+d cbase/*.c cbase/*.h ./*.h ./*.c 2> /dev/null || true
+ctags --kinds-C=+l+d \
+    cbase/*.c cbase/*.h ./*.h ./*.c posix/*.c posix/*.h \
+    2> /dev/null || true
 vtags.sed tags > .tags.vim       2> /dev/null || true
 trace_off
 
