@@ -31,18 +31,17 @@ static re_sub_match_last_t *match_ctx_add_sublast(re_sub_match_top_t *subtop,
 static void sift_ctx_init(re_sift_context_t *sctx, re_dfastate_t **sifted_sts,
                           re_dfastate_t **limited_sts, Idx last_node,
                           Idx last_str_idx);
-static reg_errcode_t re_search_internal(regex_t *preg, char *string,
-                                        Idx length, Idx start, Idx last_start,
-                                        Idx stop, int64 nmatch,
-                                        regmatch_t pmatch[], int eflags);
-static regoff_t re_search_2_stub(struct re_pattern_buffer *bufp,
-                                 char *string1, Idx length1,
-                                 char *string2, Idx length2, Idx start,
-                                 regoff_t range, struct re_registers *regs,
-                                 Idx stop, bool ret_len);
-static regoff_t re_search_stub(struct re_pattern_buffer *bufp,
-                               char *string, Idx length, Idx start,
-                               regoff_t range, Idx stop,
+static reg_errcode_t re_search_internal(regex_t *preg, char *string, Idx length,
+                                        Idx start, Idx last_start, Idx stop,
+                                        int64 nmatch, regmatch_t pmatch[],
+                                        int eflags);
+static regoff_t re_search_2_stub(struct re_pattern_buffer *bufp, char *string1,
+                                 Idx length1, char *string2, Idx length2,
+                                 Idx start, regoff_t range,
+                                 struct re_registers *regs, Idx stop,
+                                 bool ret_len);
+static regoff_t re_search_stub(struct re_pattern_buffer *bufp, char *string,
+                               Idx length, Idx start, regoff_t range, Idx stop,
                                struct re_registers *regs, bool ret_len);
 static unsigned re_copy_regs(struct re_registers *regs, regmatch_t *pmatch,
                              Idx nregs, int regs_allocated);
@@ -58,9 +57,9 @@ static reg_errcode_t push_fail_stack(struct re_fail_stack_t *fs, Idx str_idx,
                                      Idx dest_node, Idx nregs, regmatch_t *regs,
                                      regmatch_t *prevregs,
                                      re_node_set *eps_via_nodes);
-static reg_errcode_t set_regs(regex_t *preg,
-                              re_match_context_t *mctx, int64 nmatch,
-                              regmatch_t *pmatch, bool fl_backtrack);
+static reg_errcode_t set_regs(regex_t *preg, re_match_context_t *mctx,
+                              int64 nmatch, regmatch_t *pmatch,
+                              bool fl_backtrack);
 static reg_errcode_t free_fail_stack_return(struct re_fail_stack_t *fs);
 
 #ifdef RE_ENABLE_I18N
@@ -80,12 +79,12 @@ static reg_errcode_t update_cur_sifted_state(re_match_context_t *mctx,
 static reg_errcode_t add_epsilon_src_nodes(re_dfa_t *dfa,
                                            re_node_set *dest_nodes,
                                            re_node_set *candidates);
-static bool check_dst_limits(re_match_context_t *mctx,
-                             re_node_set *limits, Idx dst_node,
-                             Idx dst_idx, Idx src_node, Idx src_idx);
-static int check_dst_limits_calc_pos_1(re_match_context_t *mctx,
-                                       int boundaries, Idx subexp_idx,
-                                       Idx from_node, Idx bkref_idx);
+static bool check_dst_limits(re_match_context_t *mctx, re_node_set *limits,
+                             Idx dst_node, Idx dst_idx, Idx src_node,
+                             Idx src_idx);
+static int check_dst_limits_calc_pos_1(re_match_context_t *mctx, int boundaries,
+                                       Idx subexp_idx, Idx from_node,
+                                       Idx bkref_idx);
 static int check_dst_limits_calc_pos(re_match_context_t *mctx, Idx limit,
                                      Idx subexp_idx, Idx node, Idx str_idx,
                                      Idx bkref_idx);
@@ -126,8 +125,8 @@ static reg_errcode_t get_subexp_sub(re_match_context_t *mctx,
                                     re_sub_match_top_t *sub_top,
                                     re_sub_match_last_t *sub_last,
                                     Idx bkref_node, Idx bkref_str);
-static Idx find_subexp_node(re_dfa_t *dfa, re_node_set *nodes,
-                            Idx subexp_idx, int type);
+static Idx find_subexp_node(re_dfa_t *dfa, re_node_set *nodes, Idx subexp_idx,
+                            int type);
 static reg_errcode_t check_arrival(re_match_context_t *mctx,
                                    state_array_t *path, Idx top_node,
                                    Idx top_str, Idx last_node, Idx last_str,
@@ -151,16 +150,14 @@ static bool build_trtable(re_dfa_t *dfa, re_dfastate_t *state);
 static int check_node_accept_bytes(re_dfa_t *dfa, Idx node_idx,
                                    re_string_t *input, Idx idx);
 #ifdef _LIBC
-static uint find_collation_sequence_value(uchar *mbs,
-                                                  int64 name_len);
+static uint find_collation_sequence_value(uchar *mbs, int64 name_len);
 #endif /* _LIBC */
 #endif /* RE_ENABLE_I18N */
-static Idx group_nodes_into_DFAstates(re_dfa_t *dfa,
-                                      re_dfastate_t *state,
+static Idx group_nodes_into_DFAstates(re_dfa_t *dfa, re_dfastate_t *state,
                                       re_node_set *states_node,
                                       bitset_t *states_ch);
-static bool check_node_accept(re_match_context_t *mctx,
-                              re_token_t *node, Idx idx);
+static bool check_node_accept(re_match_context_t *mctx, re_token_t *node,
+                              Idx idx);
 static reg_errcode_t extend_buffers(re_match_context_t *mctx, int min_len);
 
 /* Entry point for POSIX code.  */
@@ -181,8 +178,8 @@ static reg_errcode_t extend_buffers(re_match_context_t *mctx, int min_len);
    EFLAGS is invalid.  */
 
 int
-regexec(regex_t *__restrict preg, char *__restrict string,
-        int64 nmatch, regmatch_t pmatch[_REGEX_NELTS(nmatch)], int eflags) {
+regexec(regex_t *__restrict preg, char *__restrict string, int64 nmatch,
+        regmatch_t pmatch[_REGEX_NELTS(nmatch)], int eflags) {
     reg_errcode_t err;
     Idx start, length;
     re_dfa_t *dfa = preg->buffer;
@@ -261,17 +258,16 @@ compat_symbol(libc, __compat_regexec, regexec, GLIBC_2_0);
    match failure, -2 on error.  */
 
 regoff_t
-re_match(struct re_pattern_buffer *bufp, char *string, Idx length,
-         Idx start, struct re_registers *regs) {
+re_match(struct re_pattern_buffer *bufp, char *string, Idx length, Idx start,
+         struct re_registers *regs) {
     return re_search_stub(bufp, string, length, start, 0, length, regs, true);
 }
 #ifdef _LIBC
 weak_alias(__re_match, re_match)
 #endif
 
-    regoff_t
-    re_search(struct re_pattern_buffer *bufp, char *string, Idx length,
-              Idx start, regoff_t range, struct re_registers *regs) {
+    regoff_t re_search(struct re_pattern_buffer *bufp, char *string, Idx length,
+                       Idx start, regoff_t range, struct re_registers *regs) {
     return re_search_stub(bufp, string, length, start, range, length, regs,
                           false);
 }
@@ -280,8 +276,8 @@ weak_alias(__re_search, re_search)
 #endif
 
     regoff_t re_match_2(struct re_pattern_buffer *bufp, char *string1,
-                        Idx length1, char *string2, Idx length2,
-                        Idx start, struct re_registers *regs, Idx stop) {
+                        Idx length1, char *string2, Idx length2, Idx start,
+                        struct re_registers *regs, Idx stop) {
     return re_search_2_stub(bufp, string1, length1, string2, length2, start, 0,
                             regs, stop, true);
 }
@@ -289,10 +285,9 @@ weak_alias(__re_search, re_search)
 weak_alias(__re_match_2, re_match_2)
 #endif
 
-    regoff_t
-    re_search_2(struct re_pattern_buffer *bufp, char *string1,
-                Idx length1, char *string2, Idx length2, Idx start,
-                regoff_t range, struct re_registers *regs, Idx stop) {
+    regoff_t re_search_2(struct re_pattern_buffer *bufp, char *string1,
+                         Idx length1, char *string2, Idx length2, Idx start,
+                         regoff_t range, struct re_registers *regs, Idx stop) {
     return re_search_2_stub(bufp, string1, length1, string2, length2, start,
                             range, regs, stop, false);
 }
@@ -301,10 +296,9 @@ weak_alias(__re_search_2, re_search_2)
 #endif
 
     static regoff_t
-    re_search_2_stub(struct re_pattern_buffer *bufp, char *string1,
-                     Idx length1, char *string2, Idx length2, Idx start,
-                     regoff_t range, struct re_registers *regs, Idx stop,
-                     bool ret_len) {
+    re_search_2_stub(struct re_pattern_buffer *bufp, char *string1, Idx length1,
+                     char *string2, Idx length2, Idx start, regoff_t range,
+                     struct re_registers *regs, Idx stop, bool ret_len) {
     char *str;
     regoff_t rval;
     Idx len;
@@ -553,9 +547,9 @@ weak_alias(__re_set_registers, re_set_registers)
    (0 <= LAST_START && LAST_START <= LENGTH)  */
 
 static reg_errcode_t __attribute_warn_unused_result__
-re_search_internal(regex_t *preg, char *string, Idx length,
-                   Idx start, Idx last_start, Idx stop, int64 nmatch,
-                   regmatch_t pmatch[], int eflags) {
+re_search_internal(regex_t *preg, char *string, Idx length, Idx start,
+                   Idx last_start, Idx stop, int64 nmatch, regmatch_t pmatch[],
+                   int eflags) {
     reg_errcode_t err;
     re_dfa_t *dfa = preg->buffer;
     Idx left_lim, right_lim;
@@ -685,8 +679,7 @@ re_search_internal(regex_t *preg, char *string, Idx length,
 
         forward_match_found_start_or_reached_end:
             if (__glibc_unlikely(match_first == right_lim)) {
-                ch = match_first >= length ? 0
-                                           : (uchar)string[match_first];
+                ch = match_first >= length ? 0 : (uchar)string[match_first];
                 if (!fastmap[t ? t[ch] : ch]) {
                     goto free_return;
                 }
@@ -697,8 +690,7 @@ re_search_internal(regex_t *preg, char *string, Idx length,
         case 5:
             /* Fastmap without multi-byte translation, match backwards.  */
             while (match_first >= left_lim) {
-                ch = match_first >= length ? 0
-                                           : (uchar)string[match_first];
+                ch = match_first >= length ? 0 : (uchar)string[match_first];
                 if (fastmap[t ? t[ch] : ch]) {
                     break;
                 }
@@ -717,8 +709,8 @@ re_search_internal(regex_t *preg, char *string, Idx length,
                 /* If MATCH_FIRST is out of the valid range, reconstruct the
                    buffers.  */
                 int64 offset = match_first - mctx.input.raw_mbs_idx;
-                if (__glibc_unlikely(
-                        offset >= (int64)mctx.input.valid_raw_len)) {
+                if (__glibc_unlikely(offset
+                                     >= (int64)mctx.input.valid_raw_len)) {
                     err = re_string_reconstruct(&mctx.input, match_first,
                                                 eflags);
                     if (__glibc_unlikely(err != REG_NOERROR)) {
@@ -1143,8 +1135,8 @@ check_halt_node_context(re_dfa_t *dfa, Idx node, uint context) {
    match the context, return the node.  */
 
 static Idx
-check_halt_state_context(re_match_context_t *mctx,
-                         re_dfastate_t *state, Idx idx) {
+check_halt_state_context(re_match_context_t *mctx, re_dfastate_t *state,
+                         Idx idx) {
     Idx i;
     uint context;
     DEBUG_ASSERT(state->halt);
@@ -1768,8 +1760,8 @@ sub_epsilon_src_nodes(re_dfa_t *dfa, Idx node, re_node_set *dest_nodes,
 }
 
 static bool
-check_dst_limits(re_match_context_t *mctx, re_node_set *limits,
-                 Idx dst_node, Idx dst_idx, Idx src_node, Idx src_idx) {
+check_dst_limits(re_match_context_t *mctx, re_node_set *limits, Idx dst_node,
+                 Idx dst_idx, Idx src_node, Idx src_idx) {
     re_dfa_t *dfa = mctx->dfa;
     Idx lim_idx, src_pos, dst_pos;
 
@@ -1884,9 +1876,8 @@ check_dst_limits_calc_pos_1(re_match_context_t *mctx, int boundaries,
 }
 
 static int
-check_dst_limits_calc_pos(re_match_context_t *mctx, Idx limit,
-                          Idx subexp_idx, Idx from_node, Idx str_idx,
-                          Idx bkref_idx) {
+check_dst_limits_calc_pos(re_match_context_t *mctx, Idx limit, Idx subexp_idx,
+                          Idx from_node, Idx str_idx, Idx bkref_idx) {
     struct re_backref_cache_entry *lim = mctx->bkref_ents + limit;
     int boundaries;
 
@@ -2535,8 +2526,7 @@ get_subexp(re_match_context_t *mctx, Idx bkref_node, Idx bkref_str_idx) {
     /* Return if we have already checked BKREF_NODE at BKREF_STR_IDX.  */
     Idx cache_idx = search_cur_bkref_entry(mctx, bkref_str_idx);
     if (cache_idx != -1) {
-        struct re_backref_cache_entry *entry
-            = mctx->bkref_ents + cache_idx;
+        struct re_backref_cache_entry *entry = mctx->bkref_ents + cache_idx;
         do {
             if (entry->node == bkref_node) {
                 return REG_NOERROR; /* We already checked it.  */
@@ -2720,8 +2710,7 @@ get_subexp_sub(re_match_context_t *mctx, re_sub_match_top_t *sub_top,
          E.g. RE: (a){2}  */
 
 static Idx
-find_subexp_node(re_dfa_t *dfa, re_node_set *nodes, Idx subexp_idx,
-                 int type) {
+find_subexp_node(re_dfa_t *dfa, re_node_set *nodes, Idx subexp_idx, int type) {
     Idx cls_idx;
     for (cls_idx = 0; cls_idx < nodes->nelem; ++cls_idx) {
         Idx cls_node = nodes->elems[cls_idx];
@@ -2959,8 +2948,8 @@ check_arrival_add_next_nodes(re_match_context_t *mctx, Idx str_idx,
 */
 
 static reg_errcode_t
-check_arrival_expand_ecl(re_dfa_t *dfa, re_node_set *cur_nodes,
-                         Idx ex_subexp, int type) {
+check_arrival_expand_ecl(re_dfa_t *dfa, re_node_set *cur_nodes, Idx ex_subexp,
+                         int type) {
     reg_errcode_t err;
     Idx idx, outside_node;
     re_node_set new_nodes;
@@ -3003,8 +2992,8 @@ check_arrival_expand_ecl(re_dfa_t *dfa, re_node_set *cur_nodes,
    problematic append it to DST_NODES.  */
 
 static reg_errcode_t __attribute_warn_unused_result__
-check_arrival_expand_ecl_sub(re_dfa_t *dfa, re_node_set *dst_nodes,
-                             Idx target, Idx ex_subexp, int type) {
+check_arrival_expand_ecl_sub(re_dfa_t *dfa, re_node_set *dst_nodes, Idx target,
+                             Idx ex_subexp, int type) {
     Idx cur_node;
     for (cur_node = target; !re_node_set_contains(dst_nodes, cur_node);) {
         bool ok;
@@ -3521,8 +3510,8 @@ error_return:
 #endif
 
 static int
-check_node_accept_bytes(re_dfa_t *dfa, Idx node_idx,
-                        re_string_t *input, Idx str_idx) {
+check_node_accept_bytes(re_dfa_t *dfa, Idx node_idx, re_string_t *input,
+                        Idx str_idx) {
     re_token_t *node = dfa->nodes + node_idx;
     int char_len, elem_len;
     Idx i;
@@ -3602,8 +3591,7 @@ check_node_accept_bytes(re_dfa_t *dfa, Idx node_idx,
     if (node->type == COMPLEX_BRACKET) {
         re_charset_t *cset = node->opr.mbcset;
 #ifdef _LIBC
-        uchar *pin
-            = ((uchar *)re_string_get_buffer(input) + str_idx);
+        uchar *pin = ((uchar *)re_string_get_buffer(input) + str_idx);
         Idx j;
         uint32_t nrules;
 #endif /* _LIBC */
@@ -3638,8 +3626,8 @@ check_node_accept_bytes(re_dfa_t *dfa, Idx node_idx,
 
             /* match with collating_symbol?  */
             if (cset->ncoll_syms) {
-                extra = (uchar *)_NL_CURRENT(
-                    LC_COLLATE, _NL_COLLATE_SYMB_EXTRAMB);
+                extra = (uchar *)_NL_CURRENT(LC_COLLATE,
+                                             _NL_COLLATE_SYMB_EXTRAMB);
             }
             for (i = 0; i < cset->ncoll_syms; ++i) {
                 /* The compiler might warn that extra may be used uninitialized,
@@ -3688,14 +3676,12 @@ check_node_accept_bytes(re_dfa_t *dfa, Idx node_idx,
             /* match with equivalence_class?  */
             if (cset->nequiv_classes) {
                 uchar *cp = pin;
-                table = (int32_t *)_NL_CURRENT(LC_COLLATE,
-                                                     _NL_COLLATE_TABLEMB);
-                weights = (uchar *)_NL_CURRENT(
-                    LC_COLLATE, _NL_COLLATE_WEIGHTMB);
-                extra = (uchar *)_NL_CURRENT(LC_COLLATE,
-                                                           _NL_COLLATE_EXTRAMB);
+                table = (int32_t *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_TABLEMB);
+                weights
+                    = (uchar *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_WEIGHTMB);
+                extra = (uchar *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_EXTRAMB);
                 indirect = (int32_t *)_NL_CURRENT(LC_COLLATE,
-                                                        _NL_COLLATE_INDIRECTMB);
+                                                  _NL_COLLATE_INDIRECTMB);
                 int32_t idx = findidx(table, indirect, extra, &cp, elem_len);
                 int32_t rule = idx >> 24;
                 idx &= 0xffffff;
@@ -3748,18 +3734,18 @@ find_collation_sequence_value(uchar *mbs, int64 mbs_len) {
     if (nrules == 0) {
         if (mbs_len == 1) {
             /* No valid character.  Match it as a single byte character.  */
-            uchar *collseq = (uchar *)_NL_CURRENT(
-                LC_COLLATE, _NL_COLLATE_COLLSEQMB);
+            uchar *collseq
+                = (uchar *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_COLLSEQMB);
             return collseq[mbs[0]];
         }
         return UINT_MAX;
     } else {
         int32_t idx;
-        uchar *extra = (uchar *)_NL_CURRENT(
-            LC_COLLATE, _NL_COLLATE_SYMB_EXTRAMB);
-        int32_t extrasize = (uchar *)_NL_CURRENT(
-                                LC_COLLATE, _NL_COLLATE_SYMB_EXTRAMB + 1)
-                            - extra;
+        uchar *extra
+            = (uchar *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_SYMB_EXTRAMB);
+        int32_t extrasize
+            = (uchar *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_SYMB_EXTRAMB + 1)
+              - extra;
 
         for (idx = 0; idx < extrasize;) {
             int mbs_cnt;
@@ -3804,8 +3790,7 @@ find_collation_sequence_value(uchar *mbs, int64 mbs_len) {
    byte of the INPUT.  */
 
 static bool
-check_node_accept(re_match_context_t *mctx, re_token_t *node,
-                  Idx idx) {
+check_node_accept(re_match_context_t *mctx, re_token_t *node, Idx idx) {
     uchar ch;
     ch = re_string_byte_at(&mctx->input, idx);
     switch (node->type) {
@@ -3842,8 +3827,7 @@ check_node_accept(re_match_context_t *mctx, re_token_t *node,
     if (node->constraint) {
         /* The node has constraints.  Check whether the current context
            satisfies the constraints.  */
-        uint context
-            = re_string_context_at(&mctx->input, idx, mctx->eflags);
+        uint context = re_string_context_at(&mctx->input, idx, mctx->eflags);
         if (NOT_SATISFY_NEXT_CONSTRAINT(node->constraint, context)) {
             return false;
         }
@@ -3922,7 +3906,7 @@ match_ctx_init(re_match_context_t *mctx, int eflags, Idx n) {
     if (n > 0) {
         /* Avoid overflow.  */
         int64 max_object_size = MAX(sizeof(struct re_backref_cache_entry),
-                                     sizeof(re_sub_match_top_t *));
+                                    sizeof(re_sub_match_top_t *));
         if (__glibc_unlikely(MIN(IDX_MAX, SIZE_MAX / max_object_size) < n)) {
             return REG_ESPACE;
         }

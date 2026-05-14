@@ -17,17 +17,13 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-static void re_string_construct_common(char *str, Idx len,
-                                       re_string_t *pstr,
+static void re_string_construct_common(char *str, Idx len, re_string_t *pstr,
                                        RE_TRANSLATE_TYPE trans, bool icase,
                                        re_dfa_t *dfa);
-static re_dfastate_t *create_ci_newstate(re_dfa_t *dfa,
-                                         re_node_set *nodes,
+static re_dfastate_t *create_ci_newstate(re_dfa_t *dfa, re_node_set *nodes,
                                          re_hashval_t hash);
-static re_dfastate_t *create_cd_newstate(re_dfa_t *dfa,
-                                         re_node_set *nodes,
-                                         uint context,
-                                         re_hashval_t hash);
+static re_dfastate_t *create_cd_newstate(re_dfa_t *dfa, re_node_set *nodes,
+                                         uint context, re_hashval_t hash);
 static reg_errcode_t re_string_realloc_buffers(re_string_t *pstr,
                                                Idx new_buf_len);
 #ifdef RE_ENABLE_I18N
@@ -36,8 +32,8 @@ static reg_errcode_t build_wcs_upper_buffer(re_string_t *pstr);
 #endif /* RE_ENABLE_I18N */
 static void build_upper_buffer(re_string_t *pstr);
 static void re_string_translate_buffer(re_string_t *pstr);
-static uint re_string_context_at(re_string_t *input, Idx idx,
-                                         int eflags) __attribute__((pure));
+static uint re_string_context_at(re_string_t *input, Idx idx, int eflags)
+    __attribute__((pure));
 
 /* Functions for string operation.  */
 
@@ -158,8 +154,7 @@ re_string_realloc_buffers(re_string_t *pstr, Idx new_buf_len) {
     }
 #endif /* RE_ENABLE_I18N  */
     if (pstr->mbs_allocated) {
-        uchar *new_mbs
-            = re_realloc(pstr->mbs, uchar, new_buf_len);
+        uchar *new_mbs = re_realloc(pstr->mbs, uchar, new_buf_len);
         if (__glibc_unlikely(new_mbs == NULL)) {
             return REG_ESPACE;
         }
@@ -171,8 +166,7 @@ re_string_realloc_buffers(re_string_t *pstr, Idx new_buf_len) {
 
 static void
 re_string_construct_common(char *str, Idx len, re_string_t *pstr,
-                           RE_TRANSLATE_TYPE trans, bool icase,
-                           re_dfa_t *dfa) {
+                           RE_TRANSLATE_TYPE trans, bool icase, re_dfa_t *dfa) {
     pstr->raw_mbs = (uchar *)str;
     pstr->len = len;
     pstr->raw_len = len;
@@ -300,8 +294,7 @@ build_wcs_upper_buffer(re_string_t *pstr) {
             remain_len = end_idx - byte_idx;
             prev_st = pstr->cur_state;
             mbclen = __mbrtowc(
-                &wc,
-                ((char *)pstr->raw_mbs + pstr->raw_mbs_idx + byte_idx),
+                &wc, ((char *)pstr->raw_mbs + pstr->raw_mbs_idx + byte_idx),
                 remain_len, &pstr->cur_state);
             if (__glibc_likely(0 < mbclen && mbclen < (int64)-2)) {
                 wchar_t wcu = __towupper(wc);
@@ -482,8 +475,8 @@ re_string_skip_chars(re_string_t *pstr, Idx new_raw_idx, wint_t *last_wc) {
         wchar_t wc2;
         Idx remain_len = pstr->raw_len - rawbuf_idx;
         prev_st = pstr->cur_state;
-        mbclen = __mbrtowc(&wc2, (char *)pstr->raw_mbs + rawbuf_idx,
-                           remain_len, &pstr->cur_state);
+        mbclen = __mbrtowc(&wc2, (char *)pstr->raw_mbs + rawbuf_idx, remain_len,
+                           &pstr->cur_state);
         if (__glibc_unlikely(mbclen == (int64)-2 || mbclen == (int64)-1
                              || mbclen == 0)) {
             /* We treat these cases as a single byte character.  */
@@ -1418,8 +1411,7 @@ calc_state_hash(re_node_set *nodes, uint context) {
            optimization.  */
 
 static re_dfastate_t *__attribute_warn_unused_result__
-re_acquire_state(reg_errcode_t *err, re_dfa_t *dfa,
-                 re_node_set *nodes) {
+re_acquire_state(reg_errcode_t *err, re_dfa_t *dfa, re_node_set *nodes) {
     re_hashval_t hash;
     re_dfastate_t *new_state;
     struct re_state_table_entry *spot;
@@ -1465,8 +1457,8 @@ re_acquire_state(reg_errcode_t *err, re_dfa_t *dfa,
            optimization.  */
 
 static re_dfastate_t *__attribute_warn_unused_result__
-re_acquire_state_context(reg_errcode_t *err, re_dfa_t *dfa,
-                         re_node_set *nodes, uint context) {
+re_acquire_state_context(reg_errcode_t *err, re_dfa_t *dfa, re_node_set *nodes,
+                         uint context) {
     re_hashval_t hash;
     re_dfastate_t *new_state;
     struct re_state_table_entry *spot;
@@ -1503,8 +1495,7 @@ re_acquire_state_context(reg_errcode_t *err, re_dfa_t *dfa,
    indicates the error code if failed.  */
 
 static reg_errcode_t __attribute_warn_unused_result__
-register_state(re_dfa_t *dfa, re_dfastate_t *newstate,
-               re_hashval_t hash) {
+register_state(re_dfa_t *dfa, re_dfastate_t *newstate, re_hashval_t hash) {
     struct re_state_table_entry *spot;
     reg_errcode_t err;
     Idx i;
@@ -1556,8 +1547,7 @@ free_state(re_dfastate_t *state) {
    Return the new state if succeeded, otherwise return NULL.  */
 
 static re_dfastate_t *__attribute_warn_unused_result__
-create_ci_newstate(re_dfa_t *dfa, re_node_set *nodes,
-                   re_hashval_t hash) {
+create_ci_newstate(re_dfa_t *dfa, re_node_set *nodes, re_hashval_t hash) {
     Idx i;
     reg_errcode_t err;
     re_dfastate_t *newstate;
@@ -1604,8 +1594,8 @@ create_ci_newstate(re_dfa_t *dfa, re_node_set *nodes,
    Return the new state if succeeded, otherwise return NULL.  */
 
 static re_dfastate_t *__attribute_warn_unused_result__
-create_cd_newstate(re_dfa_t *dfa, re_node_set *nodes,
-                   uint context, re_hashval_t hash) {
+create_cd_newstate(re_dfa_t *dfa, re_node_set *nodes, uint context,
+                   re_hashval_t hash) {
     Idx i, nctx_nodes = 0;
     reg_errcode_t err;
     re_dfastate_t *newstate;
