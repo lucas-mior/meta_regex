@@ -151,7 +151,9 @@ static RegexTest ascii_against_ascii[] = {
     {"abababab",     R("(ab){1,3}")},
     {" ",            R("[^[:alnum:]]")},
     {"!",            R("[^[:alnum:][:space:]]")},
-    {"\n",           R(".")}
+    {"\n",           R(".")},
+    {" ",            R("\\s")},
+    {"a",            R("\\S")}
 };
 
 static RegexTest utf8_against_ascii[] = {
