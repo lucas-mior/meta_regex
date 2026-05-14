@@ -22,7 +22,7 @@ typedef struct MetaOp {
     int32 value;
     int32 min;
     int32 max;
-    unsigned int mask[8];
+    uint32 mask[8];
     int32 high_codepoints[16];
 } MetaOp;
 
@@ -31,6 +31,7 @@ typedef struct MetaRegex {
     MetaOp ops[64];
     int32 has_start_anchor;
     int32 has_end_anchor;
+    int32 is_ascii;
 } MetaRegex;
 
 #define R(...) (&(MetaRegex){ .string = __VA_ARGS__ })
