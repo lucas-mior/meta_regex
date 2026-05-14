@@ -97,6 +97,9 @@ main(void) {
     PRINT_TIMINGS(LENGTH(regex_tests), t0_posix, t1_posix, "posix tests");
     PRINT_TIMINGS(LENGTH(regex_tests), t0_meta, t1_meta, "meta tests");
 
+    free2(tests_posix, SIZEOF(regex_tests));
+    free2(tests_meta, SIZEOF(regex_tests));
+
     printf("\n--- Starting Fuzzy Testing ---\n");
     {
         int32 fuzzy_len = 100;
@@ -161,9 +164,6 @@ main(void) {
         }
         free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
     }
-
-    free2(tests_posix, SIZEOF(regex_tests));
-    free2(tests_meta, SIZEOF(regex_tests));
 
     exit(EXIT_SUCCESS);
 }

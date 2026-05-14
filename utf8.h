@@ -83,4 +83,14 @@ utf8_random_string(char *buffer, int32 max_bytes) {
     buffer[current_byte] = '\0';
 }
 
+static void
+ascii_random_string(char *buffer, int32 max_bytes) {
+    int32 current_byte = 0;
+    while (current_byte < max_bytes - 4) {
+        buffer[current_byte] = (char)(32 + (rand() % 95));
+        current_byte += 1;
+    }
+    buffer[current_byte] = '\0';
+}
+
 #endif
