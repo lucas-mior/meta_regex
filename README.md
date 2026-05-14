@@ -89,7 +89,8 @@ cc gen/your_code_baked.c -o your_program
 
 ## TODO
 - Improve performance on ASCII input
-- Implement level 1 UTS 18 support
+- Implement
+  [Basic Unicode Support](https://www.unicode.org/reports/tr18/#Basic_Unicode_Support)
 - Organize tests:
   - ASCII input with group capturing against LC_ALL=C posix (reference test array)
   - ASCII input with group capturing against LC_ALL=C posix (fuzzy)
