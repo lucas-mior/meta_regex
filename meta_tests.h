@@ -6,7 +6,7 @@
 #define MAX_MATCHES 10
 
 typedef struct RegexTest {
-    char *string;
+    char *input;
     MetaRegex *meta_regex;
     int32 result;
     regmatch_t pmatch[MAX_MATCHES];
@@ -14,7 +14,7 @@ typedef struct RegexTest {
 } RegexTest;
 
 typedef struct FuzzyTest {
-    char *string;
+    char *input;
     int32 string_len;
     int32 regex_idx;
     int32 result_posix;

@@ -27,7 +27,7 @@ main(void) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
     for (int32 i = 0; i < LENGTH(ascii_tests); i += 1) {
         regex_t compiled_regex;
-        char *string = tests_posix[i].string;
+        char *input = tests_posix[i].input;
         char *regex = tests_posix[i].meta_regex->string;
         int32 compiled;
 
@@ -40,7 +40,7 @@ main(void) {
             exit(EXIT_FAILURE);
         }
         tests_posix[i].result
-            = regexec(&compiled_regex, string,
+            = regexec(&compiled_regex, input,
                       MAX_MATCHES, tests_posix[i].pmatch, 0);
         regfree(&compiled_regex);
     }
@@ -48,11 +48,11 @@ main(void) {
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
     for (int32 i = 0; i < LENGTH(ascii_tests); i += 1) {
-        char *string = tests_meta[i].string;
+        char *input = tests_meta[i].input;
         MetaRegex *meta_regex = tests_meta[i].meta_regex;
 
         tests_meta[i].result
-            = meta_regex_match(meta_regex, string,
+            = meta_regex_match(meta_regex, input,
                                MAX_MATCHES, tests_meta[i].pmatch);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
@@ -61,14 +61,14 @@ main(void) {
         RegexTest test_posix = tests_posix[i];
         RegexTest test_meta = tests_meta[i];
         char *regex = ascii_tests[i].meta_regex->string;
-        char *string = ascii_tests[i].string;
+        char *input = ascii_tests[i].input;
 
         printf(RED("%15s")" against "BLUE("%18s")": %d\n",
-               string, regex, test_posix.result);
+               input, regex, test_posix.result);
         if (test_posix.result != test_meta.result) {
-            error("Error: result mismatch for string "
+            error("Error: result mismatch for input "
                   RED("\"%s\"")" against regex "BLUE("\"%s\"")"\n",
-                  string, regex);
+                  input, regex);
             error("posix: %d, meta: %d\n", test_posix.result, test_meta.result);
             exit(EXIT_FAILURE);
         }
@@ -84,8 +84,8 @@ main(void) {
                 }
 
                 error("Mismatch:\n"
-                      "string "RED("%s")" against regex "BLUE("%s")" (group %d)\n",
-                      string, regex, m);
+                      "input "RED("%s")" against regex "BLUE("%s")" (group %d)\n",
+                      input, regex, m);
 
                 error("posix: rm_so=%d, rm_eo=%d\n",
                       posix_match.rm_so, posix_match.rm_eo);
@@ -114,8 +114,8 @@ main(void) {
 
         for (int32 i = 0; i < fuzzy_len; i += 1) {
             fuzzy[i].string_len = 1 + (rand() % 4096);
-            fuzzy[i].string = malloc2(fuzzy[i].string_len + 1);
-            ascii_random_string(fuzzy[i].string, fuzzy[i].string_len);
+            fuzzy[i].input = malloc2(fuzzy[i].string_len + 1);
+            ascii_random_string(fuzzy[i].input, fuzzy[i].string_len);
             fuzzy[i].regex_idx = rand() % LENGTH(ascii_tests);
         }
 
@@ -131,7 +131,7 @@ main(void) {
                 fatal(EXIT_FAILURE);
             }
             fuzzy[i].result_posix
-                = regexec(&compiled, fuzzy[i].string,
+                = regexec(&compiled, fuzzy[i].input,
                           MAX_MATCHES, fuzzy[i].pmatch_posix, 0);
             regfree(&compiled);
         }
@@ -143,7 +143,7 @@ main(void) {
 
             fuzzy[i].result_meta
                 = meta_regex_match(meta_pattern,
-                                   fuzzy[i].string,
+                                   fuzzy[i].input,
                                    MAX_MATCHES,
                                    fuzzy[i].pmatch_meta);
         }
@@ -153,22 +153,22 @@ main(void) {
             int32 result_posix = fuzzy[i].result_posix;
             int32 result_meta = fuzzy[i].result_meta;
             if (result_posix != result_meta) {
-                char *string = fuzzy[i].string;
+                char *input = fuzzy[i].input;
                 char *regex = ascii_tests[fuzzy[i].regex_idx].meta_regex->string;
 
                 error("Mismatch:\n"
-                      "string "RED("\"%s\"")" against regex "BLUE("\"%s\"")"\n",
-                      string, regex);
+                      "input "RED("\"%s\"")" against regex "BLUE("\"%s\"")"\n",
+                      input, regex);
                 error("posix: %d, meta: %d\n", result_posix, result_meta);
                 fprintf(mismatches, "%s against %s [posix=%d][meta=%d]\n",
-                                    string, regex, result_posix, result_meta);
+                                    input, regex, result_posix, result_meta);
             }
         }
         PRINT_TIMINGS(fuzzy_len, t0_posix, t1_posix, "fuzzy ascii posix");
         PRINT_TIMINGS(fuzzy_len, t0_meta, t1_meta, "fuzzy ascii meta");
 
         for (int32 i = 0; i < fuzzy_len; i += 1) {
-            free2(fuzzy[i].string, fuzzy[i].string_len + 1);
+            free2(fuzzy[i].input, fuzzy[i].string_len + 1);
         }
         free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
         fclose(mismatches);
