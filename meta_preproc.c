@@ -63,6 +63,7 @@ main(int argc, char **argv) {
         int32 group_stack[32] = {0};
         int32 group_stack_ptr = 0;
         int32 is_ascii = 1;
+        int32 has_alternation = 0;
 
         found_macro = strstr(cursor, macro_start);
         if (found_macro == NULL) {
@@ -209,6 +210,7 @@ main(int argc, char **argv) {
             }
             case '|': {
                 int32 w = snprintf2(op_ptr, space, "{META_OP_ALTERNATION, 0, 0, 0, {0}, {0}},\n");
+                has_alternation = 1;
                 op_ptr += w;
                 space -= w;
                 regex_index += 1;
@@ -353,8 +355,8 @@ main(int argc, char **argv) {
         space -= w;
         paren_end = strchr(quote_end, ')');
         original_string_length = (int32)(quote_end - quote_start) + 1;
-        printf("&(MetaRegex){ .string = %.*s, .ops = { %s }, .has_start_anchor = %d, .has_end_anchor = %d, .is_ascii = %d }",
-               original_string_length, quote_start, op_buffer, has_start, has_end, is_ascii);
+        printf("&(MetaRegex){ .string = %.*s, .ops = { %s }, .has_start_anchor = %d, .has_end_anchor = %d, .is_ascii = %d, .has_alternation = %d }",
+               original_string_length, quote_start, op_buffer, has_start, has_end, is_ascii, has_alternation);
         cursor = (paren_end != NULL) ? paren_end + 1 : quote_end + 1;
     }
     printf("%s", cursor);

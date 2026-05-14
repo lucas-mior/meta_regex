@@ -32,6 +32,7 @@ typedef struct MetaRegex {
     int32 has_start_anchor;
     int32 has_end_anchor;
     int32 is_ascii;
+    int32 has_alternation;
 } MetaRegex;
 
 #define R(...) (&(MetaRegex){ .string = __VA_ARGS__ })

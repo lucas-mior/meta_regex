@@ -68,7 +68,7 @@ main(void) {
         if (test_posix.result != test_meta.result) {
             error("Error: result mismatch for string "
                   RED("\"%s\"")" against regex "BLUE("\"%s\"")"\n",
-                  string, string);
+                  string, regex);
             error("posix: %d, meta: %d\n", test_posix.result, test_meta.result);
             exit(EXIT_FAILURE);
         }

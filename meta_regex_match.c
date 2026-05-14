@@ -2,6 +2,7 @@
 #define META_REGEX_MATCH_C
 
 #include <regex.h>
+#include <string.h>
 #include "meta_regex.h"
 #include "util.c"
 #include "utf8.h"
@@ -20,9 +21,7 @@ matches_char(MetaOp op, char *s, int32 *consumed, int32 is_regex_ascii) {
 
     if (first_byte < 0x80) {
         *consumed = 1;
-        if (op.type == META_OP_ANY) {
-            return 1;
-        }
+        if (op.type == META_OP_ANY) return 1;
         if (op.type == META_OP_LITERAL) {
             is_match = (op.value < 128 && (int32)first_byte == op.value);
             return is_match;
@@ -35,35 +34,20 @@ matches_char(MetaOp op, char *s, int32 *consumed, int32 is_regex_ascii) {
     }
 
     cp = utf8_decode(s, consumed);
-    if (*consumed == 0) {
-        return 0;
-    }
-    
-    if (op.type == META_OP_ANY) {
-        return 1;
-    }
-
-    if (is_regex_ascii) {
-        return 0;
-    }
+    if (*consumed == 0) return 0;
+    if (op.type == META_OP_ANY) return 1;
+    if (is_regex_ascii) return 0;
 
     if (op.type == META_OP_LITERAL) {
-        if (cp == op.value) {
-            return 1;
-        }
+        if (cp == op.value) return 1;
     } else if (op.type == META_OP_CLASS) {
         if (cp < 256) {
             is_match = ((op.mask[cp / 32] & (1u << (cp % 32))) != 0);
             return is_match;
         }
-        
         for (int32 i = 0; i < 16; i += 1) {
-            if (op.high_codepoints[i] == 0) {
-                break;
-            }
-            if (op.high_codepoints[i] == cp) {
-                return 1;
-            }
+            if (op.high_codepoints[i] == 0) break;
+            if (op.high_codepoints[i] == cp) return 1;
         }
     }
     return 0;
@@ -125,7 +109,9 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string, siz
             old_so = pmatch[group_id].rm_so;
             pmatch[group_id].rm_so = (int32)(current_string - original_string);
         }
-        res = eval_choice_point(ops + 1, original_string, current_string, nmatch, pmatch, is_ascii);
+        res = (ops[1].type == META_OP_ALTERNATION) ? 
+              eval_choice_point(ops + 1, original_string, current_string, nmatch, pmatch, is_ascii) :
+              match_at_recursive(ops + 1, original_string, current_string, nmatch, pmatch, is_ascii);
         if (res >= 0) return res;
         if (pmatch != NULL && (size_t)group_id < nmatch) pmatch[group_id].rm_so = old_so;
         return -1;
@@ -205,46 +191,65 @@ meta_regex_match(MetaRegex *regex, char *string, size_t nmatch, regmatch_t pmatc
     if (regex == NULL) return REG_NOMATCH;
     int32 is_ascii = regex->is_ascii;
 
-    if (regex->has_start_anchor) {
-        if (pmatch != NULL) {
-            for (size_t k = 0; k < nmatch; k += 1) { 
-                pmatch[k].rm_so = -1; 
-                pmatch[k].rm_eo = -1; 
-            }
+    /* Initialize pmatch once per call */
+    if (pmatch != NULL) {
+        for (size_t k = 0; k < nmatch; k += 1) { 
+            pmatch[k].rm_so = -1; 
+            pmatch[k].rm_eo = -1; 
         }
-        int32 match_len = eval_choice_point(regex->ops, string, string, nmatch, pmatch, is_ascii);
-        if (match_len >= 0) {
-            if (regex->has_end_anchor && string[match_len] != '\0') return REG_NOMATCH;
-            if (pmatch != NULL && nmatch > 0) { 
-                pmatch[0].rm_so = 0; 
-                pmatch[0].rm_eo = match_len; 
-            }
+    }
+
+    if (regex->has_start_anchor) {
+        int32 res;
+        if (regex->has_alternation) {
+            res = eval_choice_point(regex->ops, string, string, nmatch, pmatch, is_ascii);
+        } else {
+            res = match_at_recursive(regex->ops, string, string, nmatch, pmatch, is_ascii);
+        }
+        if (res >= 0) {
+            if (regex->has_end_anchor && string[res] != '\0') return REG_NOMATCH;
+            if (pmatch != NULL && nmatch > 0) { pmatch[0].rm_so = 0; pmatch[0].rm_eo = res; }
             return 0;
         }
         return REG_NOMATCH;
     }
+
+    /* Check for mandatory lead literal optimization */
+    int32 is_mandatory_lead = (regex->ops[0].type == META_OP_LITERAL && 
+                               regex->ops[1].type != META_OP_STAR && 
+                               regex->ops[1].type != META_OP_OPTIONAL &&
+                               (regex->ops[1].type != META_OP_BOUNDED || regex->ops[1].min > 0));
+
     for (int32 j = 0; ; ) {
-        if (pmatch != NULL) {
-            for (size_t k = 0; k < nmatch; k += 1) { 
-                pmatch[k].rm_so = -1; 
-                pmatch[k].rm_eo = -1; 
-            }
+        char *search_ptr = &string[j];
+        
+        /* Optimization: skip offsets that cannot possibly match the first character */
+        if (is_mandatory_lead && is_ascii) {
+            char *next = strchr(search_ptr, (char)regex->ops[0].value);
+            if (next == NULL) break;
+            j = (int32)(next - string);
+            search_ptr = next;
         }
-        int32 match_len = eval_choice_point(regex->ops, string, &string[j], nmatch, pmatch, is_ascii);
+
+        int32 match_len;
+        if (regex->has_alternation) {
+            match_len = eval_choice_point(regex->ops, string, search_ptr, nmatch, pmatch, is_ascii);
+        } else {
+            match_len = match_at_recursive(regex->ops, string, search_ptr, nmatch, pmatch, is_ascii);
+        }
+
         if (match_len >= 0) {
             if (!regex->has_end_anchor || string[match_len] == '\0') {
-                if (pmatch != NULL && nmatch > 0) { 
-                    pmatch[0].rm_so = j; 
-                    pmatch[0].rm_eo = match_len; 
-                }
+                if (pmatch != NULL && nmatch > 0) { pmatch[0].rm_so = j; pmatch[0].rm_eo = match_len; }
                 return 0;
             }
         }
+        
         if (string[j] == '\0') break;
-        int32 consumed = 0; 
         if ((uchar)string[j] < 0x80) {
             j += 1;
         } else {
+            int32 consumed = 0;
             utf8_decode(&string[j], &consumed);
             j += (consumed > 0) ? consumed : 1;
         }
