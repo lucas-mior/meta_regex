@@ -26,7 +26,7 @@ static re_dfastate_t *create_ci_newstate(re_dfa_t *dfa,
                                          re_hashval_t hash);
 static re_dfastate_t *create_cd_newstate(re_dfa_t *dfa,
                                          re_node_set *nodes,
-                                         unsigned int context,
+                                         uint context,
                                          re_hashval_t hash);
 static reg_errcode_t re_string_realloc_buffers(re_string_t *pstr,
                                                Idx new_buf_len);
@@ -36,7 +36,7 @@ static reg_errcode_t build_wcs_upper_buffer(re_string_t *pstr);
 #endif /* RE_ENABLE_I18N */
 static void build_upper_buffer(re_string_t *pstr);
 static void re_string_translate_buffer(re_string_t *pstr);
-static unsigned int re_string_context_at(re_string_t *input, Idx idx,
+static uint re_string_context_at(re_string_t *input, Idx idx,
                                          int eflags) __attribute__((pure));
 
 /* Functions for string operation.  */
@@ -64,7 +64,7 @@ re_string_allocate(re_string_t *pstr, char *str, Idx len, Idx init_len,
 
     pstr->word_char = dfa->word_char;
     pstr->word_ops_used = dfa->word_ops_used;
-    pstr->mbs = pstr->mbs_allocated ? pstr->mbs : (unsigned char *)str;
+    pstr->mbs = pstr->mbs_allocated ? pstr->mbs : (uchar *)str;
     pstr->valid_len = (pstr->mbs_allocated || dfa->mb_cur_max > 1) ? 0 : len;
     pstr->valid_raw_len = pstr->valid_len;
     return REG_NOERROR;
@@ -85,7 +85,7 @@ re_string_construct(re_string_t *pstr, char *str, Idx len,
             return ret;
         }
     }
-    pstr->mbs = pstr->mbs_allocated ? pstr->mbs : (unsigned char *)str;
+    pstr->mbs = pstr->mbs_allocated ? pstr->mbs : (uchar *)str;
 
     if (icase) {
 #ifdef RE_ENABLE_I18N
@@ -158,8 +158,8 @@ re_string_realloc_buffers(re_string_t *pstr, Idx new_buf_len) {
     }
 #endif /* RE_ENABLE_I18N  */
     if (pstr->mbs_allocated) {
-        unsigned char *new_mbs
-            = re_realloc(pstr->mbs, unsigned char, new_buf_len);
+        uchar *new_mbs
+            = re_realloc(pstr->mbs, uchar, new_buf_len);
         if (__glibc_unlikely(new_mbs == NULL)) {
             return REG_ESPACE;
         }
@@ -173,7 +173,7 @@ static void
 re_string_construct_common(char *str, Idx len, re_string_t *pstr,
                            RE_TRANSLATE_TYPE trans, bool icase,
                            re_dfa_t *dfa) {
-    pstr->raw_mbs = (unsigned char *)str;
+    pstr->raw_mbs = (uchar *)str;
     pstr->len = len;
     pstr->raw_len = len;
     pstr->trans = trans;
@@ -202,10 +202,10 @@ re_string_construct_common(char *str, Idx len, re_string_t *pstr,
 static void
 build_wcs_buffer(re_string_t *pstr) {
 #ifdef _LIBC
-    unsigned char buf[MB_LEN_MAX];
+    uchar buf[MB_LEN_MAX];
     DEBUG_ASSERT(MB_LEN_MAX >= pstr->mb_cur_max);
 #else
-    unsigned char buf[64];
+    uchar buf[64];
 #endif
     mbstate_t prev_st;
     Idx byte_idx, end_idx, remain_len;
@@ -283,7 +283,7 @@ build_wcs_upper_buffer(re_string_t *pstr) {
     if (!pstr->map_notascii && pstr->trans == NULL && !pstr->offsets_needed) {
         while (byte_idx < end_idx) {
             wchar_t wc;
-            unsigned char ch = pstr->raw_mbs[pstr->raw_mbs_idx + byte_idx];
+            uchar ch = pstr->raw_mbs[pstr->raw_mbs_idx + byte_idx];
 
             if (isascii(ch) && mbsinit(&pstr->cur_state)) {
                 /* The next step uses the assumption that wchar_t is encoded
@@ -490,7 +490,7 @@ re_string_skip_chars(re_string_t *pstr, Idx new_raw_idx, wint_t *last_wc) {
             if (mbclen == 0 || remain_len == 0) {
                 wc = L'\0';
             } else {
-                wc = *(unsigned char *)(pstr->raw_mbs + rawbuf_idx);
+                wc = *(uchar *)(pstr->raw_mbs + rawbuf_idx);
             }
             mbclen = 1;
             pstr->cur_state = prev_st;
@@ -567,7 +567,7 @@ re_string_reconstruct(re_string_t *pstr, Idx idx, int eflags) {
             = ((eflags & REG_NOTBOL) ? CONTEXT_BEGBUF
                                      : CONTEXT_NEWLINE | CONTEXT_BEGBUF);
         if (!pstr->mbs_allocated) {
-            pstr->mbs = (unsigned char *)pstr->raw_mbs;
+            pstr->mbs = (uchar *)pstr->raw_mbs;
         }
         offset = idx;
     }
@@ -675,7 +675,7 @@ re_string_reconstruct(re_string_t *pstr, Idx idx, int eflags) {
                 wint_t wc = WEOF;
 
                 if (pstr->is_utf8) {
-                    unsigned char *raw, *p, *end;
+                    uchar *raw, *p, *end;
 
                     /* Special case UTF-8.  Multi-byte chars start with any
                        byte other than 0x80 - 0xbf.  */
@@ -699,10 +699,10 @@ re_string_reconstruct(re_string_t *pstr, Idx idx, int eflags) {
                                 mbstate_t cur_state;
                                 wchar_t wc2;
                                 Idx mlen = raw + pstr->len - p;
-                                unsigned char buf[6];
+                                uchar buf[6];
                                 size_t mbclen;
 
-                                unsigned char *pp = p;
+                                uchar *pp = p;
                                 if (__glibc_unlikely(pstr->trans != NULL)) {
                                     int i = mlen < 6 ? mlen : 6;
                                     while (--i >= 0) {
@@ -804,7 +804,7 @@ re_string_reconstruct(re_string_t *pstr, Idx idx, int eflags) {
     return REG_NOERROR;
 }
 
-static unsigned char __attribute__((pure))
+static uchar __attribute__((pure))
 re_string_peek_byte_case(re_string_t *pstr, Idx idx) {
     int ch;
     Idx off;
@@ -843,7 +843,7 @@ re_string_peek_byte_case(re_string_t *pstr, Idx idx) {
     return ch;
 }
 
-static unsigned char
+static uchar
 re_string_fetch_byte_case(re_string_t *pstr) {
     if (__glibc_likely(!pstr->mbs_allocated)) {
         return re_string_fetch_byte(pstr);
@@ -893,7 +893,7 @@ re_string_destruct(re_string_t *pstr) {
 
 /* Return the context at IDX in INPUT.  */
 
-static unsigned int
+static uint
 re_string_context_at(re_string_t *input, Idx idx, int eflags) {
     int c;
     if (__glibc_unlikely(idx < 0)) {
@@ -1399,7 +1399,7 @@ re_dfa_add_node(re_dfa_t *dfa, re_token_t token) {
 }
 
 static re_hashval_t
-calc_state_hash(re_node_set *nodes, unsigned int context) {
+calc_state_hash(re_node_set *nodes, uint context) {
     re_hashval_t hash = nodes->nelem + context;
     Idx i;
     for (i = 0; i < nodes->nelem; i++) {
@@ -1466,7 +1466,7 @@ re_acquire_state(reg_errcode_t *err, re_dfa_t *dfa,
 
 static re_dfastate_t *__attribute_warn_unused_result__
 re_acquire_state_context(reg_errcode_t *err, re_dfa_t *dfa,
-                         re_node_set *nodes, unsigned int context) {
+                         re_node_set *nodes, uint context) {
     re_hashval_t hash;
     re_dfastate_t *new_state;
     struct re_state_table_entry *spot;
@@ -1605,7 +1605,7 @@ create_ci_newstate(re_dfa_t *dfa, re_node_set *nodes,
 
 static re_dfastate_t *__attribute_warn_unused_result__
 create_cd_newstate(re_dfa_t *dfa, re_node_set *nodes,
-                   unsigned int context, re_hashval_t hash) {
+                   uint context, re_hashval_t hash) {
     Idx i, nctx_nodes = 0;
     reg_errcode_t err;
     re_dfastate_t *newstate;
@@ -1626,7 +1626,7 @@ create_cd_newstate(re_dfa_t *dfa, re_node_set *nodes,
     for (i = 0; i < nodes->nelem; i++) {
         re_token_t *node = dfa->nodes + nodes->elems[i];
         re_token_type_t type = node->type;
-        unsigned int constraint = node->constraint;
+        uint constraint = node->constraint;
 
         if (type == CHARACTER && !constraint) {
             continue;

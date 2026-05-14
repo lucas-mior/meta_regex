@@ -36,7 +36,7 @@ extern "C" {
 #ifdef _REGEX_LARGE_OFFSETS
 
 /* Use types and values that are wide enough to represent signed and
-   unsigned byte offsets in memory.  This currently works only when
+   ubyte offsets in memory.  This currently works only when
    the regex code is used outside of the GNU C library; it is not yet
    supported within glibc itself, and glibc users should not define
    _REGEX_LARGE_OFFSETS.  */
@@ -45,15 +45,15 @@ extern "C" {
 typedef size_t __re_size_t;
 
 /* The type of object sizes, in places where the traditional code
-   uses unsigned long int.  */
+   uses ulong int.  */
 typedef size_t __re_long_size_t;
 
 #else
 
 /* The traditional GNU regex implementation mishandles strings longer
    than INT_MAX.  */
-typedef unsigned int __re_size_t;
-typedef unsigned long int __re_long_size_t;
+typedef uint __re_size_t;
+typedef ulong int __re_long_size_t;
 
 #endif
 
@@ -62,14 +62,14 @@ typedef unsigned long int __re_long_size_t;
    ptrdiff_t and size_t should be likely OK.  Still size of these two
    types is 2 for Microsoft C.  Ugh... */
 typedef long int s_reg_t;
-typedef unsigned long int active_reg_t;
+typedef ulong int active_reg_t;
 
 /* The following bits are used to determine the regexp syntax we
    recognize.  The set/not-set meanings are chosen so that Emacs syntax
    remains the value 0.  The bits are given in alphabetical order, and
    the definitions shifted by one from the previous bit; thus, when we
    add or remove a bit, only one other definition need change.  */
-typedef unsigned long int reg_syntax_t;
+typedef ulong int reg_syntax_t;
 
 #ifdef __USE_GNU
 /* If this bit is not set, then \ inside a bracket expression is literal.
@@ -395,7 +395,7 @@ typedef enum
    other fields are private to the regex routines.  */
 
 #ifndef RE_TRANSLATE_TYPE
-# define __RE_TRANSLATE_TYPE unsigned char *
+# define __RE_TRANSLATE_TYPE uchar *
 # ifdef __USE_GNU
 #  define RE_TRANSLATE_TYPE __RE_TRANSLATE_TYPE
 # endif

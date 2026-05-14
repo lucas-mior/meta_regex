@@ -49,9 +49,9 @@ static bin_tree_t *lower_subexp(reg_errcode_t *err, regex_t *preg,
 static reg_errcode_t calc_first(void *extra, bin_tree_t *node);
 static reg_errcode_t calc_next(void *extra, bin_tree_t *node);
 static reg_errcode_t link_nfa_nodes(void *extra, bin_tree_t *node);
-static Idx duplicate_node(re_dfa_t *dfa, Idx org_idx, unsigned int constraint);
+static Idx duplicate_node(re_dfa_t *dfa, Idx org_idx, uint constraint);
 static Idx search_duplicated_node(re_dfa_t *dfa, Idx org_node,
-                                  unsigned int constraint);
+                                  uint constraint);
 static reg_errcode_t calc_eclosure(re_dfa_t *dfa);
 static reg_errcode_t calc_eclosure_iter(re_node_set *new_set, re_dfa_t *dfa,
                                         Idx node, bool root);
@@ -91,7 +91,7 @@ static reg_errcode_t parse_bracket_symbol(bracket_elem_t *elem,
 #ifdef RE_ENABLE_I18N
 static reg_errcode_t build_equiv_class(bitset_t sbcset, re_charset_t *mbcset,
                                        Idx *equiv_class_alloc,
-                                       unsigned char *name);
+                                       uchar *name);
 static reg_errcode_t build_charclass(RE_TRANSLATE_TYPE trans, bitset_t sbcset,
                                      re_charset_t *mbcset,
                                      Idx *char_class_alloc,
@@ -99,7 +99,7 @@ static reg_errcode_t build_charclass(RE_TRANSLATE_TYPE trans, bitset_t sbcset,
                                      reg_syntax_t syntax);
 #else  /* not RE_ENABLE_I18N */
 static reg_errcode_t build_equiv_class(bitset_t sbcset,
-                                       unsigned char *name);
+                                       uchar *name);
 static reg_errcode_t build_charclass(RE_TRANSLATE_TYPE trans, bitset_t sbcset,
                                      char *class_name,
                                      reg_syntax_t syntax);
@@ -281,8 +281,8 @@ re_compile_fastmap_iter(regex_t *bufp, re_dfastate_t *init_state,
             re_set_fastmap(fastmap, icase, dfa->nodes[node].opr.c);
 #ifdef RE_ENABLE_I18N
             if ((bufp->syntax & RE_ICASE) && dfa->mb_cur_max > 1) {
-                unsigned char buf[MB_LEN_MAX];
-                unsigned char *p;
+                uchar buf[MB_LEN_MAX];
+                uchar *p;
                 wchar_t wc;
                 mbstate_t state;
 
@@ -348,7 +348,7 @@ re_compile_fastmap_iter(regex_t *bufp, re_dfastate_t *init_state,
                     || cset->nequiv_classes
 #endif /* _LIBC */
                     )) {
-                unsigned char c = 0;
+                uchar c = 0;
                 do {
                     mbstate_t mbs;
                     memset(&mbs, 0, sizeof(mbs));
@@ -366,13 +366,13 @@ re_compile_fastmap_iter(regex_t *bufp, re_dfastate_t *init_state,
                     memset(&state, '\0', sizeof(state));
                     if (__wcrtomb(buf, cset->mbchars[i], &state)
                         != (size_t)-1) {
-                        re_set_fastmap(fastmap, icase, *(unsigned char *)buf);
+                        re_set_fastmap(fastmap, icase, *(uchar *)buf);
                     }
                     if ((bufp->syntax & RE_ICASE) && dfa->mb_cur_max > 1) {
                         if (__wcrtomb(buf, __towlower(cset->mbchars[i]), &state)
                             != (size_t)-1) {
                             re_set_fastmap(fastmap, false,
-                                           *(unsigned char *)buf);
+                                           *(uchar *)buf);
                         }
                     }
                 }
@@ -1450,10 +1450,10 @@ link_nfa_nodes(void *extra, bin_tree_t *node) {
 
 static reg_errcode_t
 duplicate_node_closure(re_dfa_t *dfa, Idx top_org_node, Idx top_clone_node,
-                       Idx root_node, unsigned int init_constraint) {
+                       Idx root_node, uint init_constraint) {
     Idx org_node, clone_node;
     bool ok;
-    unsigned int constraint = init_constraint;
+    uint constraint = init_constraint;
     for (org_node = top_org_node, clone_node = top_clone_node;;) {
         Idx org_dest, clone_dest;
         if (dfa->nodes[org_node].type == OP_BACK_REF) {
@@ -1556,7 +1556,7 @@ duplicate_node_closure(re_dfa_t *dfa, Idx top_org_node, Idx top_clone_node,
 
 static Idx
 search_duplicated_node(re_dfa_t *dfa, Idx org_node,
-                       unsigned int constraint) {
+                       uint constraint) {
     Idx idx;
     for (idx = dfa->nodes_len - 1; dfa->nodes[idx].duplicated && idx > 0;
          --idx) {
@@ -1573,7 +1573,7 @@ search_duplicated_node(re_dfa_t *dfa, Idx org_node,
    available.  */
 
 static Idx
-duplicate_node(re_dfa_t *dfa, Idx org_idx, unsigned int constraint) {
+duplicate_node(re_dfa_t *dfa, Idx org_idx, uint constraint) {
     Idx dup_idx = re_dfa_add_node(dfa, dfa->nodes[org_idx]);
     if (__glibc_likely(dup_idx != -1)) {
         dfa->nodes[dup_idx].constraint = constraint;
@@ -1737,7 +1737,7 @@ fetch_token(re_token_t *result, re_string_t *input, reg_syntax_t syntax) {
 
 static int
 peek_token(re_token_t *token, re_string_t *input, reg_syntax_t syntax) {
-    unsigned char c;
+    uchar c;
 
     if (re_string_eoi(input)) {
         token->type = END_OF_RE;
@@ -1758,7 +1758,7 @@ peek_token(re_token_t *token, re_string_t *input, reg_syntax_t syntax) {
     }
 #endif
     if (c == '\\') {
-        unsigned char c2;
+        uchar c2;
         if (re_string_cur_idx(input) + 1 >= re_string_length(input)) {
             token->type = BACK_SLASH;
             return 1;
@@ -1982,7 +1982,7 @@ peek_token(re_token_t *token, re_string_t *input, reg_syntax_t syntax) {
 
 static int
 peek_token_bracket(re_token_t *token, re_string_t *input, reg_syntax_t syntax) {
-    unsigned char c;
+    uchar c;
     if (re_string_eoi(input)) {
         token->type = END_OF_RE;
         return 0;
@@ -2001,7 +2001,7 @@ peek_token_bracket(re_token_t *token, re_string_t *input, reg_syntax_t syntax) {
     if (c == '\\' && (syntax & RE_BACKSLASH_ESCAPE_IN_LISTS)
         && re_string_cur_idx(input) + 1 < re_string_length(input)) {
         /* In this case, '\' escape a character.  */
-        unsigned char c2;
+        uchar c2;
         re_string_skip_bytes(input, 1);
         c2 = re_string_peek_byte(input, 0);
         token->opr.c = c2;
@@ -2010,7 +2010,7 @@ peek_token_bracket(re_token_t *token, re_string_t *input, reg_syntax_t syntax) {
     }
     if (c == '[') /* '[' is a special char in a bracket exps.  */
     {
-        unsigned char c2;
+        uchar c2;
         int token_len;
         if (re_string_cur_idx(input) + 1 < re_string_length(input)) {
             c2 = re_string_peek_byte(input, 1);
@@ -2598,7 +2598,7 @@ parse_dup_op_espace:
    unibyte locale, treat B as itself.  In a multibyte locale, return
    WEOF if B is an encoding error.  */
 static wint_t
-parse_byte(unsigned char b, re_charset_t *mbcset) {
+parse_byte(uchar b, re_charset_t *mbcset) {
     return mbcset == NULL ? b : __btowc(b);
 }
 #endif
@@ -2622,7 +2622,7 @@ build_range_exp(reg_syntax_t syntax, bitset_t sbcset,
                 bracket_elem_t *end_elem)
 #endif /* not RE_ENABLE_I18N */
 {
-    unsigned int start_ch, end_ch;
+    uint start_ch, end_ch;
     /* Equivalence Classes and Character Classes can't be a range start/end.  */
     if (__glibc_unlikely(
             start_elem->type == EQUIV_CLASS || start_elem->type == CHAR_CLASS
@@ -2714,7 +2714,7 @@ build_range_exp(reg_syntax_t syntax, bitset_t sbcset,
     }
 #else  /* not RE_ENABLE_I18N */
     {
-        unsigned int ch;
+        uint ch;
         start_ch
             = ((start_elem->type == SB_CHAR)
                    ? start_elem->opr.ch
@@ -2749,9 +2749,9 @@ build_range_exp(reg_syntax_t syntax, bitset_t sbcset,
 static reg_errcode_t
 #ifdef RE_ENABLE_I18N
 build_collating_symbol(bitset_t sbcset, re_charset_t *mbcset,
-                       Idx *coll_sym_alloc, unsigned char *name)
+                       Idx *coll_sym_alloc, uchar *name)
 #else  /* not RE_ENABLE_I18N */
-build_collating_symbol(bitset_t sbcset, unsigned char *name)
+build_collating_symbol(bitset_t sbcset, uchar *name)
 #endif /* not RE_ENABLE_I18N */
 {
     size_t name_len = strlen((char *)name);
@@ -2771,9 +2771,9 @@ build_collating_symbol(bitset_t sbcset, unsigned char *name)
    or -1 if not found.  */
 
 static inline int32_t __attribute__((always_inline))
-seek_collating_symbol_entry(unsigned char *name, size_t name_len,
+seek_collating_symbol_entry(uchar *name, size_t name_len,
                             int32_t *symb_table, int32_t table_size,
-                            unsigned char *extra) {
+                            uchar *extra) {
     int32_t elem;
 
     for (elem = 0; elem < table_size; elem++) {
@@ -2797,12 +2797,12 @@ seek_collating_symbol_entry(unsigned char *name, size_t name_len,
    Look up the collation sequence value of BR_ELEM.
    Return the value if succeeded, UINT_MAX otherwise.  */
 
-static inline unsigned int __attribute__((always_inline))
+static inline uint __attribute__((always_inline))
 lookup_collation_sequence_value(bracket_elem_t *br_elem, uint32_t nrules,
-                                unsigned char *collseqmb,
+                                uchar *collseqmb,
                                 char *collseqwc, int32_t table_size,
                                 int32_t *symb_table,
-                                unsigned char *extra) {
+                                uchar *extra) {
     if (br_elem->type == SB_CHAR) {
         /* if (MB_CUR_MAX == 1) */
         if (nrules == 0) {
@@ -2831,12 +2831,12 @@ lookup_collation_sequence_value(bracket_elem_t *br_elem, uint32_t nrules,
                 /* Adjust for the alignment.  */
                 idx = (idx + 3) & ~3;
                 /* Skip the multibyte collation sequence value.  */
-                idx += sizeof(unsigned int);
+                idx += sizeof(uint);
                 /* Skip the wide char sequence of the collating element.  */
-                idx += sizeof(unsigned int)
-                       * (1 + *(unsigned int *)(extra + idx));
+                idx += sizeof(uint)
+                       * (1 + *(uint *)(extra + idx));
                 /* Return the collation sequence value.  */
-                return *(unsigned int *)(extra + idx);
+                return *(uint *)(extra + idx);
             } else if (sym_name_len == 1) {
                 /* No valid character.  Match it as a single byte
                    character.  */
@@ -2860,10 +2860,10 @@ static inline reg_errcode_t __attribute__((always_inline))
 build_range_exp(bitset_t sbcset, re_charset_t *mbcset, Idx *range_alloc,
                 bracket_elem_t *start_elem, bracket_elem_t *end_elem,
                 re_dfa_t *dfa, reg_syntax_t syntax, uint32_t nrules,
-                unsigned char *collseqmb, char *collseqwc,
+                uchar *collseqmb, char *collseqwc,
                 int32_t table_size, int32_t *symb_table,
-                unsigned char *extra) {
-    unsigned int ch;
+                uchar *extra) {
+    uint ch;
     uint32_t start_collseq;
     uint32_t end_collseq;
 
@@ -2948,9 +2948,9 @@ build_range_exp(bitset_t sbcset, re_charset_t *mbcset, Idx *range_alloc,
 
 static inline reg_errcode_t __attribute__((always_inline))
 build_collating_symbol(bitset_t sbcset, re_charset_t *mbcset,
-                       Idx *coll_sym_alloc, unsigned char *name,
+                       Idx *coll_sym_alloc, uchar *name,
                        uint32_t nrules, int32_t table_size,
-                       int32_t *symb_table, unsigned char *extra) {
+                       int32_t *symb_table, uchar *extra) {
     int32_t elem, idx;
     size_t name_len = strlen((char *)name);
     if (nrules != 0) {
@@ -3006,12 +3006,12 @@ static bin_tree_t *
 parse_bracket_exp(re_string_t *regexp, re_dfa_t *dfa, re_token_t *token,
                   reg_syntax_t syntax, reg_errcode_t *err) {
 #ifdef _LIBC
-    unsigned char *collseqmb;
+    uchar *collseqmb;
     char *collseqwc = NULL;
     uint32_t nrules;
     int32_t table_size = 0;
     int32_t *symb_table = NULL;
-    unsigned char *extra = NULL;
+    uchar *extra = NULL;
 #endif
 
     re_token_t br_token;
@@ -3027,7 +3027,7 @@ parse_bracket_exp(re_string_t *regexp, re_dfa_t *dfa, re_token_t *token,
     bool first_round = true;
 #ifdef _LIBC
     collseqmb
-        = (unsigned char *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_COLLSEQMB);
+        = (uchar *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_COLLSEQMB);
     nrules = _NL_CURRENT_WORD(LC_COLLATE, _NL_COLLATE_NRULES);
     if (nrules) {
         /*
@@ -3037,7 +3037,7 @@ parse_bracket_exp(re_string_t *regexp, re_dfa_t *dfa, re_token_t *token,
         table_size = _NL_CURRENT_WORD(LC_COLLATE, _NL_COLLATE_SYMB_HASH_SIZEMB);
         symb_table = (int32_t *)_NL_CURRENT(LC_COLLATE,
                                                   _NL_COLLATE_SYMB_TABLEMB);
-        extra = (unsigned char *)_NL_CURRENT(LC_COLLATE,
+        extra = (uchar *)_NL_CURRENT(LC_COLLATE,
                                                    _NL_COLLATE_SYMB_EXTRAMB);
     }
 #endif
@@ -3087,8 +3087,8 @@ parse_bracket_exp(re_string_t *regexp, re_dfa_t *dfa, re_token_t *token,
 
     while (1) {
         bracket_elem_t start_elem, end_elem;
-        unsigned char start_name_buf[BRACKET_NAME_BUF_SIZE];
-        unsigned char end_name_buf[BRACKET_NAME_BUF_SIZE];
+        uchar start_name_buf[BRACKET_NAME_BUF_SIZE];
+        uchar end_name_buf[BRACKET_NAME_BUF_SIZE];
         reg_errcode_t ret;
         int token_len2 = 0;
         bool is_range_exp = false;
@@ -3358,7 +3358,7 @@ parse_bracket_element(bracket_elem_t *elem, re_string_t *regexp,
 static reg_errcode_t
 parse_bracket_symbol(bracket_elem_t *elem, re_string_t *regexp,
                      re_token_t *token) {
-    unsigned char ch, delim = token->opr.c;
+    uchar ch, delim = token->opr.c;
     int i = 0;
     if (re_string_eoi(regexp)) {
         return REG_EBRACK;
@@ -3407,26 +3407,26 @@ parse_bracket_symbol(bracket_elem_t *elem, re_string_t *regexp,
 static reg_errcode_t
 #ifdef RE_ENABLE_I18N
 build_equiv_class(bitset_t sbcset, re_charset_t *mbcset, Idx *equiv_class_alloc,
-                  unsigned char *name)
+                  uchar *name)
 #else  /* not RE_ENABLE_I18N */
-build_equiv_class(bitset_t sbcset, unsigned char *name)
+build_equiv_class(bitset_t sbcset, uchar *name)
 #endif /* not RE_ENABLE_I18N */
 {
 #ifdef _LIBC
     uint32_t nrules = _NL_CURRENT_WORD(LC_COLLATE, _NL_COLLATE_NRULES);
     if (nrules != 0) {
         int32_t *table, *indirect;
-        unsigned char *weights, *extra, *cp;
-        unsigned char char_buf[2];
+        uchar *weights, *extra, *cp;
+        uchar char_buf[2];
         int32_t idx1, idx2;
-        unsigned int ch;
+        uint ch;
         size_t len;
         /* Calculate the index for equivalence class.  */
         cp = name;
         table = (int32_t *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_TABLEMB);
-        weights = (unsigned char *)_NL_CURRENT(LC_COLLATE,
+        weights = (uchar *)_NL_CURRENT(LC_COLLATE,
                                                      _NL_COLLATE_WEIGHTMB);
-        extra = (unsigned char *)_NL_CURRENT(LC_COLLATE,
+        extra = (uchar *)_NL_CURRENT(LC_COLLATE,
                                                    _NL_COLLATE_EXTRAMB);
         indirect
             = (int32_t *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_INDIRECTMB);
@@ -3683,7 +3683,7 @@ build_word_op_espace:
 static Idx
 fetch_number(re_string_t *input, re_token_t *token, reg_syntax_t syntax) {
     Idx num = -1;
-    unsigned char c;
+    uchar c;
     while (1) {
         fetch_token(token, input, syntax);
         c = token->opr.c;
