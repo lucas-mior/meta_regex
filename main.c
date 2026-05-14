@@ -41,9 +41,8 @@ main(void) {
             error("Regex compilation failed: %s\n", error_message);
             exit(EXIT_FAILURE);
         }
-        tests_posix[i].result
-            = regexec(&compiled_regex, input,
-                      MAX_MATCHES, tests_posix[i].pmatch, 0);
+        tests_posix[i].result = regexec(&compiled_regex, input,
+                                        MAX_MATCHES, tests_posix[i].pmatch, 0);
         regfree(&compiled_regex);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
