@@ -6,6 +6,22 @@
 #include "meta_regex.h"
 #include "util.c"
 
+static int32
+is_word_char(char c) {
+    int32 match;
+    match = 0;
+    if (c >= 'a' && c <= 'z') {
+        match = 1;
+    } else if (c >= 'A' && c <= 'Z') {
+        match = 1;
+    } else if (c >= '0' && c <= '9') {
+        match = 1;
+    } else if (c == '_') {
+        match = 1;
+    }
+    return match;
+}
+
 static int
 matches_char(MetaOp op, char *s, int32 *consumed) {
     unsigned char first_byte;
@@ -154,6 +170,38 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
 
     if (ops[0].type == META_OP_END) {
         return (int32)(current_string - original_string);
+    }
+
+    if (ops[0].type == META_OP_WORD_START) {
+        int32 curr_is_word;
+        int32 prev_is_word;
+        
+        curr_is_word = is_word_char(*current_string);
+        prev_is_word = 0;
+        if (current_string > original_string) {
+            prev_is_word = is_word_char(*(current_string - 1));
+        }
+        
+        if (curr_is_word && !prev_is_word) {
+            return match_at_recursive(ops + 1, original_string, current_string, nmatch, pmatch);
+        }
+        return -1;
+    }
+
+    if (ops[0].type == META_OP_WORD_END) {
+        int32 curr_is_word;
+        int32 prev_is_word;
+        
+        curr_is_word = is_word_char(*current_string);
+        prev_is_word = 0;
+        if (current_string > original_string) {
+            prev_is_word = is_word_char(*(current_string - 1));
+        }
+        
+        if (!curr_is_word && prev_is_word) {
+            return match_at_recursive(ops + 1, original_string, current_string, nmatch, pmatch);
+        }
+        return -1;
     }
 
     if (ops[0].type == META_OP_ALTERNATION) {

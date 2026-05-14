@@ -153,7 +153,9 @@ static RegexTest ascii_against_ascii[] = {
     {"!",            R("[^[:alnum:][:space:]]")},
     {"\n",           R(".")},
     {" ",            R("\\s")},
-    {"a",            R("\\S")}
+    {"a",            R("\\S")},
+    {" a",           R("\\<a")},
+    {"a ",           R("a\\>")}
 };
 
 static RegexTest utf8_against_ascii[] = {

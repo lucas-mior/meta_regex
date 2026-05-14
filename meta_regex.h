@@ -16,7 +16,9 @@ enum MetaOpType {
     META_OP_ALTERNATION,
     META_OP_BOUNDED,
     META_OP_SPLIT,
-    META_OP_JUMP
+    META_OP_JUMP,
+    META_OP_WORD_START,
+    META_OP_WORD_END
 };
 
 typedef struct MetaOp {

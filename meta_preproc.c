@@ -505,10 +505,37 @@ main(int argc, char **argv) {
             case '\\': {
                 regex_index += 1;
                 if (regex_string[regex_index] != '\0') {
-                    int32 c_cp = (unsigned char)regex_string[regex_index];
-                    temp_ops[temp_ops_count].type = META_OP_LITERAL;
-                    temp_ops[temp_ops_count].value = c_cp;
-                    temp_ops_count += 1;
+                    int32 c_cp;
+                    c_cp = (unsigned char)regex_string[regex_index];
+                    if (c_cp == 's' || c_cp == 'S') {
+                        temp_ops[temp_ops_count].type = META_OP_CLASS;
+                        for (int32 i = 0; i < 8; i += 1) {
+                            temp_ops[temp_ops_count].mask[i] = 0;
+                        }
+                        temp_ops[temp_ops_count].mask[32 / 32] |= (1u << (32 % 32)); 
+                        temp_ops[temp_ops_count].mask[9 / 32] |= (1u << (9 % 32));   
+                        temp_ops[temp_ops_count].mask[10 / 32] |= (1u << (10 % 32)); 
+                        temp_ops[temp_ops_count].mask[13 / 32] |= (1u << (13 % 32)); 
+                        temp_ops[temp_ops_count].mask[12 / 32] |= (1u << (12 % 32)); 
+                        temp_ops[temp_ops_count].mask[11 / 32] |= (1u << (11 % 32)); 
+                        
+                        if (c_cp == 'S') {
+                            for (int32 i = 0; i < 8; i += 1) {
+                                temp_ops[temp_ops_count].mask[i] = ~temp_ops[temp_ops_count].mask[i];
+                            }
+                        }
+                        temp_ops_count += 1;
+                    } else if (c_cp == '<') {
+                        temp_ops[temp_ops_count].type = META_OP_WORD_START;
+                        temp_ops_count += 1;
+                    } else if (c_cp == '>') {
+                        temp_ops[temp_ops_count].type = META_OP_WORD_END;
+                        temp_ops_count += 1;
+                    } else {
+                        temp_ops[temp_ops_count].type = META_OP_LITERAL;
+                        temp_ops[temp_ops_count].value = c_cp;
+                        temp_ops_count += 1;
+                    }
                     regex_index += 1;
                 }
                 break;
@@ -543,6 +570,10 @@ main(int argc, char **argv) {
                 w = snprintf2(op_ptr, space, "{META_OP_SPLIT, %d, %d, 0, {0}},\n", temp_ops[i].value, temp_ops[i].min);
             } else if (temp_ops[i].type == META_OP_JUMP) {
                 w = snprintf2(op_ptr, space, "{META_OP_JUMP, %d, 0, 0, {0}},\n", temp_ops[i].value);
+            } else if (temp_ops[i].type == META_OP_WORD_START) {
+                w = snprintf2(op_ptr, space, "{META_OP_WORD_START, 0, 0, 0, {0}},\n");
+            } else if (temp_ops[i].type == META_OP_WORD_END) {
+                w = snprintf2(op_ptr, space, "{META_OP_WORD_END, 0, 0, 0, {0}},\n");
             } else {
                 char *type_str = "META_OP_UNKNOWN";
                 if (temp_ops[i].type == META_OP_STAR) type_str = "META_OP_STAR";
@@ -564,7 +595,12 @@ main(int argc, char **argv) {
                ".has_alternation = %d }",
                original_string_length, quote_start, op_buffer, has_start, 
                has_end, has_alternation);
-        cursor = (paren_end != NULL) ? paren_end + 1 : quote_end + 1;
+        
+        if (paren_end != NULL) {
+            cursor = paren_end + 1;
+        } else {
+            cursor = quote_end + 1;
+        }
     }
     printf("%s", cursor);
     free2(buffer, file_size + 1);
