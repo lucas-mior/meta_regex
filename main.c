@@ -34,11 +34,13 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
 
         if (compiled != 0) {
             char error_message[256];
-            regerror(compiled, &compiled_regex, error_message, SIZEOF(error_message));
+            regerror(compiled, &compiled_regex,
+                     error_message, SIZEOF(error_message));
             error("Regex compilation failed: %s\n", error_message);
             exit(EXIT_FAILURE);
         }
-        tests_posix[i].result = regexec(&compiled_regex, input, MAX_MATCHES, tests_posix[i].pmatch, 0);
+        tests_posix[i].result = regexec(&compiled_regex, input,
+                                        MAX_MATCHES, tests_posix[i].pmatch, 0);
         regfree(&compiled_regex);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
@@ -48,7 +50,9 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
         char *input = tests_meta[i].input;
         MetaRegex *meta_regex = tests_meta[i].meta_regex;
 
-        tests_meta[i].result = meta_regex_match(meta_regex, input, MAX_MATCHES, tests_meta[i].pmatch);
+        tests_meta[i].result
+            = meta_regex_match(meta_regex, input,
+                               MAX_MATCHES, tests_meta[i].pmatch);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
@@ -59,7 +63,9 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
         char *input = tests[i].input;
 
         if (tp.result != tm.result) {
-            error("Error: result mismatch for input " RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n", input, regex);
+            error("Error: result mismatch for input "
+                  RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n",
+                  input, regex);
             error("posix: %d, meta: %d\n", tp.result, tm.result);
         } else if (tp.result == 0) {
             for (int32 m = 0; m < MAX_MATCHES; m += 1) {
@@ -67,7 +73,9 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
                 regmatch_t m_m = tm.pmatch[m];
 
                 if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
-                    error("Mismatch in capture group %d:\ninput " RED("%s") " against regex " BLUE("%s") "\n", m, input, regex);
+                    error("Mismatch in capture group %d:\ninput "
+                          RED("%s") " against regex " BLUE("%s") "\n",
+                          m, input, regex);
                     error("posix: rm_so=%d, rm_eo=%d\n", p_m.rm_so, p_m.rm_eo);
                     error("meta:  rm_so=%d, rm_eo=%d\n", m_m.rm_so, m_m.rm_eo);
                 }
@@ -93,16 +101,20 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
     for (int32 i = 0; i < count; i += 1) {
         char *input = tests[i].input;
         MetaRegex *meta_regex = tests[i].meta_regex;
-        int32 result = meta_regex_match(meta_regex, input, MAX_MATCHES, tests[i].pmatch);
-        bool success = (result == 0);
+        int32 result;
+        bool matched;
 
+        result = meta_regex_match(meta_regex, input,
+                                  MAX_MATCHES, tests[i].pmatch); 
+        matched = !result;
         bool expected = (bool)tests[i].result;
 
-        if (success != expected) {
+        if (matched != expected) {
             error("Error: expectation mismatch for input " RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n", input, meta_regex->string);
-            error("expected: %s, got: %s\n", expected ? "MATCH" : "NOMATCH", success ? "MATCH" : "NOMATCH");
+            error("expected: %s, got: %s\n", expected ? "MATCH" : "NOMATCH", matched ? "MATCH" : "NOMATCH");
         } else {
-            printf(RED("%15s") " against " BLUE("%18s") ": %s (OK)\n", input, meta_regex->string, success ? "MATCH" : "NOMATCH");
+            printf(RED("%15s") " against " BLUE("%18s") ": %s (OK)\n",
+                   input, meta_regex->string, matched ? "MATCH" : "NOMATCH");
         }
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
