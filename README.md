@@ -86,3 +86,12 @@ cc gen/your_code_baked.c -o your_program
 - `meta_regex.h` common stuff used at compile time and runtime.
 - `meta_regex_match.c` runtime regex matcher
 - `main.c` example of usage, with tests against the posix regex lib.
+
+## TODO
+- Improve performance on ASCII input
+- Implement level 1 UTS 18 support
+- Organize tests:
+  - ASCII input with group capturing against LC_ALL=C posix (reference test array)
+  - ASCII input with group capturing against LC_ALL=C posix (fuzzy)
+  - UTF-8 against reference true table
+  - UTF-8 against some UTS 18 level 1 implementation
