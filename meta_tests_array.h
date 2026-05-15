@@ -171,6 +171,10 @@ static RegexTest ascii_against_ascii[] = {
     {"aaaa", R("a*aa")},
     {"ab", R("(a|ab)")},
     {"aa", R("((a|aa)*)")},
+    {"abccab", R("^(a|ab)cc\\1$")},
+    {"aaccab", R("^((a|aa)*)cc\\1$")},
+    {"abccabxx", R("^(a|ab)cc\\1(xx)\\2$")},
+    {"aaccabxx", R("^((a|aa)*)cc\\1(xx)\\2$")},
 };
 
 static RegexTest utf8_against_ascii[] = {
