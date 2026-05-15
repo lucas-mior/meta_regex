@@ -149,8 +149,6 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
 
 static void
 run_fuzzy_tests(int32 max_str_size, int32 ntests) {
-    printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
-    printf("----- max_str_size: %d\n", max_str_size);
     int32 fuzzy_len;
     FuzzyTest *fuzzy;
     FILE *mismatches;
@@ -251,8 +249,14 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
     }
 
     {
-        PRINT_TIMINGS(fuzzy_len, t0_posix, t1_posix, "fuzzy ascii posix");
-        PRINT_TIMINGS(fuzzy_len, t0_meta, t1_meta, "fuzzy ascii meta");
+        char name_posix[256];
+        char name_meta[256];
+
+        SNPRINTF(name_posix, "posix [%d]", max_str_size);
+        SNPRINTF(name_meta, "meta [%d]", max_str_size);
+
+        PRINT_TIMINGS(fuzzy_len, t0_posix, t1_posix, name_posix);
+        PRINT_TIMINGS(fuzzy_len, t0_meta, t1_meta, name_meta);
     }
 
     for (int32 i = 0; i < fuzzy_len; i += 1) {
@@ -276,14 +280,15 @@ main(void) {
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "UTF8 vs UTF8");
 #endif
 
-    /* run_fuzzy_tests( 16,  1000); */
-    /* run_fuzzy_tests( 32,  1000); */
-    /* run_fuzzy_tests( 64,  1000); */
-    /* run_fuzzy_tests(128,  1000); */
-    /* run_fuzzy_tests(256,  1000); */
-    /* run_fuzzy_tests(512,  1000); */
-    /* run_fuzzy_tests(1024, 1000); */
-    /* run_fuzzy_tests(2048, 1000); */
+    printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
+    run_fuzzy_tests( 16,  1000);
+    run_fuzzy_tests( 32,  1000);
+    run_fuzzy_tests( 64,  1000);
+    run_fuzzy_tests(128,  1000);
+    run_fuzzy_tests(256,  1000);
+    run_fuzzy_tests(512,  1000);
+    run_fuzzy_tests(1024, 1000);
+    run_fuzzy_tests(2048, 1000);
     run_fuzzy_tests(4096, 2000);
     exit(EXIT_SUCCESS);
 }
