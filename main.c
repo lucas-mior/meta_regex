@@ -268,7 +268,7 @@ main(void) {
     /* run_fuzzy_tests(256,  1000); */
     /* run_fuzzy_tests(512,  1000); */
     /* run_fuzzy_tests(1024, 1000); */
-    run_fuzzy_tests(2048, 1000);
-    /* run_fuzzy_tests(4096, 1000); */
+    /* run_fuzzy_tests(2048, 1000); */
+    run_fuzzy_tests(4096, 100000);
     exit(EXIT_SUCCESS);
 }
