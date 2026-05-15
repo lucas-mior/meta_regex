@@ -13,7 +13,7 @@ typedef struct ParsedOp {
     unsigned int mask[8];
 } ParsedOp;
 
-void
+static void
 set_fastmap_bit(unsigned char *fastmap, int32 c) {
     if (c >= 0 && c < 256) {
         fastmap[c / 8] |= (1 << (c % 8));
