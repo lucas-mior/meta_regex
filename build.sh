@@ -9,7 +9,7 @@ cbase="cbase"
 
 mkdir -p bin
 
-target="$1"
+target="${1:-build}"
 
 CFLAGS="$CFLAGS -std=c11"
 CFLAGS="$CFLAGS -Wextra -Wall"
