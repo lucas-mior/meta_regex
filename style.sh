@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# shellcheck disable=SC2035 
+
 clang-format -i *.c *.h \
     --style=file:/home/lucas/.config/clangd/clang-format.yaml
 
