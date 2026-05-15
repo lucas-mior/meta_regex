@@ -518,7 +518,6 @@ meta_regex_match(MetaRegex *regex, char *string, size_t nmatch,
     char *search_ptr;
     int32 match_len;
     int32 skip_main;
-    int32 res;
 
     if (regex == NULL) {
         return REG_NOMATCH;
