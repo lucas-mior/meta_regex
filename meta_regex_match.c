@@ -22,35 +22,6 @@ is_word_char(char c) {
     return match;
 }
 
-static int
-matches_char(MetaOp op, char *s, int32 *consumed) {
-    unsigned char first_byte;
-    int32 is_match;
-
-    first_byte = (unsigned char)s[0];
-    if (first_byte == '\0') {
-        *consumed = 0;
-        return 0;
-    }
-
-    *consumed = 1;
-
-    if (op.type == META_OP_ANY) {
-        return 1;
-    }
-
-    if (op.type == META_OP_LITERAL) {
-        is_match = ((int32)first_byte == op.value);
-        return is_match;
-    } else if (op.type == META_OP_CLASS) {
-        is_match = ((op.mask[first_byte / 32] & 
-                     (1u << (first_byte % 32))) != 0);
-        return is_match;
-    }
-    
-    return 0;
-}
-
 static int match_at_recursive(MetaOp *ops, char *orig, char *curr, 
                               size_t nmatch, regmatch_t pmatch[]);
 
@@ -157,7 +128,6 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
     int32 is_bound;
     int32 min_req;
     int32 max_req;
-    int32 consumed;
     int32 count;
     int32 has_alt;
     size_t copy_size;
@@ -183,7 +153,8 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
         }
         
         if (curr_is_word && !prev_is_word) {
-            return match_at_recursive(ops + 1, original_string, current_string, nmatch, pmatch);
+            return match_at_recursive(ops + 1, original_string, current_string, 
+                                      nmatch, pmatch);
         }
         return -1;
     }
@@ -199,7 +170,8 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
         }
         
         if (!curr_is_word && prev_is_word) {
-            return match_at_recursive(ops + 1, original_string, current_string, nmatch, pmatch);
+            return match_at_recursive(ops + 1, original_string, current_string, 
+                                      nmatch, pmatch);
         }
         return -1;
     }
@@ -215,7 +187,8 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
         }
         
         if (curr_is_word != prev_is_word) {
-            return match_at_recursive(ops + 1, original_string, current_string, nmatch, pmatch);
+            return match_at_recursive(ops + 1, original_string, current_string, 
+                                      nmatch, pmatch);
         }
         return -1;
     }
@@ -231,7 +204,8 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
         }
         
         if (curr_is_word == prev_is_word) {
-            return match_at_recursive(ops + 1, original_string, current_string, nmatch, pmatch);
+            return match_at_recursive(ops + 1, original_string, current_string, 
+                                      nmatch, pmatch);
         }
         return -1;
     }
@@ -264,7 +238,8 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
             }
             pass_pmatch = temp_pmatch;
         }
-        res = match_at_recursive(ops + ops[0].value, original_string, current_string, nmatch, pass_pmatch);
+        res = match_at_recursive(ops + ops[0].value, original_string, 
+                                 current_string, nmatch, pass_pmatch);
         if (res >= 0) {
             if (pmatch == NULL) {
                 return res;
@@ -284,7 +259,8 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
             }
             pass_pmatch = temp_pmatch;
         }
-        res = match_at_recursive(ops + ops[0].min, original_string, current_string, nmatch, pass_pmatch);
+        res = match_at_recursive(ops + ops[0].min, original_string, 
+                                 current_string, nmatch, pass_pmatch);
         if (res >= 0) {
             if (pmatch == NULL) {
                 return res;
@@ -306,7 +282,8 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
     }
 
     if (ops[0].type == META_OP_JUMP) {
-        return match_at_recursive(ops + ops[0].value, original_string, current_string, nmatch, pmatch);
+        return match_at_recursive(ops + ops[0].value, original_string, 
+                                  current_string, nmatch, pmatch);
     }
 
     if (ops[0].type == META_OP_GROUP_START) {
@@ -382,7 +359,6 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
         s = current_string;
         min_req = 0;
         max_req = -1;
-        consumed = 0;
         count = 0;
 
         if (is_star) {
@@ -399,21 +375,43 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
             max_req = ops[1].max;
         }
 
-        while (count < min_req) {
-            if (!matches_char(token, s, &consumed)) {
-                return -1;
+        if (token.type == META_OP_ANY) {
+            while (max_req == -1 || count < max_req) {
+                if (s[count] == '\0') {
+                    break;
+                }
+                count += 1;
             }
-            s += consumed;
-            count += 1;
+        } else if (token.type == META_OP_LITERAL) {
+            while (max_req == -1 || count < max_req) {
+                if (s[count] == '\0') {
+                    break;
+                }
+                if ((int32)(unsigned char)s[count] != token.value) {
+                    break;
+                }
+                count += 1;
+            }
+        } else if (token.type == META_OP_CLASS) {
+            while (max_req == -1 || count < max_req) {
+                unsigned char fb;
+                fb = (unsigned char)s[count];
+                if (fb == '\0') {
+                    break;
+                }
+                if ((token.mask[fb / 32] & (1u << (fb % 32))) == 0) {
+                    break;
+                }
+                count += 1;
+            }
         }
 
-        max_s = s;
-        while ((max_req == -1 || count < max_req) && 
-               matches_char(token, max_s, &consumed)) {
-            max_s += consumed;
-            count += 1;
+        if (count < min_req) {
+            return -1;
         }
 
+        max_s = s + count;
+        s += min_req;
         longest_match = -1;
 
         while (max_s >= s) {
@@ -460,10 +458,41 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
         return longest_match;
     }
 
-    consumed = 0;
-    if (matches_char(ops[0], current_string, &consumed)) {
-        return match_at_recursive(ops + 1, original_string, 
-                                  current_string + consumed, nmatch, pmatch);
+    {
+        int32 is_match;
+        int32 consumed;
+        unsigned char fb;
+
+        consumed = 0;
+        fb = (unsigned char)current_string[0];
+        if (fb == '\0') {
+            is_match = 0;
+        } else {
+            consumed = 1;
+            if (ops[0].type == META_OP_ANY) {
+                is_match = 1;
+            } else if (ops[0].type == META_OP_LITERAL) {
+                if ((int32)fb == ops[0].value) {
+                    is_match = 1;
+                } else {
+                    is_match = 0;
+                }
+            } else if (ops[0].type == META_OP_CLASS) {
+                if ((ops[0].mask[fb / 32] & (1u << (fb % 32))) != 0) {
+                    is_match = 1;
+                } else {
+                    is_match = 0;
+                }
+            } else {
+                is_match = 0;
+            }
+        }
+
+        if (is_match) {
+            return match_at_recursive(ops + 1, original_string, 
+                                      current_string + consumed, nmatch, 
+                                      pmatch);
+        }
     }
     return -1;
 }
@@ -509,12 +538,18 @@ meta_regex_match(MetaRegex *regex, char *string,
         return REG_NOMATCH;
     }
 
-    is_mandatory_lead = (!regex->has_alternation &&
-                         regex->ops[0].type == META_OP_LITERAL && 
-                         regex->ops[1].type != META_OP_STAR && 
-                         regex->ops[1].type != META_OP_OPTIONAL &&
-                         (regex->ops[1].type != META_OP_BOUNDED || 
-                          regex->ops[1].min > 0));
+    is_mandatory_lead = 0;
+    if (!regex->has_alternation) {
+        if (regex->ops[0].type == META_OP_LITERAL) {
+            if (regex->ops[1].type != META_OP_STAR && 
+                regex->ops[1].type != META_OP_OPTIONAL) {
+                if (regex->ops[1].type != META_OP_BOUNDED || 
+                    regex->ops[1].min > 0) {
+                    is_mandatory_lead = 1;
+                }
+            }
+        }
+    }
 
     for (int32 j = 0; ; ) {
         search_ptr = &string[j];
