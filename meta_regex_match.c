@@ -617,8 +617,8 @@ meta_regex_match(MetaRegex *regex, char *string, size_t nmatch,
         }
     } else {
         /*
-         * Path 2: Placeholder for Thompson NFA or DFA (Linear Time)
-         * Currently falling back to backtracking until the linear
+         * Path 2: Placeholder for DFA
+         * Currently falling back to backtracking until the DFA
          * implementation is ready.
          */
         if (regex->has_start_anchor) {
