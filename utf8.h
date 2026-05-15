@@ -60,8 +60,12 @@ utf8_random_string(char *buffer, int32 max_bytes) {
             char b1 = (char)(0xE0 | (rand() % 16));
             char b2 = (char)(0x80 | (rand() % 64));
             char b3 = (char)(0x80 | (rand() % 64));
-            if (b1 == (char)0xE0 && b2 < (char)0xA0) b2 |= (char)0xA0;
-            if (b1 == (char)0xED && b2 > (char)0x9F) b2 &= (char)0x9F;
+            if (b1 == (char)0xE0 && b2 < (char)0xA0) {
+                b2 |= (char)0xA0;
+            }
+            if (b1 == (char)0xED && b2 > (char)0x9F) {
+                b2 &= (char)0x9F;
+            }
             buffer[current_byte] = b1;
             buffer[current_byte + 1] = b2;
             buffer[current_byte + 2] = b3;
@@ -71,8 +75,12 @@ utf8_random_string(char *buffer, int32 max_bytes) {
             char b2 = (char)(0x80 | (rand() % 64));
             char b3 = (char)(0x80 | (rand() % 64));
             char b4 = (char)(0x80 | (rand() % 64));
-            if (b1 == (char)0xF0 && b2 < (char)0x90) b2 |= (char)0x90;
-            if (b1 == (char)0xF4 && b2 > (char)0x8F) b2 &= (char)0x8F;
+            if (b1 == (char)0xF0 && b2 < (char)0x90) {
+                b2 |= (char)0x90;
+            }
+            if (b1 == (char)0xF4 && b2 > (char)0x8F) {
+                b2 &= (char)0x8F;
+            }
             buffer[current_byte] = b1;
             buffer[current_byte + 1] = b2;
             buffer[current_byte + 2] = b3;

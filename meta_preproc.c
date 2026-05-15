@@ -81,9 +81,9 @@ main(int argc, char **argv) {
         prefix_length = (int32)(found_macro - cursor);
         printf("%.*s", prefix_length, cursor);
 
-        if (found_macro[2] == 'N' && found_macro[3] == 'U' && 
-            found_macro[4] == 'L' && found_macro[5] == 'L' && 
-            found_macro[6] == ')') {
+        if (found_macro[2] == 'N' && found_macro[3] == 'U'
+            && found_macro[4] == 'L' && found_macro[5] == 'L'
+            && found_macro[6] == ')') {
             printf("NULL");
             cursor = found_macro + 7;
             continue;
@@ -119,12 +119,24 @@ main(int argc, char **argv) {
                     if (raw_string[i + 1] != '\0') {
                         i += 1;
                         switch (raw_string[i]) {
-                        case 'n': regex_string[u_idx] = '\n'; break;
-                        case 't': regex_string[u_idx] = '\t'; break;
-                        case 'r': regex_string[u_idx] = '\r'; break;
-                        case '\\': regex_string[u_idx] = '\\'; break;
-                        case '"': regex_string[u_idx] = '"'; break;
-                        default: regex_string[u_idx] = raw_string[i]; break;
+                        case 'n':
+                            regex_string[u_idx] = '\n';
+                            break;
+                        case 't':
+                            regex_string[u_idx] = '\t';
+                            break;
+                        case 'r':
+                            regex_string[u_idx] = '\r';
+                            break;
+                        case '\\':
+                            regex_string[u_idx] = '\\';
+                            break;
+                        case '"':
+                            regex_string[u_idx] = '"';
+                            break;
+                        default:
+                            regex_string[u_idx] = raw_string[i];
+                            break;
                         }
                         u_idx += 1;
                     }
@@ -157,7 +169,9 @@ main(int argc, char **argv) {
                 break;
             }
             case '*': {
-                int32 is_group = (temp_ops_count > 0 && temp_ops[temp_ops_count - 1].type == META_OP_GROUP_END);
+                int32 is_group = (temp_ops_count > 0
+                                  && temp_ops[temp_ops_count - 1].type
+                                         == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -174,7 +188,8 @@ main(int argc, char **argv) {
                     }
                     int32 group_len = temp_ops_count - target_start;
 
-                    for (int32 i = temp_ops_count - 1; i >= target_start; i -= 1) {
+                    for (int32 i = temp_ops_count - 1; i >= target_start;
+                         i -= 1) {
                         temp_ops[i + 1] = temp_ops[i];
                     }
                     temp_ops_count += 1;
@@ -196,7 +211,9 @@ main(int argc, char **argv) {
                 break;
             }
             case '+': {
-                int32 is_group = (temp_ops_count > 0 && temp_ops[temp_ops_count - 1].type == META_OP_GROUP_END);
+                int32 is_group = (temp_ops_count > 0
+                                  && temp_ops[temp_ops_count - 1].type
+                                         == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -227,7 +244,9 @@ main(int argc, char **argv) {
                 break;
             }
             case '?': {
-                int32 is_group = (temp_ops_count > 0 && temp_ops[temp_ops_count - 1].type == META_OP_GROUP_END);
+                int32 is_group = (temp_ops_count > 0
+                                  && temp_ops[temp_ops_count - 1].type
+                                         == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -244,7 +263,8 @@ main(int argc, char **argv) {
                     }
                     int32 group_len = temp_ops_count - target_start;
 
-                    for (int32 i = temp_ops_count - 1; i >= target_start; i -= 1) {
+                    for (int32 i = temp_ops_count - 1; i >= target_start;
+                         i -= 1) {
                         temp_ops[i + 1] = temp_ops[i];
                     }
                     temp_ops_count += 1;
@@ -267,19 +287,19 @@ main(int argc, char **argv) {
                 int32 n = -1;
                 int32 has_m = 0;
                 int32 valid = 0;
-                while (regex_string[temp_idx] >= '0' && 
-                       regex_string[temp_idx] <= '9') {
+                while (regex_string[temp_idx] >= '0'
+                       && regex_string[temp_idx] <= '9') {
                     m = m * 10 + (regex_string[temp_idx] - '0');
                     has_m = 1;
                     temp_idx += 1;
                 }
                 if (regex_string[temp_idx] == ',') {
                     temp_idx += 1;
-                    if (regex_string[temp_idx] >= '0' && 
-                        regex_string[temp_idx] <= '9') {
+                    if (regex_string[temp_idx] >= '0'
+                        && regex_string[temp_idx] <= '9') {
                         n = 0;
-                        while (regex_string[temp_idx] >= '0' && 
-                               regex_string[temp_idx] <= '9') {
+                        while (regex_string[temp_idx] >= '0'
+                               && regex_string[temp_idx] <= '9') {
                             n = n * 10 + (regex_string[temp_idx] - '0');
                             temp_idx += 1;
                         }
@@ -291,16 +311,19 @@ main(int argc, char **argv) {
                     valid = 1;
                     temp_idx += 1;
                 }
-                
+
                 if (valid) {
-                    int32 is_group = (temp_ops_count > 0 && temp_ops[temp_ops_count - 1].type == META_OP_GROUP_END);
+                    int32 is_group = (temp_ops_count > 0
+                                      && temp_ops[temp_ops_count - 1].type
+                                             == META_OP_GROUP_END);
                     if (is_group) {
                         int32 target_start = temp_ops_count - 1;
                         int32 depth = 0;
                         for (int32 i = target_start; i >= 0; i -= 1) {
                             if (temp_ops[i].type == META_OP_GROUP_END) {
                                 depth += 1;
-                            } else if (temp_ops[i].type == META_OP_GROUP_START) {
+                            } else if (temp_ops[i].type
+                                       == META_OP_GROUP_START) {
                                 depth -= 1;
                                 if (depth == 0) {
                                     target_start = i;
@@ -310,20 +333,20 @@ main(int argc, char **argv) {
                         }
                         int32 group_len = temp_ops_count - target_start;
                         ParsedOp group_buf[256];
-                        
+
                         for (int32 i = 0; i < group_len; i += 1) {
                             group_buf[i] = temp_ops[target_start + i];
                         }
-                        
+
                         temp_ops_count = target_start;
-                        
+
                         for (int32 k = 0; k < m; k += 1) {
                             for (int32 i = 0; i < group_len; i += 1) {
                                 temp_ops[temp_ops_count] = group_buf[i];
                                 temp_ops_count += 1;
                             }
                         }
-                        
+
                         if (n == -1) {
                             temp_ops[temp_ops_count].type = META_OP_SPLIT;
                             temp_ops[temp_ops_count].value = 1;
@@ -359,7 +382,7 @@ main(int argc, char **argv) {
                         break;
                     }
                 }
-                
+
                 temp_ops[temp_ops_count].type = META_OP_LITERAL;
                 temp_ops[temp_ops_count].value = cp;
                 temp_ops_count += 1;
@@ -409,14 +432,16 @@ main(int argc, char **argv) {
                     regex_index += 1;
                 }
                 while (regex_string[regex_index] != '\0') {
-                    if (!first_char && regex_string[regex_index] == ']') break;
-                    if (regex_string[regex_index] == '[' && 
-                        regex_string[regex_index + 1] == ':') {
+                    if (!first_char && regex_string[regex_index] == ']') {
+                        break;
+                    }
+                    if (regex_string[regex_index] == '['
+                        && regex_string[regex_index + 1] == ':') {
                         int32 colon_idx = regex_index + 2;
                         int32 found_end = 0;
                         while (regex_string[colon_idx] != '\0') {
-                            if (regex_string[colon_idx] == ':' && 
-                                regex_string[colon_idx + 1] == ']') {
+                            if (regex_string[colon_idx] == ':'
+                                && regex_string[colon_idx + 1] == ']') {
                                 found_end = 1;
                                 break;
                             }
@@ -426,48 +451,61 @@ main(int argc, char **argv) {
                             char class_name[32] = {0};
                             int32 name_len = colon_idx - (regex_index + 2);
                             if (name_len < 32) {
-                                strncpy32(class_name, 
-                                          &regex_string[regex_index + 2], 
+                                strncpy32(class_name,
+                                          &regex_string[regex_index + 2],
                                           name_len);
                                 for (int32 c = 0; c < 256; c += 1) {
                                     int32 match = 0;
                                     if (strcmp(class_name, "alnum") == 0) {
-                                        match = ((c >= 'a' && c <= 'z') || 
-                                                 (c >= 'A' && c <= 'Z') || 
-                                                 (c >= '0' && c <= '9'));
-                                    } else if (strcmp(class_name, "alpha") == 0) {
-                                        match = ((c >= 'a' && c <= 'z') || 
-                                                 (c >= 'A' && c <= 'Z'));
-                                    } else if (strcmp(class_name, "digit") == 0) {
+                                        match = ((c >= 'a' && c <= 'z')
+                                                 || (c >= 'A' && c <= 'Z')
+                                                 || (c >= '0' && c <= '9'));
+                                    } else if (strcmp(class_name, "alpha")
+                                               == 0) {
+                                        match = ((c >= 'a' && c <= 'z')
+                                                 || (c >= 'A' && c <= 'Z'));
+                                    } else if (strcmp(class_name, "digit")
+                                               == 0) {
                                         match = (c >= '0' && c <= '9');
-                                    } else if (strcmp(class_name, "space") == 0) {
-                                        match = (c == ' ' || c == '\t' || 
-                                                 c == '\n' || c == '\r' || 
-                                                 c == '\v' || c == '\f');
-                                    } else if (strcmp(class_name, "lower") == 0) {
+                                    } else if (strcmp(class_name, "space")
+                                               == 0) {
+                                        match = (c == ' ' || c == '\t'
+                                                 || c == '\n' || c == '\r'
+                                                 || c == '\v' || c == '\f');
+                                    } else if (strcmp(class_name, "lower")
+                                               == 0) {
                                         match = (c >= 'a' && c <= 'z');
-                                    } else if (strcmp(class_name, "upper") == 0) {
+                                    } else if (strcmp(class_name, "upper")
+                                               == 0) {
                                         match = (c >= 'A' && c <= 'Z');
-                                    } else if (strcmp(class_name, "punct") == 0) {
-                                        match = ((c >= 33 && c <= 47) || 
-                                                 (c >= 58 && c <= 64) || 
-                                                 (c >= 91 && c <= 96) || 
-                                                 (c >= 123 && c <= 126));
-                                    } else if (strcmp(class_name, "xdigit") == 0) {
-                                        match = ((c >= '0' && c <= '9') || 
-                                                 (c >= 'a' && c <= 'f') || 
-                                                 (c >= 'A' && c <= 'F'));
-                                    } else if (strcmp(class_name, "print") == 0) {
+                                    } else if (strcmp(class_name, "punct")
+                                               == 0) {
+                                        match = ((c >= 33 && c <= 47)
+                                                 || (c >= 58 && c <= 64)
+                                                 || (c >= 91 && c <= 96)
+                                                 || (c >= 123 && c <= 126));
+                                    } else if (strcmp(class_name, "xdigit")
+                                               == 0) {
+                                        match = ((c >= '0' && c <= '9')
+                                                 || (c >= 'a' && c <= 'f')
+                                                 || (c >= 'A' && c <= 'F'));
+                                    } else if (strcmp(class_name, "print")
+                                               == 0) {
                                         match = (c >= 32 && c <= 126);
-                                    } else if (strcmp(class_name, "graph") == 0) {
+                                    } else if (strcmp(class_name, "graph")
+                                               == 0) {
                                         match = (c >= 33 && c <= 126);
-                                    } else if (strcmp(class_name, "blank") == 0) {
+                                    } else if (strcmp(class_name, "blank")
+                                               == 0) {
                                         match = (c == ' ' || c == '\t');
-                                    } else if (strcmp(class_name, "cntrl") == 0) {
-                                        match = ((c >= 0 && c <= 31) || 
-                                                 (c == 127));
+                                    } else if (strcmp(class_name, "cntrl")
+                                               == 0) {
+                                        match = ((c >= 0 && c <= 31)
+                                                 || (c == 127));
                                     }
-                                    if (match) mask[c / 32] |= (1u << (c % 32));
+                                    if (match) {
+                                        mask[c / 32] |= (1u << (c % 32));
+                                    }
                                 }
                             }
                             regex_index = colon_idx + 2;
@@ -478,9 +516,9 @@ main(int argc, char **argv) {
                     int32 c1 = (unsigned char)regex_string[regex_index];
                     int32 c2 = c1;
                     regex_index += 1;
-                    if (regex_string[regex_index] == '-' && 
-                        regex_string[regex_index + 1] != ']' && 
-                        regex_string[regex_index + 1] != '\0') {
+                    if (regex_string[regex_index] == '-'
+                        && regex_string[regex_index + 1] != ']'
+                        && regex_string[regex_index + 1] != '\0') {
                         c2 = (unsigned char)regex_string[regex_index + 1];
                         regex_index += 2;
                     }
@@ -489,7 +527,9 @@ main(int argc, char **argv) {
                     }
                     first_char = 0;
                 }
-                if (regex_string[regex_index] == ']') regex_index += 1;
+                if (regex_string[regex_index] == ']') {
+                    regex_index += 1;
+                }
                 if (is_negated) {
                     for (int32 i = 0; i < 8; i += 1) {
                         mask[i] = ~mask[i];
@@ -512,16 +552,23 @@ main(int argc, char **argv) {
                         for (int32 i = 0; i < 8; i += 1) {
                             temp_ops[temp_ops_count].mask[i] = 0;
                         }
-                        temp_ops[temp_ops_count].mask[32 / 32] |= (1u << (32 % 32)); 
-                        temp_ops[temp_ops_count].mask[9 / 32] |= (1u << (9 % 32));   
-                        temp_ops[temp_ops_count].mask[10 / 32] |= (1u << (10 % 32)); 
-                        temp_ops[temp_ops_count].mask[13 / 32] |= (1u << (13 % 32)); 
-                        temp_ops[temp_ops_count].mask[12 / 32] |= (1u << (12 % 32)); 
-                        temp_ops[temp_ops_count].mask[11 / 32] |= (1u << (11 % 32)); 
-                        
+                        temp_ops[temp_ops_count].mask[32 / 32]
+                            |= (1u << (32 % 32));
+                        temp_ops[temp_ops_count].mask[9 / 32]
+                            |= (1u << (9 % 32));
+                        temp_ops[temp_ops_count].mask[10 / 32]
+                            |= (1u << (10 % 32));
+                        temp_ops[temp_ops_count].mask[13 / 32]
+                            |= (1u << (13 % 32));
+                        temp_ops[temp_ops_count].mask[12 / 32]
+                            |= (1u << (12 % 32));
+                        temp_ops[temp_ops_count].mask[11 / 32]
+                            |= (1u << (11 % 32));
+
                         if (c_cp == 'S') {
                             for (int32 i = 0; i < 8; i += 1) {
-                                temp_ops[temp_ops_count].mask[i] = ~temp_ops[temp_ops_count].mask[i];
+                                temp_ops[temp_ops_count].mask[i]
+                                    = ~temp_ops[temp_ops_count].mask[i];
                             }
                         }
                         temp_ops_count += 1;
@@ -535,7 +582,8 @@ main(int argc, char **argv) {
                         temp_ops[temp_ops_count].type = META_OP_WORD_BOUNDARY;
                         temp_ops_count += 1;
                     } else if (c_cp == 'B') {
-                        temp_ops[temp_ops_count].type = META_OP_NON_WORD_BOUNDARY;
+                        temp_ops[temp_ops_count].type
+                            = META_OP_NON_WORD_BOUNDARY;
                         temp_ops_count += 1;
                     } else {
                         temp_ops[temp_ops_count].type = META_OP_LITERAL;
@@ -561,38 +609,63 @@ main(int argc, char **argv) {
             if (i == temp_ops_count) {
                 w = snprintf2(op_ptr, space, "{META_OP_END, 0, 0, 0, {0}}\n");
             } else if (temp_ops[i].type == META_OP_LITERAL) {
-                w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d, 0, 0, {0}},\n", temp_ops[i].value);
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_LITERAL, %d, 0, 0, {0}},\n",
+                              temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_CLASS) {
-                w = snprintf2(op_ptr, space, "{META_OP_CLASS, 0, 0, 0, {%u, %u, %u, %u, %u, %u, %u, %u}},\n", 
-                              temp_ops[i].mask[0], temp_ops[i].mask[1], temp_ops[i].mask[2], temp_ops[i].mask[3], 
-                              temp_ops[i].mask[4], temp_ops[i].mask[5], temp_ops[i].mask[6], temp_ops[i].mask[7]);
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_CLASS, 0, 0, 0, {%u, %u, %u, %u, %u, "
+                              "%u, %u, %u}},\n",
+                              temp_ops[i].mask[0], temp_ops[i].mask[1],
+                              temp_ops[i].mask[2], temp_ops[i].mask[3],
+                              temp_ops[i].mask[4], temp_ops[i].mask[5],
+                              temp_ops[i].mask[6], temp_ops[i].mask[7]);
             } else if (temp_ops[i].type == META_OP_BOUNDED) {
-                w = snprintf2(op_ptr, space, "{META_OP_BOUNDED, 0, %d, %d, {0}},\n", temp_ops[i].min, temp_ops[i].max);
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_BOUNDED, 0, %d, %d, {0}},\n",
+                              temp_ops[i].min, temp_ops[i].max);
             } else if (temp_ops[i].type == META_OP_GROUP_START) {
-                w = snprintf2(op_ptr, space, "{META_OP_GROUP_START, %d, 0, 0, {0}},\n", temp_ops[i].value);
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_GROUP_START, %d, 0, 0, {0}},\n",
+                              temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_GROUP_END) {
-                w = snprintf2(op_ptr, space, "{META_OP_GROUP_END, %d, 0, 0, {0}},\n", temp_ops[i].value);
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_GROUP_END, %d, 0, 0, {0}},\n",
+                              temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_SPLIT) {
-                w = snprintf2(op_ptr, space, "{META_OP_SPLIT, %d, %d, 0, {0}},\n", temp_ops[i].value, temp_ops[i].min);
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_SPLIT, %d, %d, 0, {0}},\n",
+                              temp_ops[i].value, temp_ops[i].min);
             } else if (temp_ops[i].type == META_OP_JUMP) {
-                w = snprintf2(op_ptr, space, "{META_OP_JUMP, %d, 0, 0, {0}},\n", temp_ops[i].value);
+                w = snprintf2(op_ptr, space, "{META_OP_JUMP, %d, 0, 0, {0}},\n",
+                              temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_WORD_START) {
-                w = snprintf2(op_ptr, space, "{META_OP_WORD_START, 0, 0, 0, {0}},\n");
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_WORD_START, 0, 0, 0, {0}},\n");
             } else if (temp_ops[i].type == META_OP_WORD_END) {
-                w = snprintf2(op_ptr, space, "{META_OP_WORD_END, 0, 0, 0, {0}},\n");
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_WORD_END, 0, 0, 0, {0}},\n");
             } else if (temp_ops[i].type == META_OP_WORD_BOUNDARY) {
-                w = snprintf2(op_ptr, space, "{META_OP_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
             } else if (temp_ops[i].type == META_OP_NON_WORD_BOUNDARY) {
-                w = snprintf2(op_ptr, space, "{META_OP_NON_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_NON_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
             } else {
                 char *type_str;
                 type_str = "META_OP_UNKNOWN";
-                if (temp_ops[i].type == META_OP_STAR) type_str = "META_OP_STAR";
-                else if (temp_ops[i].type == META_OP_PLUS) type_str = "META_OP_PLUS";
-                else if (temp_ops[i].type == META_OP_OPTIONAL) type_str = "META_OP_OPTIONAL";
-                else if (temp_ops[i].type == META_OP_ALTERNATION) type_str = "META_OP_ALTERNATION";
-                else if (temp_ops[i].type == META_OP_ANY) type_str = "META_OP_ANY";
-                
+                if (temp_ops[i].type == META_OP_STAR) {
+                    type_str = "META_OP_STAR";
+                } else if (temp_ops[i].type == META_OP_PLUS) {
+                    type_str = "META_OP_PLUS";
+                } else if (temp_ops[i].type == META_OP_OPTIONAL) {
+                    type_str = "META_OP_OPTIONAL";
+                } else if (temp_ops[i].type == META_OP_ALTERNATION) {
+                    type_str = "META_OP_ALTERNATION";
+                } else if (temp_ops[i].type == META_OP_ANY) {
+                    type_str = "META_OP_ANY";
+                }
+
                 w = snprintf2(op_ptr, space, "{%s, 0, 0, 0, {0}},\n", type_str);
             }
             op_ptr += w;
@@ -604,9 +677,9 @@ main(int argc, char **argv) {
         printf("&(MetaRegex){ .string = %.*s, .ops = { %s }, "
                ".has_start_anchor = %d, .has_end_anchor = %d, "
                ".has_alternation = %d }",
-               original_string_length, quote_start, op_buffer, has_start, 
+               original_string_length, quote_start, op_buffer, has_start,
                has_end, has_alternation);
-        
+
         if (paren_end != NULL) {
             cursor = paren_end + 1;
         } else {

@@ -39,13 +39,13 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
 
         if (compiled != 0) {
             char error_message[256];
-            regerror(compiled, &compiled_regex,
-                     error_message, SIZEOF(error_message));
+            regerror(compiled, &compiled_regex, error_message,
+                     SIZEOF(error_message));
             error("Regex compilation failed: %s\n", error_message);
             exit(EXIT_FAILURE);
         }
-        tests_posix[i].result = regexec(&compiled_regex, input,
-                                        MAX_MATCHES, tests_posix[i].pmatch, 0);
+        tests_posix[i].result = regexec(&compiled_regex, input, MAX_MATCHES,
+                                        tests_posix[i].pmatch, 0);
         regfree(&compiled_regex);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
@@ -55,9 +55,8 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
         char *input = tests_meta[i].input;
         MetaRegex *meta_regex = tests_meta[i].meta_regex;
 
-        tests_meta[i].result
-            = meta_regex_match(meta_regex, input,
-                               MAX_MATCHES, tests_meta[i].pmatch);
+        tests_meta[i].result = meta_regex_match(meta_regex, input, MAX_MATCHES,
+                                                tests_meta[i].pmatch);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
@@ -68,8 +67,8 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
         char *input = tests[i].input;
 
         if (tp.result != tm.result) {
-            error2("Error: result mismatch for input "
-                   RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n",
+            error2("Error: result mismatch for input " RED(
+                       "\"%s\"") " against regex " BLUE("\"%s\"") "\n",
                    input, regex);
             error2("posix: %d, meta: %d\n", tp.result, tm.result);
         } else if (tp.result == 0) {
@@ -78,9 +77,9 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
                 regmatch_t m_m = tm.pmatch[m];
 
                 if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
-                    error2("Mismatch in capture group %d:\ninput "
-                          RED("%s") " against regex " BLUE("%s") "\n",
-                          m, input, regex);
+                    error2("Mismatch in capture group %d:\ninput " RED(
+                               "%s") " against regex " BLUE("%s") "\n",
+                           m, input, regex);
                     error2("posix: rm_so=%d, rm_eo=%d\n", p_m.rm_so, p_m.rm_eo);
                     error2("meta:  rm_so=%d, rm_eo=%d\n", m_m.rm_so, m_m.rm_eo);
                 }
@@ -109,17 +108,20 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
         int32 result;
         bool matched;
 
-        result = meta_regex_match(meta_regex, input,
-                                  MAX_MATCHES, tests[i].pmatch); 
+        result
+            = meta_regex_match(meta_regex, input, MAX_MATCHES, tests[i].pmatch);
         matched = !result;
         bool expected = (bool)tests[i].result;
 
         if (matched != expected) {
-            error2("Error: expectation mismatch for input " RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n", input, meta_regex->string);
-            error2("expected: %s, got: %s\n", expected ? "MATCH" : "NOMATCH", matched ? "MATCH" : "NOMATCH");
+            error2("Error: expectation mismatch for input " RED(
+                       "\"%s\"") " against regex " BLUE("\"%s\"") "\n",
+                   input, meta_regex->string);
+            error2("expected: %s, got: %s\n", expected ? "MATCH" : "NOMATCH",
+                   matched ? "MATCH" : "NOMATCH");
         } else {
-            printf(RED("%15s") " against " BLUE("%18s") ": %s (OK)\n",
-                   input, meta_regex->string, matched ? "MATCH" : "NOMATCH");
+            printf(RED("%15s") " against " BLUE("%18s") ": %s (OK)\n", input,
+                   meta_regex->string, matched ? "MATCH" : "NOMATCH");
         }
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
@@ -155,9 +157,12 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
     for (int32 i = 0; i < fuzzy_len; i += 1) {
         regex_t compiled;
-        char *pattern_str = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
+        char *pattern_str
+            = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
         if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
-            fuzzy[i].result_posix = regexec(&compiled, fuzzy[i].input, MAX_MATCHES, fuzzy[i].pmatch_posix, 0);
+            fuzzy[i].result_posix
+                = regexec(&compiled, fuzzy[i].input, MAX_MATCHES,
+                          fuzzy[i].pmatch_posix, 0);
             regfree(&compiled);
         }
     }
@@ -165,16 +170,20 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
     for (int32 i = 0; i < fuzzy_len; i += 1) {
-        MetaRegex *meta_pattern = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex;
-        fuzzy[i].result_meta = meta_regex_match(meta_pattern, fuzzy[i].input, MAX_MATCHES, fuzzy[i].pmatch_meta);
+        MetaRegex *meta_pattern
+            = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex;
+        fuzzy[i].result_meta = meta_regex_match(
+            meta_pattern, fuzzy[i].input, MAX_MATCHES, fuzzy[i].pmatch_meta);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
     for (int32 i = 0; i < fuzzy_len; i += 1) {
         if (fuzzy[i].result_posix != fuzzy[i].result_meta) {
             char *input = fuzzy[i].input;
-            char *regex = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
-            fprintf(mismatches, "%s against %s [posix=%d][meta=%d]\n", input, regex, fuzzy[i].result_posix, fuzzy[i].result_meta);
+            char *regex
+                = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
+            fprintf(mismatches, "%s against %s [posix=%d][meta=%d]\n", input,
+                    regex, fuzzy[i].result_posix, fuzzy[i].result_meta);
         }
     }
 
@@ -196,8 +205,10 @@ main(void) {
     srand((uint)42);
 
 #if !BENCHMARK
-    run_posix_vs_meta(ascii_against_ascii, LENGTH(ascii_against_ascii), "ASCII vs ASCII");
-    run_posix_vs_meta(utf8_against_ascii, LENGTH(utf8_against_ascii), "UTF8 vs ASCII");
+    run_posix_vs_meta(ascii_against_ascii, LENGTH(ascii_against_ascii),
+                      "ASCII vs ASCII");
+    run_posix_vs_meta(utf8_against_ascii, LENGTH(utf8_against_ascii),
+                      "UTF8 vs ASCII");
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "UTF8 vs UTF8");
 #endif
 
