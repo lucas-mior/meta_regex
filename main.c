@@ -252,8 +252,8 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
         char name_posix[256];
         char name_meta[256];
 
-        SNPRINTF(name_posix, "posix [%d]", max_str_size);
-        SNPRINTF(name_meta, "meta [%d]", max_str_size);
+        SNPRINTF(name_posix, YELLOW("posix [%d]"), max_str_size);
+        SNPRINTF(name_meta, GREEN("meta [%d]"), max_str_size);
 
         PRINT_TIMINGS(fuzzy_len, t0_posix, t1_posix, name_posix);
         PRINT_TIMINGS(fuzzy_len, t0_meta, t1_meta, name_meta);
