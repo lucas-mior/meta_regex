@@ -31,6 +31,7 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
     struct timespec t1_meta;
     RegexTest *tests_posix = xmemdup(tests, count * SIZEOF(RegexTest));
     RegexTest *tests_meta = xmemdup(tests, count * SIZEOF(RegexTest));
+    bool failed = false;
 
     printf("\n----- Running %s (POSIX vs Meta) -----\n", description);
 
@@ -75,6 +76,7 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
                        "\"%s\"") " against regex " BLUE("\"%s\"") "\n",
                    input, regex);
             error2("posix: %d, meta: %d\n", tp.result, tm.result);
+            failed = true;
         } else if (tp.result == 0) {
             for (int32 m = 0; m < MAX_MATCHES; m += 1) {
                 regmatch_t p_m = tp.pmatch[m];
@@ -86,9 +88,14 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
                            m, input, regex);
                     error2("posix: rm_so=%d, rm_eo=%d\n", p_m.rm_so, p_m.rm_eo);
                     error2("meta:  rm_so=%d, rm_eo=%d\n", m_m.rm_so, m_m.rm_eo);
+                    failed = true;
                 }
             }
         }
+    }
+
+    if (failed) {
+        exit(EXIT_FAILURE);
     }
 
     PRINT_TIMINGS(count, t0_posix, t1_posix, "posix");
