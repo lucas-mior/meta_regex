@@ -562,14 +562,21 @@ try_match_internal(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
 static int32
 try_match_dfa(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
               regmatch_t pmatch[]) {
-    Dfa *dfa = regex->dfa;
-    int32 current_state = dfa->start_state;
-    int32 last_accept = -1;
+    Dfa *dfa;
+    DfaState *current_state_ptr;
+    int32 last_accept;
+
+    dfa = regex->dfa;
+    current_state_ptr = &dfa->states[dfa->start_state];
+    last_accept = -1;
 
     for (int32 i = offset;; i += 1) {
-        uchar b = (uchar)string[i];
+        uchar b;
+        int32 next_state_idx;
 
-        if (dfa->states[current_state].is_accepting) {
+        b = (uchar)string[i];
+
+        if (current_state_ptr->is_accepting) {
             last_accept = i;
         }
 
@@ -577,10 +584,12 @@ try_match_dfa(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
             break;
         }
 
-        current_state = dfa->states[current_state].next[b];
-        if (current_state == 0) {
+        next_state_idx = current_state_ptr->next[b];
+        if (next_state_idx == 0) {
             break;
         }
+
+        current_state_ptr = &dfa->states[next_state_idx];
     }
 
     if (last_accept >= 0) {
@@ -613,17 +622,12 @@ meta_regex_match(MetaRegex *regex, char *string, int64 nmatch,
         }
     }
 
-    /*
-     * Decision logic: Backreferences and unsupported groups require the 
-     * backtracking NFA. The preprocessor evaluates this and sets dfa to NULL.
-     */
     use_backtracking = 0;
     if (regex->has_backref || regex->dfa == NULL) {
         use_backtracking = 1;
     }
 
     if (use_backtracking) {
-        /* Path 1: Backtracking NFA (Supports backreferences) */
         if (regex->has_start_anchor) {
             result = try_match_internal(regex, string, 0, nmatch, pmatch);
             if (result == 0) {
@@ -632,12 +636,12 @@ meta_regex_match(MetaRegex *regex, char *string, int64 nmatch,
             return REG_NOMATCH;
         }
 
-        for (int32 j = 0;;) {
+        for (int32 j = 0;; j += 1) {
             uchar b;
             int32 bit_match;
 
             b = (uchar)string[j];
-            bit_match = (regex->fastmap[b / 8] & (1 << (b % 8)));
+            bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
 
             if (bit_match || regex->can_be_null) {
                 result = try_match_internal(regex, string, j, nmatch, pmatch);
@@ -646,13 +650,11 @@ meta_regex_match(MetaRegex *regex, char *string, int64 nmatch,
                 }
             }
 
-            if (string[j] == '\0') {
+            if (b == '\0') {
                 break;
             }
-            j += 1;
         }
     } else {
-        /* Path 2: DFA Execution */
         if (regex->has_start_anchor) {
             result = try_match_dfa(regex, string, 0, nmatch, pmatch);
             if (result == 0) {
@@ -661,12 +663,12 @@ meta_regex_match(MetaRegex *regex, char *string, int64 nmatch,
             return REG_NOMATCH;
         }
 
-        for (int32 j = 0;;) {
+        for (int32 j = 0;; j += 1) {
             uchar b;
             int32 bit_match;
 
             b = (uchar)string[j];
-            bit_match = (regex->fastmap[b / 8] & (1 << (b % 8)));
+            bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
 
             if (bit_match || regex->can_be_null) {
                 result = try_match_dfa(regex, string, j, nmatch, pmatch);
@@ -675,10 +677,9 @@ meta_regex_match(MetaRegex *regex, char *string, int64 nmatch,
                 }
             }
 
-            if (string[j] == '\0') {
+            if (b == '\0') {
                 break;
             }
-            j += 1;
         }
     }
 
