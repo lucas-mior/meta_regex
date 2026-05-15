@@ -19,6 +19,10 @@
 #define error2(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
+#if !defined(BENCHMARK)
+#define BENCHMARK 0
+#endif
+
 static void
 run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
     struct timespec t0_posix;
