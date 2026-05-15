@@ -560,6 +560,43 @@ try_match_internal(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
 }
 
 static int32
+try_match_dfa(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
+              regmatch_t pmatch[]) {
+    Dfa *dfa = regex->dfa;
+    int32 current_state = dfa->start_state;
+    int32 last_accept = -1;
+
+    for (int32 i = offset;; i += 1) {
+        uchar b = (uchar)string[i];
+
+        if (dfa->states[current_state].is_accepting) {
+            last_accept = i;
+        }
+
+        if (b == '\0') {
+            break;
+        }
+
+        current_state = dfa->states[current_state].next[b];
+        if (current_state == 0) {
+            break;
+        }
+    }
+
+    if (last_accept >= 0) {
+        if (!regex->has_end_anchor || string[last_accept] == '\0') {
+            if (pmatch != NULL && nmatch > 0) {
+                pmatch[0].rm_so = offset;
+                pmatch[0].rm_eo = last_accept;
+            }
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
+static int32
 meta_regex_match(MetaRegex *regex, char *string, int64 nmatch,
                  regmatch_t pmatch[]) {
     int32 result;
@@ -577,12 +614,11 @@ meta_regex_match(MetaRegex *regex, char *string, int64 nmatch,
     }
 
     /*
-     * Decision logic: Backreferences require the backtracking NFA.
-     * Capturing groups can be handled by a Thompson NFA, but if we
-     * use a pure DFA later, we might need to flag them here too.
+     * Decision logic: Backreferences and unsupported groups require the 
+     * backtracking NFA. The preprocessor evaluates this and sets dfa to NULL.
      */
     use_backtracking = 0;
-    if (regex->has_backref) {
+    if (regex->has_backref || regex->dfa == NULL) {
         use_backtracking = 1;
     }
 
@@ -616,13 +652,9 @@ meta_regex_match(MetaRegex *regex, char *string, int64 nmatch,
             j += 1;
         }
     } else {
-        /*
-         * Path 2: Placeholder for DFA
-         * Currently falling back to backtracking until the DFA
-         * implementation is ready.
-         */
+        /* Path 2: DFA Execution */
         if (regex->has_start_anchor) {
-            result = try_match_internal(regex, string, 0, nmatch, pmatch);
+            result = try_match_dfa(regex, string, 0, nmatch, pmatch);
             if (result == 0) {
                 return 0;
             }
@@ -637,7 +669,7 @@ meta_regex_match(MetaRegex *regex, char *string, int64 nmatch,
             bit_match = (regex->fastmap[b / 8] & (1 << (b % 8)));
 
             if (bit_match || regex->can_be_null) {
-                result = try_match_internal(regex, string, j, nmatch, pmatch);
+                result = try_match_dfa(regex, string, j, nmatch, pmatch);
                 if (result == 0) {
                     return 0;
                 }

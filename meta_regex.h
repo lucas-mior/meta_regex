@@ -32,9 +32,15 @@ typedef struct MetaOp {
     uint32 mask[8];
 } MetaOp;
 
+typedef struct DfaState {
+    int32 is_accepting;
+    int32 next[256];
+} DfaState;
+
 typedef struct Dfa {
-    // implement
-    int32 dummy;
+    int32 num_states;
+    int32 start_state;
+    DfaState states[256];
 } Dfa;
 
 typedef struct MetaRegex {

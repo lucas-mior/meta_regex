@@ -13,6 +13,25 @@ typedef struct ParsedOp {
     uint32 mask[8];
 } ParsedOp;
 
+typedef struct NfaState {
+    int32 type; 
+    int32 c;
+    uint32 mask[8];
+    int32 next1;
+    int32 next2;
+} NfaState;
+
+typedef struct NfaItem {
+    ParsedOp base_op;
+    int32 quant; 
+    int32 min;
+    int32 max;
+} NfaItem;
+
+typedef struct DfaSet {
+    uint32 bits[64]; 
+} DfaSet;
+
 static void
 set_fastmap_bit(uchar *fastmap, int32 c) {
     if (c >= 0 && c < 256) {
@@ -84,7 +103,69 @@ main(int32 argc, char **argv) {
         uchar fastmap[32] = {0};
         int32 can_be_null = 0;
 
-        found_macro = strstr(cursor, macro_start);
+        found_macro = NULL;
+        {
+            char *scan = cursor;
+            int32 in_line_comment = 0;
+            int32 in_block_comment = 0;
+            int32 in_string = 0;
+            int32 in_char = 0;
+
+            while (*scan != '\0') {
+                if (in_line_comment) {
+                    if (*scan == '\n') {
+                        in_line_comment = 0;
+                    }
+                    scan += 1;
+                } else if (in_block_comment) {
+                    if (scan[0] == '*' && scan[1] == '/') {
+                        in_block_comment = 0;
+                        scan += 2;
+                    } else {
+                        scan += 1;
+                    }
+                } else if (in_string) {
+                    if (scan[0] == '\\' && scan[1] != '\0') {
+                        scan += 2;
+                    } else if (scan[0] == '"') {
+                        in_string = 0;
+                        scan += 1;
+                    } else {
+                        scan += 1;
+                    }
+                } else if (in_char) {
+                    if (scan[0] == '\\' && scan[1] != '\0') {
+                        scan += 2;
+                    } else if (scan[0] == '\'') {
+                        in_char = 0;
+                        scan += 1;
+                    } else {
+                        scan += 1;
+                    }
+                } else {
+                    if (scan[0] == '/' && scan[1] == '/') {
+                        in_line_comment = 1;
+                        scan += 2;
+                    } else if (scan[0] == '/' && scan[1] == '*') {
+                        in_block_comment = 1;
+                        scan += 2;
+                    } else if (scan[0] == '"') {
+                        in_string = 1;
+                        scan += 1;
+                    } else if (scan[0] == '\'') {
+                        in_char = 1;
+                        scan += 1;
+                    } else if (scan[0] == macro_start[0]
+                               && scan[1] == macro_start[1]) {
+                        found_macro = scan;
+                        break;
+                    } else {
+                        scan += 1;
+                    }
+                }
+            }
+        }
+
         if (found_macro == NULL) {
             break;
         }
@@ -606,7 +687,6 @@ main(int32 argc, char **argv) {
                         temp_ops[temp_ops_count].value = c_cp;
                         temp_ops_count += 1;
                     }
-                    regex_index += 1;
                 }
                 break;
             }
@@ -620,7 +700,6 @@ main(int32 argc, char **argv) {
             }
         }
 
-        /* --- Corrected Metadata extraction logic --- */
         {
             int32 current_branch_nullable = 1;
             int32 regex_is_nullable = 0;
@@ -629,7 +708,6 @@ main(int32 argc, char **argv) {
                 enum MetaOpType type = temp_ops[i].type;
                 int32 op_is_quantified_nullable = 0;
 
-                /* Lookahead for nullifying quantifiers */
                 if (i + 1 < temp_ops_count) {
                     enum MetaOpType next = temp_ops[i + 1].type;
                     if (next == META_OP_STAR || next == META_OP_OPTIONAL
@@ -643,7 +721,7 @@ main(int32 argc, char **argv) {
                     if (current_branch_nullable) {
                         regex_is_nullable = 1;
                     }
-                    current_branch_nullable = 1; /* Reset for next branch */
+                    current_branch_nullable = 1; 
                     continue;
                 }
 
@@ -766,7 +844,420 @@ main(int32 argc, char **argv) {
         for (int32 i = 0; i < 32; i += 1) {
             printf("0x%02x%s", fastmap[i], (i == 31 ? "" : ", "));
         }
-        printf("} }");
+        printf("}"); 
+
+        {
+            int32 unsupported = 0;
+            if (group_counter > 0) {
+                unsupported = 1;
+            }
+            if (has_backref > 0) {
+                unsupported = 1;
+            }
+
+            for (int32 i = 0; i < temp_ops_count; i += 1) {
+                if (temp_ops[i].type == META_OP_WORD_BOUNDARY) { unsupported = 1; break; }
+                if (temp_ops[i].type == META_OP_WORD_START) { unsupported = 1; break; }
+                if (temp_ops[i].type == META_OP_WORD_END) { unsupported = 1; break; }
+                if (temp_ops[i].type == META_OP_NON_WORD_BOUNDARY) { unsupported = 1; break; }
+                if (temp_ops[i].type == META_OP_BACKREF) { unsupported = 1; break; }
+            }
+
+            if (unsupported) {
+                printf(", .dfa = NULL }");
+            } else {
+                NfaState nfa[2048];
+                int32 nfa_count = 0;
+                NfaItem items[1024];
+                int32 item_count = 0;
+                int32 nfa_failed = 0;
+                int32 nfa_accept;
+                int32 branch_starts[128];
+                int32 branch_count = 0;
+                int32 b_start = -1;
+                int32 prev_dangling = -1;
+                int32 nfa_start_state = -1;
+                int32 dfa_transitions[256][256];
+                int32 dfa_accept[256];
+                DfaSet dfa_sets[256];
+                int32 dfa_count = 1; 
+                int32 start_dfa = 0;
+
+                for (int32 i = 0; i < temp_ops_count; i += 1) {
+                    if (temp_ops[i].type == META_OP_ALTERNATION) {
+                        items[item_count].base_op.type = META_OP_ALTERNATION;
+                        items[item_count].quant = 0;
+                        item_count += 1;
+                    } else if (temp_ops[i].type == META_OP_LITERAL || temp_ops[i].type == META_OP_CLASS || temp_ops[i].type == META_OP_ANY) {
+                        items[item_count].base_op = temp_ops[i];
+                        items[item_count].quant = 0;
+                        if (i + 1 < temp_ops_count) {
+                            enum MetaOpType qt = temp_ops[i + 1].type;
+                            if (qt == META_OP_STAR) {
+                                items[item_count].quant = 1;
+                                i += 1;
+                            } else if (qt == META_OP_PLUS) {
+                                items[item_count].quant = 2;
+                                i += 1;
+                            } else if (qt == META_OP_OPTIONAL) {
+                                items[item_count].quant = 3;
+                                i += 1;
+                            } else if (qt == META_OP_BOUNDED) {
+                                items[item_count].quant = 4;
+                                items[item_count].min = temp_ops[i + 1].min;
+                                items[item_count].max = temp_ops[i + 1].max;
+                                i += 1;
+                            }
+                        }
+                        item_count += 1;
+                    }
+                }
+
+                nfa_accept = nfa_count;
+                nfa_count += 1;
+                nfa[nfa_accept].type = 0; 
+                nfa[nfa_accept].next1 = -1; 
+                nfa[nfa_accept].next2 = -1;
+
+                for (int32 i = 0; i <= item_count; i += 1) {
+                    if (nfa_failed) {
+                        break;
+                    }
+                    if (i == item_count || items[i].base_op.type == META_OP_ALTERNATION) {
+                        if (b_start == -1) {
+                            b_start = nfa_count;
+                            nfa_count += 1;
+                            nfa[b_start].type = 5; 
+                            nfa[b_start].next1 = -1; 
+                            nfa[b_start].next2 = -1;
+                        }
+                        
+                        if (prev_dangling != -1) {
+                            if (nfa[prev_dangling].type == 4) {
+                                nfa[prev_dangling].next2 = nfa_accept;
+                            } else {
+                                nfa[prev_dangling].next1 = nfa_accept;
+                            }
+                        } else {
+                            nfa[b_start].next1 = nfa_accept;
+                        }
+
+                        if (branch_count < 128) {
+                            branch_starts[branch_count] = b_start;
+                            branch_count += 1;
+                        } else {
+                            nfa_failed = 1;
+                        }
+
+                        b_start = -1;
+                        prev_dangling = -1;
+                        continue;
+                    }
+
+                    int32 s_base = nfa_count;
+                    nfa_count += 1;
+                    if (nfa_count > 2048) { nfa_failed = 1; break; }
+                    
+                    if (items[i].base_op.type == META_OP_ANY) {
+                        nfa[s_base].type = 3;
+                    } else if (items[i].base_op.type == META_OP_CLASS) {
+                        nfa[s_base].type = 2;
+                    } else {
+                        nfa[s_base].type = 1;
+                    }
+                    
+                    nfa[s_base].c = items[i].base_op.value;
+                    nfa[s_base].next1 = -1;
+                    nfa[s_base].next2 = -1;
+                    for (int32 k = 0; k < 8; k += 1) {
+                        nfa[s_base].mask[k] = items[i].base_op.mask[k];
+                    }
+
+                    int32 i_start = -1;
+                    int32 i_out = -1;
+
+                    if (items[i].quant == 0) {
+                        i_start = s_base;
+                        i_out = s_base;
+                    } else if (items[i].quant == 1) {
+                        int32 s_split = nfa_count;
+                        nfa_count += 1;
+                        if (nfa_count > 2048) { nfa_failed = 1; break; }
+                        nfa[s_split].type = 4;
+                        nfa[s_split].next1 = s_base;
+                        nfa[s_split].next2 = -1;
+                        nfa[s_base].next1 = s_split;
+                        i_start = s_split;
+                        i_out = s_split;
+                    } else if (items[i].quant == 2) {
+                        int32 s_split = nfa_count;
+                        nfa_count += 1;
+                        if (nfa_count > 2048) { nfa_failed = 1; break; }
+                        nfa[s_split].type = 4;
+                        nfa[s_split].next1 = s_base;
+                        nfa[s_split].next2 = -1;
+                        nfa[s_base].next1 = s_split;
+                        i_start = s_base;
+                        i_out = s_split;
+                    } else if (items[i].quant == 3) {
+                        int32 s_split = nfa_count;
+                        nfa_count += 1;
+                        int32 s_merge = nfa_count;
+                        nfa_count += 1;
+                        if (nfa_count > 2048) { nfa_failed = 1; break; }
+                        nfa[s_split].type = 4;
+                        nfa[s_merge].type = 5;
+                        nfa[s_split].next1 = s_base;
+                        nfa[s_split].next2 = s_merge;
+                        nfa[s_base].next1 = s_merge;
+                        nfa[s_merge].next1 = -1;
+                        nfa[s_merge].next2 = -1;
+                        i_start = s_split;
+                        i_out = s_merge;
+                    } else if (items[i].quant == 4) {
+                        int32 f_start = -1;
+                        int32 l_out = -1;
+                        for (int32 k = 0; k < items[i].min; k += 1) {
+                            int32 copy = nfa_count;
+                            nfa_count += 1;
+                            if (nfa_count > 2048) { nfa_failed = 1; break; }
+                            nfa[copy] = nfa[s_base];
+                            nfa[copy].next1 = -1;
+                            nfa[copy].next2 = -1;
+                            if (f_start == -1) { f_start = copy; }
+                            if (l_out != -1) {
+                                if (nfa[l_out].type == 4) {
+                                    nfa[l_out].next2 = copy;
+                                } else {
+                                    nfa[l_out].next1 = copy;
+                                }
+                            }
+                            l_out = copy;
+                        }
+                        if (items[i].max == -1) {
+                            int32 s_star = nfa_count;
+                            nfa_count += 1;
+                            int32 copy = nfa_count;
+                            nfa_count += 1;
+                            if (nfa_count > 2048) { nfa_failed = 1; break; }
+                            nfa[copy] = nfa[s_base];
+                            nfa[copy].next1 = -1;
+                            nfa[copy].next2 = -1;
+                            nfa[s_star].type = 4;
+                            nfa[s_star].next1 = copy;
+                            nfa[s_star].next2 = -1;
+                            nfa[copy].next1 = s_star;
+                            if (f_start == -1) { f_start = s_star; }
+                            if (l_out != -1) {
+                                if (nfa[l_out].type == 4) {
+                                    nfa[l_out].next2 = s_star;
+                                } else {
+                                    nfa[l_out].next1 = s_star;
+                                }
+                            }
+                            l_out = s_star;
+                        } else {
+                            for (int32 k = items[i].min; k < items[i].max; k += 1) {
+                                int32 s_split = nfa_count;
+                                nfa_count += 1;
+                                int32 copy = nfa_count;
+                                nfa_count += 1;
+                                int32 s_merge = nfa_count;
+                                nfa_count += 1;
+                                if (nfa_count > 2048) { nfa_failed = 1; break; }
+                                nfa[copy] = nfa[s_base];
+                                nfa[copy].next1 = -1;
+                                nfa[copy].next2 = -1;
+                                nfa[s_split].type = 4;
+                                nfa[s_merge].type = 5;
+                                nfa[s_merge].next1 = -1;
+                                nfa[s_merge].next2 = -1;
+                                nfa[s_split].next1 = copy;
+                                nfa[s_split].next2 = s_merge;
+                                nfa[copy].next1 = s_merge;
+                                if (f_start == -1) { f_start = s_split; }
+                                if (l_out != -1) {
+                                    if (nfa[l_out].type == 4) {
+                                        nfa[l_out].next2 = s_split;
+                                    } else {
+                                        nfa[l_out].next1 = s_split;
+                                    }
+                                }
+                                l_out = s_merge;
+                            }
+                        }
+                        if (f_start == -1) {
+                            f_start = nfa_count;
+                            nfa_count += 1;
+                            if (nfa_count > 2048) { nfa_failed = 1; break; }
+                            nfa[f_start].type = 5;
+                            nfa[f_start].next1 = -1;
+                            nfa[f_start].next2 = -1;
+                            l_out = f_start;
+                        }
+                        i_start = f_start;
+                        i_out = l_out;
+                    }
+
+                    if (b_start == -1) { b_start = i_start; }
+                    if (prev_dangling != -1) {
+                        if (nfa[prev_dangling].type == 4) {
+                            nfa[prev_dangling].next2 = i_start;
+                        } else {
+                            nfa[prev_dangling].next1 = i_start;
+                        }
+                    }
+                    prev_dangling = i_out;
+                }
+
+                if (!nfa_failed && branch_count > 0) {
+                    nfa_start_state = branch_starts[0];
+                    for (int32 i = 1; i < branch_count; i += 1) {
+                        int32 s = nfa_count;
+                        nfa_count += 1;
+                        if (nfa_count > 2048) { nfa_failed = 1; break; }
+                        nfa[s].type = 4;
+                        nfa[s].next1 = branch_starts[i];
+                        nfa[s].next2 = nfa_start_state;
+                        nfa_start_state = s;
+                    }
+                } else {
+                    nfa_failed = 1;
+                }
+
+                if (!nfa_failed) {
+                    dfa_accept[0] = 0;
+                    for (int32 c = 0; c < 256; c += 1) {
+                        dfa_transitions[0][c] = 0;
+                    }
+
+                    DfaSet start_set = {0};
+                    for (int32 i = 0; i < 64; i += 1) { start_set.bits[i] = 0; }
+                    start_set.bits[nfa_start_state / 32] |= (1u << (nfa_start_state % 32));
+
+                    int32 changed = 1;
+                    while (changed) {
+                        changed = 0;
+                        for (int32 i = 0; i < nfa_count; i += 1) {
+                            if ((start_set.bits[i / 32] & (1u << (i % 32)))) {
+                                if (nfa[i].type == 4 || nfa[i].type == 5) {
+                                    if (nfa[i].next1 != -1 && !(start_set.bits[nfa[i].next1 / 32] & (1u << (nfa[i].next1 % 32)))) {
+                                        start_set.bits[nfa[i].next1 / 32] |= (1u << (nfa[i].next1 % 32));
+                                        changed = 1;
+                                    }
+                                    if (nfa[i].type == 4 && nfa[i].next2 != -1 && !(start_set.bits[nfa[i].next2 / 32] & (1u << (nfa[i].next2 % 32)))) {
+                                        start_set.bits[nfa[i].next2 / 32] |= (1u << (nfa[i].next2 % 32));
+                                        changed = 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    int32 match_id = -1;
+                    for (int32 i = 1; i < dfa_count; i += 1) {
+                        int32 match = 1;
+                        for (int32 k = 0; k < 64; k += 1) {
+                            if (dfa_sets[i].bits[k] != start_set.bits[k]) { match = 0; break; }
+                        }
+                        if (match) { match_id = i; break; }
+                    }
+                    if (match_id != -1) {
+                        start_dfa = match_id;
+                    } else if (dfa_count < 256) {
+                        dfa_sets[dfa_count] = start_set;
+                        dfa_accept[dfa_count] = (start_set.bits[nfa_accept / 32] & (1u << (nfa_accept % 32))) != 0;
+                        for (int32 c = 0; c < 256; c += 1) { dfa_transitions[dfa_count][c] = 0; }
+                        start_dfa = dfa_count;
+                        dfa_count += 1;
+                    } else {
+                        nfa_failed = 1;
+                    }
+                    
+                    if (!nfa_failed) {
+                        for (int32 d = 1; d < dfa_count; d += 1) {
+                            if (nfa_failed) { break; }
+                            for (int32 c = 0; c < 256; c += 1) {
+                                DfaSet next_set = {0};
+                                for (int32 i = 0; i < 64; i += 1) { next_set.bits[i] = 0; }
+                                int32 has_next = 0;
+                                for (int32 i = 0; i < nfa_count; i += 1) {
+                                    if ((dfa_sets[d].bits[i / 32] & (1u << (i % 32)))) {
+                                        if (nfa[i].type == 1 && nfa[i].c == c) {
+                                            next_set.bits[nfa[i].next1 / 32] |= (1u << (nfa[i].next1 % 32));
+                                            has_next = 1;
+                                        } else if (nfa[i].type == 2 && (nfa[i].mask[c / 32] & (1u << (c % 32)))) {
+                                            next_set.bits[nfa[i].next1 / 32] |= (1u << (nfa[i].next1 % 32));
+                                            has_next = 1;
+                                        } else if (nfa[i].type == 3 && c != '\n') {
+                                            next_set.bits[nfa[i].next1 / 32] |= (1u << (nfa[i].next1 % 32));
+                                            has_next = 1;
+                                        }
+                                    }
+                                }
+                                if (has_next) {
+                                    changed = 1;
+                                    while (changed) {
+                                        changed = 0;
+                                        for (int32 i = 0; i < nfa_count; i += 1) {
+                                            if ((next_set.bits[i / 32] & (1u << (i % 32)))) {
+                                                if (nfa[i].type == 4 || nfa[i].type == 5) {
+                                                    if (nfa[i].next1 != -1 && !(next_set.bits[nfa[i].next1 / 32] & (1u << (nfa[i].next1 % 32)))) {
+                                                        next_set.bits[nfa[i].next1 / 32] |= (1u << (nfa[i].next1 % 32));
+                                                        changed = 1;
+                                                    }
+                                                    if (nfa[i].type == 4 && nfa[i].next2 != -1 && !(next_set.bits[nfa[i].next2 / 32] & (1u << (nfa[i].next2 % 32)))) {
+                                                        next_set.bits[nfa[i].next2 / 32] |= (1u << (nfa[i].next2 % 32));
+                                                        changed = 1;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    int32 match_id2 = -1;
+                                    for (int32 i = 1; i < dfa_count; i += 1) {
+                                        int32 match = 1;
+                                        for (int32 k = 0; k < 64; k += 1) {
+                                            if (dfa_sets[i].bits[k] != next_set.bits[k]) { match = 0; break; }
+                                        }
+                                        if (match) { match_id2 = i; break; }
+                                    }
+                                    
+                                    if (match_id2 != -1) {
+                                        dfa_transitions[d][c] = match_id2;
+                                    } else if (dfa_count < 256) {
+                                        dfa_sets[dfa_count] = next_set;
+                                        dfa_accept[dfa_count] = (next_set.bits[nfa_accept / 32] & (1u << (nfa_accept % 32))) != 0;
+                                        for (int32 k = 0; k < 256; k += 1) { dfa_transitions[dfa_count][k] = 0; }
+                                        dfa_transitions[d][c] = dfa_count;
+                                        dfa_count += 1;
+                                    } else {
+                                        nfa_failed = 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (nfa_failed) {
+                    printf(", .dfa = NULL } }");
+                } else {
+                    printf(", .dfa = &(Dfa){ .num_states = %d, .start_state = %d, .states = {\n", dfa_count, start_dfa);
+                    for (int32 i = 0; i < dfa_count; i += 1) {
+                        printf("{ .is_accepting = %d, .next = {", dfa_accept[i]);
+                        for (int32 c = 0; c < 256; c += 1) {
+                            if (dfa_transitions[i][c] != 0) {
+                                printf("[%d]=%d,", c, dfa_transitions[i][c]);
+                            }
+                        }
+                        printf("} },\n");
+                    }
+                    printf("} } }");
+                }
+            }
+        }
 
         if (paren_end != NULL) {
             cursor = paren_end + 1;
