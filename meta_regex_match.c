@@ -5,24 +5,10 @@
 #include <string.h>
 #include "meta_regex.h"
 #include "util.c"
+#include "meta_util.c"
 
-static int32
-is_word_char(char c) {
-    int32 match;
-
-    match = 0;
-    if (c >= 'a' && c <= 'z') {
-        match = 1;
-    } else if (c >= 'A' && c <= 'Z') {
-        match = 1;
-    } else if (c >= '0' && c <= '9') {
-        match = 1;
-    } else if (c == '_') {
-        match = 1;
-    }
-
-    return match;
-}
+static int match_at_recursive(MetaOp *ops, char *orig, char *curr,
+                              size_t nmatch, regmatch_t pmatch[]);
 
 static int32
 quick_lookahead_fails(MetaOp *next_op, char *curr_str) {
@@ -54,9 +40,6 @@ quick_lookahead_fails(MetaOp *next_op, char *curr_str) {
     }
     return 0;
 }
-
-static int match_at_recursive(MetaOp *ops, char *orig, char *curr,
-                              size_t nmatch, regmatch_t pmatch[]);
 
 static int
 eval_choice_point(MetaOp *ops, char *orig, char *curr, size_t nmatch,
