@@ -165,6 +165,11 @@ static RegexTest ascii_against_ascii[] = {
     {"a",            R("\\l")},
     {"U",            R("\\U")},
     {"\\U",          R("\\U")},
+    {"11",           R("([[:digit:]])\\1")},
+    {"a1",           R("^[a-z[:digit:]]+$")},
+    {"-",            R("^[a-z[:digit:]]+$")},
+    {"aaaa",         R("a*aa")},
+    {"ab",           R("(a|ab)")},
 };
 
 static RegexTest utf8_against_ascii[] = {
