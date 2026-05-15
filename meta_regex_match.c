@@ -253,7 +253,7 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
         group_id = ops[0].value;
         backref_len = 0;
         backref_ptr = NULL;
-        if (pmatch != NULL && (size_t)group_id < nmatch 
+        if (pmatch != NULL && (size_t)group_id < nmatch
             && pmatch[group_id].rm_so != -1) {
             backref_len = pmatch[group_id].rm_eo - pmatch[group_id].rm_so;
             backref_ptr = original_string + pmatch[group_id].rm_so;
@@ -543,8 +543,8 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
 }
 
 static int32
-try_match_internal(MetaRegex *regex, char *string, int32 offset,
-                   size_t nmatch, regmatch_t pmatch[]) {
+try_match_internal(MetaRegex *regex, char *string, int32 offset, size_t nmatch,
+                   regmatch_t pmatch[]) {
     char *search_ptr;
     int32 match_len;
     int32 skip_main;
@@ -553,13 +553,13 @@ try_match_internal(MetaRegex *regex, char *string, int32 offset,
     match_len = -1;
 
     if (regex->has_alternation) {
-        match_len = eval_choice_point(regex->ops, string, search_ptr,
-                                      nmatch, pmatch);
+        match_len
+            = eval_choice_point(regex->ops, string, search_ptr, nmatch, pmatch);
     } else {
         skip_main = quick_lookahead_fails(regex->ops, search_ptr);
         if (!skip_main) {
-            match_len = match_at_recursive(regex->ops, string,
-                                           search_ptr, nmatch, pmatch);
+            match_len = match_at_recursive(regex->ops, string, search_ptr,
+                                           nmatch, pmatch);
         }
     }
 
@@ -593,9 +593,9 @@ meta_regex_match(MetaRegex *regex, char *string, size_t nmatch,
         }
     }
 
-    /* 
+    /*
      * Decision logic: Backreferences require the backtracking NFA.
-     * Capturing groups can be handled by a Thompson NFA, but if we 
+     * Capturing groups can be handled by a Thompson NFA, but if we
      * use a pure DFA later, we might need to flag them here too.
      */
     use_backtracking = 0;
@@ -633,9 +633,9 @@ meta_regex_match(MetaRegex *regex, char *string, size_t nmatch,
             j += 1;
         }
     } else {
-        /* 
+        /*
          * Path 2: Placeholder for Thompson NFA or DFA (Linear Time)
-         * Currently falling back to backtracking until the linear 
+         * Currently falling back to backtracking until the linear
          * implementation is ready.
          */
         if (regex->has_start_anchor) {

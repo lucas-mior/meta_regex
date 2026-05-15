@@ -181,8 +181,8 @@ main(int argc, char **argv) {
             }
             case '*': {
                 int32 is_group = (temp_ops_count > 0
-                    && temp_ops[temp_ops_count - 1].type
-                           == META_OP_GROUP_END);
+                                  && temp_ops[temp_ops_count - 1].type
+                                         == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -223,8 +223,8 @@ main(int argc, char **argv) {
             }
             case '+': {
                 int32 is_group = (temp_ops_count > 0
-                    && temp_ops[temp_ops_count - 1].type
-                           == META_OP_GROUP_END);
+                                  && temp_ops[temp_ops_count - 1].type
+                                         == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -256,8 +256,8 @@ main(int argc, char **argv) {
             }
             case '?': {
                 int32 is_group = (temp_ops_count > 0
-                    && temp_ops[temp_ops_count - 1].type
-                           == META_OP_GROUP_END);
+                                  && temp_ops[temp_ops_count - 1].type
+                                         == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -325,8 +325,8 @@ main(int argc, char **argv) {
 
                 if (valid) {
                     int32 is_group = (temp_ops_count > 0
-                        && temp_ops[temp_ops_count - 1].type
-                               == META_OP_GROUP_END);
+                                      && temp_ops[temp_ops_count - 1].type
+                                             == META_OP_GROUP_END);
                     if (is_group) {
                         int32 target_start = temp_ops_count - 1;
                         int32 depth = 0;
@@ -632,8 +632,9 @@ main(int argc, char **argv) {
                 /* Lookahead for nullifying quantifiers */
                 if (i + 1 < temp_ops_count) {
                     enum MetaOpType next = temp_ops[i + 1].type;
-                    if (next == META_OP_STAR || next == META_OP_OPTIONAL ||
-                        (next == META_OP_BOUNDED && temp_ops[i + 1].min == 0)) {
+                    if (next == META_OP_STAR || next == META_OP_OPTIONAL
+                        || (next == META_OP_BOUNDED
+                            && temp_ops[i + 1].min == 0)) {
                         op_is_quantified_nullable = 1;
                     }
                 }
@@ -666,7 +667,8 @@ main(int argc, char **argv) {
                         if (!op_is_quantified_nullable) {
                             current_branch_nullable = 0;
                         }
-                    } else if (type == META_OP_BOUNDED || type == META_OP_PLUS) {
+                    } else if (type == META_OP_BOUNDED
+                               || type == META_OP_PLUS) {
                         if (temp_ops[i].min > 0) {
                             current_branch_nullable = 0;
                         }
