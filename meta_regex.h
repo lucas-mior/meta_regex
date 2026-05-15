@@ -32,6 +32,11 @@ typedef struct MetaOp {
     uint32 mask[8];
 } MetaOp;
 
+typedef struct Dfa {
+    // implement
+    int32 dummy;
+} Dfa;
+
 typedef struct MetaRegex {
     char *string;
     MetaOp ops[512];
@@ -42,6 +47,7 @@ typedef struct MetaRegex {
     int32 has_backref;
     int32 can_be_null;
     uint8 fastmap[32];
+    Dfa *dfa;
 } MetaRegex;
 
 #define R(...) (&(MetaRegex){ .string = __VA_ARGS__ })
