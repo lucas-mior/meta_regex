@@ -18,7 +18,9 @@ enum MetaOpType {
     META_OP_SPLIT,
     META_OP_JUMP,
     META_OP_WORD_START,
-    META_OP_WORD_END
+    META_OP_WORD_END,
+    META_OP_WORD_BOUNDARY,
+    META_OP_NON_WORD_BOUNDARY
 };
 
 typedef struct MetaOp {

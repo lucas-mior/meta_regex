@@ -531,6 +531,12 @@ main(int argc, char **argv) {
                     } else if (c_cp == '>') {
                         temp_ops[temp_ops_count].type = META_OP_WORD_END;
                         temp_ops_count += 1;
+                    } else if (c_cp == 'b') {
+                        temp_ops[temp_ops_count].type = META_OP_WORD_BOUNDARY;
+                        temp_ops_count += 1;
+                    } else if (c_cp == 'B') {
+                        temp_ops[temp_ops_count].type = META_OP_NON_WORD_BOUNDARY;
+                        temp_ops_count += 1;
                     } else {
                         temp_ops[temp_ops_count].type = META_OP_LITERAL;
                         temp_ops[temp_ops_count].value = c_cp;
@@ -574,8 +580,13 @@ main(int argc, char **argv) {
                 w = snprintf2(op_ptr, space, "{META_OP_WORD_START, 0, 0, 0, {0}},\n");
             } else if (temp_ops[i].type == META_OP_WORD_END) {
                 w = snprintf2(op_ptr, space, "{META_OP_WORD_END, 0, 0, 0, {0}},\n");
+            } else if (temp_ops[i].type == META_OP_WORD_BOUNDARY) {
+                w = snprintf2(op_ptr, space, "{META_OP_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
+            } else if (temp_ops[i].type == META_OP_NON_WORD_BOUNDARY) {
+                w = snprintf2(op_ptr, space, "{META_OP_NON_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
             } else {
-                char *type_str = "META_OP_UNKNOWN";
+                char *type_str;
+                type_str = "META_OP_UNKNOWN";
                 if (temp_ops[i].type == META_OP_STAR) type_str = "META_OP_STAR";
                 else if (temp_ops[i].type == META_OP_PLUS) type_str = "META_OP_PLUS";
                 else if (temp_ops[i].type == META_OP_OPTIONAL) type_str = "META_OP_OPTIONAL";
