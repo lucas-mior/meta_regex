@@ -580,6 +580,7 @@ static int
 meta_regex_match(MetaRegex *regex, char *string, size_t nmatch,
                  regmatch_t pmatch[]) {
     int32 result;
+    int32 use_backtracking;
 
     if (regex == NULL) {
         return REG_NOMATCH;
@@ -592,34 +593,78 @@ meta_regex_match(MetaRegex *regex, char *string, size_t nmatch,
         }
     }
 
-    /* Optimization 1: Start anchor short-circuit */
-    if (regex->has_start_anchor) {
-        result = try_match_internal(regex, string, 0, nmatch, pmatch);
-        if (result == 0) {
-            return 0;
-        }
-        return REG_NOMATCH;
+    /* 
+     * Decision logic: Backreferences require the backtracking NFA.
+     * Capturing groups can be handled by a Thompson NFA, but if we 
+     * use a pure DFA later, we might need to flag them here too.
+     */
+    use_backtracking = 0;
+    if (regex->has_backref) {
+        use_backtracking = 1;
     }
 
-    /* Optimization 2: Fastmap skip loop */
-    for (int32 j = 0;;) {
-        unsigned char b;
-        int32 bit_match;
-
-        b = (unsigned char)string[j];
-        bit_match = (regex->fastmap[b / 8] & (1 << (b % 8)));
-
-        if (bit_match || regex->can_be_null) {
-            result = try_match_internal(regex, string, j, nmatch, pmatch);
+    if (use_backtracking) {
+        /* Path 1: Backtracking NFA (Supports backreferences) */
+        if (regex->has_start_anchor) {
+            result = try_match_internal(regex, string, 0, nmatch, pmatch);
             if (result == 0) {
                 return 0;
             }
+            return REG_NOMATCH;
         }
 
-        if (string[j] == '\0') {
-            break;
+        for (int32 j = 0;;) {
+            unsigned char b;
+            int32 bit_match;
+
+            b = (unsigned char)string[j];
+            bit_match = (regex->fastmap[b / 8] & (1 << (b % 8)));
+
+            if (bit_match || regex->can_be_null) {
+                result = try_match_internal(regex, string, j, nmatch, pmatch);
+                if (result == 0) {
+                    return 0;
+                }
+            }
+
+            if (string[j] == '\0') {
+                break;
+            }
+            j += 1;
         }
-        j += 1;
+    } else {
+        /* 
+         * Path 2: Placeholder for Thompson NFA or DFA (Linear Time)
+         * Currently falling back to backtracking until the linear 
+         * implementation is ready.
+         */
+        if (regex->has_start_anchor) {
+            result = try_match_internal(regex, string, 0, nmatch, pmatch);
+            if (result == 0) {
+                return 0;
+            }
+            return REG_NOMATCH;
+        }
+
+        for (int32 j = 0;;) {
+            unsigned char b;
+            int32 bit_match;
+
+            b = (unsigned char)string[j];
+            bit_match = (regex->fastmap[b / 8] & (1 << (b % 8)));
+
+            if (bit_match || regex->can_be_null) {
+                result = try_match_internal(regex, string, j, nmatch, pmatch);
+                if (result == 0) {
+                    return 0;
+                }
+            }
+
+            if (string[j] == '\0') {
+                break;
+            }
+            j += 1;
+        }
     }
 
     return REG_NOMATCH;
