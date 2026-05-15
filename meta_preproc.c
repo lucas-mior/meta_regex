@@ -614,55 +614,63 @@ main(int argc, char **argv) {
             }
         }
 
-        /* Calculate useful info from temp_ops */
-        if (temp_ops_count == 0) {
-            can_be_null = 1;
-        } else {
-            /* Basic Fastmap and Nullability calculation */
-            bool branch_done = false;
+        /* --- Corrected Metadata extraction logic --- */
+        {
+            int32 current_branch_nullable = 1;
+            int32 regex_is_nullable = 0;
+
             for (int32 i = 0; i < temp_ops_count; i += 1) {
-                if (branch_done) {
-                    break;
+                enum MetaOpType type = temp_ops[i].type;
+                int32 op_is_quantified_nullable = 0;
+
+                /* Lookahead for nullifying quantifiers */
+                if (i + 1 < temp_ops_count) {
+                    enum MetaOpType next = temp_ops[i + 1].type;
+                    if (next == META_OP_STAR || next == META_OP_OPTIONAL ||
+                        (next == META_OP_BOUNDED && temp_ops[i + 1].min == 0)) {
+                        op_is_quantified_nullable = 1;
+                    }
                 }
 
-                switch (temp_ops[i].type) {
-                case META_OP_LITERAL:
-                    set_fastmap_bit(fastmap, temp_ops[i].value);
-                    branch_done = true;
-                    break;
-                case META_OP_CLASS:
-                    for (int32 c = 0; c < 256; c += 1) {
-                        if (temp_ops[i].mask[c / 32] & (1u << (c % 32))) {
-                            set_fastmap_bit(fastmap, c);
+                if (type == META_OP_ALTERNATION) {
+                    if (current_branch_nullable) {
+                        regex_is_nullable = 1;
+                    }
+                    current_branch_nullable = 1; /* Reset for next branch */
+                    continue;
+                }
+
+                if (current_branch_nullable) {
+                    if (type == META_OP_LITERAL) {
+                        set_fastmap_bit(fastmap, temp_ops[i].value);
+                        if (!op_is_quantified_nullable) {
+                            current_branch_nullable = 0;
+                        }
+                    } else if (type == META_OP_CLASS) {
+                        for (int32 c = 0; c < 256; c += 1) {
+                            if (temp_ops[i].mask[c / 32] & (1u << (c % 32))) {
+                                set_fastmap_bit(fastmap, c);
+                            }
+                        }
+                        if (!op_is_quantified_nullable) {
+                            current_branch_nullable = 0;
+                        }
+                    } else if (type == META_OP_ANY) {
+                        memset(fastmap, 0xff, 32);
+                        if (!op_is_quantified_nullable) {
+                            current_branch_nullable = 0;
+                        }
+                    } else if (type == META_OP_BOUNDED || type == META_OP_PLUS) {
+                        if (temp_ops[i].min > 0) {
+                            current_branch_nullable = 0;
                         }
                     }
-                    branch_done = true;
-                    break;
-                case META_OP_ANY:
-                    memset(fastmap, 0xff, 32);
-                    branch_done = true;
-                    break;
-                case META_OP_STAR:
-                case META_OP_OPTIONAL:
-                    /* These could match nothing, so don't stop the branch */
-                    break;
-                case META_OP_GROUP_START:
-                case META_OP_GROUP_END:
-                case META_OP_WORD_START:
-                case META_OP_WORD_END:
-                case META_OP_WORD_BOUNDARY:
-                case META_OP_NON_WORD_BOUNDARY:
-                    break;
-                case META_OP_ALTERNATION:
-                    /* If alternation exists, just allow all for now */
-                    memset(fastmap, 0xff, 32);
-                    branch_done = true;
-                    break;
-                default:
-                    branch_done = true;
-                    break;
                 }
             }
+            if (current_branch_nullable) {
+                regex_is_nullable = 1;
+            }
+            can_be_null = regex_is_nullable;
         }
 
         for (int32 i = 0; i <= temp_ops_count; i += 1) {
