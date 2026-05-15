@@ -161,6 +161,10 @@ static RegexTest ascii_against_ascii[] = {
     {"a ",           R("a\\b")},
     {" aa",          R("\\Ba")},
     {"aa ",          R("a\\B")},
+    {"9",            R("\\d")},
+    {"a",            R("\\l")},
+    {"U",            R("\\U")},
+    {"\\U",          R("\\U")},
 };
 
 static RegexTest utf8_against_ascii[] = {
@@ -178,7 +182,10 @@ static RegexTest utf8_against_utf8[] = {
     {"é",            R("ê"),     false},
     {"é",            R("é"),     true},
     {"é",            R("[é]"),   true},
-    {"é",            R("^[é]$"), true},
+    {"é",            R("^[é]$"), false},
+    {"\\U",          R("\\U"),   true},
+    {"aéc",          R("a.c"),   false},
+    {"aéc",          R("a.*c"),  true},
 };
 
 #endif /* META_TESTS_ARRAY_H */

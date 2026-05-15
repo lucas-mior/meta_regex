@@ -130,7 +130,7 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
 
 int
 main(void) {
-    setlocale(LC_ALL, "C.UTF-8");
+    setlocale(LC_ALL, "C");
     srand((uint)42);
 
     run_posix_vs_meta(ascii_against_ascii, LENGTH(ascii_against_ascii), "ASCII vs ASCII");
