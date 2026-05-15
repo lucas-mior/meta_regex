@@ -78,6 +78,7 @@ main(int argc, char **argv) {
         int32 group_stack[32] = {0};
         int32 group_stack_ptr = 0;
         int32 has_alternation = 0;
+        int32 has_backref = 0;
         ParsedOp temp_ops[1024] = {0};
         int32 temp_ops_count = 0;
         unsigned char fastmap[32] = {0};
@@ -180,8 +181,8 @@ main(int argc, char **argv) {
             }
             case '*': {
                 int32 is_group = (temp_ops_count > 0
-                                  && temp_ops[temp_ops_count - 1].type
-                                         == META_OP_GROUP_END);
+                    && temp_ops[temp_ops_count - 1].type
+                           == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -222,8 +223,8 @@ main(int argc, char **argv) {
             }
             case '+': {
                 int32 is_group = (temp_ops_count > 0
-                                  && temp_ops[temp_ops_count - 1].type
-                                         == META_OP_GROUP_END);
+                    && temp_ops[temp_ops_count - 1].type
+                           == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -255,8 +256,8 @@ main(int argc, char **argv) {
             }
             case '?': {
                 int32 is_group = (temp_ops_count > 0
-                                  && temp_ops[temp_ops_count - 1].type
-                                         == META_OP_GROUP_END);
+                    && temp_ops[temp_ops_count - 1].type
+                           == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -324,8 +325,8 @@ main(int argc, char **argv) {
 
                 if (valid) {
                     int32 is_group = (temp_ops_count > 0
-                                      && temp_ops[temp_ops_count - 1].type
-                                             == META_OP_GROUP_END);
+                        && temp_ops[temp_ops_count - 1].type
+                               == META_OP_GROUP_END);
                     if (is_group) {
                         int32 target_start = temp_ops_count - 1;
                         int32 depth = 0;
@@ -582,6 +583,11 @@ main(int argc, char **argv) {
                             }
                         }
                         temp_ops_count += 1;
+                    } else if (c_cp >= '1' && c_cp <= '9') {
+                        has_backref = 1;
+                        temp_ops[temp_ops_count].type = META_OP_BACKREF;
+                        temp_ops[temp_ops_count].value = c_cp - '0';
+                        temp_ops_count += 1;
                     } else if (c_cp == '<') {
                         temp_ops[temp_ops_count].type = META_OP_WORD_START;
                         temp_ops_count += 1;
@@ -720,6 +726,10 @@ main(int argc, char **argv) {
             } else if (temp_ops[i].type == META_OP_NON_WORD_BOUNDARY) {
                 w = snprintf2(op_ptr, space,
                               "{META_OP_NON_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
+            } else if (temp_ops[i].type == META_OP_BACKREF) {
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_BACKREF, %d, 0, 0, {0}},\n",
+                              temp_ops[i].value);
             } else {
                 char *type_str;
                 type_str = "META_OP_UNKNOWN";
@@ -745,10 +755,11 @@ main(int argc, char **argv) {
         original_string_length = (int32)(quote_end - quote_start) + 1;
         printf("&(MetaRegex){ .string = %.*s, .ops = { %s }, "
                ".has_start_anchor = %d, .has_end_anchor = %d, "
-               ".has_alternation = %d, .re_nsub = %d, .can_be_null = %d, "
-               ".fastmap = {",
+               ".has_alternation = %d, .re_nsub = %d, .has_backref = %d, "
+               ".can_be_null = %d, .fastmap = {",
                original_string_length, quote_start, op_buffer, has_start,
-               has_end, has_alternation, group_counter, can_be_null);
+               has_end, has_alternation, group_counter, has_backref,
+               can_be_null);
 
         for (int32 i = 0; i < 32; i += 1) {
             printf("0x%02x%s", fastmap[i], (i == 31 ? "" : ", "));

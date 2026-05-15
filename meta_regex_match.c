@@ -246,6 +246,27 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
         return -1;
     }
 
+    if (ops[0].type == META_OP_BACKREF) {
+        int32 backref_len;
+        char *backref_ptr;
+
+        group_id = ops[0].value;
+        backref_len = 0;
+        backref_ptr = NULL;
+        if (pmatch != NULL && (size_t)group_id < nmatch 
+            && pmatch[group_id].rm_so != -1) {
+            backref_len = pmatch[group_id].rm_eo - pmatch[group_id].rm_so;
+            backref_ptr = original_string + pmatch[group_id].rm_so;
+
+            if (strncmp(current_string, backref_ptr, backref_len) == 0) {
+                return match_at_recursive(ops + 1, original_string,
+                                          current_string + backref_len, nmatch,
+                                          pmatch);
+            }
+        }
+        return -1;
+    }
+
     if (ops[0].type == META_OP_ALTERNATION) {
         depth = 0;
         end_op = ops;

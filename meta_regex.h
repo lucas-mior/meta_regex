@@ -20,7 +20,8 @@ enum MetaOpType {
     META_OP_WORD_START,
     META_OP_WORD_END,
     META_OP_WORD_BOUNDARY,
-    META_OP_NON_WORD_BOUNDARY
+    META_OP_NON_WORD_BOUNDARY,
+    META_OP_BACKREF
 };
 
 typedef struct MetaOp {
@@ -38,6 +39,7 @@ typedef struct MetaRegex {
     int32 has_end_anchor;
     int32 has_alternation;
     int32 re_nsub;
+    int32 has_backref;
     int32 can_be_null;
     uint8 fastmap[32];
 } MetaRegex;
