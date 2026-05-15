@@ -711,6 +711,7 @@ main(int32 argc, char **argv) {
                         temp_ops[temp_ops_count].value = c_cp;
                         temp_ops_count += 1;
                     }
+                    regex_index += 1;
                 }
                 break;
             }
@@ -1270,10 +1271,12 @@ main(int32 argc, char **argv) {
                                             next_set.bits[nfa[i].next1 / BITS_PER_UINT32]
                                                 |= (1u << (nfa[i].next1 % BITS_PER_UINT32));
                                             has_next = 1;
-                                        } else if (nfa[i].type == NFA_STATE_ANY
-                                                   && c != '\n') {
-                                            next_set.bits[nfa[i].next1 / BITS_PER_UINT32]
-                                                |= (1u << (nfa[i].next1 % BITS_PER_UINT32));
+                                        } else if (nfa[i].type
+                                                   == NFA_STATE_ANY) {
+                                            next_set.bits[nfa[i].next1
+                                                          / BITS_PER_UINT32]
+                                                |= (1u << (nfa[i].next1
+                                                           % BITS_PER_UINT32));
                                             has_next = 1;
                                         }
                                     }
