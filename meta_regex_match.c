@@ -629,7 +629,7 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
     }
     assert(!use_backtracking);
     assert(regex->dfa);
-    /* use_backtracking = 1; */
+    use_backtracking = 1;
 
     if (use_backtracking) {
         if (regex->has_start_anchor) {
