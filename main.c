@@ -252,6 +252,14 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
         char name_posix[256];
         char name_meta[256];
 
+        if (max_str_size < 2048) {
+            double t_posix = timediff(t0_posix, t1_posix);
+            double t_meta = timediff(t0_meta, t1_meta);
+
+            if (t_posix < t_meta) {
+                error("Performance regression! (%f < %f)\n", t_posix, t_meta);
+            }
+        }
         SNPRINTF(name_posix, YELLOW("posix [%d]"), max_str_size);
         SNPRINTF(name_meta, GREEN("meta [%d]"), max_str_size);
 
