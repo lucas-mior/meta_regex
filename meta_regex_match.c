@@ -530,7 +530,6 @@ try_match_internal(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
                    regmatch_t pmatch[]) {
     char *search_ptr;
     int32 match_len;
-    int32 skip_main;
 
     search_ptr = &string[offset];
     match_len = -1;
@@ -539,8 +538,7 @@ try_match_internal(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
         match_len
             = eval_choice_point(regex->ops, string, search_ptr, nmatch, pmatch);
     } else {
-        skip_main = quick_lookahead_fails(regex->ops, search_ptr);
-        if (!skip_main) {
+        if (!quick_lookahead_fails(regex->ops, search_ptr)) {
             match_len = match_at_recursive(regex->ops, string, search_ptr,
                                            nmatch, pmatch);
         }
