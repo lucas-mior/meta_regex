@@ -562,20 +562,21 @@ try_match_internal(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
 static int32
 try_match_dfa(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
               regmatch_t pmatch[]) {
-    Dfa *dfa;
+    DfaState *states;
     DfaState *current_state_ptr;
     int32 last_accept;
 
-    dfa = regex->dfa;
-    current_state_ptr = &dfa->states[dfa->start_state];
+    states = regex->dfa->states;
+    current_state_ptr = &states[regex->dfa->start_state];
     last_accept = -1;
 
     for (int32 i = offset;; i += 1) {
         uchar b;
         int32 next_state_idx;
+        int32 *next_table;
 
         b = (uchar)string[i];
-
+        
         if (current_state_ptr->is_accepting) {
             last_accept = i;
         }
@@ -584,12 +585,14 @@ try_match_dfa(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
             break;
         }
 
-        next_state_idx = current_state_ptr->next[b];
+        next_table = current_state_ptr->next;
+        next_state_idx = next_table[b];
+        
         if (next_state_idx == 0) {
             break;
         }
 
-        current_state_ptr = &dfa->states[next_state_idx];
+        current_state_ptr = &states[next_state_idx];
     }
 
     if (last_accept >= 0) {
