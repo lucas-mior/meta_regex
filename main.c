@@ -111,6 +111,7 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
     struct timespec t0;
     struct timespec t1;
     printf("\n----- Running %s (Meta Only) -----\n", description);
+    bool failed = false;
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
     for (int32 i = 0; i < count; i += 1) {
@@ -130,12 +131,17 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
                    input, meta_regex->string);
             error2("expected: %s, got: %s\n", expected ? "MATCH" : "NOMATCH",
                    matched ? "MATCH" : "NOMATCH");
+            failed = true;
         } else {
             printf(RED("%15s") " against " BLUE("%18s") ": %s (OK)\n", input,
                    meta_regex->string, matched ? "MATCH" : "NOMATCH");
         }
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+
+    if (failed) {
+        exit(EXIT_FAILURE);
+    }
 
     PRINT_TIMINGS(count, t0, t1, "meta (exclusive)");
     return;
