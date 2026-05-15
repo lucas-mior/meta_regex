@@ -27,6 +27,8 @@ for f in *.c *.h; do
     s/\<size_t\>/int64/g;
     s/\<ssize_t\>/int64/g;
     s/\<ptrdiff_t\>/int64/g;
+
+    s/(\S+) \* (\S+)/\1*\2/g;
     ' "$f"
 done
 

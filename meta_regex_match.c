@@ -8,7 +8,7 @@
 #include "meta_util.c"
 
 static int32 match_at_recursive(MetaOp *ops, char *orig, char *curr,
-                              int64 nmatch, regmatch_t pmatch[]);
+                                int64 nmatch, regmatch_t pmatch[]);
 
 static int32
 quick_lookahead_fails(MetaOp *next_op, char *curr_str) {
