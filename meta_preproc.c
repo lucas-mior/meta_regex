@@ -13,6 +13,14 @@ typedef struct ParsedOp {
     unsigned int mask[8];
 } ParsedOp;
 
+void
+set_fastmap_bit(unsigned char *fastmap, int32 c) {
+    if (c >= 0 && c < 256) {
+        fastmap[c / 8] |= (1 << (c % 8));
+    }
+    return;
+}
+
 int
 main(int argc, char **argv) {
     FILE *input_file;
@@ -66,12 +74,14 @@ main(int argc, char **argv) {
         int32 has_end = 0;
         int32 regex_index = 0;
         int32 original_string_length;
-        int32 group_counter = 1;
+        int32 group_counter = 0;
         int32 group_stack[32] = {0};
         int32 group_stack_ptr = 0;
         int32 has_alternation = 0;
         ParsedOp temp_ops[1024] = {0};
         int32 temp_ops_count = 0;
+        unsigned char fastmap[32] = {0};
+        int32 can_be_null = 0;
 
         found_macro = strstr(cursor, macro_start);
         if (found_macro == NULL) {
@@ -397,12 +407,12 @@ main(int argc, char **argv) {
                 break;
             }
             case '(': {
+                group_counter += 1;
                 group_stack[group_stack_ptr] = group_counter;
                 group_stack_ptr += 1;
                 temp_ops[temp_ops_count].type = META_OP_GROUP_START;
                 temp_ops[temp_ops_count].value = group_counter;
                 temp_ops_count += 1;
-                group_counter += 1;
                 regex_index += 1;
                 break;
             }
@@ -604,6 +614,57 @@ main(int argc, char **argv) {
             }
         }
 
+        /* Calculate useful info from temp_ops */
+        if (temp_ops_count == 0) {
+            can_be_null = 1;
+        } else {
+            /* Basic Fastmap and Nullability calculation */
+            bool branch_done = false;
+            for (int32 i = 0; i < temp_ops_count; i += 1) {
+                if (branch_done) {
+                    break;
+                }
+
+                switch (temp_ops[i].type) {
+                case META_OP_LITERAL:
+                    set_fastmap_bit(fastmap, temp_ops[i].value);
+                    branch_done = true;
+                    break;
+                case META_OP_CLASS:
+                    for (int32 c = 0; c < 256; c += 1) {
+                        if (temp_ops[i].mask[c / 32] & (1u << (c % 32))) {
+                            set_fastmap_bit(fastmap, c);
+                        }
+                    }
+                    branch_done = true;
+                    break;
+                case META_OP_ANY:
+                    memset(fastmap, 0xff, 32);
+                    branch_done = true;
+                    break;
+                case META_OP_STAR:
+                case META_OP_OPTIONAL:
+                    /* These could match nothing, so don't stop the branch */
+                    break;
+                case META_OP_GROUP_START:
+                case META_OP_GROUP_END:
+                case META_OP_WORD_START:
+                case META_OP_WORD_END:
+                case META_OP_WORD_BOUNDARY:
+                case META_OP_NON_WORD_BOUNDARY:
+                    break;
+                case META_OP_ALTERNATION:
+                    /* If alternation exists, just allow all for now */
+                    memset(fastmap, 0xff, 32);
+                    branch_done = true;
+                    break;
+                default:
+                    branch_done = true;
+                    break;
+                }
+            }
+        }
+
         for (int32 i = 0; i <= temp_ops_count; i += 1) {
             int32 w = 0;
             if (i == temp_ops_count) {
@@ -676,9 +737,15 @@ main(int argc, char **argv) {
         original_string_length = (int32)(quote_end - quote_start) + 1;
         printf("&(MetaRegex){ .string = %.*s, .ops = { %s }, "
                ".has_start_anchor = %d, .has_end_anchor = %d, "
-               ".has_alternation = %d }",
+               ".has_alternation = %d, .re_nsub = %d, .can_be_null = %d, "
+               ".fastmap = {",
                original_string_length, quote_start, op_buffer, has_start,
-               has_end, has_alternation);
+               has_end, has_alternation, group_counter, can_be_null);
+
+        for (int32 i = 0; i < 32; i += 1) {
+            printf("0x%02x%s", fastmap[i], (i == 31 ? "" : ", "));
+        }
+        printf("} }");
 
         if (paren_end != NULL) {
             cursor = paren_end + 1;
