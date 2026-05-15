@@ -138,13 +138,16 @@ static void
 run_fuzzy_tests(int32 max_str_size, int32 ntests) {
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
     printf("----- max_str_size: %d\n", max_str_size);
-    int32 fuzzy_len = ntests;
-    FuzzyTest *fuzzy = malloc2(SIZEOF(*fuzzy) * fuzzy_len);
+    int32 fuzzy_len;
+    FuzzyTest *fuzzy;
     FILE *mismatches;
     struct timespec t0_posix;
     struct timespec t1_posix;
     struct timespec t0_meta;
     struct timespec t1_meta;
+
+    fuzzy_len = ntests;
+    fuzzy = malloc2(SIZEOF(*fuzzy) * fuzzy_len);
 
     if ((mismatches = fopen("mismatches_ascii.txt", "w")) == NULL) {
         error("Error opening file: %s.\n", strerror(errno));
@@ -161,12 +164,13 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
     for (int32 i = 0; i < fuzzy_len; i += 1) {
         regex_t compiled;
-        char *pattern_str
-            = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
+        char *pattern_str;
+        pattern_str = 
+            ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
         if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
-            fuzzy[i].result_posix
-                = regexec(&compiled, fuzzy[i].input, MAX_MATCHES,
-                          fuzzy[i].pmatch_posix, 0);
+            fuzzy[i].result_posix = regexec(&compiled, fuzzy[i].input, 
+                                            MAX_MATCHES, 
+                                            fuzzy[i].pmatch_posix, 0);
             regfree(&compiled);
         }
     }
@@ -174,20 +178,60 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
     for (int32 i = 0; i < fuzzy_len; i += 1) {
-        MetaRegex *meta_pattern
-            = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex;
-        fuzzy[i].result_meta = meta_regex_match(
-            meta_pattern, fuzzy[i].input, MAX_MATCHES, fuzzy[i].pmatch_meta);
+        MetaRegex *meta_pattern;
+        meta_pattern = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex;
+        fuzzy[i].result_meta = meta_regex_match(meta_pattern, fuzzy[i].input, 
+                                                MAX_MATCHES, 
+                                                fuzzy[i].pmatch_meta);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
     for (int32 i = 0; i < fuzzy_len; i += 1) {
+        char *input;
+        char *regex;
+        int32 mismatch;
+
+        input = fuzzy[i].input;
+        regex = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
+        mismatch = 0;
+
         if (fuzzy[i].result_posix != fuzzy[i].result_meta) {
-            char *input = fuzzy[i].input;
-            char *regex
-                = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
-            fprintf(mismatches, "%s against %s [posix=%d][meta=%d]\n", input,
-                    regex, fuzzy[i].result_posix, fuzzy[i].result_meta);
+            mismatch = 1;
+        } else if (fuzzy[i].result_posix == 0) {
+            for (int32 m = 0; m < MAX_MATCHES; m += 1) {
+                if (fuzzy[i].pmatch_posix[m].rm_so != 
+                    fuzzy[i].pmatch_meta[m].rm_so ||
+                    fuzzy[i].pmatch_posix[m].rm_eo != 
+                    fuzzy[i].pmatch_meta[m].rm_eo) {
+                    mismatch = 1;
+                    break;
+                }
+            }
+        }
+
+        if (mismatch) {
+            fprintf(mismatches, "Error: mismatch for input \"%s\" "
+                    "against regex \"%s\"\n", input, regex);
+            fprintf(mismatches, "posix res: %d, meta res: %d\n",
+                    fuzzy[i].result_posix, fuzzy[i].result_meta);
+
+            if (fuzzy[i].result_posix == 0 && fuzzy[i].result_meta == 0) {
+                for (int32 m = 0; m < MAX_MATCHES; m += 1) {
+                    regmatch_t p_m;
+                    regmatch_t m_m;
+
+                    p_m = fuzzy[i].pmatch_posix[m];
+                    m_m = fuzzy[i].pmatch_meta[m];
+
+                    if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
+                        fprintf(mismatches, "  Group %d: posix[%d, %d], "
+                                "meta[%d, %d]\n", m, (int32)p_m.rm_so, 
+                                (int32)p_m.rm_eo, (int32)m_m.rm_so, 
+                                (int32)m_m.rm_eo);
+                    }
+                }
+            }
+            fprintf(mismatches, "------------------------------------\n");
         }
     }
 
@@ -201,6 +245,7 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
     }
     free2(fuzzy, SIZEOF(*fuzzy) * fuzzy_len);
     fclose(mismatches);
+    return;
 }
 
 int
