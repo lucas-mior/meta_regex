@@ -12,6 +12,7 @@ for f in *.c *.h; do
     s/\<memchr\>memchr64/g;
     s/\<strlen\>strlen32/g;
     s/\<strncmp\>strncmp32/g;
+    s/\<unsigned ([a-z]+)\>/u\1/g;
     ' "$f"
 done
 

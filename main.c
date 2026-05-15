@@ -281,12 +281,12 @@ main(void) {
 #endif
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
-    run_fuzzy_tests( 16,  1000);
-    run_fuzzy_tests( 32,  1000);
-    run_fuzzy_tests( 64,  1000);
-    run_fuzzy_tests(128,  1000);
-    run_fuzzy_tests(256,  1000);
-    run_fuzzy_tests(512,  1000);
+    run_fuzzy_tests(16, 1000);
+    run_fuzzy_tests(32, 1000);
+    run_fuzzy_tests(64, 1000);
+    run_fuzzy_tests(128, 1000);
+    run_fuzzy_tests(256, 1000);
+    run_fuzzy_tests(512, 1000);
     run_fuzzy_tests(1024, 1000);
     run_fuzzy_tests(2048, 1000);
     run_fuzzy_tests(4096, 2000);
