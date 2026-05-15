@@ -891,6 +891,9 @@ main(int32 argc, char **argv) {
             }
 
             if (unsupported) {
+                fprintf(stderr, "Warning: Unsupported regex feature in %.*s, "
+                                "falling back to NFA.\n",
+                        original_string_length, quote_start);
                 printf(", .dfa = NULL }");
             } else {
                 NfaState nfa[PREPROC_MAX_NFA_STATES];
@@ -1344,6 +1347,9 @@ main(int32 argc, char **argv) {
                 }
 
                 if (nfa_failed) {
+                    fprintf(stderr, "Warning: DFA conversion failed for %.*s, "
+                                    "falling back to NFA.\n",
+                            original_string_length, quote_start);
                     printf(", .dfa = NULL } }");
                 } else {
                     printf(", .dfa = &(Dfa){ .num_states = %d, "

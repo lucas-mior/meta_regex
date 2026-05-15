@@ -626,6 +626,9 @@ meta_regex_match(MetaRegex *regex, char *string, int64 nmatch,
     if (regex->has_backref || regex->dfa == NULL) {
         use_backtracking = 1;
     }
+    assert(!use_backtracking);
+    assert(regex->dfa);
+    /* use_backtracking = 1; */
 
     if (use_backtracking) {
         if (regex->has_start_anchor) {

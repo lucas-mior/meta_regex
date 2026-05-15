@@ -102,6 +102,8 @@ debug)
     gdb ./bin/regex_test -ex 'break exit' -ex 'run'
     ;;
 callgrind)
+    trace_on
     valgrind --tool=callgrind bin/regex_test
+    trace_off
     ;;
 esac

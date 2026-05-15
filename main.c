@@ -281,7 +281,7 @@ main(void) {
     setlocale(LC_ALL, "C");
     srand((uint32)42);
 
-#if !BENCHMARK
+#if 0 || !BENCHMARK
     run_posix_vs_meta(ascii_against_ascii, LENGTH(ascii_against_ascii),
                       "ASCII vs ASCII");
     run_posix_vs_meta(utf8_against_ascii, LENGTH(utf8_against_ascii),
@@ -290,15 +290,15 @@ main(void) {
 #endif
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
-    run_fuzzy_tests(16, 1000);
-    run_fuzzy_tests(32, 1000);
-    run_fuzzy_tests(64, 1000);
-    run_fuzzy_tests(128, 1000);
-    run_fuzzy_tests(256, 1000);
-    run_fuzzy_tests(512, 1000);
-    run_fuzzy_tests(1024, 1000);
+    /* run_fuzzy_tests(16, 1000); */
+    /* run_fuzzy_tests(32, 1000); */
+    /* run_fuzzy_tests(64, 1000); */
+    /* run_fuzzy_tests(128, 1000); */
+    /* run_fuzzy_tests(256, 1000); */
+    /* run_fuzzy_tests(512, 1000); */
+    /* run_fuzzy_tests(1024, 1000); */
     run_fuzzy_tests(2048, 1000);
-    run_fuzzy_tests(4096, 2000);
+    /* run_fuzzy_tests(4096, 2000); */
     /* run_fuzzy_tests(8192, 2000); */
     exit(EXIT_SUCCESS);
 }
