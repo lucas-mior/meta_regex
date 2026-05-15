@@ -14,11 +14,16 @@ for f in *.c *.h; do
     s/\<memchr\>/memchr64/g;
     s/\<strlen\>/strlen32/g;
     s/\<strncmp\>/strncmp32/g;
+
     s/\<unsigned ([a-z]+)/u\1/g;
+
+    s/\<ushort\>/uint16/g;
+    s/\<short\>/int16/g;
     s/\<uint\>/uint32/g;
     s/\<int\>/int32/g;
     s/\<ulong\>/uint64/g;
     s/\<long\>/int64/g;
+
     s/\<size_t\>/int64/g;
     s/\<ssize_t\>/int64/g;
     s/\<ptrdiff_t\>/int64/g;
