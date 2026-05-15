@@ -267,10 +267,10 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
     return;
 }
 
-int
+int32
 main(void) {
     setlocale(LC_ALL, "C");
-    srand((uint)42);
+    srand((uint32)42);
 
 #if !BENCHMARK
     run_posix_vs_meta(ascii_against_ascii, LENGTH(ascii_against_ascii),

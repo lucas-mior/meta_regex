@@ -6,7 +6,7 @@
 
 static int32
 utf8_decode(char *s, int32 *consumed) {
-    unsigned char *u = (unsigned char *)s;
+    uchar *u = (uchar *)s;
     int32 cp = 0;
     int32 len = 0;
 

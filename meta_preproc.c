@@ -10,19 +10,19 @@ typedef struct ParsedOp {
     int32 value;
     int32 min;
     int32 max;
-    unsigned int mask[8];
+    uint32 mask[8];
 } ParsedOp;
 
 static void
-set_fastmap_bit(unsigned char *fastmap, int32 c) {
+set_fastmap_bit(uchar *fastmap, int32 c) {
     if (c >= 0 && c < 256) {
         fastmap[c / 8] |= (1 << (c % 8));
     }
     return;
 }
 
-int
-main(int argc, char **argv) {
+int32
+main(int32 argc, char **argv) {
     FILE *input_file;
     int64 file_size;
     char *buffer;
@@ -81,7 +81,7 @@ main(int argc, char **argv) {
         int32 has_backref = 0;
         ParsedOp temp_ops[1024] = {0};
         int32 temp_ops_count = 0;
-        unsigned char fastmap[32] = {0};
+        uchar fastmap[32] = {0};
         int32 can_be_null = 0;
 
         found_macro = strstr(cursor, macro_start);
@@ -164,7 +164,7 @@ main(int argc, char **argv) {
         }
 
         while (regex_string[regex_index] != '\0') {
-            int32 cp = (unsigned char)regex_string[regex_index];
+            int32 cp = (uchar)regex_string[regex_index];
 
             switch (cp) {
             case '$': {
@@ -435,7 +435,7 @@ main(int argc, char **argv) {
             }
             case '[': {
                 int32 is_negated = 0;
-                unsigned int mask[8] = {0};
+                uint32 mask[8] = {0};
                 int32 first_char = 1;
                 regex_index += 1;
                 if (regex_string[regex_index] == '^') {
@@ -524,13 +524,13 @@ main(int argc, char **argv) {
                             continue;
                         }
                     }
-                    int32 c1 = (unsigned char)regex_string[regex_index];
+                    int32 c1 = (uchar)regex_string[regex_index];
                     int32 c2 = c1;
                     regex_index += 1;
                     if (regex_string[regex_index] == '-'
                         && regex_string[regex_index + 1] != ']'
                         && regex_string[regex_index + 1] != '\0') {
-                        c2 = (unsigned char)regex_string[regex_index + 1];
+                        c2 = (uchar)regex_string[regex_index + 1];
                         regex_index += 2;
                     }
                     for (int32 c = c1; c <= c2; c += 1) {
@@ -557,7 +557,7 @@ main(int argc, char **argv) {
                 regex_index += 1;
                 if (regex_string[regex_index] != '\0') {
                     int32 c_cp;
-                    c_cp = (unsigned char)regex_string[regex_index];
+                    c_cp = (uchar)regex_string[regex_index];
                     if (c_cp == 's' || c_cp == 'S') {
                         temp_ops[temp_ops_count].type = META_OP_CLASS;
                         for (int32 i = 0; i < 8; i += 1) {
@@ -663,7 +663,7 @@ main(int argc, char **argv) {
                             current_branch_nullable = 0;
                         }
                     } else if (type == META_OP_ANY) {
-                        memset(fastmap, 0xff, 32);
+                        memset64(fastmap, 0xff, 32);
                         if (!op_is_quantified_nullable) {
                             current_branch_nullable = 0;
                         }
