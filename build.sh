@@ -81,9 +81,8 @@ $CC $CPPFLAGS -O2 -flto $CFLAGS gen/main2.c -o bin/regex_test $LDFLAGS
 trace_off
 if [ "$1" = "callgrind" ]; then
     valgrind --tool=callgrind bin/regex_test
+else
+    ./bin/regex_test
+        # 2>&1 | sed -E 's/ +/ /' | column -s '' -t
+        # 2>&1 | sed -E 's/\[[0-9;]*[mK]//g; s/: [01]$//' | xsel -b
 fi
-
-printf "\nRunning Tests:\n"
-./bin/regex_test
-    # 2>&1 | sed -E 's/ +/ /' | column -s '' -t
-    # 2>&1 | sed -E 's/\[[0-9;]*[mK]//g; s/: [01]$//' | xsel -b
