@@ -57,7 +57,7 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
     for (int32 i = 0; i < count; i += 1) {
-        char *input = tests_meta[i].input;
+        uchar *input = (uchar *)tests_meta[i].input;
         MetaRegex *meta_regex = tests_meta[i].meta_regex;
 
         tests_meta[i].result = meta_regex_match(meta_regex, input, MAX_MATCHES,
@@ -121,7 +121,7 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
         bool matched;
 
         result
-            = meta_regex_match(meta_regex, input, MAX_MATCHES, tests[i].pmatch);
+            = meta_regex_match(meta_regex, (uchar*)input, MAX_MATCHES, tests[i].pmatch);
         matched = !result;
         bool expected = (bool)tests[i].result;
 
@@ -192,7 +192,7 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
         MetaRegex *meta_pattern;
         meta_pattern = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex;
         fuzzy[i].result_meta = meta_regex_match(
-            meta_pattern, fuzzy[i].input, MAX_MATCHES, fuzzy[i].pmatch_meta);
+            meta_pattern, (uchar *)fuzzy[i].input, MAX_MATCHES, fuzzy[i].pmatch_meta);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 

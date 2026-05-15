@@ -2,7 +2,7 @@
 #define META_UTIL_C
 
 static int32
-is_word_char(char c) {
+is_word_char(uchar c) {
     int32 match;
 
     match = 0;

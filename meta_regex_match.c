@@ -7,11 +7,11 @@
 #include "util.c"
 #include "meta_util.c"
 
-static int32 match_at_recursive(MetaOp *ops, char *orig, char *curr,
+static int32 match_at_recursive(MetaOp *ops, uchar *orig, uchar *curr,
                                 int64 nmatch, regmatch_t pmatch[]);
 
 static int32
-quick_lookahead_fails(MetaOp *next_op, char *curr_str) {
+quick_lookahead_fails(MetaOp *next_op, uchar *curr_str) {
     if (next_op->type == META_OP_LITERAL || next_op->type == META_OP_CLASS) {
         if (next_op[1].type == META_OP_STAR
             || next_op[1].type == META_OP_OPTIONAL
@@ -42,7 +42,7 @@ quick_lookahead_fails(MetaOp *next_op, char *curr_str) {
 }
 
 static int32
-eval_choice_point(MetaOp *ops, char *orig, char *curr, int64 nmatch,
+eval_choice_point(MetaOp *ops, uchar *orig, uchar *curr, int64 nmatch,
                   regmatch_t pmatch[]) {
     MetaOp *alt_start;
     regmatch_t temp_pmatch[32];
@@ -124,7 +124,7 @@ eval_choice_point(MetaOp *ops, char *orig, char *curr, int64 nmatch,
 }
 
 static int32
-match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
+match_at_recursive(MetaOp *ops, uchar *original_string, uchar *current_string,
                    int64 nmatch, regmatch_t pmatch[]) {
     MetaOp *end_op;
     MetaOp *scan;
@@ -133,8 +133,8 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
     regmatch_t temp_pmatch[32];
     regmatch_t best_pmatch[32];
     regmatch_t *pass_pmatch;
-    char *s;
-    char *max_s;
+    uchar *s;
+    uchar *max_s;
     int32 depth;
     int32 group_id;
     int32 old_so;
@@ -231,7 +231,7 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
 
     if (ops[0].type == META_OP_BACKREF) {
         int32 backref_len;
-        char *backref_ptr;
+        uchar *backref_ptr;
 
         group_id = ops[0].value;
         backref_len = 0;
@@ -241,7 +241,7 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
             backref_len = pmatch[group_id].rm_eo - pmatch[group_id].rm_so;
             backref_ptr = original_string + pmatch[group_id].rm_so;
 
-            if (strncmp32(current_string, backref_ptr, backref_len) == 0) {
+            if (strncmp32((char*)current_string, (char*)backref_ptr, backref_len) == 0) {
                 return match_at_recursive(ops + 1, original_string,
                                           current_string + backref_len, nmatch,
                                           pmatch);
@@ -526,9 +526,9 @@ match_at_recursive(MetaOp *ops, char *original_string, char *current_string,
 }
 
 static int32
-try_match_internal(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
+try_match_internal(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
                    regmatch_t pmatch[]) {
-    char *search_ptr;
+    uchar *search_ptr;
     int32 match_len;
 
     search_ptr = &string[offset];
@@ -558,7 +558,7 @@ try_match_internal(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
 }
 
 static int32
-try_match_dfa(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
+try_match_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
               regmatch_t pmatch[]) {
     DfaState *states;
     DfaState *current_state_ptr;
@@ -607,7 +607,7 @@ try_match_dfa(MetaRegex *regex, char *string, int32 offset, int64 nmatch,
 }
 
 static int32
-meta_regex_match(MetaRegex *regex, char *string, int64 nmatch,
+meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
                  regmatch_t pmatch[]) {
     int32 result;
     int32 use_backtracking;
