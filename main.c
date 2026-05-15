@@ -128,6 +128,68 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
     return;
 }
 
+static void
+run_fuzzy_tests(int32 max_str_size, int32 ntests) {
+    printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
+    printf("----- max_str_size: %d\n", max_str_size);
+    int32 fuzzy_len = ntests;
+    FuzzyTest *fuzzy = malloc2(SIZEOF(*fuzzy) * fuzzy_len);
+    FILE *mismatches;
+    struct timespec t0_posix;
+    struct timespec t1_posix;
+    struct timespec t0_meta;
+    struct timespec t1_meta;
+
+    if ((mismatches = fopen("mismatches_ascii.txt", "w")) == NULL) {
+        error("Error opening file: %s.\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    for (int32 i = 0; i < fuzzy_len; i += 1) {
+        fuzzy[i].string_len = 1 + (rand() % max_str_size);
+        fuzzy[i].input = malloc2(fuzzy[i].string_len + 1);
+        ascii_random_string(fuzzy[i].input, fuzzy[i].string_len);
+        fuzzy[i].regex_idx = rand() % LENGTH(ascii_against_ascii);
+    }
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
+    for (int32 i = 0; i < fuzzy_len; i += 1) {
+        regex_t compiled;
+        char *pattern_str = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
+        if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
+            fuzzy[i].result_posix = regexec(&compiled, fuzzy[i].input, MAX_MATCHES, fuzzy[i].pmatch_posix, 0);
+            regfree(&compiled);
+        }
+    }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
+    for (int32 i = 0; i < fuzzy_len; i += 1) {
+        MetaRegex *meta_pattern = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex;
+        fuzzy[i].result_meta = meta_regex_match(meta_pattern, fuzzy[i].input, MAX_MATCHES, fuzzy[i].pmatch_meta);
+    }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
+
+    for (int32 i = 0; i < fuzzy_len; i += 1) {
+        if (fuzzy[i].result_posix != fuzzy[i].result_meta) {
+            char *input = fuzzy[i].input;
+            char *regex = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
+            fprintf(mismatches, "%s against %s [posix=%d][meta=%d]\n", input, regex, fuzzy[i].result_posix, fuzzy[i].result_meta);
+        }
+    }
+
+    {
+        PRINT_TIMINGS(fuzzy_len, t0_posix, t1_posix, "fuzzy ascii posix");
+        PRINT_TIMINGS(fuzzy_len, t0_meta, t1_meta, "fuzzy ascii meta");
+    }
+
+    for (int32 i = 0; i < fuzzy_len; i += 1) {
+        free2(fuzzy[i].input, fuzzy[i].string_len + 1);
+    }
+    free2(fuzzy, SIZEOF(*fuzzy) * fuzzy_len);
+    fclose(mismatches);
+}
+
 int
 main(void) {
     setlocale(LC_ALL, "C");
@@ -137,63 +199,14 @@ main(void) {
     run_posix_vs_meta(utf8_against_ascii, LENGTH(utf8_against_ascii), "UTF8 vs ASCII");
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "UTF8 vs UTF8");
 
-    printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
-    {
-        int32 fuzzy_len = 1000;
-        FuzzyTest *fuzzy = malloc2(SIZEOF(*fuzzy) * fuzzy_len);
-        FILE *mismatches;
-        struct timespec t0_posix;
-        struct timespec t1_posix;
-        struct timespec t0_meta;
-        struct timespec t1_meta;
-
-        if ((mismatches = fopen("mismatches_ascii.txt", "w")) == NULL) {
-            error("Error opening file: %s.\n", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-
-        for (int32 i = 0; i < fuzzy_len; i += 1) {
-            fuzzy[i].string_len = 1 + (rand() % 4096);
-            fuzzy[i].input = malloc2(fuzzy[i].string_len + 1);
-            ascii_random_string(fuzzy[i].input, fuzzy[i].string_len);
-            fuzzy[i].regex_idx = rand() % LENGTH(ascii_against_ascii);
-        }
-
-        clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
-        for (int32 i = 0; i < fuzzy_len; i += 1) {
-            regex_t compiled;
-            char *pattern_str = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
-            if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
-                fuzzy[i].result_posix = regexec(&compiled, fuzzy[i].input, MAX_MATCHES, fuzzy[i].pmatch_posix, 0);
-                regfree(&compiled);
-            }
-        }
-        clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
-
-        clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
-        for (int32 i = 0; i < fuzzy_len; i += 1) {
-            MetaRegex *meta_pattern = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex;
-            fuzzy[i].result_meta = meta_regex_match(meta_pattern, fuzzy[i].input, MAX_MATCHES, fuzzy[i].pmatch_meta);
-        }
-        clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
-
-        for (int32 i = 0; i < fuzzy_len; i += 1) {
-            if (fuzzy[i].result_posix != fuzzy[i].result_meta) {
-                char *input = fuzzy[i].input;
-                char *regex = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex->string;
-                fprintf(mismatches, "%s against %s [posix=%d][meta=%d]\n", input, regex, fuzzy[i].result_posix, fuzzy[i].result_meta);
-            }
-        }
-
-        PRINT_TIMINGS(fuzzy_len, t0_posix, t1_posix, "fuzzy ascii posix");
-        PRINT_TIMINGS(fuzzy_len, t0_meta, t1_meta, "fuzzy ascii meta");
-
-        for (int32 i = 0; i < fuzzy_len; i += 1) {
-            free2(fuzzy[i].input, fuzzy[i].string_len + 1);
-        }
-        free2(fuzzy, SIZEOF(*fuzzy) * fuzzy_len);
-        fclose(mismatches);
-    }
-
+    run_fuzzy_tests( 16,  1000);
+    run_fuzzy_tests( 32,  1000);
+    run_fuzzy_tests( 64,  1000);
+    run_fuzzy_tests(128,  1000);
+    run_fuzzy_tests(256,  1000);
+    run_fuzzy_tests(512,  1000);
+    run_fuzzy_tests(1024, 1000);
+    run_fuzzy_tests(2048, 1000);
+    run_fuzzy_tests(4096, 1000);
     exit(EXIT_SUCCESS);
 }
