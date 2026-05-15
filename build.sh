@@ -9,6 +9,8 @@ cbase="cbase"
 
 mkdir -p bin
 
+target="$1"
+
 CFLAGS="$CFLAGS -std=c11"
 CFLAGS="$CFLAGS -Wextra -Wall"
 # CFLAGS="$CFLAGS -Werror"
@@ -32,7 +34,22 @@ fi
 
 CC=${CC:-cc}
 
-CFLAGS="$CFLAGS -g $GNUSOURCE -DDEBUGGING=1"
+case "$target" in
+debug)
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=1 $GNUSOURCE"
+    CFLAGS="$CFLAGS -g3"
+    ;;
+build)
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=1 $GNUSOURCE"
+    CFLAGS="$CFLAGS -g -O2 -flto"
+    ;;
+callgrind)
+    CFLAGS="$CFLAGS -Wno-unused-variable"
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=1 $GNUSOURCE"
+    CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
+    CFLAGS="$CFLAGS -g3 -O2 -flto"
+    ;;
+esac
 
 if [ "$CC" = "clang" ]; then
     CFLAGS="$CFLAGS -Weverything"
@@ -71,18 +88,18 @@ trace_on
 trace_off
 
 printf "\nBuilding target program...\n"
-if [ "$1" = "callgrind" ]; then
-    CFLAGS="$CFLAGS -g3"
-    CFLAGS="$CFLAGS -Wno-unused-variable"
-    CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
-fi
 trace_on
-$CC $CPPFLAGS -O2 -flto $CFLAGS gen/main2.c -o bin/regex_test $LDFLAGS
+$CC $CPPFLAGS $CFLAGS gen/main2.c -o bin/regex_test $LDFLAGS
 trace_off
-if [ "$1" = "callgrind" ]; then
-    valgrind --tool=callgrind bin/regex_test
-else
+
+case "$target" in
+build)
     ./bin/regex_test
-        # 2>&1 | sed -E 's/ +/ /' | column -s '' -t
-        # 2>&1 | sed -E 's/\[[0-9;]*[mK]//g; s/: [01]$//' | xsel -b
-fi
+    ;;
+debug)
+    gdb ./bin/regex_test -ex 'break exit' -ex 'run'
+    ;;
+callgrind)
+    valgrind --tool=callgrind bin/regex_test
+    ;;
+esac
