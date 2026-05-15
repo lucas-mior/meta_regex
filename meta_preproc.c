@@ -5,18 +5,40 @@
 #include "cbase/util.c"
 #include "meta_regex.h"
 
+#define PREPROC_OP_BUFFER_SIZE 16384
+#define PREPROC_MAX_STRING_LEN 256
+#define PREPROC_MAX_GROUP_STACK 32
+#define PREPROC_MAX_TEMP_OPS 1024
+#define PREPROC_MAX_CLASS_NAME 32
+#define PREPROC_MAX_NFA_STATES 2048
+#define PREPROC_MAX_NFA_ITEMS 1024
+#define PREPROC_MAX_BRANCHES 128
+#define PREPROC_NFA_BITSET_WORDS 64
+
+#define BITS_PER_UINT8 8
+#define BITS_PER_UINT32 32
+
+enum NfaStateType {
+    NFA_STATE_ACCEPT = 0,
+    NFA_STATE_LITERAL = 1,
+    NFA_STATE_CLASS = 2,
+    NFA_STATE_ANY = 3,
+    NFA_STATE_SPLIT = 4,
+    NFA_STATE_EMPTY = 5
+};
+
 typedef struct ParsedOp {
     enum MetaOpType type;
     int32 value;
     int32 min;
     int32 max;
-    uint32 mask[8];
+    uint32 mask[META_CHAR_BITMASK_WORDS];
 } ParsedOp;
 
 typedef struct NfaState {
     int32 type; 
     int32 c;
-    uint32 mask[8];
+    uint32 mask[META_CHAR_BITMASK_WORDS];
     int32 next1;
     int32 next2;
 } NfaState;
@@ -29,13 +51,13 @@ typedef struct NfaItem {
 } NfaItem;
 
 typedef struct DfaSet {
-    uint32 bits[64]; 
+    uint32 bits[PREPROC_NFA_BITSET_WORDS]; 
 } DfaSet;
 
 static void
 set_fastmap_bit(uchar *fastmap, int32 c) {
-    if (c >= 0 && c < 256) {
-        fastmap[c / 8] |= (1 << (c % 8));
+    if (c >= 0 && c < META_ALPHABET_SIZE) {
+        fastmap[c / BITS_PER_UINT8] |= (1 << (c % BITS_PER_UINT8));
     }
     return;
 }
@@ -83,9 +105,9 @@ main(int32 argc, char **argv) {
         char *quote_start;
         char *quote_end;
         char *paren_end;
-        char raw_string[256] = {0};
-        char regex_string[256] = {0};
-        char op_buffer[16384] = {0};
+        char raw_string[PREPROC_MAX_STRING_LEN] = {0};
+        char regex_string[PREPROC_MAX_STRING_LEN] = {0};
+        char op_buffer[PREPROC_OP_BUFFER_SIZE] = {0};
         char *op_ptr = op_buffer;
         int32 space = SIZEOF(op_buffer);
         int32 prefix_length;
@@ -94,13 +116,13 @@ main(int32 argc, char **argv) {
         int32 regex_index = 0;
         int32 original_string_length;
         int32 group_counter = 0;
-        int32 group_stack[32] = {0};
+        int32 group_stack[PREPROC_MAX_GROUP_STACK] = {0};
         int32 group_stack_ptr = 0;
         int32 has_alternation = 0;
         int32 has_backref = 0;
-        ParsedOp temp_ops[1024] = {0};
+        ParsedOp temp_ops[PREPROC_MAX_TEMP_OPS] = {0};
         int32 temp_ops_count = 0;
-        uchar fastmap[32] = {0};
+        uchar fastmap[META_FASTMAP_SIZE] = {0};
         int32 can_be_null = 0;
 
         found_macro = NULL;
@@ -424,7 +446,7 @@ main(int32 argc, char **argv) {
                             }
                         }
                         int32 group_len = temp_ops_count - target_start;
-                        ParsedOp group_buf[256];
+                        ParsedOp group_buf[PREPROC_MAX_STRING_LEN];
 
                         for (int32 i = 0; i < group_len; i += 1) {
                             group_buf[i] = temp_ops[target_start + i];
@@ -516,7 +538,7 @@ main(int32 argc, char **argv) {
             }
             case '[': {
                 int32 is_negated = 0;
-                uint32 mask[8] = {0};
+                uint32 mask[META_CHAR_BITMASK_WORDS] = {0};
                 int32 first_char = 1;
                 regex_index += 1;
                 if (regex_string[regex_index] == '^') {
@@ -540,13 +562,13 @@ main(int32 argc, char **argv) {
                             colon_idx += 1;
                         }
                         if (found_end) {
-                            char class_name[32] = {0};
+                            char class_name[PREPROC_MAX_CLASS_NAME] = {0};
                             int32 name_len = colon_idx - (regex_index + 2);
-                            if (name_len < 32) {
+                            if (name_len < PREPROC_MAX_CLASS_NAME) {
                                 strncpy32(class_name,
                                           &regex_string[regex_index + 2],
                                           name_len);
-                                for (int32 c = 0; c < 256; c += 1) {
+                                for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                                     int32 match = 0;
                                     if (strcmp(class_name, "alnum") == 0) {
                                         match = ((c >= 'a' && c <= 'z')
@@ -596,7 +618,8 @@ main(int32 argc, char **argv) {
                                                  || (c == 127));
                                     }
                                     if (match) {
-                                        mask[c / 32] |= (1u << (c % 32));
+                                        mask[c / BITS_PER_UINT32]
+                                            |= (1u << (c % BITS_PER_UINT32));
                                     }
                                 }
                             }
@@ -615,7 +638,8 @@ main(int32 argc, char **argv) {
                         regex_index += 2;
                     }
                     for (int32 c = c1; c <= c2; c += 1) {
-                        mask[c / 32] |= (1u << (c % 32));
+                        mask[c / BITS_PER_UINT32]
+                            |= (1u << (c % BITS_PER_UINT32));
                     }
                     first_char = 0;
                 }
@@ -623,12 +647,12 @@ main(int32 argc, char **argv) {
                     regex_index += 1;
                 }
                 if (is_negated) {
-                    for (int32 i = 0; i < 8; i += 1) {
+                    for (int32 i = 0; i < META_CHAR_BITMASK_WORDS; i += 1) {
                         mask[i] = ~mask[i];
                     }
                 }
                 temp_ops[temp_ops_count].type = META_OP_CLASS;
-                for (int32 i = 0; i < 8; i += 1) {
+                for (int32 i = 0; i < META_CHAR_BITMASK_WORDS; i += 1) {
                     temp_ops[temp_ops_count].mask[i] = mask[i];
                 }
                 temp_ops_count += 1;
@@ -641,24 +665,24 @@ main(int32 argc, char **argv) {
                     c_cp = (uchar)regex_string[regex_index];
                     if (c_cp == 's' || c_cp == 'S') {
                         temp_ops[temp_ops_count].type = META_OP_CLASS;
-                        for (int32 i = 0; i < 8; i += 1) {
+                        for (int32 i = 0; i < META_CHAR_BITMASK_WORDS; i += 1) {
                             temp_ops[temp_ops_count].mask[i] = 0;
                         }
-                        temp_ops[temp_ops_count].mask[32 / 32]
-                            |= (1u << (32 % 32));
-                        temp_ops[temp_ops_count].mask[9 / 32]
-                            |= (1u << (9 % 32));
-                        temp_ops[temp_ops_count].mask[10 / 32]
-                            |= (1u << (10 % 32));
-                        temp_ops[temp_ops_count].mask[13 / 32]
-                            |= (1u << (13 % 32));
-                        temp_ops[temp_ops_count].mask[12 / 32]
-                            |= (1u << (12 % 32));
-                        temp_ops[temp_ops_count].mask[11 / 32]
-                            |= (1u << (11 % 32));
+                        temp_ops[temp_ops_count].mask[' ' / BITS_PER_UINT32]
+                            |= (1u << (' ' % BITS_PER_UINT32));
+                        temp_ops[temp_ops_count].mask['\t' / BITS_PER_UINT32]
+                            |= (1u << ('\t' % BITS_PER_UINT32));
+                        temp_ops[temp_ops_count].mask['\n' / BITS_PER_UINT32]
+                            |= (1u << ('\n' % BITS_PER_UINT32));
+                        temp_ops[temp_ops_count].mask['\r' / BITS_PER_UINT32]
+                            |= (1u << ('\r' % BITS_PER_UINT32));
+                        temp_ops[temp_ops_count].mask['\f' / BITS_PER_UINT32]
+                            |= (1u << ('\f' % BITS_PER_UINT32));
+                        temp_ops[temp_ops_count].mask['\v' / BITS_PER_UINT32]
+                            |= (1u << ('\v' % BITS_PER_UINT32));
 
                         if (c_cp == 'S') {
-                            for (int32 i = 0; i < 8; i += 1) {
+                            for (int32 i = 0; i < META_CHAR_BITMASK_WORDS; i += 1) {
                                 temp_ops[temp_ops_count].mask[i]
                                     = ~temp_ops[temp_ops_count].mask[i];
                             }
@@ -732,8 +756,9 @@ main(int32 argc, char **argv) {
                             current_branch_nullable = 0;
                         }
                     } else if (type == META_OP_CLASS) {
-                        for (int32 c = 0; c < 256; c += 1) {
-                            if (temp_ops[i].mask[c / 32] & (1u << (c % 32))) {
+                        for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
+                            if (temp_ops[i].mask[c / BITS_PER_UINT32]
+                                & (1u << (c % BITS_PER_UINT32))) {
                                 set_fastmap_bit(fastmap, c);
                             }
                         }
@@ -741,7 +766,7 @@ main(int32 argc, char **argv) {
                             current_branch_nullable = 0;
                         }
                     } else if (type == META_OP_ANY) {
-                        memset64(fastmap, 0xff, 32);
+                        memset64(fastmap, 0xff, META_FASTMAP_SIZE);
                         if (!op_is_quantified_nullable) {
                             current_branch_nullable = 0;
                         }
@@ -841,8 +866,9 @@ main(int32 argc, char **argv) {
                has_end, has_alternation, group_counter, has_backref,
                can_be_null);
 
-        for (int32 i = 0; i < 32; i += 1) {
-            printf("0x%02x%s", fastmap[i], (i == 31 ? "" : ", "));
+        for (int32 i = 0; i < META_FASTMAP_SIZE; i += 1) {
+            printf("0x%02x%s", fastmap[i],
+                   (i == META_FASTMAP_SIZE - 1 ? "" : ", "));
         }
         printf("}"); 
 
@@ -866,20 +892,20 @@ main(int32 argc, char **argv) {
             if (unsupported) {
                 printf(", .dfa = NULL }");
             } else {
-                NfaState nfa[2048];
+                NfaState nfa[PREPROC_MAX_NFA_STATES];
                 int32 nfa_count = 0;
-                NfaItem items[1024];
+                NfaItem items[PREPROC_MAX_NFA_ITEMS];
                 int32 item_count = 0;
                 int32 nfa_failed = 0;
                 int32 nfa_accept;
-                int32 branch_starts[128];
+                int32 branch_starts[PREPROC_MAX_BRANCHES];
                 int32 branch_count = 0;
                 int32 b_start = -1;
                 int32 prev_dangling = -1;
                 int32 nfa_start_state = -1;
-                int32 dfa_transitions[256][256];
-                int32 dfa_accept[256];
-                DfaSet dfa_sets[256];
+                int32 dfa_transitions[META_MAX_DFA_STATES][META_ALPHABET_SIZE];
+                int32 dfa_accept[META_MAX_DFA_STATES];
+                DfaSet dfa_sets[META_MAX_DFA_STATES];
                 int32 dfa_count = 1; 
                 int32 start_dfa = 0;
 
@@ -915,7 +941,7 @@ main(int32 argc, char **argv) {
 
                 nfa_accept = nfa_count;
                 nfa_count += 1;
-                nfa[nfa_accept].type = 0; 
+                nfa[nfa_accept].type = NFA_STATE_ACCEPT; 
                 nfa[nfa_accept].next1 = -1; 
                 nfa[nfa_accept].next2 = -1;
 
@@ -927,13 +953,13 @@ main(int32 argc, char **argv) {
                         if (b_start == -1) {
                             b_start = nfa_count;
                             nfa_count += 1;
-                            nfa[b_start].type = 5; 
+                            nfa[b_start].type = NFA_STATE_EMPTY; 
                             nfa[b_start].next1 = -1; 
                             nfa[b_start].next2 = -1;
                         }
                         
                         if (prev_dangling != -1) {
-                            if (nfa[prev_dangling].type == 4) {
+                            if (nfa[prev_dangling].type == NFA_STATE_SPLIT) {
                                 nfa[prev_dangling].next2 = nfa_accept;
                             } else {
                                 nfa[prev_dangling].next1 = nfa_accept;
@@ -942,7 +968,7 @@ main(int32 argc, char **argv) {
                             nfa[b_start].next1 = nfa_accept;
                         }
 
-                        if (branch_count < 128) {
+                        if (branch_count < PREPROC_MAX_BRANCHES) {
                             branch_starts[branch_count] = b_start;
                             branch_count += 1;
                         } else {
@@ -956,20 +982,23 @@ main(int32 argc, char **argv) {
 
                     int32 s_base = nfa_count;
                     nfa_count += 1;
-                    if (nfa_count > 2048) { nfa_failed = 1; break; }
+                    if (nfa_count > PREPROC_MAX_NFA_STATES) {
+                        nfa_failed = 1;
+                        break;
+                    }
                     
                     if (items[i].base_op.type == META_OP_ANY) {
-                        nfa[s_base].type = 3;
+                        nfa[s_base].type = NFA_STATE_ANY;
                     } else if (items[i].base_op.type == META_OP_CLASS) {
-                        nfa[s_base].type = 2;
+                        nfa[s_base].type = NFA_STATE_CLASS;
                     } else {
-                        nfa[s_base].type = 1;
+                        nfa[s_base].type = NFA_STATE_LITERAL;
                     }
                     
                     nfa[s_base].c = items[i].base_op.value;
                     nfa[s_base].next1 = -1;
                     nfa[s_base].next2 = -1;
-                    for (int32 k = 0; k < 8; k += 1) {
+                    for (int32 k = 0; k < META_CHAR_BITMASK_WORDS; k += 1) {
                         nfa[s_base].mask[k] = items[i].base_op.mask[k];
                     }
 
@@ -982,8 +1011,11 @@ main(int32 argc, char **argv) {
                     } else if (items[i].quant == 1) {
                         int32 s_split = nfa_count;
                         nfa_count += 1;
-                        if (nfa_count > 2048) { nfa_failed = 1; break; }
-                        nfa[s_split].type = 4;
+                        if (nfa_count > PREPROC_MAX_NFA_STATES) {
+                            nfa_failed = 1;
+                            break;
+                        }
+                        nfa[s_split].type = NFA_STATE_SPLIT;
                         nfa[s_split].next1 = s_base;
                         nfa[s_split].next2 = -1;
                         nfa[s_base].next1 = s_split;
@@ -992,8 +1024,11 @@ main(int32 argc, char **argv) {
                     } else if (items[i].quant == 2) {
                         int32 s_split = nfa_count;
                         nfa_count += 1;
-                        if (nfa_count > 2048) { nfa_failed = 1; break; }
-                        nfa[s_split].type = 4;
+                        if (nfa_count > PREPROC_MAX_NFA_STATES) {
+                            nfa_failed = 1;
+                            break;
+                        }
+                        nfa[s_split].type = NFA_STATE_SPLIT;
                         nfa[s_split].next1 = s_base;
                         nfa[s_split].next2 = -1;
                         nfa[s_base].next1 = s_split;
@@ -1004,9 +1039,12 @@ main(int32 argc, char **argv) {
                         nfa_count += 1;
                         int32 s_merge = nfa_count;
                         nfa_count += 1;
-                        if (nfa_count > 2048) { nfa_failed = 1; break; }
-                        nfa[s_split].type = 4;
-                        nfa[s_merge].type = 5;
+                        if (nfa_count > PREPROC_MAX_NFA_STATES) {
+                            nfa_failed = 1;
+                            break;
+                        }
+                        nfa[s_split].type = NFA_STATE_SPLIT;
+                        nfa[s_merge].type = NFA_STATE_EMPTY;
                         nfa[s_split].next1 = s_base;
                         nfa[s_split].next2 = s_merge;
                         nfa[s_base].next1 = s_merge;
@@ -1020,13 +1058,16 @@ main(int32 argc, char **argv) {
                         for (int32 k = 0; k < items[i].min; k += 1) {
                             int32 copy = nfa_count;
                             nfa_count += 1;
-                            if (nfa_count > 2048) { nfa_failed = 1; break; }
+                            if (nfa_count > PREPROC_MAX_NFA_STATES) {
+                                nfa_failed = 1;
+                                break;
+                            }
                             nfa[copy] = nfa[s_base];
                             nfa[copy].next1 = -1;
                             nfa[copy].next2 = -1;
                             if (f_start == -1) { f_start = copy; }
                             if (l_out != -1) {
-                                if (nfa[l_out].type == 4) {
+                                if (nfa[l_out].type == NFA_STATE_SPLIT) {
                                     nfa[l_out].next2 = copy;
                                 } else {
                                     nfa[l_out].next1 = copy;
@@ -1039,17 +1080,20 @@ main(int32 argc, char **argv) {
                             nfa_count += 1;
                             int32 copy = nfa_count;
                             nfa_count += 1;
-                            if (nfa_count > 2048) { nfa_failed = 1; break; }
+                            if (nfa_count > PREPROC_MAX_NFA_STATES) {
+                                nfa_failed = 1;
+                                break;
+                            }
                             nfa[copy] = nfa[s_base];
                             nfa[copy].next1 = -1;
                             nfa[copy].next2 = -1;
-                            nfa[s_star].type = 4;
+                            nfa[s_star].type = NFA_STATE_SPLIT;
                             nfa[s_star].next1 = copy;
                             nfa[s_star].next2 = -1;
                             nfa[copy].next1 = s_star;
                             if (f_start == -1) { f_start = s_star; }
                             if (l_out != -1) {
-                                if (nfa[l_out].type == 4) {
+                                if (nfa[l_out].type == NFA_STATE_SPLIT) {
                                     nfa[l_out].next2 = s_star;
                                 } else {
                                     nfa[l_out].next1 = s_star;
@@ -1057,19 +1101,23 @@ main(int32 argc, char **argv) {
                             }
                             l_out = s_star;
                         } else {
-                            for (int32 k = items[i].min; k < items[i].max; k += 1) {
+                            for (int32 k = items[i].min;
+                                 k < items[i].max; k += 1) {
                                 int32 s_split = nfa_count;
                                 nfa_count += 1;
                                 int32 copy = nfa_count;
                                 nfa_count += 1;
                                 int32 s_merge = nfa_count;
                                 nfa_count += 1;
-                                if (nfa_count > 2048) { nfa_failed = 1; break; }
+                                if (nfa_count > PREPROC_MAX_NFA_STATES) {
+                                    nfa_failed = 1;
+                                    break;
+                                }
                                 nfa[copy] = nfa[s_base];
                                 nfa[copy].next1 = -1;
                                 nfa[copy].next2 = -1;
-                                nfa[s_split].type = 4;
-                                nfa[s_merge].type = 5;
+                                nfa[s_split].type = NFA_STATE_SPLIT;
+                                nfa[s_merge].type = NFA_STATE_EMPTY;
                                 nfa[s_merge].next1 = -1;
                                 nfa[s_merge].next2 = -1;
                                 nfa[s_split].next1 = copy;
@@ -1077,7 +1125,7 @@ main(int32 argc, char **argv) {
                                 nfa[copy].next1 = s_merge;
                                 if (f_start == -1) { f_start = s_split; }
                                 if (l_out != -1) {
-                                    if (nfa[l_out].type == 4) {
+                                    if (nfa[l_out].type == NFA_STATE_SPLIT) {
                                         nfa[l_out].next2 = s_split;
                                     } else {
                                         nfa[l_out].next1 = s_split;
@@ -1089,8 +1137,11 @@ main(int32 argc, char **argv) {
                         if (f_start == -1) {
                             f_start = nfa_count;
                             nfa_count += 1;
-                            if (nfa_count > 2048) { nfa_failed = 1; break; }
-                            nfa[f_start].type = 5;
+                            if (nfa_count > PREPROC_MAX_NFA_STATES) {
+                                nfa_failed = 1;
+                                break;
+                            }
+                            nfa[f_start].type = NFA_STATE_EMPTY;
                             nfa[f_start].next1 = -1;
                             nfa[f_start].next2 = -1;
                             l_out = f_start;
@@ -1101,7 +1152,7 @@ main(int32 argc, char **argv) {
 
                     if (b_start == -1) { b_start = i_start; }
                     if (prev_dangling != -1) {
-                        if (nfa[prev_dangling].type == 4) {
+                        if (nfa[prev_dangling].type == NFA_STATE_SPLIT) {
                             nfa[prev_dangling].next2 = i_start;
                         } else {
                             nfa[prev_dangling].next1 = i_start;
@@ -1115,8 +1166,11 @@ main(int32 argc, char **argv) {
                     for (int32 i = 1; i < branch_count; i += 1) {
                         int32 s = nfa_count;
                         nfa_count += 1;
-                        if (nfa_count > 2048) { nfa_failed = 1; break; }
-                        nfa[s].type = 4;
+                        if (nfa_count > PREPROC_MAX_NFA_STATES) {
+                            nfa_failed = 1;
+                            break;
+                        }
+                        nfa[s].type = NFA_STATE_SPLIT;
                         nfa[s].next1 = branch_starts[i];
                         nfa[s].next2 = nfa_start_state;
                         nfa_start_state = s;
@@ -1127,26 +1181,38 @@ main(int32 argc, char **argv) {
 
                 if (!nfa_failed) {
                     dfa_accept[0] = 0;
-                    for (int32 c = 0; c < 256; c += 1) {
+                    for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                         dfa_transitions[0][c] = 0;
                     }
 
                     DfaSet start_set = {0};
-                    for (int32 i = 0; i < 64; i += 1) { start_set.bits[i] = 0; }
-                    start_set.bits[nfa_start_state / 32] |= (1u << (nfa_start_state % 32));
+                    for (int32 i = 0; i < PREPROC_NFA_BITSET_WORDS; i += 1) {
+                        start_set.bits[i] = 0;
+                    }
+                    start_set.bits[nfa_start_state / BITS_PER_UINT32]
+                        |= (1u << (nfa_start_state % BITS_PER_UINT32));
 
                     int32 changed = 1;
                     while (changed) {
                         changed = 0;
                         for (int32 i = 0; i < nfa_count; i += 1) {
-                            if ((start_set.bits[i / 32] & (1u << (i % 32)))) {
-                                if (nfa[i].type == 4 || nfa[i].type == 5) {
-                                    if (nfa[i].next1 != -1 && !(start_set.bits[nfa[i].next1 / 32] & (1u << (nfa[i].next1 % 32)))) {
-                                        start_set.bits[nfa[i].next1 / 32] |= (1u << (nfa[i].next1 % 32));
+                            if ((start_set.bits[i / BITS_PER_UINT32]
+                                 & (1u << (i % BITS_PER_UINT32)))) {
+                                if (nfa[i].type == NFA_STATE_SPLIT
+                                    || nfa[i].type == NFA_STATE_EMPTY) {
+                                    if (nfa[i].next1 != -1
+                                        && !(start_set.bits[nfa[i].next1 / BITS_PER_UINT32]
+                                             & (1u << (nfa[i].next1 % BITS_PER_UINT32)))) {
+                                        start_set.bits[nfa[i].next1 / BITS_PER_UINT32]
+                                            |= (1u << (nfa[i].next1 % BITS_PER_UINT32));
                                         changed = 1;
                                     }
-                                    if (nfa[i].type == 4 && nfa[i].next2 != -1 && !(start_set.bits[nfa[i].next2 / 32] & (1u << (nfa[i].next2 % 32)))) {
-                                        start_set.bits[nfa[i].next2 / 32] |= (1u << (nfa[i].next2 % 32));
+                                    if (nfa[i].type == NFA_STATE_SPLIT
+                                        && nfa[i].next2 != -1
+                                        && !(start_set.bits[nfa[i].next2 / BITS_PER_UINT32]
+                                             & (1u << (nfa[i].next2 % BITS_PER_UINT32)))) {
+                                        start_set.bits[nfa[i].next2 / BITS_PER_UINT32]
+                                            |= (1u << (nfa[i].next2 % BITS_PER_UINT32));
                                         changed = 1;
                                     }
                                 }
@@ -1157,17 +1223,24 @@ main(int32 argc, char **argv) {
                     int32 match_id = -1;
                     for (int32 i = 1; i < dfa_count; i += 1) {
                         int32 match = 1;
-                        for (int32 k = 0; k < 64; k += 1) {
-                            if (dfa_sets[i].bits[k] != start_set.bits[k]) { match = 0; break; }
+                        for (int32 k = 0; k < PREPROC_NFA_BITSET_WORDS; k += 1) {
+                            if (dfa_sets[i].bits[k] != start_set.bits[k]) {
+                                match = 0;
+                                break;
+                            }
                         }
                         if (match) { match_id = i; break; }
                     }
                     if (match_id != -1) {
                         start_dfa = match_id;
-                    } else if (dfa_count < 256) {
+                    } else if (dfa_count < META_MAX_DFA_STATES) {
                         dfa_sets[dfa_count] = start_set;
-                        dfa_accept[dfa_count] = (start_set.bits[nfa_accept / 32] & (1u << (nfa_accept % 32))) != 0;
-                        for (int32 c = 0; c < 256; c += 1) { dfa_transitions[dfa_count][c] = 0; }
+                        dfa_accept[dfa_count]
+                            = (start_set.bits[nfa_accept / BITS_PER_UINT32]
+                               & (1u << (nfa_accept % BITS_PER_UINT32))) != 0;
+                        for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
+                            dfa_transitions[dfa_count][c] = 0;
+                        }
                         start_dfa = dfa_count;
                         dfa_count += 1;
                     } else {
@@ -1177,20 +1250,30 @@ main(int32 argc, char **argv) {
                     if (!nfa_failed) {
                         for (int32 d = 1; d < dfa_count; d += 1) {
                             if (nfa_failed) { break; }
-                            for (int32 c = 0; c < 256; c += 1) {
+                            for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                                 DfaSet next_set = {0};
-                                for (int32 i = 0; i < 64; i += 1) { next_set.bits[i] = 0; }
+                                for (int32 i = 0; i < PREPROC_NFA_BITSET_WORDS; i += 1) {
+                                    next_set.bits[i] = 0;
+                                }
                                 int32 has_next = 0;
                                 for (int32 i = 0; i < nfa_count; i += 1) {
-                                    if ((dfa_sets[d].bits[i / 32] & (1u << (i % 32)))) {
-                                        if (nfa[i].type == 1 && nfa[i].c == c) {
-                                            next_set.bits[nfa[i].next1 / 32] |= (1u << (nfa[i].next1 % 32));
+                                    if ((dfa_sets[d].bits[i / BITS_PER_UINT32]
+                                         & (1u << (i % BITS_PER_UINT32)))) {
+                                        if (nfa[i].type == NFA_STATE_LITERAL
+                                            && nfa[i].c == c) {
+                                            next_set.bits[nfa[i].next1 / BITS_PER_UINT32]
+                                                |= (1u << (nfa[i].next1 % BITS_PER_UINT32));
                                             has_next = 1;
-                                        } else if (nfa[i].type == 2 && (nfa[i].mask[c / 32] & (1u << (c % 32)))) {
-                                            next_set.bits[nfa[i].next1 / 32] |= (1u << (nfa[i].next1 % 32));
+                                        } else if (nfa[i].type == NFA_STATE_CLASS
+                                                   && (nfa[i].mask[c / BITS_PER_UINT32]
+                                                       & (1u << (c % BITS_PER_UINT32)))) {
+                                            next_set.bits[nfa[i].next1 / BITS_PER_UINT32]
+                                                |= (1u << (nfa[i].next1 % BITS_PER_UINT32));
                                             has_next = 1;
-                                        } else if (nfa[i].type == 3 && c != '\n') {
-                                            next_set.bits[nfa[i].next1 / 32] |= (1u << (nfa[i].next1 % 32));
+                                        } else if (nfa[i].type == NFA_STATE_ANY
+                                                   && c != '\n') {
+                                            next_set.bits[nfa[i].next1 / BITS_PER_UINT32]
+                                                |= (1u << (nfa[i].next1 % BITS_PER_UINT32));
                                             has_next = 1;
                                         }
                                     }
@@ -1200,41 +1283,57 @@ main(int32 argc, char **argv) {
                                     while (changed) {
                                         changed = 0;
                                         for (int32 i = 0; i < nfa_count; i += 1) {
-                                            if ((next_set.bits[i / 32] & (1u << (i % 32)))) {
-                                                if (nfa[i].type == 4 || nfa[i].type == 5) {
-                                                    if (nfa[i].next1 != -1 && !(next_set.bits[nfa[i].next1 / 32] & (1u << (nfa[i].next1 % 32)))) {
-                                                        next_set.bits[nfa[i].next1 / 32] |= (1u << (nfa[i].next1 % 32));
+                                            if ((next_set.bits[i / BITS_PER_UINT32]
+                                                 & (1u << (i % BITS_PER_UINT32)))) {
+                                                if (nfa[i].type == NFA_STATE_SPLIT
+                                                    || nfa[i].type == NFA_STATE_EMPTY) {
+                                                    if (nfa[i].next1 != -1
+                                                        && !(next_set.bits[nfa[i].next1 / BITS_PER_UINT32]
+                                                             & (1u << (nfa[i].next1 % BITS_PER_UINT32)))) {
+                                                        next_set.bits[nfa[i].next1 / BITS_PER_UINT32]
+                                                            |= (1u << (nfa[i].next1 % BITS_PER_UINT32));
                                                         changed = 1;
                                                     }
-                                                    if (nfa[i].type == 4 && nfa[i].next2 != -1 && !(next_set.bits[nfa[i].next2 / 32] & (1u << (nfa[i].next2 % 32)))) {
-                                                        next_set.bits[nfa[i].next2 / 32] |= (1u << (nfa[i].next2 % 32));
+                                                    if (nfa[i].type == NFA_STATE_SPLIT
+                                                        && nfa[i].next2 != -1
+                                                        && !(next_set.bits[nfa[i].next2 / BITS_PER_UINT32]
+                                                             & (1u << (nfa[i].next2 % BITS_PER_UINT32)))) {
+                                                        next_set.bits[nfa[i].next2 / BITS_PER_UINT32]
+                                                            |= (1u << (nfa[i].next2 % BITS_PER_UINT32));
                                                         changed = 1;
                                                     }
                                                 }
                                             }
                                         }
                                     }
+                                }
 
-                                    int32 match_id2 = -1;
-                                    for (int32 i = 1; i < dfa_count; i += 1) {
-                                        int32 match = 1;
-                                        for (int32 k = 0; k < 64; k += 1) {
-                                            if (dfa_sets[i].bits[k] != next_set.bits[k]) { match = 0; break; }
+                                int32 match_id2 = -1;
+                                for (int32 i = 1; i < dfa_count; i += 1) {
+                                    int32 match = 1;
+                                    for (int32 k = 0; k < PREPROC_NFA_BITSET_WORDS; k += 1) {
+                                        if (dfa_sets[i].bits[k] != next_set.bits[k]) {
+                                            match = 0;
+                                            break;
                                         }
-                                        if (match) { match_id2 = i; break; }
                                     }
-                                    
-                                    if (match_id2 != -1) {
-                                        dfa_transitions[d][c] = match_id2;
-                                    } else if (dfa_count < 256) {
-                                        dfa_sets[dfa_count] = next_set;
-                                        dfa_accept[dfa_count] = (next_set.bits[nfa_accept / 32] & (1u << (nfa_accept % 32))) != 0;
-                                        for (int32 k = 0; k < 256; k += 1) { dfa_transitions[dfa_count][k] = 0; }
-                                        dfa_transitions[d][c] = dfa_count;
-                                        dfa_count += 1;
-                                    } else {
-                                        nfa_failed = 1;
+                                    if (match) { match_id2 = i; break; }
+                                }
+                                
+                                if (match_id2 != -1) {
+                                    dfa_transitions[d][c] = match_id2;
+                                } else if (dfa_count < META_MAX_DFA_STATES) {
+                                    dfa_sets[dfa_count] = next_set;
+                                    dfa_accept[dfa_count]
+                                        = (next_set.bits[nfa_accept / BITS_PER_UINT32]
+                                           & (1u << (nfa_accept % BITS_PER_UINT32))) != 0;
+                                    for (int32 k = 0; k < META_ALPHABET_SIZE; k += 1) {
+                                        dfa_transitions[dfa_count][k] = 0;
                                     }
+                                    dfa_transitions[d][c] = dfa_count;
+                                    dfa_count += 1;
+                                } else {
+                                    nfa_failed = 1;
                                 }
                             }
                         }
@@ -1244,10 +1343,12 @@ main(int32 argc, char **argv) {
                 if (nfa_failed) {
                     printf(", .dfa = NULL } }");
                 } else {
-                    printf(", .dfa = &(Dfa){ .num_states = %d, .start_state = %d, .states = {\n", dfa_count, start_dfa);
+                    printf(", .dfa = &(Dfa){ .num_states = %d, "
+                           ".start_state = %d, .states = {\n",
+                           dfa_count, start_dfa);
                     for (int32 i = 0; i < dfa_count; i += 1) {
                         printf("{ .is_accepting = %d, .next = {", dfa_accept[i]);
-                        for (int32 c = 0; c < 256; c += 1) {
+                        for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                             if (dfa_transitions[i][c] != 0) {
                                 printf("[%d]=%d,", c, dfa_transitions[i][c]);
                             }

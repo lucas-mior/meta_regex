@@ -3,6 +3,12 @@
 
 #include "cbase/util.c"
 
+#define META_ALPHABET_SIZE 256
+#define META_MAX_DFA_STATES 256
+#define META_MAX_OPS 512
+#define META_FASTMAP_SIZE 32
+#define META_CHAR_BITMASK_WORDS 8
+
 enum MetaOpType {
     META_OP_END,
     META_OP_LITERAL,
@@ -29,30 +35,30 @@ typedef struct MetaOp {
     int32 value;
     int32 min;
     int32 max;
-    uint32 mask[8];
+    uint32 mask[META_CHAR_BITMASK_WORDS];
 } MetaOp;
 
 typedef struct DfaState {
     int32 is_accepting;
-    int32 next[256];
+    int32 next[META_ALPHABET_SIZE];
 } DfaState;
 
 typedef struct Dfa {
     int32 num_states;
     int32 start_state;
-    DfaState states[256];
+    DfaState states[META_MAX_DFA_STATES];
 } Dfa;
 
 typedef struct MetaRegex {
     char *string;
-    MetaOp ops[512];
+    MetaOp ops[META_MAX_OPS];
     int32 has_start_anchor;
     int32 has_end_anchor;
     int32 has_alternation;
     int32 re_nsub;
     int32 has_backref;
     int32 can_be_null;
-    uint8 fastmap[32];
+    uint8 fastmap[META_FASTMAP_SIZE];
     Dfa *dfa;
 } MetaRegex;
 
