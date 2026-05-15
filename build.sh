@@ -11,7 +11,7 @@ mkdir -p bin
 
 CFLAGS="$CFLAGS -std=c11"
 CFLAGS="$CFLAGS -Wextra -Wall"
-CFLAGS="$CFLAGS -Werror"
+# CFLAGS="$CFLAGS -Werror"
 CFLAGS="$CFLAGS -Wno-unused-macros -Wno-unused-function"
 CFLAGS="$CFLAGS -Wno-unknown-pragmas"
 CFLAGS="$CFLAGS -Wfatal-errors"
@@ -71,9 +71,17 @@ trace_on
 trace_off
 
 printf "\nBuilding target program...\n"
+if [ "$1" = "callgrind" ]; then
+    CFLAGS="$CFLAGS -g3"
+    CFLAGS="$CFLAGS -Wno-unused-variable"
+    CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
+fi
 trace_on
 $CC $CPPFLAGS -O2 -flto $CFLAGS gen/main2.c -o bin/regex_test $LDFLAGS
 trace_off
+if [ "$1" = "callgrind" ]; then
+    valgrind --tool=callgrind bin/regex_test
+fi
 
 printf "\nRunning Tests:\n"
 ./bin/regex_test

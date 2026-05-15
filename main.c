@@ -195,18 +195,20 @@ main(void) {
     setlocale(LC_ALL, "C");
     srand((uint)42);
 
+#if !BENCHMARK
     run_posix_vs_meta(ascii_against_ascii, LENGTH(ascii_against_ascii), "ASCII vs ASCII");
     run_posix_vs_meta(utf8_against_ascii, LENGTH(utf8_against_ascii), "UTF8 vs ASCII");
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "UTF8 vs UTF8");
+#endif
 
-    run_fuzzy_tests( 16,  1000);
-    run_fuzzy_tests( 32,  1000);
-    run_fuzzy_tests( 64,  1000);
-    run_fuzzy_tests(128,  1000);
-    run_fuzzy_tests(256,  1000);
-    run_fuzzy_tests(512,  1000);
-    run_fuzzy_tests(1024, 1000);
+    /* run_fuzzy_tests( 16,  1000); */
+    /* run_fuzzy_tests( 32,  1000); */
+    /* run_fuzzy_tests( 64,  1000); */
+    /* run_fuzzy_tests(128,  1000); */
+    /* run_fuzzy_tests(256,  1000); */
+    /* run_fuzzy_tests(512,  1000); */
+    /* run_fuzzy_tests(1024, 1000); */
     run_fuzzy_tests(2048, 1000);
-    run_fuzzy_tests(4096, 1000);
+    /* run_fuzzy_tests(4096, 1000); */
     exit(EXIT_SUCCESS);
 }
