@@ -19,12 +19,10 @@ typedef struct LazyDfa {
     LazyDfaState states[META_MAX_LAZY_DFA_STATES];
 } LazyDfa;
 
-static void
-add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
-                    int32 *is_accepting);
-static void
-compute_next_state(MetaOp *ops, NfaStateSet *current_set, int32 c,
-                   NfaStateSet *next_set, int32 *is_accepting);
+static void add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
+                                int32 *is_accepting);
+static void compute_next_state(MetaOp *ops, NfaStateSet *current_set, int32 c,
+                               NfaStateSet *next_set, int32 *is_accepting);
 
 static int32
 try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
@@ -58,13 +56,14 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
                 depth += 1;
             } else if (regex->ops[i].type == META_OP_GROUP_END) {
                 depth -= 1;
-            } else if (regex->ops[i].type == META_OP_ALTERNATION && depth == 0) {
-                add_epsilon_closure(regex->ops, i + 1, &start_set, &is_accepting);
+            } else if (regex->ops[i].type == META_OP_ALTERNATION
+                       && depth == 0) {
+                add_epsilon_closure(regex->ops, i + 1, &start_set,
+                                    &is_accepting);
             }
         }
 
-        if (!hash_lookup_map(ldfa->state_map,
-                             &start_set, SIZEOF(start_set),
+        if (!hash_lookup_map(ldfa->state_map, &start_set, SIZEOF(start_set),
                              &current_state_id)) {
             current_state_id = ldfa->num_states;
             if (current_state_id < META_MAX_LAZY_DFA_STATES) {
@@ -74,11 +73,11 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
                     ldfa->states[current_state_id].next[c] = 0;
                 }
                 for (int32 k = 0; k < META_PC_WORDS; k += 1) {
-                    ldfa->states[current_state_id].set.bits[k] = start_set.bits[k];
+                    ldfa->states[current_state_id].set.bits[k]
+                        = start_set.bits[k];
                 }
-                ASSERT(hash_insert_map(ldfa->state_map,
-                                       &start_set, SIZEOF(start_set),
-                                       current_state_id));
+                ASSERT(hash_insert_map(ldfa->state_map, &start_set,
+                                       SIZEOF(start_set), current_state_id));
             }
         }
     }
@@ -89,7 +88,8 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
         uchar b;
         int32 next_state_idx;
 
-        if (current_state_id > 0 && current_state_id < META_MAX_LAZY_DFA_STATES) {
+        if (current_state_id > 0
+            && current_state_id < META_MAX_LAZY_DFA_STATES) {
             if (ldfa->states[current_state_id].is_accepting) {
                 last_accept = i;
             }
@@ -100,7 +100,8 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
             break;
         }
 
-        if (current_state_id > 0 && current_state_id < META_MAX_LAZY_DFA_STATES) {
+        if (current_state_id > 0
+            && current_state_id < META_MAX_LAZY_DFA_STATES) {
             next_state_idx = ldfa->states[current_state_id].next[b];
         } else {
             next_state_idx = 0;
@@ -112,7 +113,8 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
             int32 set_is_empty;
 
             set_is_empty = 1;
-            if (current_state_id > 0 && current_state_id < META_MAX_LAZY_DFA_STATES) {
+            if (current_state_id > 0
+                && current_state_id < META_MAX_LAZY_DFA_STATES) {
                 compute_next_state(regex->ops,
                                    &ldfa->states[current_state_id].set, b,
                                    &next_set, &next_is_accepting);
@@ -131,26 +133,27 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
                 break;
             }
 
-            if (!hash_lookup_map(ldfa->state_map,
-                                 &next_set, SIZEOF(next_set),
+            if (!hash_lookup_map(ldfa->state_map, &next_set, SIZEOF(next_set),
                                  &next_state_idx)) {
                 next_state_idx = ldfa->num_states;
                 if (next_state_idx < META_MAX_LAZY_DFA_STATES) {
                     ldfa->num_states += 1;
-                    ldfa->states[next_state_idx].is_accepting = next_is_accepting;
+                    ldfa->states[next_state_idx].is_accepting
+                        = next_is_accepting;
                     for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                         ldfa->states[next_state_idx].next[c] = 0;
                     }
                     for (int32 k = 0; k < META_PC_WORDS; k += 1) {
-                        ldfa->states[next_state_idx].set.bits[k] = next_set.bits[k];
+                        ldfa->states[next_state_idx].set.bits[k]
+                            = next_set.bits[k];
                     }
-                    ASSERT(hash_insert_map(ldfa->state_map,
-                                           &next_set, SIZEOF(next_set),
-                                           next_state_idx));
+                    ASSERT(hash_insert_map(ldfa->state_map, &next_set,
+                                           SIZEOF(next_set), next_state_idx));
                 }
             }
 
-            if (current_state_id > 0 && current_state_id < META_MAX_LAZY_DFA_STATES) {
+            if (current_state_id > 0
+                && current_state_id < META_MAX_LAZY_DFA_STATES) {
                 ldfa->states[current_state_id].next[b] = next_state_idx;
             }
         }
@@ -248,11 +251,13 @@ add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
             stack_ptr += 1;
         }
 
-        if (op->type == META_OP_LITERAL || op->type == META_OP_CLASS || op->type == META_OP_ANY) {
+        if (op->type == META_OP_LITERAL || op->type == META_OP_CLASS
+            || op->type == META_OP_ANY) {
             MetaOp *next_op;
 
             next_op = &ops[current_pc + 1];
-            if (next_op->type == META_OP_STAR || next_op->type == META_OP_OPTIONAL) {
+            if (next_op->type == META_OP_STAR
+                || next_op->type == META_OP_OPTIONAL) {
                 stack[stack_ptr] = current_pc + 2;
                 stack_ptr += 1;
             }
@@ -297,7 +302,8 @@ compute_next_state(MetaOp *ops, NfaStateSet *current_set, int32 c,
                 MetaOp *next_op;
 
                 next_op = &ops[i + 1];
-                if (next_op->type == META_OP_STAR || next_op->type == META_OP_PLUS) {
+                if (next_op->type == META_OP_STAR
+                    || next_op->type == META_OP_PLUS) {
                     add_epsilon_closure(ops, i, next_set, is_accepting);
                     add_epsilon_closure(ops, i + 2, next_set, is_accepting);
                 } else if (next_op->type == META_OP_OPTIONAL) {

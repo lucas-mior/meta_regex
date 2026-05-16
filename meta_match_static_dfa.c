@@ -18,7 +18,7 @@ try_match_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
         int32 *next_table;
 
         b = (uchar)string[i];
-        
+
         if (current_state_ptr->is_accepting) {
             last_accept = i;
         }
@@ -29,7 +29,7 @@ try_match_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
 
         next_table = current_state_ptr->next;
         next_state_idx = next_table[b];
-        
+
         if (next_state_idx == 0) {
             break;
         }

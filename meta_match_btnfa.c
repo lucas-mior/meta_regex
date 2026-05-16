@@ -238,8 +238,9 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
             backref_len = pmatch[group_id].rm_eo - pmatch[group_id].rm_so;
             backref_ptr = original_string + pmatch[group_id].rm_so;
 
-            if (strncmp32((char*)current_string, (char*)backref_ptr,
-                          backref_len) == 0) {
+            if (strncmp32((char *)current_string, (char *)backref_ptr,
+                          backref_len)
+                == 0) {
                 return btnfa_match_at_recursive(ops + 1, original_string,
                                                 current_string + backref_len,
                                                 nmatch, pmatch);
@@ -268,8 +269,8 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
 
     if (ops[0].type == META_OP_SPLIT) {
         longest_match = -1;
-        skip_1 = btnfa_quick_lookahead_fails(ops + ops[0].value,
-                                             current_string);
+        skip_1
+            = btnfa_quick_lookahead_fails(ops + ops[0].value, current_string);
         if (!skip_1) {
             pass_pmatch = NULL;
             if (pmatch != NULL) {

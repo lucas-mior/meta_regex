@@ -29,8 +29,8 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
     struct timespec t1_posix;
     struct timespec t0_meta;
     struct timespec t1_meta;
-    RegexTest *tests_posix = xmemdup(tests, count*SIZEOF(RegexTest));
-    RegexTest *tests_meta = xmemdup(tests, count*SIZEOF(RegexTest));
+    RegexTest *tests_posix = xmemdup(tests, count * SIZEOF(RegexTest));
+    RegexTest *tests_meta = xmemdup(tests, count * SIZEOF(RegexTest));
     bool failed = false;
 
     printf("\n----- Running %s (POSIX vs Meta) -----\n", description);
@@ -101,8 +101,8 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
     PRINT_TIMINGS(count, t0_posix, t1_posix, "posix");
     PRINT_TIMINGS(count, t0_meta, t1_meta, "meta");
 
-    free2(tests_posix, count*SIZEOF(RegexTest));
-    free2(tests_meta, count*SIZEOF(RegexTest));
+    free2(tests_posix, count * SIZEOF(RegexTest));
+    free2(tests_meta, count * SIZEOF(RegexTest));
     return;
 }
 
@@ -120,8 +120,8 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
         int32 result;
         bool matched;
 
-        result
-            = meta_regex_match(meta_regex, (uchar*)input, MAX_MATCHES, tests[i].pmatch);
+        result = meta_regex_match(meta_regex, (uchar *)input, MAX_MATCHES,
+                                  tests[i].pmatch);
         matched = !result;
         bool expected = (bool)tests[i].result;
 
@@ -158,7 +158,7 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
     struct timespec t1_meta;
 
     fuzzy_len = ntests;
-    fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
+    fuzzy = malloc2(SIZEOF(*fuzzy) * fuzzy_len);
 
     if ((mismatches = fopen("mismatches_ascii.txt", "w")) == NULL) {
         error("Error opening file: %s.\n", strerror(errno));
@@ -191,8 +191,9 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
     for (int32 i = 0; i < fuzzy_len; i += 1) {
         MetaRegex *meta_pattern;
         meta_pattern = ascii_against_ascii[fuzzy[i].regex_idx].meta_regex;
-        fuzzy[i].result_meta = meta_regex_match(
-            meta_pattern, (uchar *)fuzzy[i].input, MAX_MATCHES, fuzzy[i].pmatch_meta);
+        fuzzy[i].result_meta
+            = meta_regex_match(meta_pattern, (uchar *)fuzzy[i].input,
+                               MAX_MATCHES, fuzzy[i].pmatch_meta);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
@@ -271,7 +272,7 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
     for (int32 i = 0; i < fuzzy_len; i += 1) {
         free2(fuzzy[i].input, fuzzy[i].string_len + 1);
     }
-    free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
+    free2(fuzzy, SIZEOF(*fuzzy) * fuzzy_len);
     fclose(mismatches);
     return;
 }
@@ -286,7 +287,8 @@ main(void) {
                       "ASCII vs ASCII");
     /* run_posix_vs_meta(utf8_against_ascii, LENGTH(utf8_against_ascii), */
     /*                   "UTF8 vs ASCII"); */
-    /* run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "UTF8 vs UTF8"); */
+    /* run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "UTF8 vs
+     * UTF8"); */
 #endif
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
