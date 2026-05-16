@@ -13,7 +13,7 @@
 
 #include "main_tests.h"
 #include "gen/main_tests_array2.h"
-#include "utf8.h"
+#include "utf8.c"
 
 #if !defined(error2)
 #define error2(...) fprintf(stderr, __VA_ARGS__)
@@ -168,7 +168,7 @@ run_fuzzy_tests(int32 max_str_size, int32 ntests) {
     for (int32 i = 0; i < fuzzy_len; i += 1) {
         fuzzy[i].string_len = 1 + (rand() % max_str_size);
         fuzzy[i].input = malloc2(fuzzy[i].string_len + 1);
-        ascii_random_string(fuzzy[i].input, fuzzy[i].string_len);
+        random_ascii_string(fuzzy[i].input, fuzzy[i].string_len, 1);
         fuzzy[i].regex_idx = rand() % LENGTH(ascii_against_ascii);
     }
 

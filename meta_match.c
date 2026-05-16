@@ -12,7 +12,7 @@
 #include "meta_match_static_dfa.c"
 
 #if !defined(ALGO_LAZY_DFA)
-#define ALGO_LAZY_DFA 1
+#define ALGO_LAZY_DFA 0
 #endif
 
 #if !defined(ALGO_STATIC_DFA)
