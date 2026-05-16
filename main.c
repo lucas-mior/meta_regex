@@ -60,9 +60,9 @@ main(void) {
     RUN_FUZZY_TESTS(fuzzy_patterns, 256, 1000);
     RUN_FUZZY_TESTS(fuzzy_patterns, 512, 1000);
     RUN_FUZZY_TESTS(fuzzy_patterns, 1024, 1000);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 100);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 2000);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 8192, 20);
+    RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 1000);
+    RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 1000);
+    RUN_FUZZY_TESTS(fuzzy_patterns, 8192, 1000);
     exit(EXIT_SUCCESS);
 }
 
