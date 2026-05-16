@@ -819,8 +819,7 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
 
         state_set_to_string(&start_set, key_buf, SIZEOF(key_buf));
         len = strlen32(key_buf);
-        ASSERT(hash_lookup_map(ldfa->state_map, key_buf, len, &current_state_id));
-        if (current_state_id == 0) {
+        if (!hash_lookup_map(ldfa->state_map, key_buf, len, &current_state_id)) {
             current_state_id = ldfa->num_states;
             if (current_state_id < META_MAX_LAZY_DFA_STATES) {
                 ldfa->num_states += 1;
@@ -888,9 +887,7 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
 
             state_set_to_string(&next_set, key_buf, SIZEOF(key_buf));
             len = strlen32(key_buf);
-            ASSERT(hash_lookup_map(ldfa->state_map, key_buf, len, &next_state_idx));
-
-            if (next_state_idx == 0) {
+            if (!hash_lookup_map(ldfa->state_map, key_buf, len, &next_state_idx)) {
                 next_state_idx = ldfa->num_states;
                 if (next_state_idx < META_MAX_LAZY_DFA_STATES) {
                     ldfa->num_states += 1;
