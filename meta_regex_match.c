@@ -947,6 +947,7 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
 
     if (regex->has_backref) {
         use_backtracking = 1;
+    /* } else if (!regex->dfa) { */
     } else {
         int32 has_unsupported;
 

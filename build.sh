@@ -41,7 +41,7 @@ debug)
     CFLAGS="$CFLAGS -g3"
     ;;
 build)
-    CPPFLAGS="$CPPFLAGS -DDEBUGGING=1 $GNUSOURCE"
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
     CFLAGS="$CFLAGS -g -O2 -flto"
     ;;
 callgrind)
