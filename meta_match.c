@@ -16,7 +16,11 @@
 #endif
 
 #if !defined(ALGO_STATIC_DFA)
-#define ALGO_STATIC_DFA 1
+#define ALGO_STATIC_DFA 0
+#endif
+
+#if !defined(ALGO_STATIC_DFA)
+#define ALGO_BTNFA_ALWAYS 1
 #endif
 
 #if ALGO_LAZY_DFA && ALGO_STATIC_DFA
@@ -52,7 +56,7 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
     }
 
 #if defined(ALGO_BTNFA_ALWAYS)
-    algorithm = ALGO_BTNFA;
+    algorithm = MATCH_ALGO_BTNFA;
 #else
     if (regex->has_backref) {
         algorithm = MATCH_ALGO_BTNFA;
@@ -71,17 +75,18 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
         }
 
         if (has_unsupported) {
-            printf("TODO: Word boundaries are not supported in DFA yet.\n");
-            algorithm = MATCH_ALGO_BTNFA;
+            error("TODO: Word boundaries are not supported in DFA yet.\n");
         }
 
 #if ALGO_LAZY_DFA
         algorithm = MATCH_ALGO_LAZY_DFA;
-#else
+#elif ALGO_STATIC_DFA
         algorithm = MATCH_ALGO_STATIC_DFA;
 #endif
     }
 #endif
+
+    ASSERT_EQUAL(algorithm, MATCH_ALGO_BTNFA);
 
     if (algorithm == MATCH_ALGO_BTNFA) {
         if (regex->has_start_anchor) {
