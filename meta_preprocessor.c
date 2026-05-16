@@ -1388,43 +1388,45 @@ main(int32 argc, char **argv) {
                                             }
                                         }
                                     }
-                                }
 
-                                int32 match_id2 = -1;
-                                for (int32 i = 1; i < dfa_count; i += 1) {
-                                    int32 match = 1;
-                                    for (int32 k = 0;
-                                         k < PREPROC_NFA_BITSET_WORDS; k += 1) {
-                                        if (dfa_sets[i].bits[k]
-                                            != next_set.bits[k]) {
-                                            match = 0;
+                                    int32 match_id2 = -1;
+                                    for (int32 i = 1; i < dfa_count; i += 1) {
+                                        int32 match = 1;
+                                        for (int32 k = 0;
+                                             k < PREPROC_NFA_BITSET_WORDS;
+                                             k += 1) {
+                                            if (dfa_sets[i].bits[k]
+                                                != next_set.bits[k]) {
+                                                match = 0;
+                                                break;
+                                            }
+                                        }
+                                        if (match) {
+                                            match_id2 = i;
                                             break;
                                         }
                                     }
-                                    if (match) {
-                                        match_id2 = i;
-                                        break;
-                                    }
-                                }
 
-                                if (match_id2 != -1) {
-                                    dfa_transitions[d][c] = match_id2;
-                                } else if (dfa_count < META_MAX_DFA_STATES) {
-                                    dfa_sets[dfa_count] = next_set;
-                                    dfa_accept[dfa_count]
-                                        = (next_set.bits[nfa_accept
-                                                         / BITS_PER_UINT32]
-                                           & (1u << (nfa_accept
-                                                     % BITS_PER_UINT32)))
-                                          != 0;
-                                    for (int32 k = 0; k < META_ALPHABET_SIZE;
-                                         k += 1) {
-                                        dfa_transitions[dfa_count][k] = 0;
+                                    if (match_id2 != -1) {
+                                        dfa_transitions[d][c] = match_id2;
+                                    } else if (dfa_count
+                                               < META_MAX_DFA_STATES) {
+                                        dfa_sets[dfa_count] = next_set;
+                                        dfa_accept[dfa_count]
+                                            = (next_set.bits[nfa_accept
+                                                             / BITS_PER_UINT32]
+                                               & (1u << (nfa_accept
+                                                         % BITS_PER_UINT32)))
+                                              != 0;
+                                        for (int32 k = 0;
+                                             k < META_ALPHABET_SIZE; k += 1) {
+                                            dfa_transitions[dfa_count][k] = 0;
+                                        }
+                                        dfa_transitions[d][c] = dfa_count;
+                                        dfa_count += 1;
+                                    } else {
+                                        nfa_failed = 1;
                                     }
-                                    dfa_transitions[d][c] = dfa_count;
-                                    dfa_count += 1;
-                                } else {
-                                    nfa_failed = 1;
                                 }
                             }
                         }
@@ -1442,12 +1444,25 @@ main(int32 argc, char **argv) {
                            ".start_state = %d, .states = {\n",
                            dfa_count, start_dfa);
                     for (int32 i = 0; i < dfa_count; i += 1) {
+                        int32 has_transitions = 0;
+
                         printf("{ .is_accepting = %d, .next = {",
                                dfa_accept[i]);
                         for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                             if (dfa_transitions[i][c] != 0) {
-                                printf("[%d]=%d,", c, dfa_transitions[i][c]);
+                                has_transitions = 1;
+                                break;
                             }
+                        }
+                        if (has_transitions) {
+                            for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
+                                if (dfa_transitions[i][c] != 0) {
+                                    printf("[%d]=%d,", c,
+                                           dfa_transitions[i][c]);
+                                }
+                            }
+                        } else {
+                            printf("0");
                         }
                         printf("} },\n");
                     }
