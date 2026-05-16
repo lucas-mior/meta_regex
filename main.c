@@ -33,6 +33,8 @@ static void run_meta_only(RegexTest *tests, int32 count, char *description);
 #define RUN_FUZZY_TESTS(ARRAY, MAX_STR_SIZE, NTESTS) \
     run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS)
 
+#define FUZZY_PRECOMPILE_POSIX 1
+
 int32
 main(void) {
     setlocale(LC_ALL, "C");
@@ -194,6 +196,9 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     struct timespec t1_posix;
     struct timespec t0_meta;
     struct timespec t1_meta;
+#if FUZZY_PRECOMPILE_POSIX
+    regex_t *posix_regexes = NULL;
+#endif
 
     fuzzy_len = ntests * tests_len;
     fuzzy = malloc2(SIZEOF(*fuzzy) * fuzzy_len);
@@ -221,8 +226,30 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         }
     }
 
+#if FUZZY_PRECOMPILE_POSIX
+    posix_regexes = malloc2(tests_len * SIZEOF(regex_t));
+    for (int32 i = 0; i < tests_len; i += 1) {
+        char *pattern_str;
+
+        pattern_str = tests[i]->string;
+        if (regcomp(&posix_regexes[i], pattern_str,
+                    REG_EXTENDED) != 0) {
+            error("Pre-compilation failed for: %s\n", pattern_str);
+            exit(EXIT_FAILURE);
+        }
+    }
+#endif
+
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
     for (int32 i = 0; i < fuzzy_len; i += 1) {
+#if FUZZY_PRECOMPILE_POSIX
+        int32 idx;
+
+        idx = fuzzy[i].regex_idx;
+        fuzzy[i].result_posix
+            = regexec(&posix_regexes[idx], fuzzy[i].input,
+                      MAX_MATCHES, fuzzy[i].pmatch_posix, 0);
+#else
         regex_t compiled;
         char *pattern_str;
 
@@ -235,6 +262,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         } else {
             fuzzy[i].result_posix = REG_NOMATCH;
         }
+#endif
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
 
@@ -314,6 +342,13 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         PRINT_TIMINGS(fuzzy_len, t0_posix, t1_posix, name_posix);
         PRINT_TIMINGS(fuzzy_len, t0_meta, t1_meta, name_meta);
     }
+
+#if FUZZY_PRECOMPILE_POSIX
+    for (int32 i = 0; i < tests_len; i += 1) {
+        regfree(&posix_regexes[i]);
+    }
+    free2(posix_regexes, tests_len * SIZEOF(regex_t));
+#endif
 
     for (int32 i = 0; i < ntests; i += 1) {
         int32 idx;
