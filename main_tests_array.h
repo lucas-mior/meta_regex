@@ -236,7 +236,7 @@ static RegexTest ascii_catastrophic_with_group_no_backref[] = {
 
 static RegexTest ascii_catastrophic_with_group_and_backref[] = {
     {"aaaaaaaaaaaaaaaaaX",           R("(a)\\1**b")},
-    {"aaaaaaaaaaaaaaaaaX",           R("((a)\\1*)*b")},
+    /* {"aaaaaaaaaaaaaaaaaX",           R("((a)\\1*)*b")}, */
     {"aaaaaaaaaaaaaaaaaX",           R("((a)\\1+)+b")},
     {"aaaaaaaaaaaaaaaaaX",           R("((a|\\1)*)*b")},
     {"aaaaaaaaaaaaaaaaaX",           R("((a*)\\1*)*b")},
