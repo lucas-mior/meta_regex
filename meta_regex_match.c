@@ -15,16 +15,25 @@
 #include "meta_regex.h"
 #include "util.c"
 #include "meta_util.c"
+#include "meta_lazy_dfa.c"
 
-typedef struct LazyDfa {
-    struct Hash_map *state_map;
-    int32 num_states;
-    LazyDfaState states[META_MAX_LAZY_DFA_STATES];
-} LazyDfa;
+#if !defined(ALGO_LAZY_DFA)
+#define ALGO_LAZY_DFA 0
+#endif
 
-#if defined(ALGO_LAZY_DFA) && defined(ALGO_STATIC_DFA)
+#if !defined(ALGO_STATIC_DFA)
+#define ALGO_STATIC_DFA 1
+#endif
+
+#if ALGO_LAZY_DFA && ALGO_STATIC_DFA
 #error "Cannot define both ALGO_LAZY_DFA and ALGO_STATIC_DFA"
 #endif
+
+enum MatchAlgorithm {
+    MATCH_ALGO_BTNFA,
+    MATCH_ALGO_LAZY_DFA,
+    MATCH_ALGO_STATIC_DFA,
+};
 
 static int32 try_match_btnfa(MetaRegex *regex, uchar *string,
                              int32 offset, int64 nmatch, regmatch_t *pmatch);
@@ -36,9 +45,8 @@ static int32 try_match_dfa(MetaRegex *regex, uchar *string,
 static int32
 meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
                  regmatch_t pmatch[]) {
+    enum MatchAlgorithm algorithm;
     int32 result;
-    int32 use_btnfa;
-    int32 use_lazy_dfa;
 
     if (regex == NULL) {
         return REG_NOMATCH;
@@ -51,14 +59,11 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
         }
     }
 
-    use_btnfa = 0;
-    use_lazy_dfa = 0;
-
 #if defined(ALGO_BTNFA_ALWAYS)
-    use_btnfa = 1;
+    algorithm = ALGO_BTNFA;
 #else
     if (regex->has_backref) {
-        use_btnfa = 1;
+        algorithm = MATCH_ALGO_BTNFA;
     } else {
         int32 has_unsupported;
 
@@ -75,24 +80,18 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
 
         if (has_unsupported) {
             printf("TODO: Word boundaries are not supported in DFA yet.\n");
-            use_btnfa;
+            algorithm = MATCH_ALGO_BTNFA;
         }
 
-#if defined(ALGO_LAZY_DFA)
-        use_lazy_dfa = 1;
-#elif defined(ALGO_STATIC_DFA)
-        use_lazy_dfa = 0;
+#if ALGO_LAZY_DFA
+        algorithm = MATCH_ALGO_LAZY_DFA;
 #else
-        if (regex->dfa == NULL) {
-            use_lazy_dfa = 1;
-        } else {
-            use_lazy_dfa = 0;
-        }
-#endif
+        algorithm = MATCH_ALGO_STATIC_DFA;
     }
 #endif
+#endif
 
-    if (use_btnfa) {
+    if (algorithm == MATCH_ALGO_BTNFA) {
         if (regex->has_start_anchor) {
             result = try_match_btnfa(regex, string, 0, nmatch, pmatch);
             if (result == 0) {
@@ -119,7 +118,7 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
                 break;
             }
         }
-    } else if (use_lazy_dfa) {
+    } else if (algorithm == MATCH_ALGO_LAZY_DFA) {
         if (regex->has_start_anchor) {
             result = try_match_lazy_dfa(regex, string, 0, nmatch, pmatch);
             if (result == 0) {
@@ -146,7 +145,7 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
                 break;
             }
         }
-    } else {
+    } else if (algorithm == MATCH_ALGO_STATIC_DFA) {
         if (regex->has_start_anchor) {
             result = try_match_dfa(regex, string, 0, nmatch, pmatch);
             if (result == 0) {
@@ -173,6 +172,9 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
                 break;
             }
         }
+    } else {
+        error("Undefined matching algorithm.\n");
+        exit(EXIT_FAILURE);
     }
 
     return REG_NOMATCH;
