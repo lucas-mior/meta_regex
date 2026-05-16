@@ -185,8 +185,8 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
 }
 
 static void
-run_fuzzy_tests(RegexTest *tests, int32 tests_len,
-                int32 max_str_size, int32 ntests) {
+run_fuzzy_tests(RegexTest *tests, int32 tests_len, int32 max_str_size,
+                int32 ntests) {
     int32 fuzzy_len;
     FuzzyTest *fuzzy;
     FILE *mismatches;
@@ -214,8 +214,7 @@ run_fuzzy_tests(RegexTest *tests, int32 tests_len,
     for (int32 i = 0; i < fuzzy_len; i += 1) {
         regex_t compiled;
         char *pattern_str;
-        pattern_str
-            = tests[fuzzy[i].regex_idx].meta_regex->string;
+        pattern_str = tests[fuzzy[i].regex_idx].meta_regex->string;
         if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
             fuzzy[i].result_posix
                 = regexec(&compiled, fuzzy[i].input, MAX_MATCHES,

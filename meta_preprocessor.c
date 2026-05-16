@@ -630,12 +630,24 @@ main(int32 argc, char **argv) {
                         }
                     }
                     int32 c1 = (uchar)regex_string[regex_index];
+                    if (c1 >= 128) {
+                        fprintf(stderr,
+                                "Error: Non-ASCII character inside bracket "
+                                "expression is not supported.\n");
+                        exit(EXIT_FAILURE);
+                    }
                     int32 c2 = c1;
                     regex_index += 1;
                     if (regex_string[regex_index] == '-'
                         && regex_string[regex_index + 1] != ']'
                         && regex_string[regex_index + 1] != '\0') {
                         c2 = (uchar)regex_string[regex_index + 1];
+                        if (c2 >= 128) {
+                            fprintf(stderr,
+                                    "Error: Non-ASCII character inside "
+                                    "bracket expression is not supported.\n");
+                            exit(EXIT_FAILURE);
+                        }
                         regex_index += 2;
                     }
                     for (int32 c = c1; c <= c2; c += 1) {
