@@ -932,8 +932,7 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
 
     if (regex->has_backref) {
         use_backtracking = 1;
-    /* } else if (!regex->dfa) { */
-    } else {
+    } else if (!regex->dfa) {
         int32 has_unsupported;
 
         has_unsupported = 0;
@@ -953,7 +952,6 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
             use_lazy_dfa = 1;
         }
     }
-    ASSERT(use_lazy_dfa);
 
     if (use_backtracking) {
         if (regex->has_start_anchor) {
