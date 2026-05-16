@@ -44,15 +44,15 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                 int32 offset, int64 nmatch, regmatch_t pmatch[]) {
     uchar *search_ptr;
     int32 match_len;
-    int32 stack_cap;
-    BtnfaState *stack;
-    int32 stack_ptr;
+    int32 stack_cap = 8192;
+    BtnfaState *stack = NULL;
+    int32 stack_ptr = 0;
     int64 copy_size;
     regmatch_t best_pmatch[32];
-    uint32 *memo;
-    int32 memo_size;
-    int32 step_count;
-    int32 is_catastrophic;
+    uint32 *memo = NULL;
+    int32 memo_size = 0;
+    int32 step_count = 0;
+    int32 is_catastrophic = 0;
 
     search_ptr = &string[offset];
     match_len = -1;
@@ -63,14 +63,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
         copy_size = nmatch;
     }
 
-    stack_cap = 8192;
     stack = realloc2(NULL, 0, stack_cap, SIZEOF(*stack));
-    stack_ptr = 0;
-
-    memo = NULL;
-    memo_size = 0;
-    step_count = 0;
-    is_catastrophic = 0;
 
     if (regex->has_alternation) {
         MetaOp *alts[128];
