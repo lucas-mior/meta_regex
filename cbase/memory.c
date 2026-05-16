@@ -719,7 +719,6 @@ xmmap_commit(int64 *size) {
 
     if (RUNNING_ON_VALGRIND) {
         p = malloc2(*size);
-        memset64(p, 0, *size);
         return p;
     }
     if (memory_page_size == 0) {

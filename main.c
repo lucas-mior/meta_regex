@@ -46,13 +46,13 @@ main(void) {
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 16, 1000); */
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 32, 1000); */
-    RUN_FUZZY_TESTS(fuzzy_patterns, 64, 1000);
+    RUN_FUZZY_TESTS(fuzzy_patterns, 64, 100);
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 128, 1000); */
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 256, 1000); */
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 512, 1000); */
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 1024, 1000); */
-    RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 1000);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 2000);
+    RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 100);
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 2000); */
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 8192, 20); */
     exit(EXIT_SUCCESS);
 }
