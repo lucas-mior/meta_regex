@@ -45,7 +45,10 @@ main(void) {
     RUN_POSIX_VS_META(ascii_with_group_and_backref);
     RUN_POSIX_VS_META(utf8_against_ascii);
     RUN_POSIX_VS_META(utf8_against_utf8);
-    RUN_POSIX_VS_META(ascii_catastrophic_cases);
+    RUN_POSIX_VS_META(ascii_catastrophic_no_group_no_backref);
+    RUN_POSIX_VS_META(ascii_catastrophic_with_group_no_backref);
+    RUN_POSIX_VS_META(ascii_catastrophic_with_group_and_backref);
+
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
@@ -88,7 +91,8 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
             char error_message[256];
             regerror(compiled, &compiled_regex, error_message,
                      SIZEOF(error_message));
-            error("Regex compilation failed: %s\n", error_message);
+            error("Regex compilation failed for"
+                  RED("\"%s\"")": %s\n", regex, error_message);
             exit(EXIT_FAILURE);
         }
         tests_posix[i].result = regexec(&compiled_regex, input, MAX_MATCHES,

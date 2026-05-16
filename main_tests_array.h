@@ -132,17 +132,6 @@ static RegexTest ascii_no_group_no_backref[] = {
     {"aaaa",         R("a*aa")},
 };
 
-static RegexTest ascii_catastrophic_cases[] = {
-    {"aaaaaaaaaaaaaaaaaX",           R("a*a*a*b")},
-    {"12345678901234560X",           R("[0-9]+[0-9]+a")},
-    {"xxxxxxxxxxxxxxxxxX",           R(".*.*b")},
-    {"aaaaaaaaaaaaaaaaaX",           R("a?a?a?aaaaaa")},
-    {"aaaaaaaaaaaaaaaaaaaaaaaaaaaX", R("a*a*a*a*a*a*a*b")},
-    {"aaaaaaaaaa12345678901234560X", R("[0-9]+[0-9]+[0-9]+[0-9]+a")},
-    {"aaaaaaaaaaxxxxxxxxxxxxxxxxxX", R(".*.*.*.*.*.*b")},
-    {"aaaaaaaaaaaaaaaaaaaaaaaaaaaX", R("a?a?a?a?a?a?a?aaaaa")},
-};
-
 static RegexTest ascii_with_group_no_backref[] = {
     {"foo bar",  R("(foo) (bar)")},
     {"a1b2",     R("([a-z])([0-9])")},
@@ -219,6 +208,39 @@ static RegexTest ascii_with_group_and_backref[] = {
     {"abab",               R("(a)(b)\\1\\2")},
     {"abcabca",            R("(a)(b)(c)\\1\\2\\3\\1")},
     {"1111",               R("([0-9])\\1\\1\\1")},
+};
+
+static RegexTest ascii_catastrophic_no_group_no_backref[] = {
+    {"aaaaaaaaaaaaaaaaaX",           R("a*a*a*b")},
+    {"12345678901234560X",           R("[0-9]+[0-9]+a")},
+    {"xxxxxxxxxxxxxxxxxX",           R(".*.*b")},
+    {"aaaaaaaaaaaaaaaaaX",           R("a?a?a?aaaaaa")},
+    {"aaaaaaaaaaaaaaaaaaaaaaaaaaaX", R("a*a*a*a*a*a*a*b")},
+    {"aaaaaaaaaa12345678901234560X", R("[0-9]+[0-9]+[0-9]+[0-9]+a")},
+    {"aaaaaaaaaaxxxxxxxxxxxxxxxxxX", R(".*.*.*.*.*.*b")},
+    {"aaaaaaaaaaaaaaaaaaaaaaaaaaaX", R("a?a?a?a?a?a?a?aaaaa")},
+    {"abababababababababX",          R("(ab)*(ab)*c")},
+};
+
+static RegexTest ascii_catastrophic_with_group_no_backref[] = {
+    {"aaX",           R("(a*)")},
+    {"aaX",           R("(a*)*b")},
+    /* {"aaaaaaaaaaaaaaaaaX",           R("(a+)+b")}, */
+    /* {"aaaaaaaaaaaaaaaaaX",           R("(a|a)*b")}, */
+    /* {"aaaaaaaaaaaaaaaaaX",           R("(a*a*)*b")}, */
+    /* {"aaaaaaaaaaaaaaaaaX",           R("(a|aa)*b")}, */
+    /* {"aaaaaaaaaaaaaaaaaX",           R("((a)*)*b")}, */
+    /* {"aaaaaaaaaaaaaaaaaX",           R("((a|a)*)*b")}, */
+    /* {"aaaaaaaaaaaaaaaaaX",           R("((a*)*)*b")}, */
+};
+
+static RegexTest ascii_catastrophic_with_group_and_backref[] = {
+    {"aaaaaaaaaaaaaaaaaX",           R("(a)\\1**b")},
+    {"aaaaaaaaaaaaaaaaaX",           R("((a)\\1*)*b")},
+    {"aaaaaaaaaaaaaaaaaX",           R("((a)\\1+)+b")},
+    {"aaaaaaaaaaaaaaaaaX",           R("((a|\\1)*)*b")},
+    {"aaaaaaaaaaaaaaaaaX",           R("((a*)\\1*)*b")},
+    {"aaaaaaaaaaaaaaaaaX",           R("((a|a\\1)*)*b")},
 };
 
 static RegexTest utf8_against_ascii[] = {
