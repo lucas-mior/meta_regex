@@ -45,8 +45,8 @@ main(void) {
     RUN_POSIX_VS_META(ascii_with_group_and_backref);
     RUN_POSIX_VS_META(utf8_against_ascii);
     RUN_POSIX_VS_META(utf8_against_utf8);
+    RUN_POSIX_VS_META(ascii_catastrophic_cases);
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
-    exit(0);
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 16, 1000); */
