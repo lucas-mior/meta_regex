@@ -35,6 +35,8 @@
     X(STATIC_DFA)
 #include "xenums.c"
 
+#define USE_DFA_THRESHOLD 256
+
 static int32
 meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
                  int64 nmatch, regmatch_t pmatch[]) {
@@ -72,7 +74,7 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
         }
 
         if (has_unsupported || (regex->re_nsub > 0 && nmatch > 1)
-            || input_len < 256) {
+            || input_len < USE_DFA_THRESHOLD) {
             algorithm = MATCH_ALGO_BTNFA;
         } else {
 #if ALGO_LAZY_DFA
