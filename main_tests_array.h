@@ -224,7 +224,7 @@ static RegexTest ascii_catastrophic_no_group_no_backref[] = {
 
 static RegexTest ascii_catastrophic_with_group_no_backref[] = {
     {"aaX",           R("(a*)")},
-    {"aaX",           R("(a*)*b")},
+    {"aX",            R("(a*)*b")},
     /* {"aaaaaaaaaaaaaaaaaX",           R("(a+)+b")}, */
     /* {"aaaaaaaaaaaaaaaaaX",           R("(a|a)*b")}, */
     /* {"aaaaaaaaaaaaaaaaaX",           R("(a*a*)*b")}, */

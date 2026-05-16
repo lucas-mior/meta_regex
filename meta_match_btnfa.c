@@ -5,6 +5,7 @@ typedef struct BtnfaState {
     MetaOp *pc;
     uchar *input;
     regmatch_t pmatch[32];
+    int32 empty_transitions; /* Tracks consecutive empty operations */
 } BtnfaState;
 
 static int32
@@ -94,6 +95,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
             if (!btnfa_quick_lookahead_fails(alts[i], search_ptr)) {
                 stack[stack_ptr].pc = alts[i];
                 stack[stack_ptr].input = search_ptr;
+                stack[stack_ptr].empty_transitions = 0;
                 if (pmatch != NULL) {
                     for (int64 k = 0; k < copy_size; k += 1) {
                         stack[stack_ptr].pmatch[k] = pmatch[k];
@@ -106,6 +108,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
         if (!btnfa_quick_lookahead_fails(regex->ops, search_ptr)) {
             stack[stack_ptr].pc = regex->ops;
             stack[stack_ptr].input = search_ptr;
+            stack[stack_ptr].empty_transitions = 0;
             if (pmatch != NULL) {
                 for (int64 k = 0; k < copy_size; k += 1) {
                     stack[stack_ptr].pmatch[k] = pmatch[k];
@@ -120,10 +123,12 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
         uchar *input;
         regmatch_t current_pmatch[32];
         int32 pmatch_copy_valid;
+        int32 empty_transitions;
 
         stack_ptr -= 1;
         pc = stack[stack_ptr].pc;
         input = stack[stack_ptr].input;
+        empty_transitions = stack[stack_ptr].empty_transitions;
         pmatch_copy_valid = (pmatch != NULL);
 
         if (pmatch_copy_valid) {
@@ -133,6 +138,12 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
         }
 
         while (1) {
+            empty_transitions += 1;
+            /* Break epsilon loops mathematically guaranteed by Max Ops */
+            if (empty_transitions > META_MAX_OPS) {
+                break;
+            }
+
             if (pc->type == META_OP_END) {
                 int32 curr_match_len;
 
@@ -228,6 +239,9 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                                   backref_len) == 0) {
                         input += backref_len;
                         pc += 1;
+                        if (backref_len > 0) {
+                            empty_transitions = 0;
+                        }
                         continue;
                     }
                 }
@@ -276,6 +290,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                     }
                     stack[stack_ptr].pc = pc + pc->min;
                     stack[stack_ptr].input = input;
+                    stack[stack_ptr].empty_transitions = empty_transitions;
                     if (pmatch_copy_valid) {
                         for (int64 k = 0; k < copy_size; k += 1) {
                             stack[stack_ptr].pmatch[k] = current_pmatch[k];
@@ -298,6 +313,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                     }
                     stack[stack_ptr].pc = pc + pc->value;
                     stack[stack_ptr].input = input;
+                    stack[stack_ptr].empty_transitions = empty_transitions;
                     if (pmatch_copy_valid) {
                         for (int64 k = 0; k < copy_size; k += 1) {
                             stack[stack_ptr].pmatch[k] = current_pmatch[k];
@@ -382,6 +398,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                             }
                             stack[stack_ptr].pc = alts[i];
                             stack[stack_ptr].input = input;
+                            stack[stack_ptr].empty_transitions = empty_transitions;
                             if (pmatch_copy_valid) {
                                 for (int64 k = 0; k < copy_size; k += 1) {
                                     stack[stack_ptr].pmatch[k] = current_pmatch[k];
@@ -502,6 +519,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                                 }
                                 stack[stack_ptr].pc = next_ops;
                                 stack[stack_ptr].input = p;
+                                stack[stack_ptr].empty_transitions
+                                    = (p > input) ? 0 : empty_transitions;
                                 if (pmatch_copy_valid) {
                                     for (int64 k = 0; k < copy_size; k += 1) {
                                         stack[stack_ptr].pmatch[k] = current_pmatch[k];
@@ -536,6 +555,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                     if (is_match) {
                         pc += 1;
                         input += consumed;
+                        empty_transitions = 0;
                         continue;
                     } else {
                         break;
