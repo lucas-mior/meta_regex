@@ -33,15 +33,10 @@ enum MatchAlgorithm {
     MATCH_ALGO_STATIC_DFA,
 };
 
-static int32 try_match_btnfa(MetaRegex *regex, uchar *string,
-                             int32 offset, int64 nmatch, regmatch_t *pmatch);
-static int32 try_match_dfa(MetaRegex *regex, uchar *string,
-                           int32 offset, int64 nmatch, regmatch_t *pmatch);
-
 static int32
 meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
                  regmatch_t pmatch[]) {
-    enum MatchAlgorithm algorithm;
+    enum MatchAlgorithm algorithm = MATCH_ALGO_BTNFA;
     int32 result;
 
     if (regex == NULL) {
