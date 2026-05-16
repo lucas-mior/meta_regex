@@ -23,6 +23,45 @@
 #define BENCHMARK 0
 #endif
 
+static void run_posix_vs_meta(RegexTest *tests, int32 count, char *description);
+static void run_fuzzy_tests(RegexTest *tests, int32 tests_len,
+                            int32 max_str_size, int32 ntests);
+
+#define RUN_POSIX_VS_META(ARRAY) \
+    run_posix_vs_meta(ARRAY, LENGTH(ARRAY), #ARRAY)
+#define RUN_FUZZY_TESTS(ARRAY, MAX_STR_SIZE, NTESTS) \
+    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS)
+
+int32
+main(void) {
+    setlocale(LC_ALL, "C");
+    srand((uint32)42);
+
+#if 1 || !BENCHMARK
+    RUN_POSIX_VS_META(ascii_no_group_no_backref);
+    /* run_posix_vs_meta(utf8_against_ascii, LENGTH(utf8_against_ascii), */
+    /*                   "UTF8 vs ASCII"); */
+    /* run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "UTF8 vs
+     * UTF8"); */
+#endif
+
+    printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
+    RUN_FUZZY_TESTS(ascii_no_group_no_backref, 16, 1000);
+    /* run_fuzzy_tests(32, 1000); */
+    /* run_fuzzy_tests(64, 1000); */
+    /* run_fuzzy_tests(128, 1000); */
+    /* run_fuzzy_tests(256, 1000); */
+    /* run_fuzzy_tests(512, 1000); */
+    /* run_fuzzy_tests(1024, 1000); */
+    /* run_fuzzy_tests(2048, 1000); */
+    /* run_fuzzy_tests(4096, 2000); */
+    /* run_fuzzy_tests(8192, 20); */
+    exit(EXIT_SUCCESS);
+}
+
+#undef RUN_FUZZY_TESTS
+#undef RUN_POSIX_VS_META
+
 static void
 run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
     struct timespec t0_posix;
@@ -276,36 +315,4 @@ run_fuzzy_tests(RegexTest *tests, int32 tests_len,
     free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
     fclose(mismatches);
     return;
-}
-
-int32
-main(void) {
-    setlocale(LC_ALL, "C");
-    srand((uint32)42);
-
-#define RUN_POSIX_VS_META(ARRAY) \
-    run_posix_vs_meta(ARRAY, LENGTH(ARRAY), #ARRAY)
-#define RUN_FUZZY_TESTS(ARRAY, MAX_STR_SIZE, NTESTS) \
-    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS)
-
-#if 1 || !BENCHMARK
-    RUN_POSIX_VS_META(ascii_no_group_no_backref);
-    /* run_posix_vs_meta(utf8_against_ascii, LENGTH(utf8_against_ascii), */
-    /*                   "UTF8 vs ASCII"); */
-    /* run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "UTF8 vs
-     * UTF8"); */
-#endif
-
-    printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
-    RUN_FUZZY_TESTS(ascii_no_group_no_backref, 16, 1000);
-    /* run_fuzzy_tests(32, 1000); */
-    /* run_fuzzy_tests(64, 1000); */
-    /* run_fuzzy_tests(128, 1000); */
-    /* run_fuzzy_tests(256, 1000); */
-    /* run_fuzzy_tests(512, 1000); */
-    /* run_fuzzy_tests(1024, 1000); */
-    /* run_fuzzy_tests(2048, 1000); */
-    /* run_fuzzy_tests(4096, 2000); */
-    /* run_fuzzy_tests(8192, 20); */
-    exit(EXIT_SUCCESS);
 }
