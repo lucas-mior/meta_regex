@@ -40,15 +40,15 @@ main(void) {
     setlocale(LC_ALL, "C");
     srand((uint32)42);
 
-    /* RUN_POSIX_VS_META(ascii_no_group_no_backref); */
-    /* RUN_POSIX_VS_META(ascii_with_group_no_backref); */
-    /* RUN_POSIX_VS_META(ascii_with_group_and_backref); */
-    /* RUN_POSIX_VS_META(utf8_against_ascii); */
-    /* RUN_POSIX_VS_META(utf8_against_utf8); */
-    /* RUN_POSIX_VS_META(ascii_catastrophic_no_group_no_backref); */
+    RUN_POSIX_VS_META(ascii_no_group_no_backref);
+    RUN_POSIX_VS_META(ascii_with_group_no_backref);
+    RUN_POSIX_VS_META(ascii_with_group_and_backref);
+    RUN_POSIX_VS_META(utf8_against_ascii);
+    RUN_POSIX_VS_META(utf8_against_utf8);
+    RUN_POSIX_VS_META(ascii_catastrophic_no_group_no_backref);
     RUN_POSIX_VS_META(ascii_catastrophic_with_group_no_backref);
-    /* RUN_POSIX_VS_META(ascii_catastrophic_with_group_and_backref); */
-    exit(0);
+    RUN_POSIX_VS_META(ascii_catastrophic_with_group_and_backref);
+    /* exit(0); */
 
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
 
