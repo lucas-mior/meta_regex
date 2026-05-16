@@ -12,7 +12,7 @@
 #include "meta_match_static_dfa.c"
 
 #if !defined(ALGO_LAZY_DFA)
-#define ALGO_LAZY_DFA 0
+#define ALGO_LAZY_DFA 1
 #endif
 #if !defined(ALGO_STATIC_DFA)
 #define ALGO_STATIC_DFA 0
@@ -26,11 +26,14 @@
 #error "Cannot define both ALGO_LAZY_DFA and ALGO_STATIC_DFA"
 #endif
 
-enum MatchAlgorithm {
-    MATCH_ALGO_BTNFA,
-    MATCH_ALGO_LAZY_DFA,
-    MATCH_ALGO_STATIC_DFA,
-};
+#define ENUM_PREFIX_ MATCH_ALGO_
+#define ENUM_NAME MatchAlgorithm
+#define ENUM_BITFLAGS 0
+#define ENUM_FIELDS \
+    X(BTNFA) \
+    X(LAZY_DFA) \
+    X(STATIC_DFA)
+#include "xenums.c"
 
 static int32
 meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
