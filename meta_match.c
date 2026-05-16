@@ -12,7 +12,7 @@
 #include "meta_match_static_dfa.c"
 
 #if !defined(ALGO_LAZY_DFA)
-#define ALGO_LAZY_DFA 0
+#define ALGO_LAZY_DFA 1
 #endif
 
 #if !defined(ALGO_STATIC_DFA)
@@ -86,7 +86,7 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
     }
 #endif
 
-    ASSERT_EQUAL((uint)algorithm, (uint)MATCH_ALGO_BTNFA);
+    /* ASSERT_EQUAL((uint)algorithm, (uint)MATCH_ALGO_BTNFA); */
 
     if (algorithm == MATCH_ALGO_BTNFA) {
         if (regex->has_start_anchor) {
