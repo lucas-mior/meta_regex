@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "cbase/util.c"
-#include "meta_regex.h"
+#include "meta.h"
 
 #define PREPROC_OP_BUFFER_SIZE 16384
 #define PREPROC_MAX_STRING_LEN 256

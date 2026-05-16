@@ -8,11 +8,11 @@
 #include <errno.h>
 
 #include "util.c"
-#include "meta_regex.h"
-#include "meta_regex_match.c"
+#include "meta.h"
+#include "meta_match.c"
 
-#include "meta_tests.h"
-#include "gen/meta_tests_array2.h"
+#include "main_tests.h"
+#include "gen/main_tests_array2.h"
 #include "utf8.h"
 
 #if !defined(error2)

@@ -1,7 +1,7 @@
 #if !defined(META_TESTS_ARRAY_H)
 #define META_TESTS_ARRAY_H
 
-#include "meta_tests.h"
+#include "main_tests.h"
 
 static RegexTest ascii_against_ascii[] = {
     {"abc5def", R("[0-9]")},

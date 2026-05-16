@@ -80,13 +80,13 @@ trace_off
 
 printf "\nBuilding preprocessor...\n"
 trace_on
-$CC $CPPFLAGS -O2 -flto $CFLAGS meta_preproc.c -o bin/meta_preproc $LDFLAGS
+$CC $CPPFLAGS -O2 -flto $CFLAGS meta_preprocessor.c -o bin/meta_preproc $LDFLAGS
 trace_off
 
 printf "\nPreprocessing main.c...\n"
 trace_on
 ./bin/meta_preproc main.c             > gen/main2.c
-./bin/meta_preproc meta_tests_array.h > gen/meta_tests_array2.h
+./bin/meta_preproc main_tests_array.h > gen/main_tests_array2.h
 trace_off
 
 printf "\nBuilding target program...\n"
