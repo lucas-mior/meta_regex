@@ -56,13 +56,13 @@ static void compute_core_transitions(MetaOp *ops,
                                      NfaStateSet *next_core_set);
 
 static int32
-try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 string_len,
+try_match_lazy_dfa(MetaRegex *regex, uchar *input, int32 input_len,
                    int32 offset, int64 nmatch, regmatch_t *pmatch) {
     LazyDfa *ldfa;
     int32 current_state_id;
     int32 last_accept;
     int32 prev_is_word;
-    (void)string_len;
+    (void)input_len;
 
     ldfa = (LazyDfa *)regex->lazy_dfa;
     if (ldfa == NULL) {
@@ -73,7 +73,7 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 string_len,
     }
 
     if (offset > 0) {
-        prev_is_word = is_word_char2((uchar)string[offset - 1]);
+        prev_is_word = is_word_char2((uchar)input[offset - 1]);
     } else {
         prev_is_word = 0;
     }
@@ -124,7 +124,7 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 string_len,
     for (int32 i = offset;; i += 1) {
         uchar b;
 
-        b = (uchar)string[i];
+        b = (uchar)input[i];
         if (b == '\0') {
             if (current_state_id > 0
                 && current_state_id < META_MAX_LAZY_DFA_STATES) {
@@ -240,7 +240,7 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 string_len,
     }
 
     if (last_accept >= 0) {
-        if (!regex->has_end_anchor || string[last_accept] == '\0') {
+        if (!regex->has_end_anchor || input[last_accept] == '\0') {
             if (pmatch != NULL && nmatch > 0) {
                 pmatch[0].rm_so = offset;
                 pmatch[0].rm_eo = last_accept;
