@@ -16,7 +16,7 @@
 #endif
 
 #if !defined(ALGO_STATIC_DFA)
-#define ALGO_STATIC_DFA 0
+#define ALGO_STATIC_DFA 1
 #endif
 
 #if !defined(ALGO_STATIC_DFA)
@@ -71,13 +71,14 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
 
         if (has_unsupported) {
             error("TODO: Word boundaries are not supported in DFA yet.\n");
+            algorithm = MATCH_ALGO_BTNFA;
+        } else {
+  #if ALGO_LAZY_DFA
+            algorithm = MATCH_ALGO_LAZY_DFA;
+  #elif ALGO_STATIC_DFA
+            algorithm = MATCH_ALGO_STATIC_DFA;
+  #endif
         }
-
-#if ALGO_LAZY_DFA
-        algorithm = MATCH_ALGO_LAZY_DFA;
-#elif ALGO_STATIC_DFA
-        algorithm = MATCH_ALGO_STATIC_DFA;
-#endif
     }
 #endif
 
