@@ -196,15 +196,24 @@ static RegexTest ascii_with_group_and_backref[] = {
 };
 
 static RegexTest utf8_against_ascii[] = {
-    {"é", R("e")}, {"é", R("[e]")}, {"é", R("^e$")},
-    {"a", R("a")}, {"a", R("a.c")}, {"aéc", R("a.c")},
+    {"é", R("e")},
+    {"é", R("[e]")},
+    {"é", R("^e$")},
+    {"a", R("a")},
+    {"a", R("a.c")},
+    {"aéc", R("a.c")},
 };
 
 // dont test groups here
 static RegexTest utf8_against_utf8[] = {
-    {"é", R("e"), false},     {"é", R("ê"), false},     {"é", R("é"), true},
-    {"é", R("[é]"), true},    {"é", R("^[é]$"), false}, {"\\U", R("\\U"), true},
-    {"aéc", R("a.c"), false}, {"aéc", R("a.*c"), true},
+    {"é", R("e"), false},     
+    {"é", R("ê"), false},     
+    {"é", R("é"), true},
+    {"é", R("[é]"), true},    
+    {"é", R("^[é]$"), false}, 
+    {"\\U", R("\\U"), true},
+    {"aéc", R("a.c"), false}, 
+    {"aéc", R("a.*c"), true},
 };
 
 #endif /* META_TESTS_ARRAY_H */
