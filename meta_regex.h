@@ -8,6 +8,8 @@
 #define META_MAX_OPS 512
 #define META_FASTMAP_SIZE 32
 #define META_CHAR_BITMASK_WORDS 8
+#define META_MAX_LAZY_DFA_STATES 2048
+#define META_PC_WORDS (META_MAX_OPS / 32)
 
 enum MetaOpType {
     META_OP_END,
@@ -49,6 +51,16 @@ typedef struct Dfa {
     DfaState states[META_MAX_DFA_STATES];
 } Dfa;
 
+typedef struct NfaStateSet {
+    uint32 bits[META_PC_WORDS];
+} NfaStateSet;
+
+typedef struct LazyDfaState {
+    int32 is_accepting;
+    int32 next[META_ALPHABET_SIZE];
+    NfaStateSet set;
+} LazyDfaState;
+
 typedef struct MetaRegex {
     char *string;
     MetaOp ops[META_MAX_OPS];
@@ -60,6 +72,7 @@ typedef struct MetaRegex {
     int32 can_be_null;
     uint8 fastmap[META_FASTMAP_SIZE];
     Dfa *dfa;
+    void *lazy_dfa;
 } MetaRegex;
 
 #define R(...) (&(MetaRegex){ .string = __VA_ARGS__ })

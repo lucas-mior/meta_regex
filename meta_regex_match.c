@@ -3,9 +3,24 @@
 
 #include <regex.h>
 #include <string.h>
+
+#define HASH_KEY_TYPE char
+#define HASH_KEY_FORMATTER "%s"
+#define HASH_VALUE_TYPE int32
+#define HASH_VALUE_FORMATTER "%d"
+#define HASH_TYPE map
+#define HASH_DUPLICATE_KEYS 1
+#include "hash.c"
+
 #include "meta_regex.h"
 #include "util.c"
 #include "meta_util.c"
+
+typedef struct LazyDfa {
+    struct Hash_map *state_map;
+    int32 num_states;
+    LazyDfaState states[META_MAX_LAZY_DFA_STATES];
+} LazyDfa;
 
 static int32 btnfa_match_at_recursive(MetaOp *ops, uchar *orig, uchar *curr,
                                       int64 nmatch, regmatch_t pmatch[]);
@@ -609,11 +624,250 @@ try_match_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
     return -1;
 }
 
+static void
+state_set_to_string(NfaStateSet *set, char *buffer, int32 max_len) {
+    int32 offset;
+
+    offset = 0;
+    for (int32 i = 0; i < META_PC_WORDS; i += 1) {
+        int32 w;
+
+        w = snprintf2(buffer + offset, max_len - offset, "%08x", set->bits[i]);
+        offset += w;
+    }
+    return;
+}
+
+static void
+add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
+                    int32 *is_accepting) {
+    int32 stack[META_MAX_OPS];
+    int32 stack_ptr;
+
+    stack_ptr = 0;
+    stack[stack_ptr] = pc;
+    stack_ptr += 1;
+
+    while (stack_ptr > 0) {
+        int32 current_pc;
+        MetaOp *op;
+
+        stack_ptr -= 1;
+        current_pc = stack[stack_ptr];
+
+        if ((set->bits[current_pc / 32] & (1u << (current_pc % 32))) != 0) {
+            continue;
+        }
+
+        set->bits[current_pc / 32] |= (1u << (current_pc % 32));
+        op = &ops[current_pc];
+
+        if (op->type == META_OP_END) {
+            *is_accepting = 1;
+        } else if (op->type == META_OP_SPLIT) {
+            stack[stack_ptr] = current_pc + op->value;
+            stack_ptr += 1;
+            stack[stack_ptr] = current_pc + op->min;
+            stack_ptr += 1;
+        } else if (op->type == META_OP_JUMP) {
+            stack[stack_ptr] = current_pc + op->value;
+            stack_ptr += 1;
+        } else if (op->type == META_OP_GROUP_START
+                   || op->type == META_OP_GROUP_END
+                   || op->type == META_OP_ALTERNATION) {
+            stack[stack_ptr] = current_pc + 1;
+            stack_ptr += 1;
+        }
+    }
+    return;
+}
+
+static void
+compute_next_state(MetaOp *ops, NfaStateSet *current_set, int32 c,
+                   NfaStateSet *next_set, int32 *is_accepting) {
+    for (int32 i = 0; i < META_PC_WORDS; i += 1) {
+        next_set->bits[i] = 0;
+    }
+    *is_accepting = 0;
+
+    for (int32 i = 0; i < META_MAX_OPS; i += 1) {
+        if ((current_set->bits[i / 32] & (1u << (i % 32))) != 0) {
+            MetaOp *op;
+            int32 match;
+
+            op = &ops[i];
+            match = 0;
+
+            if (op->type == META_OP_LITERAL) {
+                if (c == op->value) {
+                    match = 1;
+                }
+            } else if (op->type == META_OP_CLASS) {
+                if (c >= 0 && c < META_ALPHABET_SIZE) {
+                    if ((op->mask[c / 32] & (1u << (c % 32))) != 0) {
+                        match = 1;
+                    }
+                }
+            } else if (op->type == META_OP_ANY) {
+                if (c != '\0') {
+                    match = 1;
+                }
+            }
+
+            if (match) {
+                add_epsilon_closure(ops, i + 1, next_set, is_accepting);
+            }
+        }
+    }
+    return;
+}
+
+static int32
+try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
+                   regmatch_t pmatch[]) {
+    LazyDfa *ldfa;
+    int32 current_state_id;
+    int32 last_accept;
+    char key_buf[META_PC_WORDS * 8 + 1];
+
+    ldfa = (LazyDfa *)regex->lazy_dfa;
+    if (ldfa == NULL) {
+        ldfa = malloc2(SIZEOF(LazyDfa));
+        ldfa->state_map = hash_create_map(META_MAX_LAZY_DFA_STATES, "dfa");
+        ldfa->num_states = 1;
+        regex->lazy_dfa = ldfa;
+    }
+
+    {
+        NfaStateSet start_set;
+        int32 is_accepting;
+
+        is_accepting = 0;
+        for (int32 i = 0; i < META_PC_WORDS; i += 1) {
+            start_set.bits[i] = 0;
+        }
+        add_epsilon_closure(regex->ops, 0, &start_set, &is_accepting);
+
+        state_set_to_string(&start_set, key_buf, SIZEOF(key_buf));
+        hash_lookup_map(ldfa->state_map, key_buf, SIZEOF(key_buf), &current_state_id);
+        if (current_state_id == 0) {
+            current_state_id = ldfa->num_states;
+            if (current_state_id < META_MAX_LAZY_DFA_STATES) {
+                ldfa->num_states += 1;
+                ldfa->states[current_state_id].is_accepting = is_accepting;
+                for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
+                    ldfa->states[current_state_id].next[c] = 0;
+                }
+                for (int32 k = 0; k < META_PC_WORDS; k += 1) {
+                    ldfa->states[current_state_id].set.bits[k]
+                        = start_set.bits[k];
+                }
+                hash_insert_map(ldfa->state_map, key_buf, SIZEOF(key_buf),
+                                current_state_id);
+            }
+        }
+    }
+
+    last_accept = -1;
+
+    for (int32 i = offset;; i += 1) {
+        uchar b;
+        int32 next_state_idx;
+
+        if (current_state_id > 0
+            && current_state_id < META_MAX_LAZY_DFA_STATES) {
+            if (ldfa->states[current_state_id].is_accepting) {
+                last_accept = i;
+            }
+        }
+
+        b = (uchar)string[i];
+        if (b == '\0') {
+            break;
+        }
+
+        if (current_state_id > 0
+            && current_state_id < META_MAX_LAZY_DFA_STATES) {
+            next_state_idx = ldfa->states[current_state_id].next[b];
+        } else {
+            next_state_idx = 0;
+        }
+
+        if (next_state_idx == 0) {
+            NfaStateSet next_set;
+            int32 next_is_accepting;
+            int32 set_is_empty;
+
+            if (current_state_id > 0
+                && current_state_id < META_MAX_LAZY_DFA_STATES) {
+                compute_next_state(regex->ops,
+                                   &ldfa->states[current_state_id].set, b,
+                                   &next_set, &next_is_accepting);
+            } else {
+                break;
+            }
+
+            set_is_empty = 1;
+            for (int32 k = 0; k < META_PC_WORDS; k += 1) {
+                if (next_set.bits[k] != 0) {
+                    set_is_empty = 0;
+                    break;
+                }
+            }
+
+            if (set_is_empty) {
+                break;
+            }
+
+            state_set_to_string(&next_set, key_buf, SIZEOF(key_buf));
+            hash_lookup_map(ldfa->state_map, key_buf, SIZEOF(key_buf), &next_state_idx);
+
+            if (next_state_idx == 0) {
+                next_state_idx = ldfa->num_states;
+                if (next_state_idx < META_MAX_LAZY_DFA_STATES) {
+                    ldfa->num_states += 1;
+                    ldfa->states[next_state_idx].is_accepting
+                        = next_is_accepting;
+                    for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
+                        ldfa->states[next_state_idx].next[c] = 0;
+                    }
+                    for (int32 k = 0; k < META_PC_WORDS; k += 1) {
+                        ldfa->states[next_state_idx].set.bits[k]
+                            = next_set.bits[k];
+                    }
+                    hash_insert_map(ldfa->state_map, key_buf, SIZEOF(key_buf),
+                                    next_state_idx);
+                }
+            }
+
+            if (current_state_id > 0
+                && current_state_id < META_MAX_LAZY_DFA_STATES) {
+                ldfa->states[current_state_id].next[b] = next_state_idx;
+            }
+        }
+
+        current_state_id = next_state_idx;
+    }
+
+    if (last_accept >= 0) {
+        if (!regex->has_end_anchor || string[last_accept] == '\0') {
+            if (pmatch != NULL && nmatch > 0) {
+                pmatch[0].rm_so = offset;
+                pmatch[0].rm_eo = last_accept;
+            }
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
 static int32
 meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
                  regmatch_t pmatch[]) {
     int32 result;
     int32 use_backtracking;
+    int32 use_lazy_dfa;
 
     if (regex == NULL) {
         return REG_NOMATCH;
@@ -627,8 +881,29 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
     }
 
     use_backtracking = 0;
-    if (regex->has_backref || regex->dfa == NULL) {
+    use_lazy_dfa = 0;
+
+    if (regex->has_backref) {
         use_backtracking = 1;
+    } else if (regex->dfa == NULL) {
+        int32 has_unsupported;
+
+        has_unsupported = 0;
+        for (int32 i = 0; regex->ops[i].type != META_OP_END; i += 1) {
+            if (regex->ops[i].type == META_OP_WORD_BOUNDARY
+                || regex->ops[i].type == META_OP_WORD_START
+                || regex->ops[i].type == META_OP_WORD_END
+                || regex->ops[i].type == META_OP_NON_WORD_BOUNDARY) {
+                has_unsupported = 1;
+                break;
+            }
+        }
+
+        if (has_unsupported) {
+            use_backtracking = 1;
+        } else {
+            use_lazy_dfa = 1;
+        }
     }
 
     if (use_backtracking) {
@@ -649,6 +924,33 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
 
             if (bit_match || regex->can_be_null) {
                 result = try_match_btnfa(regex, string, j, nmatch, pmatch);
+                if (result == 0) {
+                    return 0;
+                }
+            }
+
+            if (b == '\0') {
+                break;
+            }
+        }
+    } else if (use_lazy_dfa) {
+        if (regex->has_start_anchor) {
+            result = try_match_lazy_dfa(regex, string, 0, nmatch, pmatch);
+            if (result == 0) {
+                return 0;
+            }
+            return REG_NOMATCH;
+        }
+
+        for (int32 j = 0;; j += 1) {
+            uchar b;
+            int32 bit_match;
+
+            b = (uchar)string[j];
+            bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
+
+            if (bit_match || regex->can_be_null) {
+                result = try_match_lazy_dfa(regex, string, j, nmatch, pmatch);
                 if (result == 0) {
                     return 0;
                 }
