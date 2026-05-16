@@ -909,11 +909,15 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
     return -1;
 }
 
+#if defined(ALGO_LAZY_DFA) && defined(ALGO_STATIC_DFA)
+#error "Cannot define both ALGO_LAZY_DFA and ALGO_STATIC_DFA"
+#endif
+
 static int32
 meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
                  regmatch_t pmatch[]) {
     int32 result;
-    int32 use_backtracking;
+    int32 use_btnfa;
     int32 use_lazy_dfa;
 
     if (regex == NULL) {
@@ -927,12 +931,15 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
         }
     }
 
-    use_backtracking = 0;
+    use_btnfa = 0;
     use_lazy_dfa = 0;
 
+#if defined(ALGO_BTNFA_ALWAYS)
+    use_btnfa = 1;
+#else
     if (regex->has_backref) {
-        use_backtracking = 1;
-    } else if (!regex->dfa) {
+        use_btnfa = 1;
+    } else {
         int32 has_unsupported;
 
         has_unsupported = 0;
@@ -947,13 +954,25 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
         }
 
         if (has_unsupported) {
-            use_backtracking = 1;
-        } else {
-            use_lazy_dfa = 1;
+            printf("TODO: Word boundaries are not supported in DFA yet.\n");
+            exit(1);
         }
-    }
 
-    if (use_backtracking) {
+#if defined(ALGO_LAZY_DFA)
+        use_lazy_dfa = 1;
+#elif defined(ALGO_STATIC_DFA)
+        use_lazy_dfa = 0;
+#else
+        if (regex->dfa == NULL) {
+            use_lazy_dfa = 1;
+        } else {
+            use_lazy_dfa = 0;
+        }
+#endif
+    }
+#endif
+
+    if (use_btnfa) {
         if (regex->has_start_anchor) {
             result = try_match_btnfa(regex, string, 0, nmatch, pmatch);
             if (result == 0) {
