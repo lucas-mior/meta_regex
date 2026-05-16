@@ -242,7 +242,7 @@ static RegexTest ascii_catastrophic_with_group_and_backref[] = {
     {"aaaxxxxxxxxxxxxX", R("(a*)*\\1*b")},
     {"aaaxxxxxxxxxxxxX", R("(a|aa)*\\1b")},
     {"aaaxxxxxxxxxxxxX", R("(a)\\1*a*\\1*b")},
-    /* {"axxx", R("(.*)*\\1b")}, */
+    {"axxx", R("(.*)*\\1b")},
 };
 
 static RegexTest utf8_against_ascii[] = {
