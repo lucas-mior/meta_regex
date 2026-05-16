@@ -81,7 +81,7 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
     }
 #endif
 
-    /* ASSERT_EQUAL((uint)algorithm, (uint)MATCH_ALGO_BTNFA); */
+    /* ASSERT_EQUAL((uint32)algorithm, (uint32)MATCH_ALGO_BTNFA); */
 
     if (algorithm == MATCH_ALGO_BTNFA) {
         if (regex->has_start_anchor) {

@@ -403,7 +403,7 @@ main(int32 argc, char **argv) {
                 int32 valid = 0;
                 while (regex_string[temp_idx] >= '0'
                        && regex_string[temp_idx] <= '9') {
-                    m = m * 10 + (regex_string[temp_idx] - '0');
+                    m = m*10 + (regex_string[temp_idx] - '0');
                     has_m = 1;
                     temp_idx += 1;
                 }
@@ -414,7 +414,7 @@ main(int32 argc, char **argv) {
                         n = 0;
                         while (regex_string[temp_idx] >= '0'
                                && regex_string[temp_idx] <= '9') {
-                            n = n * 10 + (regex_string[temp_idx] - '0');
+                            n = n*10 + (regex_string[temp_idx] - '0');
                             temp_idx += 1;
                         }
                     }
