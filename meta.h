@@ -55,12 +55,6 @@ typedef struct NfaStateSet {
     uint32 bits[META_PC_WORDS];
 } NfaStateSet;
 
-typedef struct LazyDfaState {
-    int32 is_accepting;
-    int32 next[META_ALPHABET_SIZE];
-    NfaStateSet set;
-} LazyDfaState;
-
 typedef struct MetaRegex {
     char *string;
     MetaOp ops[META_MAX_OPS];
