@@ -187,11 +187,38 @@ static RegexTest ascii_with_group_no_backref[] = {
 };
 
 static RegexTest ascii_with_group_and_backref[] = {
-    {"11",       R("([[:digit:]])\\1")},
-    {"abccab",   R("^(a|ab)cc\\1$")},
-    {"aaccab",   R("^((a|aa)*)cc\\1$")},
-    {"abccabxx", R("^(a|ab)cc\\1(xx)\\2$")},
-    {"aaccabxx", R("^((a|aa)*)cc\\1(xx)\\2$")},
+    {"11",                 R("([[:digit:]])\\1")},
+    {"abccab",             R("^(a|ab)cc\\1$")},
+    {"aaccab",             R("^((a|aa)*)cc\\1$")},
+    {"abccabxx",           R("^(a|ab)cc\\1(xx)\\2$")},
+    {"aaccabxx",           R("^((a|aa)*)cc\\1(xx)\\2$")},
+    {"hello hello",        R("([a-z]+) \\1")},
+    {"foo bar foo",        R("([a-z]+) bar \\1")},
+    {"abc abc def def",    R("([a-z]+) \\1 ([a-z]+) \\2")},
+    {"abab",               R("(ab)\\1")},
+    {"xyxy",               R("((x)(y))\\1")},
+    {"abba",               R("(a)(b)\\2\\1")},
+    {"radar",              R("(r)(a)d\\2\\1")},
+    {"123123",             R("([0-9]{3})\\1")},
+    {"catcat",             R("(cat|dog)\\1")},
+    {"dogdog",             R("(cat|dog)\\1")},
+    {"catdog",             R("(cat|dog)\\1")},
+    {"a a a",              R("([a-z]) \\1 \\1")},
+    {"12 12 12",           R("([0-9]+)( \\1)+")},
+    /* {"x",                  R("(x)\\1*")}, */
+    /* {"xx",                 R("(x)\\1*")}, */
+    /* {"xxxxx",              R("(x)\\1*")}, */
+    {"wowwow",             R("^([a-z]{3})\\1$")},
+    {"<tag>content</tag>", R("<([a-z]+)>.*</\\1>")},
+    {"'hello'",            R("(['\"]).*\\1")},
+    {"\"world\"",          R("(['\"]).*\\1")},
+    {"abcabb",             R("((a)(b))c\\1\\2")},
+    {"a_a",                R("([a-z])_\\1")},
+    {"123-123",            R("([0-9]+)-\\1")},
+    {"aba",                R("(a)(b)\\1")},
+    {"abab",               R("(a)(b)\\1\\2")},
+    {"abcabca",            R("(a)(b)(c)\\1\\2\\3\\1")},
+    {"1111",               R("([0-9])\\1\\1\\1")},
 };
 
 static RegexTest utf8_against_ascii[] = {
