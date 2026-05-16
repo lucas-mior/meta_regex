@@ -1,92 +1,11 @@
 #if !defined(META_MATCH_BTNFA)
 #define META_MATCH_BTNFA
 
-static int32 btnfa_match_at_recursive(MetaOp *ops, uchar *original_input,
-                                      uchar *current_input, int64 nmatch,
-                                      regmatch_t *pmatch);
-static int32 btnfa_quick_lookahead_fails(MetaOp *next_op, uchar *curr_str);
-
-static int32
-btnfa_eval_choice_point(MetaOp *ops, uchar *orig, uchar *curr, int64 nmatch,
-                        regmatch_t pmatch[]) {
-    MetaOp *alt_start;
-    regmatch_t temp_pmatch[32];
-    regmatch_t best_pmatch[32];
-    regmatch_t *pass_pmatch;
-    int64 copy_size;
-    int32 longest_match;
-    int32 res;
-    int32 depth;
-    int32 skip;
-
-    if (nmatch > 32) {
-        copy_size = 32;
-    } else {
-        copy_size = nmatch;
-    }
-
-    alt_start = ops;
-    longest_match = -1;
-
-    while (1) {
-        skip = btnfa_quick_lookahead_fails(alt_start, curr);
-        if (!skip) {
-            pass_pmatch = NULL;
-            if (pmatch != NULL) {
-                for (int64 i = 0; i < copy_size; i += 1) {
-                    temp_pmatch[i] = pmatch[i];
-                }
-                pass_pmatch = temp_pmatch;
-            }
-
-            res = btnfa_match_at_recursive(alt_start, orig, curr, nmatch,
-                                           pass_pmatch);
-
-            if (res >= 0) {
-                if (pmatch == NULL) {
-                    return res;
-                }
-                if (res > longest_match) {
-                    longest_match = res;
-                    for (int64 i = 0; i < copy_size; i += 1) {
-                        best_pmatch[i] = pass_pmatch[i];
-                    }
-                }
-            }
-        }
-
-        depth = 0;
-        while (alt_start->type != META_OP_END) {
-            if (alt_start->type == META_OP_GROUP_START) {
-                depth += 1;
-            } else if (alt_start->type == META_OP_GROUP_END) {
-                if (depth == 0) {
-                    break;
-                }
-                depth -= 1;
-            } else if (alt_start->type == META_OP_ALTERNATION && depth == 0) {
-                break;
-            }
-            alt_start += 1;
-        }
-
-        if (alt_start->type == META_OP_ALTERNATION && depth == 0) {
-            alt_start += 1;
-        } else {
-            break;
-        }
-    }
-
-    if (longest_match >= 0) {
-        if (pmatch != NULL) {
-            for (int64 i = 0; i < copy_size; i += 1) {
-                pmatch[i] = best_pmatch[i];
-            }
-        }
-    }
-
-    return longest_match;
-}
+typedef struct BtnfaState {
+    MetaOp *pc;
+    uchar *input;
+    regmatch_t pmatch[32];
+} BtnfaState;
 
 static int32
 btnfa_quick_lookahead_fails(MetaOp *next_op, uchar *curr_str) {
@@ -120,37 +39,19 @@ btnfa_quick_lookahead_fails(MetaOp *next_op, uchar *curr_str) {
 }
 
 static int32
-btnfa_match_at_recursive(MetaOp *ops, uchar *original_input,
-                         uchar *current_input, int64 nmatch,
-                         regmatch_t pmatch[]) {
-    MetaOp *end_op;
-    MetaOp *scan;
-    MetaOp token;
-    MetaOp *next_ops;
-    regmatch_t temp_pmatch[32];
-    regmatch_t best_pmatch[32];
-    regmatch_t *pass_pmatch;
-    uchar *s;
-    uchar *max_s;
-    int32 depth;
-    int32 group_id;
-    int32 old_so;
-    int32 old_eo;
-    int32 res;
-    int32 longest_match;
-    int32 is_star;
-    int32 is_plus;
-    int32 is_opt;
-    int32 is_bound;
-    int32 min_req;
-    int32 max_req;
-    int32 consumed;
-    int32 count;
-    int32 has_alt;
-    int32 skip_1;
-    int32 skip_2;
-    int32 skip_quant;
+try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
+                int32 offset, int64 nmatch, regmatch_t pmatch[]) {
+    uchar *search_ptr;
+    int32 match_len;
+    int32 stack_cap;
+    BtnfaState *stack;
+    int32 stack_ptr;
     int64 copy_size;
+    regmatch_t best_pmatch[32];
+    (void)string_len;
+
+    search_ptr = &string[offset];
+    match_len = -1;
 
     if (nmatch > 32) {
         copy_size = 32;
@@ -158,190 +59,22 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_input,
         copy_size = nmatch;
     }
 
-    if (ops[0].type == META_OP_END) {
-        return (int32)(current_input - original_input);
-    }
+    stack_cap = 8192;
+    stack = malloc2(SIZEOF(BtnfaState) * stack_cap);
+    stack_ptr = 0;
 
-    if (ops[0].type == META_OP_WORD_START) {
-        int32 curr_is_word;
-        int32 prev_is_word;
+    if (regex->has_alternation) {
+        MetaOp *alts[128];
+        int32 num_alts;
+        int32 depth;
+        MetaOp *scan;
 
-        curr_is_word = is_word_char(*current_input);
-        prev_is_word = 0;
-        if (current_input > original_input) {
-            prev_is_word = is_word_char(*(current_input - 1));
-        }
-        if (curr_is_word && !prev_is_word) {
-            return btnfa_match_at_recursive(ops + 1, original_input,
-                                            current_input, nmatch, pmatch);
-        }
-        return -1;
-    }
+        num_alts = 0;
+        alts[num_alts] = regex->ops;
+        num_alts += 1;
 
-    if (ops[0].type == META_OP_WORD_END) {
-        int32 curr_is_word;
-        int32 prev_is_word;
-
-        curr_is_word = is_word_char(*current_input);
-        prev_is_word = 0;
-        if (current_input > original_input) {
-            prev_is_word = is_word_char(*(current_input - 1));
-        }
-        if (!curr_is_word && prev_is_word) {
-            return btnfa_match_at_recursive(ops + 1, original_input,
-                                            current_input, nmatch, pmatch);
-        }
-        return -1;
-    }
-
-    if (ops[0].type == META_OP_WORD_BOUNDARY) {
-        int32 curr_is_word;
-        int32 prev_is_word;
-
-        curr_is_word = is_word_char(*current_input);
-        prev_is_word = 0;
-        if (current_input > original_input) {
-            prev_is_word = is_word_char(*(current_input - 1));
-        }
-        if (curr_is_word != prev_is_word) {
-            return btnfa_match_at_recursive(ops + 1, original_input,
-                                            current_input, nmatch, pmatch);
-        }
-        return -1;
-    }
-
-    if (ops[0].type == META_OP_NON_WORD_BOUNDARY) {
-        int32 curr_is_word;
-        int32 prev_is_word;
-
-        curr_is_word = is_word_char(*current_input);
-        prev_is_word = 0;
-        if (current_input > original_input) {
-            prev_is_word = is_word_char(*(current_input - 1));
-        }
-        if (curr_is_word == prev_is_word) {
-            return btnfa_match_at_recursive(ops + 1, original_input,
-                                            current_input, nmatch, pmatch);
-        }
-        return -1;
-    }
-
-    if (ops[0].type == META_OP_BACKREF) {
-        int32 backref_len;
-        uchar *backref_ptr;
-
-        group_id = ops[0].value;
-        backref_len = 0;
-        backref_ptr = NULL;
-        if (pmatch != NULL && (int64)group_id < nmatch
-            && pmatch[group_id].rm_so != -1) {
-            backref_len = pmatch[group_id].rm_eo - pmatch[group_id].rm_so;
-            backref_ptr = original_input + pmatch[group_id].rm_so;
-
-            if (strncmp32((char *)current_input, (char *)backref_ptr,
-                          backref_len)
-                == 0) {
-                return btnfa_match_at_recursive(ops + 1, original_input,
-                                                current_input + backref_len,
-                                                nmatch, pmatch);
-            }
-        }
-        return -1;
-    }
-
-    if (ops[0].type == META_OP_ALTERNATION) {
         depth = 0;
-        end_op = ops;
-        while (end_op->type != META_OP_END) {
-            if (end_op->type == META_OP_GROUP_START) {
-                depth += 1;
-            } else if (end_op->type == META_OP_GROUP_END) {
-                if (depth == 0) {
-                    break;
-                }
-                depth -= 1;
-            }
-            end_op += 1;
-        }
-        return btnfa_match_at_recursive(end_op, original_input, current_input,
-                                        nmatch, pmatch);
-    }
-
-    if (ops[0].type == META_OP_SPLIT) {
-        longest_match = -1;
-        skip_1
-            = btnfa_quick_lookahead_fails(ops + ops[0].value, current_input);
-        if (!skip_1) {
-            pass_pmatch = NULL;
-            if (pmatch != NULL) {
-                for (int64 i = 0; i < copy_size; i += 1) {
-                    temp_pmatch[i] = pmatch[i];
-                }
-                pass_pmatch = temp_pmatch;
-            }
-            res = btnfa_match_at_recursive(ops + ops[0].value, original_input,
-                                           current_input, nmatch, pass_pmatch);
-            if (res >= 0) {
-                if (pmatch == NULL) {
-                    return res;
-                }
-                if (res > longest_match) {
-                    longest_match = res;
-                    for (int64 i = 0; i < copy_size; i += 1) {
-                        best_pmatch[i] = pass_pmatch[i];
-                    }
-                }
-            }
-        }
-
-        skip_2 = btnfa_quick_lookahead_fails(ops + ops[0].min, current_input);
-        if (!skip_2) {
-            pass_pmatch = NULL;
-            if (pmatch != NULL) {
-                for (int64 i = 0; i < copy_size; i += 1) {
-                    temp_pmatch[i] = pmatch[i];
-                }
-                pass_pmatch = temp_pmatch;
-            }
-            res = btnfa_match_at_recursive(ops + ops[0].min, original_input,
-                                           current_input, nmatch, pass_pmatch);
-            if (res >= 0) {
-                if (pmatch == NULL) {
-                    return res;
-                }
-                if (res > longest_match) {
-                    longest_match = res;
-                    for (int64 i = 0; i < copy_size; i += 1) {
-                        best_pmatch[i] = pass_pmatch[i];
-                    }
-                }
-            }
-        }
-
-        if (longest_match >= 0 && pmatch != NULL) {
-            for (int64 i = 0; i < copy_size; i += 1) {
-                pmatch[i] = best_pmatch[i];
-            }
-        }
-        return longest_match;
-    }
-
-    if (ops[0].type == META_OP_JUMP) {
-        return btnfa_match_at_recursive(ops + ops[0].value, original_input,
-                                        current_input, nmatch, pmatch);
-    }
-
-    if (ops[0].type == META_OP_GROUP_START) {
-        group_id = ops[0].value;
-        old_so = -1;
-        if (pmatch != NULL && (int64)group_id < nmatch) {
-            old_so = pmatch[group_id].rm_so;
-            pmatch[group_id].rm_so = (int32)(current_input - original_input);
-        }
-
-        has_alt = 0;
-        depth = 0;
-        scan = ops + 1;
+        scan = regex->ops;
         while (scan->type != META_OP_END) {
             if (scan->type == META_OP_GROUP_START) {
                 depth += 1;
@@ -351,205 +84,477 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_input,
                 }
                 depth -= 1;
             } else if (scan->type == META_OP_ALTERNATION && depth == 0) {
-                has_alt = 1;
-                break;
+                alts[num_alts] = scan + 1;
+                num_alts += 1;
             }
             scan += 1;
         }
 
-        if (has_alt) {
-            res = btnfa_eval_choice_point(ops + 1, original_input,
-                                          current_input, nmatch, pmatch);
-        } else {
-            res = btnfa_match_at_recursive(ops + 1, original_input,
-                                           current_input, nmatch, pmatch);
-        }
-
-        if (res >= 0) {
-            return res;
-        }
-        if (pmatch != NULL && (int64)group_id < nmatch) {
-            pmatch[group_id].rm_so = old_so;
-        }
-        return -1;
-    }
-
-    if (ops[0].type == META_OP_GROUP_END) {
-        group_id = ops[0].value;
-        old_eo = -1;
-        if (pmatch != NULL && (int64)group_id < nmatch) {
-            old_eo = pmatch[group_id].rm_eo;
-            pmatch[group_id].rm_eo = (int32)(current_input - original_input);
-        }
-        res = btnfa_match_at_recursive(ops + 1, original_input, current_input,
-                                       nmatch, pmatch);
-        if (res >= 0) {
-            return res;
-        }
-        if (pmatch != NULL && (int64)group_id < nmatch) {
-            pmatch[group_id].rm_eo = old_eo;
-        }
-        return -1;
-    }
-
-    is_star = (ops[1].type == META_OP_STAR);
-    is_plus = (ops[1].type == META_OP_PLUS);
-    is_opt = (ops[1].type == META_OP_OPTIONAL);
-    is_bound = (ops[1].type == META_OP_BOUNDED);
-
-    if (is_star || is_plus || is_opt || is_bound) {
-        token = ops[0];
-        next_ops = ops + 2;
-        s = current_input;
-        min_req = 0;
-        max_req = -1;
-        count = 0;
-
-        if (is_star) {
-            min_req = 0;
-            max_req = -1;
-        } else if (is_plus) {
-            min_req = 1;
-            max_req = -1;
-        } else if (is_opt) {
-            min_req = 0;
-            max_req = 1;
-        } else if (is_bound) {
-            min_req = ops[1].min;
-            max_req = ops[1].max;
-        }
-
-        if (token.type == META_OP_ANY) {
-            while (max_req == -1 || count < max_req) {
-                if (s[count] == '\0') {
-                    break;
-                }
-                count += 1;
-            }
-        } else if (token.type == META_OP_LITERAL) {
-            while (max_req == -1 || count < max_req) {
-                if (s[count] == '\0') {
-                    break;
-                }
-                if ((int32)(uchar)s[count] != token.value) {
-                    break;
-                }
-                count += 1;
-            }
-        } else if (token.type == META_OP_CLASS) {
-            while (max_req == -1 || count < max_req) {
-                uchar fb;
-
-                fb = (uchar)s[count];
-                if (fb == '\0') {
-                    break;
-                }
-                if ((token.mask[fb / 32] & (1u << (fb % 32))) == 0) {
-                    break;
-                }
-                count += 1;
-            }
-        }
-
-        if (count < min_req) {
-            return -1;
-        }
-
-        max_s = s + count;
-        s += min_req;
-        longest_match = -1;
-
-        while (max_s >= s) {
-            skip_quant = btnfa_quick_lookahead_fails(next_ops, max_s);
-            if (!skip_quant) {
-                pass_pmatch = NULL;
+        for (int32 i = num_alts - 1; i >= 0; i -= 1) {
+            if (!btnfa_quick_lookahead_fails(alts[i], search_ptr)) {
+                stack[stack_ptr].pc = alts[i];
+                stack[stack_ptr].input = search_ptr;
                 if (pmatch != NULL) {
-                    for (int64 i = 0; i < copy_size; i += 1) {
-                        temp_pmatch[i] = pmatch[i];
+                    for (int64 k = 0; k < copy_size; k += 1) {
+                        stack[stack_ptr].pmatch[k] = pmatch[k];
                     }
-                    pass_pmatch = temp_pmatch;
                 }
-                res = btnfa_match_at_recursive(next_ops, original_input, max_s,
-                                               nmatch, pass_pmatch);
-                if (res >= 0) {
-                    if (pmatch == NULL) {
-                        return res;
-                    }
-                    if (res > longest_match) {
-                        longest_match = res;
-                        for (int64 i = 0; i < copy_size; i += 1) {
-                            best_pmatch[i] = pass_pmatch[i];
+                stack_ptr += 1;
+            }
+        }
+    } else {
+        if (!btnfa_quick_lookahead_fails(regex->ops, search_ptr)) {
+            stack[stack_ptr].pc = regex->ops;
+            stack[stack_ptr].input = search_ptr;
+            if (pmatch != NULL) {
+                for (int64 k = 0; k < copy_size; k += 1) {
+                    stack[stack_ptr].pmatch[k] = pmatch[k];
+                }
+            }
+            stack_ptr += 1;
+        }
+    }
+
+    while (stack_ptr > 0) {
+        MetaOp *pc;
+        uchar *input;
+        regmatch_t current_pmatch[32];
+        int32 pmatch_copy_valid;
+
+        stack_ptr -= 1;
+        pc = stack[stack_ptr].pc;
+        input = stack[stack_ptr].input;
+        pmatch_copy_valid = (pmatch != NULL);
+
+        if (pmatch_copy_valid) {
+            for (int64 k = 0; k < copy_size; k += 1) {
+                current_pmatch[k] = stack[stack_ptr].pmatch[k];
+            }
+        }
+
+        while (1) {
+            if (pc->type == META_OP_END) {
+                int32 curr_match_len;
+
+                curr_match_len = (int32)(input - string);
+                if (curr_match_len > match_len) {
+                    match_len = curr_match_len;
+                    if (pmatch_copy_valid) {
+                        for (int64 k = 0; k < copy_size; k += 1) {
+                            best_pmatch[k] = current_pmatch[k];
                         }
                     }
                 }
-            }
-            if (max_s == s) {
                 break;
             }
-            max_s -= 1;
-        }
-        if (longest_match >= 0 && pmatch != NULL) {
-            for (int64 i = 0; i < copy_size; i += 1) {
-                pmatch[i] = best_pmatch[i];
+
+            if (pc->type == META_OP_WORD_START) {
+                int32 curr_is_word;
+                int32 prev_is_word;
+
+                curr_is_word = is_word_char(*input);
+                prev_is_word = 0;
+                if (input > string) {
+                    prev_is_word = is_word_char(*(input - 1));
+                }
+                if (curr_is_word && !prev_is_word) {
+                    pc += 1;
+                    continue;
+                }
+                break;
+            }
+
+            if (pc->type == META_OP_WORD_END) {
+                int32 curr_is_word;
+                int32 prev_is_word;
+
+                curr_is_word = is_word_char(*input);
+                prev_is_word = 0;
+                if (input > string) {
+                    prev_is_word = is_word_char(*(input - 1));
+                }
+                if (!curr_is_word && prev_is_word) {
+                    pc += 1;
+                    continue;
+                }
+                break;
+            }
+
+            if (pc->type == META_OP_WORD_BOUNDARY) {
+                int32 curr_is_word;
+                int32 prev_is_word;
+
+                curr_is_word = is_word_char(*input);
+                prev_is_word = 0;
+                if (input > string) {
+                    prev_is_word = is_word_char(*(input - 1));
+                }
+                if (curr_is_word != prev_is_word) {
+                    pc += 1;
+                    continue;
+                }
+                break;
+            }
+
+            if (pc->type == META_OP_NON_WORD_BOUNDARY) {
+                int32 curr_is_word;
+                int32 prev_is_word;
+
+                curr_is_word = is_word_char(*input);
+                prev_is_word = 0;
+                if (input > string) {
+                    prev_is_word = is_word_char(*(input - 1));
+                }
+                if (curr_is_word == prev_is_word) {
+                    pc += 1;
+                    continue;
+                }
+                break;
+            }
+
+            if (pc->type == META_OP_BACKREF) {
+                int32 group_id;
+                int32 backref_len;
+                uchar *backref_ptr;
+
+                group_id = pc->value;
+                if (pmatch_copy_valid && group_id < nmatch
+                    && current_pmatch[group_id].rm_so != -1) {
+                    backref_len = current_pmatch[group_id].rm_eo
+                                  - current_pmatch[group_id].rm_so;
+                    backref_ptr = string + current_pmatch[group_id].rm_so;
+
+                    if (strncmp32((char *)input, (char *)backref_ptr,
+                                  backref_len) == 0) {
+                        input += backref_len;
+                        pc += 1;
+                        continue;
+                    }
+                }
+                break;
+            }
+
+            if (pc->type == META_OP_ALTERNATION) {
+                int32 depth;
+                MetaOp *end_op;
+
+                depth = 0;
+                end_op = pc;
+                while (end_op->type != META_OP_END) {
+                    if (end_op->type == META_OP_GROUP_START) {
+                        depth += 1;
+                    } else if (end_op->type == META_OP_GROUP_END) {
+                        if (depth == 0) {
+                            break;
+                        }
+                        depth -= 1;
+                    }
+                    end_op += 1;
+                }
+                pc = end_op;
+                continue;
+            }
+
+            if (pc->type == META_OP_SPLIT) {
+                int32 skip_1;
+                int32 skip_2;
+
+                skip_1 = btnfa_quick_lookahead_fails(pc + pc->value, input);
+                skip_2 = btnfa_quick_lookahead_fails(pc + pc->min, input);
+
+                if (!skip_2) {
+                    if (stack_ptr >= stack_cap) {
+                        int32 new_cap;
+                        BtnfaState *new_stack;
+
+                        new_cap = stack_cap * 2;
+                        new_stack = malloc2(SIZEOF(BtnfaState) * new_cap);
+                        memcpy(new_stack, stack, SIZEOF(BtnfaState) * stack_cap);
+                        free2(stack, SIZEOF(BtnfaState) * stack_cap);
+                        stack = new_stack;
+                        stack_cap = new_cap;
+                    }
+                    stack[stack_ptr].pc = pc + pc->min;
+                    stack[stack_ptr].input = input;
+                    if (pmatch_copy_valid) {
+                        for (int64 k = 0; k < copy_size; k += 1) {
+                            stack[stack_ptr].pmatch[k] = current_pmatch[k];
+                        }
+                    }
+                    stack_ptr += 1;
+                }
+
+                if (!skip_1) {
+                    if (stack_ptr >= stack_cap) {
+                        int32 new_cap;
+                        BtnfaState *new_stack;
+
+                        new_cap = stack_cap * 2;
+                        new_stack = malloc2(SIZEOF(BtnfaState) * new_cap);
+                        memcpy(new_stack, stack, SIZEOF(BtnfaState) * stack_cap);
+                        free2(stack, SIZEOF(BtnfaState) * stack_cap);
+                        stack = new_stack;
+                        stack_cap = new_cap;
+                    }
+                    stack[stack_ptr].pc = pc + pc->value;
+                    stack[stack_ptr].input = input;
+                    if (pmatch_copy_valid) {
+                        for (int64 k = 0; k < copy_size; k += 1) {
+                            stack[stack_ptr].pmatch[k] = current_pmatch[k];
+                        }
+                    }
+                    stack_ptr += 1;
+                }
+                break;
+            }
+
+            if (pc->type == META_OP_JUMP) {
+                pc += pc->value;
+                continue;
+            }
+
+            if (pc->type == META_OP_GROUP_START) {
+                int32 group_id;
+                int32 has_alt;
+                int32 depth;
+                MetaOp *scan;
+
+                group_id = pc->value;
+                if (pmatch_copy_valid && group_id < nmatch) {
+                    current_pmatch[group_id].rm_so = (int32)(input - string);
+                }
+
+                has_alt = 0;
+                depth = 0;
+                scan = pc + 1;
+                while (scan->type != META_OP_END) {
+                    if (scan->type == META_OP_GROUP_START) {
+                        depth += 1;
+                    } else if (scan->type == META_OP_GROUP_END) {
+                        if (depth == 0) {
+                            break;
+                        }
+                        depth -= 1;
+                    } else if (scan->type == META_OP_ALTERNATION && depth == 0) {
+                        has_alt = 1;
+                        break;
+                    }
+                    scan += 1;
+                }
+
+                if (has_alt) {
+                    MetaOp *alts[128];
+                    int32 num_alts;
+
+                    num_alts = 0;
+                    alts[num_alts] = pc + 1;
+                    num_alts += 1;
+
+                    depth = 0;
+                    scan = pc + 1;
+                    while (scan->type != META_OP_END) {
+                        if (scan->type == META_OP_GROUP_START) {
+                            depth += 1;
+                        } else if (scan->type == META_OP_GROUP_END) {
+                            if (depth == 0) {
+                                break;
+                            }
+                            depth -= 1;
+                        } else if (scan->type == META_OP_ALTERNATION && depth == 0) {
+                            alts[num_alts] = scan + 1;
+                            num_alts += 1;
+                        }
+                        scan += 1;
+                    }
+
+                    for (int32 i = num_alts - 1; i >= 0; i -= 1) {
+                        if (!btnfa_quick_lookahead_fails(alts[i], input)) {
+                            if (stack_ptr >= stack_cap) {
+                                int32 new_cap;
+                                BtnfaState *new_stack;
+
+                                new_cap = stack_cap * 2;
+                                new_stack = malloc2(SIZEOF(BtnfaState) * new_cap);
+                                memcpy(new_stack, stack, SIZEOF(BtnfaState) * stack_cap);
+                                free2(stack, SIZEOF(BtnfaState) * stack_cap);
+                                stack = new_stack;
+                                stack_cap = new_cap;
+                            }
+                            stack[stack_ptr].pc = alts[i];
+                            stack[stack_ptr].input = input;
+                            if (pmatch_copy_valid) {
+                                for (int64 k = 0; k < copy_size; k += 1) {
+                                    stack[stack_ptr].pmatch[k] = current_pmatch[k];
+                                }
+                            }
+                            stack_ptr += 1;
+                        }
+                    }
+                    break;
+                } else {
+                    pc += 1;
+                    continue;
+                }
+            }
+
+            if (pc->type == META_OP_GROUP_END) {
+                int32 group_id;
+
+                group_id = pc->value;
+                if (pmatch_copy_valid && group_id < nmatch) {
+                    current_pmatch[group_id].rm_eo = (int32)(input - string);
+                }
+                pc += 1;
+                continue;
+            }
+
+            {
+                int32 is_star;
+                int32 is_plus;
+                int32 is_opt;
+                int32 is_bound;
+
+                is_star = (pc[1].type == META_OP_STAR);
+                is_plus = (pc[1].type == META_OP_PLUS);
+                is_opt = (pc[1].type == META_OP_OPTIONAL);
+                is_bound = (pc[1].type == META_OP_BOUNDED);
+
+                if (is_star || is_plus || is_opt || is_bound) {
+                    MetaOp token;
+                    MetaOp *next_ops;
+                    uchar *s;
+                    int32 min_req;
+                    int32 max_req;
+                    int32 count;
+
+                    token = pc[0];
+                    next_ops = pc + 2;
+                    s = input;
+                    min_req = 0;
+                    max_req = -1;
+                    count = 0;
+
+                    if (is_star) {
+                        min_req = 0;
+                        max_req = -1;
+                    } else if (is_plus) {
+                        min_req = 1;
+                        max_req = -1;
+                    } else if (is_opt) {
+                        min_req = 0;
+                        max_req = 1;
+                    } else if (is_bound) {
+                        min_req = pc[1].min;
+                        max_req = pc[1].max;
+                    }
+
+                    if (token.type == META_OP_ANY) {
+                        while (max_req == -1 || count < max_req) {
+                            if (s[count] == '\0') {
+                                break;
+                            }
+                            count += 1;
+                        }
+                    } else if (token.type == META_OP_LITERAL) {
+                        while (max_req == -1 || count < max_req) {
+                            if (s[count] == '\0') {
+                                break;
+                            }
+                            if ((int32)(uchar)s[count] != token.value) {
+                                break;
+                            }
+                            count += 1;
+                        }
+                    } else if (token.type == META_OP_CLASS) {
+                        while (max_req == -1 || count < max_req) {
+                            uchar fb;
+
+                            fb = (uchar)s[count];
+                            if (fb == '\0') {
+                                break;
+                            }
+                            if ((token.mask[fb / 32] & (1u << (fb % 32))) == 0) {
+                                break;
+                            }
+                            count += 1;
+                        }
+                    }
+
+                    if (count >= min_req) {
+                        uchar *min_s;
+                        uchar *max_s_ptr;
+
+                        min_s = s + min_req;
+                        max_s_ptr = s + count;
+
+                        for (uchar *p = min_s; p <= max_s_ptr; p += 1) {
+                            if (!btnfa_quick_lookahead_fails(next_ops, p)) {
+                                if (stack_ptr >= stack_cap) {
+                                    int32 new_cap;
+                                    BtnfaState *new_stack;
+
+                                    new_cap = stack_cap * 2;
+                                    new_stack = malloc2(SIZEOF(BtnfaState) * new_cap);
+                                    memcpy(new_stack, stack, SIZEOF(BtnfaState) * stack_cap);
+                                    free2(stack, SIZEOF(BtnfaState) * stack_cap);
+                                    stack = new_stack;
+                                    stack_cap = new_cap;
+                                }
+                                stack[stack_ptr].pc = next_ops;
+                                stack[stack_ptr].input = p;
+                                if (pmatch_copy_valid) {
+                                    for (int64 k = 0; k < copy_size; k += 1) {
+                                        stack[stack_ptr].pmatch[k] = current_pmatch[k];
+                                    }
+                                }
+                                stack_ptr += 1;
+                            }
+                        }
+                    }
+                    break;
+                } else {
+                    int32 is_match;
+                    uchar fb;
+                    int32 consumed;
+
+                    consumed = 0;
+                    fb = (uchar)input[0];
+                    if (fb == '\0') {
+                        is_match = 0;
+                    } else {
+                        consumed = 1;
+                        if (pc->type == META_OP_ANY) {
+                            is_match = 1;
+                        } else if (pc->type == META_OP_LITERAL) {
+                            is_match = ((int32)fb == pc->value);
+                        } else if (pc->type == META_OP_CLASS) {
+                            is_match = ((pc->mask[fb / 32] & (1u << (fb % 32))) != 0);
+                        } else {
+                            is_match = 0;
+                        }
+                    }
+                    if (is_match) {
+                        pc += 1;
+                        input += consumed;
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
             }
         }
-        return longest_match;
     }
 
-    {
-        int32 is_match;
-        uchar fb;
-
-        consumed = 0;
-        fb = (uchar)current_input[0];
-        if (fb == '\0') {
-            is_match = 0;
-        } else {
-            consumed = 1;
-            if (ops[0].type == META_OP_ANY) {
-                is_match = 1;
-            } else if (ops[0].type == META_OP_LITERAL) {
-                is_match = ((int32)fb == ops[0].value);
-            } else if (ops[0].type == META_OP_CLASS) {
-                is_match = ((ops[0].mask[fb / 32] & (1u << (fb % 32))) != 0);
-            } else {
-                is_match = 0;
-            }
-        }
-        if (is_match) {
-            return btnfa_match_at_recursive(ops + 1, original_input,
-                                            current_input + consumed, nmatch,
-                                            pmatch);
-        }
-    }
-    return -1;
-}
-
-static int32
-try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
-                int32 offset, int64 nmatch, regmatch_t pmatch[]) {
-    uchar *search_ptr;
-    int32 match_len;
-    (void)string_len;
-
-    search_ptr = &string[offset];
-    match_len = -1;
-
-    if (regex->has_alternation) {
-        match_len = btnfa_eval_choice_point(regex->ops, string, search_ptr,
-                                            nmatch, pmatch);
-    } else {
-        if (!btnfa_quick_lookahead_fails(regex->ops, search_ptr)) {
-            match_len = btnfa_match_at_recursive(regex->ops, string, search_ptr,
-                                                 nmatch, pmatch);
-        }
-    }
+    free2(stack, SIZEOF(BtnfaState) * stack_cap);
 
     if (match_len >= 0) {
         if (!regex->has_end_anchor || string[match_len] == '\0') {
             if (pmatch != NULL && nmatch > 0) {
                 pmatch[0].rm_so = offset;
                 pmatch[0].rm_eo = match_len;
+                for (int64 k = 1; k < copy_size; k += 1) {
+                    pmatch[k] = best_pmatch[k];
+                }
             }
             return 0;
         }
