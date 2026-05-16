@@ -44,8 +44,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                 int32 offset, int64 nmatch, regmatch_t pmatch[]) {
     uchar *search_ptr;
     int32 match_len;
-    int32 stack_cap = 8192;
-    BtnfaState *stack = NULL;
+    static int32 stack_cap = 8192;
+    static BtnfaState *stack = NULL;
     int32 stack_ptr = 0;
     int64 copy_size;
     regmatch_t best_pmatch[32];
@@ -63,7 +63,9 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
         copy_size = nmatch;
     }
 
-    stack = realloc2(NULL, 0, stack_cap, SIZEOF(*stack));
+    if (stack == NULL) {
+        stack = realloc2(NULL, 0, stack_cap, SIZEOF(*stack));
+    }
 
     if (regex->has_alternation) {
         MetaOp *alts[128];
@@ -619,7 +621,6 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
         }
     }
 
-    free2(stack, stack_cap*SIZEOF(*stack));
     if (memo) {
         free2(memo, memo_size * SIZEOF(uint32));
     }
