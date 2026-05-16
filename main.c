@@ -24,7 +24,7 @@
 #endif
 
 static void run_posix_vs_meta(RegexTest *tests, int32 count, char *description);
-static void run_fuzzy_tests(RegexTest *tests, int32 tests_len,
+static void run_fuzzy_tests(MetaRegex **patterns, int32 tests_len,
                             int32 max_str_size, int32 ntests);
 static void run_meta_only(RegexTest *tests, int32 count, char *description);
 
@@ -185,7 +185,7 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
 }
 
 static void
-run_fuzzy_tests(RegexTest *tests, int32 tests_len, int32 max_str_size,
+run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
                 int32 ntests) {
     int32 fuzzy_len;
     FuzzyTest *fuzzy;
@@ -226,7 +226,7 @@ run_fuzzy_tests(RegexTest *tests, int32 tests_len, int32 max_str_size,
         regex_t compiled;
         char *pattern_str;
 
-        pattern_str = tests[fuzzy[i].regex_idx].meta_regex->string;
+        pattern_str = tests[fuzzy[i].regex_idx]->string;
         if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
             fuzzy[i].result_posix
                 = regexec(&compiled, fuzzy[i].input, MAX_MATCHES,
@@ -240,9 +240,7 @@ run_fuzzy_tests(RegexTest *tests, int32 tests_len, int32 max_str_size,
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
     for (int32 i = 0; i < fuzzy_len; i += 1) {
-        MetaRegex *meta_pattern;
-
-        meta_pattern = tests[fuzzy[i].regex_idx].meta_regex;
+        MetaRegex *meta_pattern = tests[fuzzy[i].regex_idx];
         fuzzy[i].result_meta
             = meta_regex_match(meta_pattern, (uchar *)fuzzy[i].input,
                                MAX_MATCHES, fuzzy[i].pmatch_meta);
@@ -250,13 +248,9 @@ run_fuzzy_tests(RegexTest *tests, int32 tests_len, int32 max_str_size,
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
     for (int32 i = 0; i < fuzzy_len; i += 1) {
-        char *input;
-        char *regex;
-        int32 mismatch;
-
-        input = fuzzy[i].input;
-        regex = tests[fuzzy[i].regex_idx].meta_regex->string;
-        mismatch = 0;
+        char *input = fuzzy[i].input;
+        char *regex = tests[fuzzy[i].regex_idx]->string;
+        int32 mismatch = 0;
 
         if (fuzzy[i].result_posix != fuzzy[i].result_meta) {
             mismatch = 1;
