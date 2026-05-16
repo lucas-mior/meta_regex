@@ -204,9 +204,9 @@ run_fuzzy_tests(RegexTest *tests, int32 tests_len, int32 max_str_size,
     }
 
     for (int32 i = 0; i < fuzzy_len; i += 1) {
-        fuzzy[i].string_len = 1 + (rand() % max_str_size);
-        fuzzy[i].input = malloc2(fuzzy[i].string_len + 1);
-        random_ascii_string(fuzzy[i].input, fuzzy[i].string_len, 1);
+        fuzzy[i].input_len = 1 + (rand() % max_str_size);
+        fuzzy[i].input = malloc2(fuzzy[i].input_len + 1);
+        random_ascii_string(fuzzy[i].input, fuzzy[i].input_len, 1);
         fuzzy[i].regex_idx = rand() % tests_len;
     }
 
@@ -307,7 +307,7 @@ run_fuzzy_tests(RegexTest *tests, int32 tests_len, int32 max_str_size,
     }
 
     for (int32 i = 0; i < fuzzy_len; i += 1) {
-        free2(fuzzy[i].input, fuzzy[i].string_len + 1);
+        free2(fuzzy[i].input, fuzzy[i].input_len + 1);
     }
     free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
     fclose(mismatches);
