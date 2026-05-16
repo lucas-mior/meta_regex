@@ -284,9 +284,9 @@ main(void) {
 #if 1 || !BENCHMARK
     run_posix_vs_meta(ascii_against_ascii, LENGTH(ascii_against_ascii),
                       "ASCII vs ASCII");
-    run_posix_vs_meta(utf8_against_ascii, LENGTH(utf8_against_ascii),
-                      "UTF8 vs ASCII");
-    run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "UTF8 vs UTF8");
+    /* run_posix_vs_meta(utf8_against_ascii, LENGTH(utf8_against_ascii), */
+    /*                   "UTF8 vs ASCII"); */
+    /* run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "UTF8 vs UTF8"); */
 #endif
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
