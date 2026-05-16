@@ -56,12 +56,13 @@ static void compute_core_transitions(MetaOp *ops,
                                      NfaStateSet *next_core_set);
 
 static int32
-try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
-                   regmatch_t *pmatch) {
+try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 string_len,
+                   int32 offset, int64 nmatch, regmatch_t *pmatch) {
     LazyDfa *ldfa;
     int32 current_state_id;
     int32 last_accept;
     int32 prev_is_word;
+    (void)string_len;
 
     ldfa = (LazyDfa *)regex->lazy_dfa;
     if (ldfa == NULL) {

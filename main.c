@@ -97,9 +97,11 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
     for (int32 i = 0; i < count; i += 1) {
         uchar *input = (uchar *)tests_meta[i].input;
+        int32 input_len = strlen32((char*)input);
         MetaRegex *meta_regex = tests_meta[i].meta_regex;
 
-        tests_meta[i].result = meta_regex_match(meta_regex, input, MAX_MATCHES,
+        tests_meta[i].result = meta_regex_match(meta_regex, input, input_len,
+                                                MAX_MATCHES,
                                                 tests_meta[i].pmatch);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
@@ -155,12 +157,13 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
     for (int32 i = 0; i < count; i += 1) {
         char *input = tests[i].input;
+        int32 input_len = strlen32((char*)input);
         MetaRegex *meta_regex = tests[i].meta_regex;
         int32 result;
         bool matched;
 
-        result = meta_regex_match(meta_regex, (uchar *)input, MAX_MATCHES,
-                                  tests[i].pmatch);
+        result = meta_regex_match(meta_regex, (uchar *)input, input_len,
+                                  MAX_MATCHES, tests[i].pmatch);
         matched = !result;
         bool expected = (bool)tests[i].result;
 
@@ -268,9 +271,11 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
     for (int32 i = 0; i < fuzzy_len; i += 1) {
+        uchar *input = (uchar *)fuzzy[i].input;
+        int32 input_len = fuzzy[i].input_len;
         MetaRegex *meta_pattern = tests[fuzzy[i].regex_idx];
         fuzzy[i].result_meta
-            = meta_regex_match(meta_pattern, (uchar *)fuzzy[i].input,
+            = meta_regex_match(meta_pattern, input, input_len,
                                MAX_MATCHES, fuzzy[i].pmatch_meta);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
@@ -332,8 +337,9 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
             double t_meta = timediff(t0_meta, t1_meta);
 
             if (t_posix < t_meta) {
-                error("Performance regression at max_str_size=%d! (%f < %f)\n",
-                      max_str_size, t_posix, t_meta);
+                fprintf(stderr,
+                        "\nPerformance regression at max_str_size=%d\n",
+                        max_str_size);
             }
         }
         SNPRINTF(name_posix, YELLOW("posix [max_str_size=%d]"), max_str_size);

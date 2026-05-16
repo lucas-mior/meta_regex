@@ -526,10 +526,11 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
 }
 
 static int32
-try_match_btnfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
-                regmatch_t pmatch[]) {
+try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
+                int32 offset, int64 nmatch, regmatch_t pmatch[]) {
     uchar *search_ptr;
     int32 match_len;
+    (void)string_len;
 
     search_ptr = &string[offset];
     match_len = -1;
