@@ -45,15 +45,15 @@ main(void) {
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
     RUN_FUZZY_TESTS(ascii_no_group_no_backref, 16, 1000);
-    /* run_fuzzy_tests(32, 1000); */
-    /* run_fuzzy_tests(64, 1000); */
-    /* run_fuzzy_tests(128, 1000); */
-    /* run_fuzzy_tests(256, 1000); */
-    /* run_fuzzy_tests(512, 1000); */
-    /* run_fuzzy_tests(1024, 1000); */
-    /* run_fuzzy_tests(2048, 1000); */
-    /* run_fuzzy_tests(4096, 2000); */
-    /* run_fuzzy_tests(8192, 20); */
+    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 32, 1000); */
+    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 64, 1000); */
+    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 128, 1000); */
+    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 256, 1000); */
+    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 512, 1000); */
+    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 1024, 1000); */
+    RUN_FUZZY_TESTS(ascii_no_group_no_backref, 2048, 1000);
+    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 4096, 2000); */
+    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 8192, 20); */
     exit(EXIT_SUCCESS);
 }
 
