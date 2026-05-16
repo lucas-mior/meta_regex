@@ -38,11 +38,9 @@ main(void) {
     setlocale(LC_ALL, "C");
     srand((uint32)42);
 
-#if 1 || !BENCHMARK
     RUN_POSIX_VS_META(ascii_no_group_no_backref);
     RUN_POSIX_VS_META(utf8_against_ascii);
-    run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "meta only");
-#endif
+    RUN_POSIX_VS_META(utf8_against_utf8);
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
     RUN_FUZZY_TESTS(ascii_no_group_no_backref, 16, 1000);
