@@ -143,7 +143,6 @@ static RegexTest ascii_catastrophic_cases[] = {
     {"aaaaaaaaaaaaaaaaaaaaaaaaaaaX", R("a?a?a?a?a?a?a?aaaaa")},
 };
 
-/* 2) Uses grouping, but not backreferences */
 static RegexTest ascii_with_group_no_backref[] = {
     {"foo bar", R("(foo) (bar)")},
     {"a1b2", R("([a-z])([0-9])")},
