@@ -76,13 +76,15 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
   #if ALGO_LAZY_DFA
             algorithm = MATCH_ALGO_LAZY_DFA;
   #elif ALGO_STATIC_DFA
-            algorithm = MATCH_ALGO_STATIC_DFA;
+            if (regex->dfa == NULL) {
+                algorithm = MATCH_ALGO_BTNFA;
+            } else {
+                algorithm = MATCH_ALGO_STATIC_DFA;
+            }
   #endif
         }
     }
 #endif
-
-    /* ASSERT_EQUAL((uint32)algorithm, (uint32)MATCH_ALGO_BTNFA); */
 
     if (algorithm == MATCH_ALGO_BTNFA) {
         if (regex->has_start_anchor) {
