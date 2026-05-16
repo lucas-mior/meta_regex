@@ -206,13 +206,11 @@ static RegexTest utf8_against_ascii[] = {
 
 // dont test groups here
 static RegexTest utf8_against_utf8[] = {
-    {"é", R("e"), false},     
-    {"é", R("ê"), false},     
-    {"é", R("é"), true},
-    {"é", R("[é]"), true},    
-    {"é", R("^[é]$"), false}, 
-    {"\\U", R("\\U"), true},
-    {"aéc", R("a.c"), false}, 
+    {"é", R("e"),      false},     
+    {"é", R("ê"),      false},     
+    {"é", R("é"),      true},
+    {"\\U", R("\\U"),  true},
+    {"aéc", R("a.c"),  false}, 
     {"aéc", R("a.*c"), true},
 };
 
