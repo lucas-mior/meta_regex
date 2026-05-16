@@ -44,15 +44,15 @@ main(void) {
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
-    RUN_FUZZY_TESTS(ascii_no_group_no_backref, 16, 1000);
+    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 16, 1000); */
     /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 32, 1000); */
-    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 64, 1000); */
+    RUN_FUZZY_TESTS(ascii_no_group_no_backref, 64, 1000);
     /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 128, 1000); */
     /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 256, 1000); */
     /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 512, 1000); */
     /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 1024, 1000); */
     RUN_FUZZY_TESTS(ascii_no_group_no_backref, 2048, 1000);
-    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 4096, 2000); */
+    RUN_FUZZY_TESTS(ascii_no_group_no_backref, 4096, 2000);
     /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 8192, 20); */
     exit(EXIT_SUCCESS);
 }
