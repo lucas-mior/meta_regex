@@ -51,6 +51,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
     regmatch_t best_pmatch[32];
     uint32 *memo;
     int32 memo_size;
+    int32 step_count;
+    int32 is_catastrophic;
 
     search_ptr = &string[offset];
     match_len = -1;
@@ -67,13 +69,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
 
     memo = NULL;
     memo_size = 0;
-    if (!regex->has_backref) {
-        memo_size = (string_len + 1) * META_PC_WORDS;
-        memo = malloc2(memo_size * SIZEOF(uint32));
-        for (int32 i = 0; i < memo_size; i += 1) {
-            memo[i] = 0;
-        }
-    }
+    step_count = 0;
+    is_catastrophic = 0;
 
     if (regex->has_alternation) {
         MetaOp *alts[128];
@@ -106,9 +103,6 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
             if (!btnfa_quick_lookahead_fails(alts[i], search_ptr)) {
                 stack[stack_ptr].pc = alts[i];
                 stack[stack_ptr].input = search_ptr;
-                for (int32 w = 0; w < META_PC_WORDS; w += 1) {
-                    stack[stack_ptr].visited_empty[w] = 0;
-                }
                 if (pmatch != NULL) {
                     for (int64 k = 0; k < copy_size; k += 1) {
                         stack[stack_ptr].pmatch[k] = pmatch[k];
@@ -121,9 +115,6 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
         if (!btnfa_quick_lookahead_fails(regex->ops, search_ptr)) {
             stack[stack_ptr].pc = regex->ops;
             stack[stack_ptr].input = search_ptr;
-            for (int32 w = 0; w < META_PC_WORDS; w += 1) {
-                stack[stack_ptr].visited_empty[w] = 0;
-            }
             if (pmatch != NULL) {
                 for (int64 k = 0; k < copy_size; k += 1) {
                     stack[stack_ptr].pmatch[k] = pmatch[k];
@@ -140,13 +131,32 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
         uint32 visited_empty[META_PC_WORDS];
         int32 pmatch_copy_valid;
 
+        step_count += 1;
+        if (step_count > 4096 && !is_catastrophic) {
+            is_catastrophic = 1;
+            if (!regex->has_backref) {
+                memo_size = (string_len + 1) * META_PC_WORDS;
+                memo = malloc2(memo_size * SIZEOF(uint32));
+                for (int32 i = 0; i < memo_size; i += 1) {
+                    memo[i] = 0;
+                }
+            }
+            for (int32 i = 0; i < stack_ptr; i += 1) {
+                for (int32 w = 0; w < META_PC_WORDS; w += 1) {
+                    stack[i].visited_empty[w] = 0;
+                }
+            }
+        }
+
         stack_ptr -= 1;
         pc = stack[stack_ptr].pc;
         input = stack[stack_ptr].input;
         pmatch_copy_valid = (pmatch != NULL);
 
-        for (int32 w = 0; w < META_PC_WORDS; w += 1) {
-            visited_empty[w] = stack[stack_ptr].visited_empty[w];
+        if (is_catastrophic) {
+            for (int32 w = 0; w < META_PC_WORDS; w += 1) {
+                visited_empty[w] = stack[stack_ptr].visited_empty[w];
+            }
         }
 
         if (pmatch_copy_valid) {
@@ -156,29 +166,31 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
         }
 
         while (1) {
-            int32 pc_idx;
+            if (is_catastrophic) {
+                int32 pc_idx;
 
-            pc_idx = (int32)(pc - regex->ops);
-            if ((visited_empty[pc_idx / 32] & (1u << (pc_idx % 32))) != 0) {
-                break;
-            }
-            visited_empty[pc_idx / 32] |= (1u << (pc_idx % 32));
+                pc_idx = (int32)(pc - regex->ops);
+                if ((visited_empty[pc_idx / 32] & (1u << (pc_idx % 32))) != 0) {
+                    break;
+                }
+                visited_empty[pc_idx / 32] |= (1u << (pc_idx % 32));
 
-            if (memo != NULL) {
-                int32 in_idx;
+                if (memo != NULL) {
+                    int32 in_idx;
 
-                in_idx = (int32)(input - string);
-                if (in_idx >= 0 && in_idx <= string_len) {
-                    int32 word_idx;
-                    int32 bit_idx;
+                    in_idx = (int32)(input - string);
+                    if (in_idx >= 0 && in_idx <= string_len) {
+                        int32 word_idx;
+                        int32 bit_idx;
 
-                    word_idx = in_idx * META_PC_WORDS + (pc_idx / 32);
-                    bit_idx = pc_idx % 32;
+                        word_idx = in_idx * META_PC_WORDS + (pc_idx / 32);
+                        bit_idx = pc_idx % 32;
 
-                    if ((memo[word_idx] & (1u << bit_idx)) != 0) {
-                        break;
+                        if ((memo[word_idx] & (1u << bit_idx)) != 0) {
+                            break;
+                        }
+                        memo[word_idx] |= (1u << bit_idx);
                     }
-                    memo[word_idx] |= (1u << bit_idx);
                 }
             }
 
@@ -277,7 +289,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                                   backref_len) == 0) {
                         input += backref_len;
                         pc += 1;
-                        if (backref_len > 0) {
+                        if (is_catastrophic && backref_len > 0) {
                             for (int32 w = 0; w < META_PC_WORDS; w += 1) {
                                 visited_empty[w] = 0;
                             }
@@ -330,8 +342,10 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                     }
                     stack[stack_ptr].pc = pc + pc->min;
                     stack[stack_ptr].input = input;
-                    for (int32 w = 0; w < META_PC_WORDS; w += 1) {
-                        stack[stack_ptr].visited_empty[w] = visited_empty[w];
+                    if (is_catastrophic) {
+                        for (int32 w = 0; w < META_PC_WORDS; w += 1) {
+                            stack[stack_ptr].visited_empty[w] = visited_empty[w];
+                        }
                     }
                     if (pmatch_copy_valid) {
                         for (int64 k = 0; k < copy_size; k += 1) {
@@ -355,8 +369,10 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                     }
                     stack[stack_ptr].pc = pc + pc->value;
                     stack[stack_ptr].input = input;
-                    for (int32 w = 0; w < META_PC_WORDS; w += 1) {
-                        stack[stack_ptr].visited_empty[w] = visited_empty[w];
+                    if (is_catastrophic) {
+                        for (int32 w = 0; w < META_PC_WORDS; w += 1) {
+                            stack[stack_ptr].visited_empty[w] = visited_empty[w];
+                        }
                     }
                     if (pmatch_copy_valid) {
                         for (int64 k = 0; k < copy_size; k += 1) {
@@ -442,8 +458,10 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                             }
                             stack[stack_ptr].pc = alts[i];
                             stack[stack_ptr].input = input;
-                            for (int32 w = 0; w < META_PC_WORDS; w += 1) {
-                                stack[stack_ptr].visited_empty[w] = visited_empty[w];
+                            if (is_catastrophic) {
+                                for (int32 w = 0; w < META_PC_WORDS; w += 1) {
+                                    stack[stack_ptr].visited_empty[w] = visited_empty[w];
+                                }
                             }
                             if (pmatch_copy_valid) {
                                 for (int64 k = 0; k < copy_size; k += 1) {
@@ -565,13 +583,15 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                                 }
                                 stack[stack_ptr].pc = next_ops;
                                 stack[stack_ptr].input = p;
-                                if (p > input) {
-                                    for (int32 w = 0; w < META_PC_WORDS; w += 1) {
-                                        stack[stack_ptr].visited_empty[w] = 0;
-                                    }
-                                } else {
-                                    for (int32 w = 0; w < META_PC_WORDS; w += 1) {
-                                        stack[stack_ptr].visited_empty[w] = visited_empty[w];
+                                if (is_catastrophic) {
+                                    if (p > input) {
+                                        for (int32 w = 0; w < META_PC_WORDS; w += 1) {
+                                            stack[stack_ptr].visited_empty[w] = 0;
+                                        }
+                                    } else {
+                                        for (int32 w = 0; w < META_PC_WORDS; w += 1) {
+                                            stack[stack_ptr].visited_empty[w] = visited_empty[w];
+                                        }
                                     }
                                 }
                                 if (pmatch_copy_valid) {
@@ -608,7 +628,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                     if (is_match) {
                         pc += 1;
                         input += consumed;
-                        if (consumed > 0) {
+                        if (is_catastrophic && consumed > 0) {
                             for (int32 w = 0; w < META_PC_WORDS; w += 1) {
                                 visited_empty[w] = 0;
                             }
