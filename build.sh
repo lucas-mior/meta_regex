@@ -47,7 +47,7 @@ build)
     ;;
 callgrind)
     CFLAGS="$CFLAGS -Wno-unused-variable"
-    CPPFLAGS="$CPPFLAGS -DDEBUGGING=1 $GNUSOURCE"
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
     CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
     CFLAGS="$CFLAGS -g3 -O2 -flto"
     ;;
