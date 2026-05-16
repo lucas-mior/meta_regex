@@ -63,14 +63,17 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
             if (regex->ops[i].type == META_OP_WORD_BOUNDARY
                 || regex->ops[i].type == META_OP_WORD_START
                 || regex->ops[i].type == META_OP_WORD_END
-                || regex->ops[i].type == META_OP_NON_WORD_BOUNDARY) {
+                || regex->ops[i].type == META_OP_NON_WORD_BOUNDARY
+#if ALGO_LAZY_DFA
+                || regex->ops[i].type == META_OP_BOUNDED
+#endif
+                ) {
                 has_unsupported = 1;
                 break;
             }
         }
 
         if (has_unsupported) {
-            error("TODO: Word boundaries are not supported in DFA yet.\n");
             algorithm = MATCH_ALGO_BTNFA;
         } else {
   #if ALGO_LAZY_DFA
