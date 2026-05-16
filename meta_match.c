@@ -12,10 +12,10 @@
 #include "meta_match_static_dfa.c"
 
 #if !defined(ALGO_LAZY_DFA)
-#define ALGO_LAZY_DFA 0
+#define ALGO_LAZY_DFA 1
 #endif
 #if !defined(ALGO_STATIC_DFA)
-#define ALGO_STATIC_DFA 1
+#define ALGO_STATIC_DFA 0
 #endif
 
 #if !defined(ALGO_STATIC_DFA)
@@ -58,33 +58,28 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
         int32 has_unsupported;
 
         has_unsupported = 0;
-#if ALGO_LAZY_DFA
         for (int32 i = 0; regex->ops[i].type != META_OP_END; i += 1) {
-            if (
-                regex->ops[i].type == META_OP_WORD_BOUNDARY
+            if (regex->ops[i].type == META_OP_WORD_BOUNDARY
                 || regex->ops[i].type == META_OP_WORD_START
                 || regex->ops[i].type == META_OP_WORD_END
-                || regex->ops[i].type == META_OP_NON_WORD_BOUNDARY
-                || regex->ops[i].type == META_OP_BOUNDED
-                ) {
+                || regex->ops[i].type == META_OP_NON_WORD_BOUNDARY) {
                 has_unsupported = 1;
                 break;
             }
         }
-#endif
 
         if (has_unsupported || (regex->re_nsub > 0 && nmatch > 1)) {
             algorithm = MATCH_ALGO_BTNFA;
         } else {
-  #if ALGO_LAZY_DFA
+#if ALGO_LAZY_DFA
             algorithm = MATCH_ALGO_LAZY_DFA;
-  #elif ALGO_STATIC_DFA
+#elif ALGO_STATIC_DFA
             if (regex->dfa == NULL) {
                 algorithm = MATCH_ALGO_BTNFA;
             } else {
                 algorithm = MATCH_ALGO_STATIC_DFA;
             }
-  #endif
+#endif
         }
     }
 #endif

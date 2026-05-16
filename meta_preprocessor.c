@@ -487,13 +487,42 @@ main(int32 argc, char **argv) {
                         }
                         regex_index = temp_idx;
                         break;
-                    } else {
-                        temp_ops[temp_ops_count].type = META_OP_BOUNDED;
-                        temp_ops[temp_ops_count].min = m;
-                        temp_ops[temp_ops_count].max = n;
-                        temp_ops_count += 1;
+                    } else if (temp_ops_count > 0) {
+                        int32 target_start = temp_ops_count - 1;
+                        ParsedOp op_to_repeat = temp_ops[target_start];
+
+                        if (temp_ops_count + m + (n == -1 ? 2 : (n - m)*2)
+                            >= PREPROC_MAX_TEMP_OPS) {
+                            fprintf(stderr, "Error: Quantifier unrolling "
+                                            "exceeds max ops.\n");
+                            exit(EXIT_FAILURE);
+                        }
+
+                        temp_ops_count = target_start;
+
+                        for (int32 k = 0; k < m; k += 1) {
+                            temp_ops[temp_ops_count] = op_to_repeat;
+                            temp_ops_count += 1;
+                        }
+
+                        if (n == -1) {
+                            temp_ops[temp_ops_count] = op_to_repeat;
+                            temp_ops_count += 1;
+                            temp_ops[temp_ops_count].type = META_OP_STAR;
+                            temp_ops_count += 1;
+                        } else {
+                            for (int32 k = m; k < n; k += 1) {
+                                temp_ops[temp_ops_count] = op_to_repeat;
+                                temp_ops_count += 1;
+                                temp_ops[temp_ops_count].type
+                                    = META_OP_OPTIONAL;
+                                temp_ops_count += 1;
+                            }
+                        }
                         regex_index = temp_idx;
                         break;
+                    } else {
+                        valid = 0;
                     }
                 }
 
