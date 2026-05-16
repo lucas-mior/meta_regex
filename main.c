@@ -336,8 +336,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
                       max_str_size, t_posix, t_meta);
             }
         }
-        SNPRINTF(name_posix, YELLOW("posix [%d]"), max_str_size);
-        SNPRINTF(name_meta, GREEN("meta [%d]"), max_str_size);
+        SNPRINTF(name_posix, YELLOW("posix [max_str_size=%d]"), max_str_size);
+        SNPRINTF(name_meta, GREEN("meta [max_str_size=%d]"), max_str_size);
 
         PRINT_TIMINGS(fuzzy_len, t0_posix, t1_posix, name_posix);
         PRINT_TIMINGS(fuzzy_len, t0_meta, t1_meta, name_meta);
