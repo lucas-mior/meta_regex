@@ -64,7 +64,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
     }
 
     stack_cap = 8192;
-    stack = malloc2(SIZEOF(BtnfaState) * stack_cap);
+    stack = realloc2(NULL, 0, stack_cap, SIZEOF(*stack));
     stack_ptr = 0;
 
     memo = NULL;
@@ -330,14 +330,10 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
 
                 if (!skip_2) {
                     if (stack_ptr >= stack_cap) {
-                        int32 new_cap;
-                        BtnfaState *new_stack;
-
-                        new_cap = stack_cap * 2;
-                        new_stack = malloc2(SIZEOF(BtnfaState) * new_cap);
-                        memcpy(new_stack, stack, SIZEOF(BtnfaState) * stack_cap);
-                        free2(stack, SIZEOF(BtnfaState) * stack_cap);
-                        stack = new_stack;
+                        int32 new_cap = stack_cap * 2;
+                        stack = realloc2(stack, 
+                                         stack_cap, new_cap,
+                                         SIZEOF(BtnfaState));
                         stack_cap = new_cap;
                     }
                     stack[stack_ptr].pc = pc + pc->min;
@@ -357,14 +353,10 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
 
                 if (!skip_1) {
                     if (stack_ptr >= stack_cap) {
-                        int32 new_cap;
-                        BtnfaState *new_stack;
-
-                        new_cap = stack_cap * 2;
-                        new_stack = malloc2(SIZEOF(BtnfaState) * new_cap);
-                        memcpy(new_stack, stack, SIZEOF(BtnfaState) * stack_cap);
-                        free2(stack, SIZEOF(BtnfaState) * stack_cap);
-                        stack = new_stack;
+                        int32 new_cap = stack_cap * 2;
+                        stack = realloc2(stack, 
+                                         stack_cap, new_cap,
+                                         SIZEOF(BtnfaState));
                         stack_cap = new_cap;
                     }
                     stack[stack_ptr].pc = pc + pc->value;
@@ -446,14 +438,10 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                     for (int32 i = num_alts - 1; i >= 0; i -= 1) {
                         if (!btnfa_quick_lookahead_fails(alts[i], input)) {
                             if (stack_ptr >= stack_cap) {
-                                int32 new_cap;
-                                BtnfaState *new_stack;
-
-                                new_cap = stack_cap * 2;
-                                new_stack = malloc2(SIZEOF(BtnfaState) * new_cap);
-                                memcpy(new_stack, stack, SIZEOF(BtnfaState) * stack_cap);
-                                free2(stack, SIZEOF(BtnfaState) * stack_cap);
-                                stack = new_stack;
+                                int32 new_cap = stack_cap * 2;
+                                stack = realloc2(stack, 
+                                                 stack_cap, new_cap,
+                                                 SIZEOF(BtnfaState));
                                 stack_cap = new_cap;
                             }
                             stack[stack_ptr].pc = alts[i];
@@ -571,14 +559,10 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                         for (uchar *p = min_s; p <= max_s_ptr; p += 1) {
                             if (!btnfa_quick_lookahead_fails(next_ops, p)) {
                                 if (stack_ptr >= stack_cap) {
-                                    int32 new_cap;
-                                    BtnfaState *new_stack;
-
-                                    new_cap = stack_cap * 2;
-                                    new_stack = malloc2(SIZEOF(BtnfaState) * new_cap);
-                                    memcpy(new_stack, stack, SIZEOF(BtnfaState) * stack_cap);
-                                    free2(stack, SIZEOF(BtnfaState) * stack_cap);
-                                    stack = new_stack;
+                                    int32 new_cap = stack_cap * 2;
+                                    stack = realloc2(stack, 
+                                                     stack_cap, new_cap,
+                                                     SIZEOF(BtnfaState));
                                     stack_cap = new_cap;
                                 }
                                 stack[stack_ptr].pc = next_ops;
@@ -642,8 +626,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
         }
     }
 
-    free2(stack, SIZEOF(BtnfaState) * stack_cap);
-    if (memo != NULL) {
+    free2(stack, stack_cap*SIZEOF(*stack));
+    if (memo) {
         free2(memo, memo_size * SIZEOF(uint32));
     }
 
