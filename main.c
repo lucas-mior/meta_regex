@@ -44,16 +44,16 @@ main(void) {
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
-    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 16, 1000); */
-    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 32, 1000); */
-    RUN_FUZZY_TESTS(ascii_no_group_no_backref, 64, 1000);
-    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 128, 1000); */
-    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 256, 1000); */
-    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 512, 1000); */
-    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 1024, 1000); */
-    RUN_FUZZY_TESTS(ascii_no_group_no_backref, 2048, 1000);
-    RUN_FUZZY_TESTS(ascii_no_group_no_backref, 4096, 2000);
-    /* RUN_FUZZY_TESTS(ascii_no_group_no_backref, 8192, 20); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 16, 1000); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 32, 1000); */
+    RUN_FUZZY_TESTS(fuzzy_patterns, 64, 1000);
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 128, 1000); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 256, 1000); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 512, 1000); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 1024, 1000); */
+    RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 1000);
+    RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 2000);
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 8192, 20); */
     exit(EXIT_SUCCESS);
 }
 
@@ -195,31 +195,45 @@ run_fuzzy_tests(RegexTest *tests, int32 tests_len, int32 max_str_size,
     struct timespec t0_meta;
     struct timespec t1_meta;
 
-    fuzzy_len = ntests;
-    fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
+    fuzzy_len = ntests * tests_len;
+    fuzzy = malloc2(SIZEOF(*fuzzy) * fuzzy_len);
 
     if ((mismatches = fopen("mismatches_ascii.txt", "w")) == NULL) {
         error("Error opening file: %s.\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
-    for (int32 i = 0; i < fuzzy_len; i += 1) {
-        fuzzy[i].input_len = 1 + (rand() % max_str_size);
-        fuzzy[i].input = malloc2(fuzzy[i].input_len + 1);
-        random_ascii_string(fuzzy[i].input, fuzzy[i].input_len, 1);
-        fuzzy[i].regex_idx = rand() % tests_len;
+    for (int32 i = 0; i < ntests; i += 1) {
+        char *input;
+        int32 input_len;
+
+        input_len = 1 + (rand() % max_str_size);
+        input = malloc2(input_len + 1);
+        random_ascii_string(input, input_len, 1);
+
+        for (int32 j = 0; j < tests_len; j += 1) {
+            int32 idx;
+
+            idx = i * tests_len + j;
+            fuzzy[idx].input_len = input_len;
+            fuzzy[idx].input = input;
+            fuzzy[idx].regex_idx = j;
+        }
     }
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
     for (int32 i = 0; i < fuzzy_len; i += 1) {
         regex_t compiled;
         char *pattern_str;
+
         pattern_str = tests[fuzzy[i].regex_idx].meta_regex->string;
         if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
             fuzzy[i].result_posix
                 = regexec(&compiled, fuzzy[i].input, MAX_MATCHES,
                           fuzzy[i].pmatch_posix, 0);
             regfree(&compiled);
+        } else {
+            fuzzy[i].result_posix = REG_NOMATCH;
         }
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
@@ -227,6 +241,7 @@ run_fuzzy_tests(RegexTest *tests, int32 tests_len, int32 max_str_size,
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
     for (int32 i = 0; i < fuzzy_len; i += 1) {
         MetaRegex *meta_pattern;
+
         meta_pattern = tests[fuzzy[i].regex_idx].meta_regex;
         fuzzy[i].result_meta
             = meta_regex_match(meta_pattern, (uchar *)fuzzy[i].input,
@@ -306,10 +321,13 @@ run_fuzzy_tests(RegexTest *tests, int32 tests_len, int32 max_str_size,
         PRINT_TIMINGS(fuzzy_len, t0_meta, t1_meta, name_meta);
     }
 
-    for (int32 i = 0; i < fuzzy_len; i += 1) {
-        free2(fuzzy[i].input, fuzzy[i].input_len + 1);
+    for (int32 i = 0; i < ntests; i += 1) {
+        int32 idx;
+
+        idx = i * tests_len;
+        free2(fuzzy[idx].input, fuzzy[idx].input_len + 1);
     }
-    free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
+    free2(fuzzy, SIZEOF(*fuzzy) * fuzzy_len);
     fclose(mismatches);
     return;
 }
