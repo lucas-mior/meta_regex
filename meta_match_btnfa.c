@@ -3,14 +3,12 @@
 
 static int32 btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
                                       uchar *current_string, int64 nmatch,
-                                      regmatch_t *pmatch, uint32 *visited,
-                                      MetaOp *ops_start);
+                                      regmatch_t *pmatch);
 static int32 btnfa_quick_lookahead_fails(MetaOp *next_op, uchar *curr_str);
 
 static int32
 btnfa_eval_choice_point(MetaOp *ops, uchar *orig, uchar *curr, int64 nmatch,
-                        regmatch_t pmatch[], uint32 *visited,
-                        MetaOp *ops_start) {
+                        regmatch_t pmatch[]) {
     MetaOp *alt_start;
     regmatch_t temp_pmatch[32];
     regmatch_t best_pmatch[32];
@@ -34,17 +32,15 @@ btnfa_eval_choice_point(MetaOp *ops, uchar *orig, uchar *curr, int64 nmatch,
         skip = btnfa_quick_lookahead_fails(alt_start, curr);
         if (!skip) {
             pass_pmatch = NULL;
-            if (pmatch != NULL && nmatch > 1) {
+            if (pmatch != NULL) {
                 for (int64 i = 0; i < copy_size; i += 1) {
                     temp_pmatch[i] = pmatch[i];
                 }
                 pass_pmatch = temp_pmatch;
-            } else {
-                pass_pmatch = pmatch;
             }
 
             res = btnfa_match_at_recursive(alt_start, orig, curr, nmatch,
-                                           pass_pmatch, visited, ops_start);
+                                           pass_pmatch);
 
             if (res >= 0) {
                 if (pmatch == NULL) {
@@ -52,10 +48,8 @@ btnfa_eval_choice_point(MetaOp *ops, uchar *orig, uchar *curr, int64 nmatch,
                 }
                 if (res > longest_match) {
                     longest_match = res;
-                    if (nmatch > 1) {
-                        for (int64 i = 0; i < copy_size; i += 1) {
-                            best_pmatch[i] = pass_pmatch[i];
-                        }
+                    for (int64 i = 0; i < copy_size; i += 1) {
+                        best_pmatch[i] = pass_pmatch[i];
                     }
                 }
             }
@@ -84,7 +78,7 @@ btnfa_eval_choice_point(MetaOp *ops, uchar *orig, uchar *curr, int64 nmatch,
     }
 
     if (longest_match >= 0) {
-        if (pmatch != NULL && nmatch > 1) {
+        if (pmatch != NULL) {
             for (int64 i = 0; i < copy_size; i += 1) {
                 pmatch[i] = best_pmatch[i];
             }
@@ -128,8 +122,7 @@ btnfa_quick_lookahead_fails(MetaOp *next_op, uchar *curr_str) {
 static int32
 btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
                          uchar *current_string, int64 nmatch,
-                         regmatch_t pmatch[], uint32 *visited,
-                         MetaOp *ops_start) {
+                         regmatch_t pmatch[]) {
     MetaOp *end_op;
     MetaOp *scan;
     MetaOp token;
@@ -158,23 +151,11 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
     int32 skip_2;
     int32 skip_quant;
     int64 copy_size;
-    int32 pc;
-    int32 offset;
-    int64 memo_index;
 
     if (nmatch > 32) {
         copy_size = 32;
     } else {
         copy_size = nmatch;
-    }
-
-    if (visited != NULL) {
-        pc = (int32)(ops - ops_start);
-        offset = (int32)(current_string - original_string);
-        memo_index = (int64)offset * META_MAX_OPS + pc;
-        if ((visited[memo_index / 32] & (1u << (memo_index % 32))) != 0) {
-            return -1;
-        }
     }
 
     if (ops[0].type == META_OP_END) {
@@ -192,10 +173,9 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
         }
         if (curr_is_word && !prev_is_word) {
             return btnfa_match_at_recursive(ops + 1, original_string,
-                                            current_string, nmatch,
-                                            pmatch, visited, ops_start);
+                                            current_string, nmatch, pmatch);
         }
-        goto failure;
+        return -1;
     }
 
     if (ops[0].type == META_OP_WORD_END) {
@@ -209,10 +189,9 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
         }
         if (!curr_is_word && prev_is_word) {
             return btnfa_match_at_recursive(ops + 1, original_string,
-                                            current_string, nmatch,
-                                            pmatch, visited, ops_start);
+                                            current_string, nmatch, pmatch);
         }
-        goto failure;
+        return -1;
     }
 
     if (ops[0].type == META_OP_WORD_BOUNDARY) {
@@ -226,10 +205,9 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
         }
         if (curr_is_word != prev_is_word) {
             return btnfa_match_at_recursive(ops + 1, original_string,
-                                            current_string, nmatch,
-                                            pmatch, visited, ops_start);
+                                            current_string, nmatch, pmatch);
         }
-        goto failure;
+        return -1;
     }
 
     if (ops[0].type == META_OP_NON_WORD_BOUNDARY) {
@@ -243,10 +221,9 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
         }
         if (curr_is_word == prev_is_word) {
             return btnfa_match_at_recursive(ops + 1, original_string,
-                                            current_string, nmatch,
-                                            pmatch, visited, ops_start);
+                                            current_string, nmatch, pmatch);
         }
-        goto failure;
+        return -1;
     }
 
     if (ops[0].type == META_OP_BACKREF) {
@@ -266,11 +243,10 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
                 == 0) {
                 return btnfa_match_at_recursive(ops + 1, original_string,
                                                 current_string + backref_len,
-                                                nmatch, pmatch, visited,
-                                                ops_start);
+                                                nmatch, pmatch);
             }
         }
-        goto failure;
+        return -1;
     }
 
     if (ops[0].type == META_OP_ALTERNATION) {
@@ -287,41 +263,32 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
             }
             end_op += 1;
         }
-        res = btnfa_match_at_recursive(end_op, original_string, current_string,
-                                       nmatch, pmatch, visited, ops_start);
-        if (res >= 0) {
-            return res;
-        }
-        goto failure;
+        return btnfa_match_at_recursive(end_op, original_string, current_string,
+                                        nmatch, pmatch);
     }
 
     if (ops[0].type == META_OP_SPLIT) {
         longest_match = -1;
-        skip_1 = btnfa_quick_lookahead_fails(ops + ops[0].value,
-                                             current_string);
+        skip_1
+            = btnfa_quick_lookahead_fails(ops + ops[0].value, current_string);
         if (!skip_1) {
             pass_pmatch = NULL;
-            if (pmatch != NULL && nmatch > 1) {
+            if (pmatch != NULL) {
                 for (int64 i = 0; i < copy_size; i += 1) {
                     temp_pmatch[i] = pmatch[i];
                 }
                 pass_pmatch = temp_pmatch;
-            } else {
-                pass_pmatch = pmatch;
             }
             res = btnfa_match_at_recursive(ops + ops[0].value, original_string,
-                                           current_string, nmatch, pass_pmatch,
-                                           visited, ops_start);
+                                           current_string, nmatch, pass_pmatch);
             if (res >= 0) {
                 if (pmatch == NULL) {
                     return res;
                 }
                 if (res > longest_match) {
                     longest_match = res;
-                    if (nmatch > 1) {
-                        for (int64 i = 0; i < copy_size; i += 1) {
-                            best_pmatch[i] = pass_pmatch[i];
-                        }
+                    for (int64 i = 0; i < copy_size; i += 1) {
+                        best_pmatch[i] = pass_pmatch[i];
                     }
                 }
             }
@@ -330,51 +297,38 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
         skip_2 = btnfa_quick_lookahead_fails(ops + ops[0].min, current_string);
         if (!skip_2) {
             pass_pmatch = NULL;
-            if (pmatch != NULL && nmatch > 1) {
+            if (pmatch != NULL) {
                 for (int64 i = 0; i < copy_size; i += 1) {
                     temp_pmatch[i] = pmatch[i];
                 }
                 pass_pmatch = temp_pmatch;
-            } else {
-                pass_pmatch = pmatch;
             }
             res = btnfa_match_at_recursive(ops + ops[0].min, original_string,
-                                           current_string, nmatch, pass_pmatch,
-                                           visited, ops_start);
+                                           current_string, nmatch, pass_pmatch);
             if (res >= 0) {
                 if (pmatch == NULL) {
                     return res;
                 }
                 if (res > longest_match) {
                     longest_match = res;
-                    if (nmatch > 1) {
-                        for (int64 i = 0; i < copy_size; i += 1) {
-                            best_pmatch[i] = pass_pmatch[i];
-                        }
+                    for (int64 i = 0; i < copy_size; i += 1) {
+                        best_pmatch[i] = pass_pmatch[i];
                     }
                 }
             }
         }
 
-        if (longest_match >= 0) {
-            if (pmatch != NULL && nmatch > 1) {
-                for (int64 i = 0; i < copy_size; i += 1) {
-                    pmatch[i] = best_pmatch[i];
-                }
+        if (longest_match >= 0 && pmatch != NULL) {
+            for (int64 i = 0; i < copy_size; i += 1) {
+                pmatch[i] = best_pmatch[i];
             }
-            return longest_match;
         }
-        goto failure;
+        return longest_match;
     }
 
     if (ops[0].type == META_OP_JUMP) {
-        res = btnfa_match_at_recursive(ops + ops[0].value, original_string,
-                                       current_string, nmatch, pmatch,
-                                       visited, ops_start);
-        if (res >= 0) {
-            return res;
-        }
-        goto failure;
+        return btnfa_match_at_recursive(ops + ops[0].value, original_string,
+                                        current_string, nmatch, pmatch);
     }
 
     if (ops[0].type == META_OP_GROUP_START) {
@@ -405,12 +359,10 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
 
         if (has_alt) {
             res = btnfa_eval_choice_point(ops + 1, original_string,
-                                          current_string, nmatch, pmatch,
-                                          visited, ops_start);
+                                          current_string, nmatch, pmatch);
         } else {
             res = btnfa_match_at_recursive(ops + 1, original_string,
-                                           current_string, nmatch, pmatch,
-                                           visited, ops_start);
+                                           current_string, nmatch, pmatch);
         }
 
         if (res >= 0) {
@@ -419,7 +371,7 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
         if (pmatch != NULL && (int64)group_id < nmatch) {
             pmatch[group_id].rm_so = old_so;
         }
-        goto failure;
+        return -1;
     }
 
     if (ops[0].type == META_OP_GROUP_END) {
@@ -430,14 +382,14 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
             pmatch[group_id].rm_eo = (int32)(current_string - original_string);
         }
         res = btnfa_match_at_recursive(ops + 1, original_string, current_string,
-                                       nmatch, pmatch, visited, ops_start);
+                                       nmatch, pmatch);
         if (res >= 0) {
             return res;
         }
         if (pmatch != NULL && (int64)group_id < nmatch) {
             pmatch[group_id].rm_eo = old_eo;
         }
-        goto failure;
+        return -1;
     }
 
     is_star = (ops[1].type == META_OP_STAR);
@@ -500,7 +452,7 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
         }
 
         if (count < min_req) {
-            goto failure;
+            return -1;
         }
 
         max_s = s + count;
@@ -511,27 +463,22 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
             skip_quant = btnfa_quick_lookahead_fails(next_ops, max_s);
             if (!skip_quant) {
                 pass_pmatch = NULL;
-                if (pmatch != NULL && nmatch > 1) {
+                if (pmatch != NULL) {
                     for (int64 i = 0; i < copy_size; i += 1) {
                         temp_pmatch[i] = pmatch[i];
                     }
                     pass_pmatch = temp_pmatch;
-                } else {
-                    pass_pmatch = pmatch;
                 }
                 res = btnfa_match_at_recursive(next_ops, original_string, max_s,
-                                               nmatch, pass_pmatch, visited,
-                                               ops_start);
+                                               nmatch, pass_pmatch);
                 if (res >= 0) {
                     if (pmatch == NULL) {
                         return res;
                     }
                     if (res > longest_match) {
                         longest_match = res;
-                        if (nmatch > 1) {
-                            for (int64 i = 0; i < copy_size; i += 1) {
-                                best_pmatch[i] = pass_pmatch[i];
-                            }
+                        for (int64 i = 0; i < copy_size; i += 1) {
+                            best_pmatch[i] = pass_pmatch[i];
                         }
                     }
                 }
@@ -541,15 +488,12 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
             }
             max_s -= 1;
         }
-        if (longest_match >= 0) {
-            if (pmatch != NULL && nmatch > 1) {
-                for (int64 i = 0; i < copy_size; i += 1) {
-                    pmatch[i] = best_pmatch[i];
-                }
+        if (longest_match >= 0 && pmatch != NULL) {
+            for (int64 i = 0; i < copy_size; i += 1) {
+                pmatch[i] = best_pmatch[i];
             }
-            return longest_match;
         }
-        goto failure;
+        return longest_match;
     }
 
     {
@@ -573,21 +517,10 @@ btnfa_match_at_recursive(MetaOp *ops, uchar *original_string,
             }
         }
         if (is_match) {
-            res = btnfa_match_at_recursive(ops + 1, original_string,
-                                           current_string + consumed, nmatch,
-                                           pmatch, visited, ops_start);
-            if (res >= 0) {
-                return res;
-            }
+            return btnfa_match_at_recursive(ops + 1, original_string,
+                                            current_string + consumed, nmatch,
+                                            pmatch);
         }
-    }
-
-failure:
-    if (visited != NULL) {
-        pc = (int32)(ops - ops_start);
-        offset = (int32)(current_string - original_string);
-        memo_index = (int64)offset * META_MAX_OPS + pc;
-        visited[memo_index / 32] |= (1u << (memo_index % 32));
     }
     return -1;
 }
@@ -601,35 +534,13 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
     search_ptr = &string[offset];
     match_len = -1;
 
-    {
-        uint32 *visited = NULL;
-        int64 visited_size = 0;
-
-        if (!regex->has_backref) {
-            int32 string_len;
-
-            string_len = (int32)strlen((char *)string);
-            visited_size = ((int64)(string_len + 1) * META_MAX_OPS + 31) / 32;
-            visited = malloc2(visited_size * SIZEOF(uint32));
-            for (int64 i = 0; i < visited_size; i += 1) {
-                visited[i] = 0;
-            }
-        }
-
-        if (regex->has_alternation) {
-            match_len = btnfa_eval_choice_point(regex->ops, string, search_ptr,
-                                                nmatch, pmatch, visited,
-                                                regex->ops);
-        } else {
-            if (!btnfa_quick_lookahead_fails(regex->ops, search_ptr)) {
-                match_len = btnfa_match_at_recursive(regex->ops, string,
-                                                     search_ptr, nmatch, pmatch,
-                                                     visited, regex->ops);
-            }
-        }
-
-        if (visited != NULL) {
-            free2(visited, visited_size * SIZEOF(uint32));
+    if (regex->has_alternation) {
+        match_len = btnfa_eval_choice_point(regex->ops, string, search_ptr,
+                                            nmatch, pmatch);
+    } else {
+        if (!btnfa_quick_lookahead_fails(regex->ops, search_ptr)) {
+            match_len = btnfa_match_at_recursive(regex->ops, string, search_ptr,
+                                                 nmatch, pmatch);
         }
     }
 
