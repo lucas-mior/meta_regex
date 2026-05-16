@@ -8,6 +8,8 @@ See `meta_tests_array.h` to check which patterns are being tested.
 ### Not supported
 - collating elements like `[[=a=]]` and `[[.a.]]` will give an error
 - locale settings: they are completely ignored.
+- regexes with non ascii characters inside bracket expressions like `[[á]]`:
+  will trigger an error during pre processing of the regex.
 
 ## Getting started
 ```sh
