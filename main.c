@@ -26,6 +26,7 @@
 static void run_posix_vs_meta(RegexTest *tests, int32 count, char *description);
 static void run_fuzzy_tests(RegexTest *tests, int32 tests_len,
                             int32 max_str_size, int32 ntests);
+static void run_meta_only(RegexTest *tests, int32 count, char *description);
 
 #define RUN_POSIX_VS_META(ARRAY) \
     run_posix_vs_meta(ARRAY, LENGTH(ARRAY), #ARRAY)
@@ -39,10 +40,8 @@ main(void) {
 
 #if 1 || !BENCHMARK
     RUN_POSIX_VS_META(ascii_no_group_no_backref);
-    /* run_posix_vs_meta(utf8_against_ascii, LENGTH(utf8_against_ascii), */
-    /*                   "UTF8 vs ASCII"); */
-    /* run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "UTF8 vs
-     * UTF8"); */
+    RUN_POSIX_VS_META(utf8_against_ascii);
+    run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "meta only");
 #endif
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
