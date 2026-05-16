@@ -73,7 +73,7 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
             }
         }
 
-        if (has_unsupported) {
+        if (has_unsupported || (regex->re_nsub > 0 && nmatch > 1)) {
             algorithm = MATCH_ALGO_BTNFA;
         } else {
   #if ALGO_LAZY_DFA
