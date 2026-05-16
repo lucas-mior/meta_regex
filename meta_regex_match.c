@@ -625,20 +625,6 @@ try_match_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
 }
 
 static void
-state_set_to_string(NfaStateSet *set, char *buffer, int32 max_len) {
-    int32 offset;
-
-    offset = 0;
-    for (int32 i = 0; i < META_PC_WORDS; i += 1) {
-        int32 w;
-
-        w = snprintf2(buffer + offset, max_len - offset, "%08x", set->bits[i]);
-        offset += w;
-    }
-    return;
-}
-
-static void
 add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                     int32 *is_accepting) {
     int32 stack[META_MAX_OPS];
@@ -784,7 +770,7 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
     LazyDfa *ldfa;
     int32 current_state_id;
     int32 last_accept;
-    char key_buf[META_PC_WORDS * 8 + 1];
+    int32 key_len;
 
     ldfa = (LazyDfa *)regex->lazy_dfa;
     if (ldfa == NULL) {
@@ -794,11 +780,12 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
         regex->lazy_dfa = ldfa;
     }
 
+    key_len = META_PC_WORDS * 4;
+
     {
         NfaStateSet start_set;
         int32 is_accepting;
         int32 depth;
-        int32 len;
 
         is_accepting = 0;
         for (int32 i = 0; i < META_PC_WORDS; i += 1) {
@@ -817,9 +804,8 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
             }
         }
 
-        state_set_to_string(&start_set, key_buf, SIZEOF(key_buf));
-        len = strlen32(key_buf);
-        if (!hash_lookup_map(ldfa->state_map, key_buf, len, &current_state_id)) {
+        if (!hash_lookup_map(ldfa->state_map, (char *)start_set.bits, key_len,
+                             &current_state_id)) {
             current_state_id = ldfa->num_states;
             if (current_state_id < META_MAX_LAZY_DFA_STATES) {
                 ldfa->num_states += 1;
@@ -830,8 +816,8 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
                 for (int32 k = 0; k < META_PC_WORDS; k += 1) {
                     ldfa->states[current_state_id].set.bits[k] = start_set.bits[k];
                 }
-                ASSERT(hash_insert_map(ldfa->state_map, key_buf, len,
-                                       current_state_id));
+                ASSERT(hash_insert_map(ldfa->state_map, (char *)start_set.bits,
+                                       key_len, current_state_id));
             }
         }
     }
@@ -863,7 +849,6 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
             NfaStateSet next_set;
             int32 next_is_accepting;
             int32 set_is_empty;
-            int32 len;
 
             set_is_empty = 1;
             if (current_state_id > 0 && current_state_id < META_MAX_LAZY_DFA_STATES) {
@@ -885,9 +870,8 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
                 break;
             }
 
-            state_set_to_string(&next_set, key_buf, SIZEOF(key_buf));
-            len = strlen32(key_buf);
-            if (!hash_lookup_map(ldfa->state_map, key_buf, len, &next_state_idx)) {
+            if (!hash_lookup_map(ldfa->state_map, (char *)next_set.bits,
+                                 key_len, &next_state_idx)) {
                 next_state_idx = ldfa->num_states;
                 if (next_state_idx < META_MAX_LAZY_DFA_STATES) {
                     ldfa->num_states += 1;
@@ -898,8 +882,9 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
                     for (int32 k = 0; k < META_PC_WORDS; k += 1) {
                         ldfa->states[next_state_idx].set.bits[k] = next_set.bits[k];
                     }
-                    ASSERT(hash_insert_map(ldfa->state_map, key_buf, len,
-                                    next_state_idx));
+                    ASSERT(hash_insert_map(ldfa->state_map,
+                                           (char *)next_set.bits, key_len,
+                                           next_state_idx));
                 }
             }
 
