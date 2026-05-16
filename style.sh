@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC2035 
 
-clang-format -i *.c *.h \
+clang-format -i *.c \
     --style=file:/home/lucas/.config/clangd/clang-format.yaml
 
 for f in *.c *.h; do 
