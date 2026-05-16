@@ -2,13 +2,13 @@
 #define META_MATCH_STATIC_DFA
 
 static int32
-try_match_static_dfa(MetaRegex *regex, uchar *string, int32 string_len,
+try_match_static_dfa(MetaRegex *regex, uchar *input, int32 input_len,
                      int32 offset, int64 nmatch, regmatch_t pmatch[]) {
     DfaState *states;
     DfaState *current_state_ptr;
     int32 last_accept;
 
-    (void)string_len;
+    (void)input_len;
 
     states = regex->dfa->states;
     current_state_ptr = &states[regex->dfa->start_state];
@@ -19,7 +19,7 @@ try_match_static_dfa(MetaRegex *regex, uchar *string, int32 string_len,
         int32 next_state_idx;
         int32 *next_table;
 
-        b = (uchar)string[i];
+        b = (uchar)input[i];
 
         if (current_state_ptr->is_accepting) {
             last_accept = i;
@@ -40,7 +40,7 @@ try_match_static_dfa(MetaRegex *regex, uchar *string, int32 string_len,
     }
 
     if (last_accept >= 0) {
-        if (!regex->has_end_anchor || string[last_accept] == '\0') {
+        if (!regex->has_end_anchor || input[last_accept] == '\0') {
             if (pmatch != NULL && nmatch > 0) {
                 pmatch[0].rm_so = offset;
                 pmatch[0].rm_eo = last_accept;
