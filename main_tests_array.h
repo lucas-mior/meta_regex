@@ -235,12 +235,14 @@ static RegexTest ascii_catastrophic_with_group_no_backref[] = {
 };
 
 static RegexTest ascii_catastrophic_with_group_and_backref[] = {
-    {"aaaaaaaaaaaaaaaaaX",           R("(a)\\1**b")},
-    /* {"aaaaaaaaaaaaaaaaaX",           R("((a)\\1*)*b")}, */
-    {"aaaaaaaaaaaaaaaaaX",           R("((a)\\1+)+b")},
-    {"aaaaaaaaaaaaaaaaaX",           R("((a|\\1)*)*b")},
-    {"aaaaaaaaaaaaaaaaaX",           R("((a*)\\1*)*b")},
-    {"aaaaaaaaaaaaaaaaaX",           R("((a|a\\1)*)*b")},
+    {"aaaaaaaaaX",           R("(a)\\1*\\1*b")},
+    {"aaaaaaaaaX",           R("(a*)*\\1b")},
+    {"aaaaaaaaaX",           R("(a+)+\\1b")},
+    {"aaaaaaaaaX",           R("(a|a)*\\1b")},
+    {"aaaaaaaaaX",           R("(a*)*\\1*b")},
+    {"aaaaaaaaaX",           R("(a|aa)*\\1b")},
+    {"aaaaaaaaaX",           R("(a)\\1*a*\\1*b")},
+    {"aaxxxxxxxxxxxxxxxxxX", R("(.*)*\\1b")},
 };
 
 static RegexTest utf8_against_ascii[] = {
