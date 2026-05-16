@@ -201,6 +201,7 @@ static RegexTest utf8_against_ascii[] = {
     {"a",   R("a")},
     {"a",   R("a.c")},
     {"aéc", R("a.c")},
+    {"aéc", R("a(e|é)c")},
 };
 
 // dont test groups here
