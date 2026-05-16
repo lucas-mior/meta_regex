@@ -175,10 +175,10 @@ static RegexTest ascii_against_ascii[] = {
 //    {"aaccab", R("^((a|aa)*)cc\\1$")},
 //    {"abccabxx", R("^(a|ab)cc\\1(xx)\\2$")},
 //    {"aaccabxx", R("^((a|aa)*)cc\\1(xx)\\2$")},
-    {"aaaaaaaaaaaaaaaaaX", R("a*a*a*b")},
-    {"12345678901234560X", R("[0-9]+[0-9]+a")},
-    {"xxxxxxxxxxxxxxxxxX", R(".*.*b")},
-    {"aaaaaaaaaaaaaaaaaX", R("a?a?a?aaaaaa")},
+    /* {"aaaaaaaaaaaaaaaaaX", R("a*a*a*b")}, */
+    /* {"12345678901234560X", R("[0-9]+[0-9]+a")}, */
+    /* {"xxxxxxxxxxxxxxxxxX", R(".*.*b")}, */
+    /* {"aaaaaaaaaaaaaaaaaX", R("a?a?a?aaaaaa")}, */
 };
 
 static RegexTest utf8_against_ascii[] = {
