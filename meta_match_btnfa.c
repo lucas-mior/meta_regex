@@ -49,7 +49,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
     int32 stack_ptr;
     int64 copy_size;
     regmatch_t best_pmatch[32];
-    (void)string_len;
+    uint32 *memo;
+    int32 memo_size;
 
     search_ptr = &string[offset];
     match_len = -1;
@@ -63,6 +64,16 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
     stack_cap = 8192;
     stack = malloc2(SIZEOF(BtnfaState) * stack_cap);
     stack_ptr = 0;
+
+    memo = NULL;
+    memo_size = 0;
+    if (!regex->has_backref) {
+        memo_size = (string_len + 1) * META_PC_WORDS;
+        memo = malloc2(memo_size * SIZEOF(uint32));
+        for (int32 i = 0; i < memo_size; i += 1) {
+            memo[i] = 0;
+        }
+    }
 
     if (regex->has_alternation) {
         MetaOp *alts[128];
@@ -152,6 +163,24 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
                 break;
             }
             visited_empty[pc_idx / 32] |= (1u << (pc_idx % 32));
+
+            if (memo != NULL) {
+                int32 in_idx;
+
+                in_idx = (int32)(input - string);
+                if (in_idx >= 0 && in_idx <= string_len) {
+                    int32 word_idx;
+                    int32 bit_idx;
+
+                    word_idx = in_idx * META_PC_WORDS + (pc_idx / 32);
+                    bit_idx = pc_idx % 32;
+
+                    if ((memo[word_idx] & (1u << bit_idx)) != 0) {
+                        break;
+                    }
+                    memo[word_idx] |= (1u << bit_idx);
+                }
+            }
 
             if (pc->type == META_OP_END) {
                 int32 curr_match_len;
@@ -594,6 +623,9 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len,
     }
 
     free2(stack, SIZEOF(BtnfaState) * stack_cap);
+    if (memo != NULL) {
+        free2(memo, memo_size * SIZEOF(uint32));
+    }
 
     if (match_len >= 0) {
         if (!regex->has_end_anchor || string[match_len] == '\0') {
