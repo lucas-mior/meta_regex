@@ -223,15 +223,15 @@ static RegexTest ascii_catastrophic_no_group_no_backref[] = {
 };
 
 static RegexTest ascii_catastrophic_with_group_no_backref[] = {
-    {"aaX",           R("(a*)")},
-    {"aX",            R("(a*)*b")},
-    /* {"aaaaaaaaaaaaaaaaaX",           R("(a+)+b")}, */
-    /* {"aaaaaaaaaaaaaaaaaX",           R("(a|a)*b")}, */
-    /* {"aaaaaaaaaaaaaaaaaX",           R("(a*a*)*b")}, */
-    /* {"aaaaaaaaaaaaaaaaaX",           R("(a|aa)*b")}, */
-    /* {"aaaaaaaaaaaaaaaaaX",           R("((a)*)*b")}, */
-    /* {"aaaaaaaaaaaaaaaaaX",           R("((a|a)*)*b")}, */
-    /* {"aaaaaaaaaaaaaaaaaX",           R("((a*)*)*b")}, */
+    {"aaX",                R("(a*)")},
+    {"aX",                 R("(a*)*b")},
+    {"aaaaaaaaaaaaaaaaaX", R("(a+)+b")},
+    {"aaaaaaaaaaaaaaaaaX", R("(a|a)*b")},
+    {"aaaaaaaaaaaaaaaaaX", R("(a|aa)*b")},
+    {"aaaaaaaaaaaaaaaaaX", R("((a)*)*b")},
+    {"aaaaaaaaaaaaaaaaaX", R("((a|a)*)*b")},
+    {"aaaaaaaaaaaaaaaaaX", R("((a*)*)*b")},
+    {"aaaaaaaaaaaaX",      R("(a*a*)*b")},
 };
 
 static RegexTest ascii_catastrophic_with_group_and_backref[] = {
