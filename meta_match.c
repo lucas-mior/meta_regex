@@ -9,6 +9,7 @@
 #include "meta_util.c"
 #include "meta_match_lazy_dfa.c"
 #include "meta_match_btnfa.c"
+#include "meta_match_static_dfa.c"
 
 #if !defined(ALGO_LAZY_DFA)
 #define ALGO_LAZY_DFA 0
@@ -169,55 +170,6 @@ meta_regex_match(MetaRegex *regex, uchar *string, int64 nmatch,
     }
 
     return REG_NOMATCH;
-}
-
-static int32
-try_match_dfa(MetaRegex *regex, uchar *string, int32 offset, int64 nmatch,
-              regmatch_t pmatch[]) {
-    DfaState *states;
-    DfaState *current_state_ptr;
-    int32 last_accept;
-
-    states = regex->dfa->states;
-    current_state_ptr = &states[regex->dfa->start_state];
-    last_accept = -1;
-
-    for (int32 i = offset;; i += 1) {
-        uchar b;
-        int32 next_state_idx;
-        int32 *next_table;
-
-        b = (uchar)string[i];
-        
-        if (current_state_ptr->is_accepting) {
-            last_accept = i;
-        }
-
-        if (b == '\0') {
-            break;
-        }
-
-        next_table = current_state_ptr->next;
-        next_state_idx = next_table[b];
-        
-        if (next_state_idx == 0) {
-            break;
-        }
-
-        current_state_ptr = &states[next_state_idx];
-    }
-
-    if (last_accept >= 0) {
-        if (!regex->has_end_anchor || string[last_accept] == '\0') {
-            if (pmatch != NULL && nmatch > 0) {
-                pmatch[0].rm_so = offset;
-                pmatch[0].rm_eo = last_accept;
-            }
-            return 0;
-        }
-    }
-
-    return -1;
 }
 
 #endif /* META_REGEX_MATCH_C */
