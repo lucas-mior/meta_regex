@@ -22,10 +22,9 @@ typedef struct LazyTdfaKey {
 #include "hash.c"
 
 typedef struct LazyTdfaCommand {
-    int16 type;
     int16 src_idx;
     int16 dest_idx;
-    int16 tag_idx;
+    uint64 set_mask;
 } LazyTdfaCommand;
 
 typedef struct LazyTdfaTransition {
@@ -53,8 +52,8 @@ typedef struct LazyTdfa {
     LazyTdfaTransition transitions_pool[META_MAX_LAZY_TDFA_TRANSITIONS];
     LazyTdfaCommand commands_pool[META_MAX_LAZY_TDFA_COMMANDS];
 
-    int32 current_tags[META_MAX_OPS][64];
-    int32 next_tags[META_MAX_OPS][64];
+    int32 tag_buffers[2][META_MAX_OPS][64];
+    int32 current_buf_idx;
     int32 init_tags[META_MAX_OPS][64];
 } LazyTdfa;
 
@@ -88,7 +87,7 @@ run_tdfa_epsilon_closure(MetaOp *ops, int32 start_pc, int32 src_idx,
 
         if (visited[curr_pc]) {
             continue;
-        }
+            }
         visited[curr_pc] = 1;
 
         cop = &ops[curr_pc];
@@ -178,11 +177,13 @@ run_tdfa_epsilon_closure(MetaOp *ops, int32 start_pc, int32 src_idx,
 
             for (int32 k = num_alts - 1; k >= 0; k -= 1) {
                 stack[stack_ptr].pc = alts[k];
-                stack[stack_ptr].mask = curr_mask | (1ULL << (cop->value*2));
+                stack[stack_ptr].mask
+                    = curr_mask | (1ULL << (cop->value*2));
                 stack_ptr += 1;
             }
             stack[stack_ptr].pc = curr_pc + 1;
-            stack[stack_ptr].mask = curr_mask | (1ULL << (cop->value*2));
+            stack[stack_ptr].mask
+                = curr_mask | (1ULL << (cop->value*2));
             stack_ptr += 1;
         } else if (cop->type == META_OP_ALTERNATION) {
             int32 depth;
@@ -206,7 +207,8 @@ run_tdfa_epsilon_closure(MetaOp *ops, int32 start_pc, int32 src_idx,
             stack_ptr += 1;
         } else if (cop->type == META_OP_GROUP_END) {
             stack[stack_ptr].pc = curr_pc + 1;
-            stack[stack_ptr].mask = curr_mask | (1ULL << (cop->value*2 + 1));
+            stack[stack_ptr].mask
+                = curr_mask | (1ULL << (cop->value*2 + 1));
             stack_ptr += 1;
         } else {
             stack[stack_ptr].pc = curr_pc + 1;
@@ -238,6 +240,7 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
         regex->lazy_dfa = ldfa;
     }
 
+    ldfa->current_buf_idx = 0;
     for (int32 k = 0; k < 64; k += 1) {
         best_tags[k] = -1;
     }
@@ -331,7 +334,7 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
 
     for (int32 i = 0; i < ldfa->states[current_state_id].num_pcs; i += 1) {
         for (int32 t = 0; t < regex->num_tags; t += 1) {
-            ldfa->current_tags[i][t] = ldfa->init_tags[i][t];
+            ldfa->tag_buffers[0][i][t] = ldfa->init_tags[i][t];
         }
         if (regex->ops[ldfa->states[current_state_id].pcs[i]].type
             == META_OP_END) {
@@ -489,33 +492,19 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                         cmd_count = 0;
 
                         for (int32 k = 0; k < num_dest_pcs; k += 1) {
-                            int32 src;
-                            uint64 mask;
+                            if (ldfa->num_commands
+                                < META_MAX_LAZY_TDFA_COMMANDS) {
+                                int32 c_pos;
+                                LazyTdfaCommand *c_item;
 
-                            src = dest_src_idx[k];
-                            mask = dest_tag_mask[k];
+                                c_pos = ldfa->num_commands;
+                                c_item = &ldfa->commands_pool[c_pos];
+                                c_item->src_idx = dest_src_idx[k];
+                                c_item->dest_idx = k;
+                                c_item->set_mask = dest_tag_mask[k];
 
-                            for (int32 t = 0; t < regex->num_tags; t += 1) {
-                                if (ldfa->num_commands < 131072) {
-                                    int32 c_pos;
-                                    LazyTdfaCommand *c_item;
-
-                                    c_pos = ldfa->num_commands;
-                                    c_item = &ldfa->commands_pool[c_pos];
-                                    if ((mask & (1ULL << t)) != 0) {
-                                        c_item->type = 2;
-                                        c_item->src_idx = src;
-                                        c_item->dest_idx = k;
-                                        c_item->tag_idx = t;
-                                    } else {
-                                        c_item->type = 1;
-                                        c_item->src_idx = src;
-                                        c_item->dest_idx = k;
-                                        c_item->tag_idx = t;
-                                    }
-                                    ldfa->num_commands += 1;
-                                    cmd_count += 1;
-                                }
+                                ldfa->num_commands += 1;
+                                cmd_count += 1;
                             }
                         }
 
@@ -536,39 +525,48 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
         if (next_state != -1) {
             LazyTdfaTransition *trans;
             int32 num_cmds;
+            int32 src_buf;
+            int32 dest_buf;
             int32 next_pcs_count;
 
-            trans = &ldfa->transitions_pool[
-                state->transition_idx[lookup_idx]];
+            trans = &ldfa->transitions_pool[state->transition_idx[lookup_idx]];
             num_cmds = trans->num_commands;
+            src_buf = ldfa->current_buf_idx;
+            dest_buf = 1 - src_buf;
 
             for (int32 c_idx = 0; c_idx < num_cmds; c_idx += 1) {
                 LazyTdfaCommand *cmd;
+                int32 src;
+                int32 dest;
+                uint64 mask;
+
                 cmd = &ldfa->commands_pool[trans->command_start + c_idx];
-                if (cmd->type == 1) {
-                    ldfa->next_tags[cmd->dest_idx][cmd->tag_idx] =
-                        ldfa->current_tags[cmd->src_idx][cmd->tag_idx];
-                } else {
-                    ldfa->next_tags[cmd->dest_idx][cmd->tag_idx] = i + 1;
+                src = cmd->src_idx;
+                dest = cmd->dest_idx;
+                mask = cmd->set_mask;
+
+                for (int32 t = 0; t < regex->num_tags; t += 1) {
+                    if ((mask & (1ULL << t)) != 0) {
+                        ldfa->tag_buffers[dest_buf][dest][t] = i + 1;
+                    } else {
+                        ldfa->tag_buffers[dest_buf][dest][t]
+                            = ldfa->tag_buffers[src_buf][src][t];
+                    }
                 }
             }
 
+            ldfa->current_buf_idx = dest_buf;
             next_pcs_count = ldfa->states[next_state].num_pcs;
+
             for (int32 k = 0; k < next_pcs_count; k += 1) {
                 if (regex->ops[ldfa->states[next_state].pcs[k]].type
                     == META_OP_END) {
                     if (last_accept < i + 1) {
                         last_accept = i + 1;
                         for (int32 t = 0; t < regex->num_tags; t += 1) {
-                            best_tags[t] = ldfa->next_tags[k][t];
+                            best_tags[t] = ldfa->tag_buffers[dest_buf][k][t];
                         }
                     }
-                }
-            }
-
-            for (int32 k = 0; k < next_pcs_count; k += 1) {
-                for (int32 t = 0; t < regex->num_tags; t += 1) {
-                    ldfa->current_tags[k][t] = ldfa->next_tags[k][t];
                 }
             }
         }
