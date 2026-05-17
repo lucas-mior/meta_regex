@@ -244,6 +244,9 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
         int32 dest_src_idx[META_MAX_OPS];
         uint64 dest_tag_mask[META_MAX_OPS];
         int32 num_dest_pcs;
+        int32 top_pcs[META_MAX_OPS];
+        int32 num_top_pcs;
+        int32 current_depth;
 
         memset64(&start_key, 0, SIZEOF(start_key));
         start_key.prev_is_word = prev_is_word;
@@ -255,10 +258,30 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
             visited[i] = 0;
         }
 
+        num_top_pcs = 0;
+        top_pcs[num_top_pcs] = 0;
+        num_top_pcs += 1;
+        current_depth = 0;
+
+        for (int32 i = 0; regex->ops[i].type != META_OP_END; i += 1) {
+            if (regex->ops[i].type == META_OP_GROUP_START) {
+                current_depth += 1;
+            } else if (regex->ops[i].type == META_OP_GROUP_END) {
+                current_depth -= 1;
+            } else if (regex->ops[i].type == META_OP_ALTERNATION) {
+                if (current_depth == 0) {
+                    top_pcs[num_top_pcs] = i + 1;
+                    num_top_pcs += 1;
+                }
+            }
+        }
+
         num_dest_pcs = 0;
-        run_tdfa_epsilon_closure(regex->ops, 0, 0, prev_is_word, prev_is_word,
-                                 dest_pcs, dest_src_idx, dest_tag_mask,
-                                 &num_dest_pcs, visited);
+        for (int32 p = 0; p < num_top_pcs; p += 1) {
+            run_tdfa_epsilon_closure(regex->ops, top_pcs[p], 0, prev_is_word,
+                                     prev_is_word, dest_pcs, dest_src_idx,
+                                     dest_tag_mask, &num_dest_pcs, visited);
+        }
 
         start_key.num_pcs = num_dest_pcs;
         for (int32 i = 0; i < num_dest_pcs; i += 1) {
@@ -298,11 +321,12 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
         }
         if (regex->ops[ldfa->states[current_state_id].pcs[i]].type
             == META_OP_END) {
-            last_accept = offset;
-            for (int32 t = 0; t < 64; t += 1) {
-                best_tags[t] = ldfa->init_tags[i][t];
+            if (last_accept < offset) {
+                last_accept = offset;
+                for (int32 t = 0; t < 64; t += 1) {
+                    best_tags[t] = ldfa->init_tags[i][t];
+                }
             }
-            break;
         }
     }
 
@@ -471,9 +495,11 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
 
                 if (regex->ops[ldfa->states[next_state].pcs[k]].type
                     == META_OP_END) {
-                    last_accept = i + 1;
-                    for (int32 t = 0; t < 64; t += 1) {
-                        best_tags[t] = ldfa->next_tags[k][t];
+                    if (last_accept < i + 1) {
+                        last_accept = i + 1;
+                        for (int32 t = 0; t < 64; t += 1) {
+                            best_tags[t] = ldfa->next_tags[k][t];
+                        }
                     }
                 }
             }
