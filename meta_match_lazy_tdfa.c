@@ -21,9 +21,16 @@ typedef struct LazyTdfaKey {
 #define HASH_DUPLICATE_KEYS 0
 #include "hash.c"
 
+typedef struct LazyTdfaCommand {
+    int16 type;
+    int16 src_idx;
+    int16 dest_idx;
+    int16 tag_idx;
+} LazyTdfaCommand;
+
 typedef struct LazyTdfaTransition {
-    int16 src_idx[META_MAX_OPS];
-    uint64 saved_tags_mask[META_MAX_OPS];
+    int32 command_start;
+    int32 num_commands;
 } LazyTdfaTransition;
 
 typedef struct LazyTdfaState {
@@ -35,13 +42,16 @@ typedef struct LazyTdfaState {
 
 #define META_MAX_LAZY_TDFA_STATES 512
 #define META_MAX_LAZY_TDFA_TRANSITIONS 4096
+#define META_MAX_LAZY_TDFA_COMMANDS 131072
 
 typedef struct LazyTdfa {
     struct Hash_tdfa_map *state_tdfa_map;
     int32 num_states;
     int32 num_transitions;
+    int32 num_commands;
     LazyTdfaState states[META_MAX_LAZY_TDFA_STATES];
     LazyTdfaTransition transitions_pool[META_MAX_LAZY_TDFA_TRANSITIONS];
+    LazyTdfaCommand commands_pool[META_MAX_LAZY_TDFA_COMMANDS];
 
     int32 current_tags[META_MAX_OPS][64];
     int32 next_tags[META_MAX_OPS][64];
@@ -224,6 +234,7 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
             = hash_create_tdfa_map(META_MAX_LAZY_TDFA_STATES, "tdfa");
         ldfa->num_states = 1;
         ldfa->num_transitions = 1;
+        ldfa->num_commands = 0;
         regex->lazy_dfa = ldfa;
     }
 
@@ -254,7 +265,7 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
         start_key.prev_is_word = prev_is_word;
 
         for (int32 i = 0; i < META_MAX_OPS; i += 1) {
-            for (int32 k = 0; k < 64; k += 1) {
+            for (int32 k = 0; k < regex->num_tags; k += 1) {
                 ldfa->init_tags[i][k] = -1;
             }
             visited[i] = 0;
@@ -289,7 +300,7 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
         start_key.num_pcs = num_dest_pcs;
         for (int32 i = 0; i < num_dest_pcs; i += 1) {
             start_key.pcs[i] = dest_pcs[i];
-            for (int32 t = 0; t < 64; t += 1) {
+            for (int32 t = 0; t < regex->num_tags; t += 1) {
                 if ((dest_tag_mask[i] & (1ULL << t)) != 0) {
                     ldfa->init_tags[i][t] = offset;
                 }
@@ -319,14 +330,14 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
     }
 
     for (int32 i = 0; i < ldfa->states[current_state_id].num_pcs; i += 1) {
-        for (int32 t = 0; t < 64; t += 1) {
+        for (int32 t = 0; t < regex->num_tags; t += 1) {
             ldfa->current_tags[i][t] = ldfa->init_tags[i][t];
         }
         if (regex->ops[ldfa->states[current_state_id].pcs[i]].type
             == META_OP_END) {
             if (last_accept < offset) {
                 last_accept = offset;
-                for (int32 t = 0; t < 64; t += 1) {
+                for (int32 t = 0; t < regex->num_tags; t += 1) {
                     best_tags[t] = ldfa->init_tags[i][t];
                 }
             }
@@ -471,13 +482,47 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                     int32 t_idx;
                     t_idx = ldfa->num_transitions;
                     if (t_idx < META_MAX_LAZY_TDFA_TRANSITIONS) {
-                        ldfa->num_transitions += 1;
+                        int32 cmd_start;
+                        int32 cmd_count;
+
+                        cmd_start = ldfa->num_commands;
+                        cmd_count = 0;
+
                         for (int32 k = 0; k < num_dest_pcs; k += 1) {
-                            ldfa->transitions_pool[t_idx].src_idx[k]
-                                = dest_src_idx[k];
-                            ldfa->transitions_pool[t_idx].saved_tags_mask[k]
-                                = dest_tag_mask[k];
+                            int32 src;
+                            uint64 mask;
+
+                            src = dest_src_idx[k];
+                            mask = dest_tag_mask[k];
+
+                            for (int32 t = 0; t < regex->num_tags; t += 1) {
+                                if (ldfa->num_commands < 131072) {
+                                    int32 c_pos;
+                                    LazyTdfaCommand *c_item;
+
+                                    c_pos = ldfa->num_commands;
+                                    c_item = &ldfa->commands_pool[c_pos];
+                                    if ((mask & (1ULL << t)) != 0) {
+                                        c_item->type = 2;
+                                        c_item->src_idx = src;
+                                        c_item->dest_idx = k;
+                                        c_item->tag_idx = t;
+                                    } else {
+                                        c_item->type = 1;
+                                        c_item->src_idx = src;
+                                        c_item->dest_idx = k;
+                                        c_item->tag_idx = t;
+                                    }
+                                    ldfa->num_commands += 1;
+                                    cmd_count += 1;
+                                }
+                            }
                         }
+
+                        ldfa->transitions_pool[t_idx].command_start = cmd_start;
+                        ldfa->transitions_pool[t_idx].num_commands = cmd_count;
+                        ldfa->num_transitions += 1;
+
                         state->next[lookup_idx] = next_state;
                         state->transition_idx[lookup_idx] = t_idx;
                     } else {
@@ -490,35 +535,39 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
 
         if (next_state != -1) {
             LazyTdfaTransition *trans;
-            trans = &ldfa->transitions_pool[state->transition_idx[lookup_idx]];
+            int32 num_cmds;
+            int32 next_pcs_count;
 
-            for (int32 k = 0; k < ldfa->states[next_state].num_pcs; k += 1) {
-                int32 src;
-                uint64 mask;
+            trans = &ldfa->transitions_pool[
+                state->transition_idx[lookup_idx]];
+            num_cmds = trans->num_commands;
 
-                src = trans->src_idx[k];
-                mask = trans->saved_tags_mask[k];
-
-                for (int32 t = 0; t < 64; t += 1) {
-                    ldfa->next_tags[k][t] = ldfa->current_tags[src][t];
-                    if ((mask & (1ULL << t)) != 0) {
-                        ldfa->next_tags[k][t] = i + 1;
-                    }
+            for (int32 c_idx = 0; c_idx < num_cmds; c_idx += 1) {
+                LazyTdfaCommand *cmd;
+                cmd = &ldfa->commands_pool[trans->command_start + c_idx];
+                if (cmd->type == 1) {
+                    ldfa->next_tags[cmd->dest_idx][cmd->tag_idx] =
+                        ldfa->current_tags[cmd->src_idx][cmd->tag_idx];
+                } else {
+                    ldfa->next_tags[cmd->dest_idx][cmd->tag_idx] = i + 1;
                 }
+            }
 
+            next_pcs_count = ldfa->states[next_state].num_pcs;
+            for (int32 k = 0; k < next_pcs_count; k += 1) {
                 if (regex->ops[ldfa->states[next_state].pcs[k]].type
                     == META_OP_END) {
                     if (last_accept < i + 1) {
                         last_accept = i + 1;
-                        for (int32 t = 0; t < 64; t += 1) {
+                        for (int32 t = 0; t < regex->num_tags; t += 1) {
                             best_tags[t] = ldfa->next_tags[k][t];
                         }
                     }
                 }
             }
 
-            for (int32 k = 0; k < ldfa->states[next_state].num_pcs; k += 1) {
-                for (int32 t = 0; t < 64; t += 1) {
+            for (int32 k = 0; k < next_pcs_count; k += 1) {
+                for (int32 t = 0; t < regex->num_tags; t += 1) {
                     ldfa->current_tags[k][t] = ldfa->next_tags[k][t];
                 }
             }
