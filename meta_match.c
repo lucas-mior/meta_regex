@@ -8,6 +8,7 @@
 #include "util.c"
 #include "meta_util.c"
 #include "meta_match_lazy_dfa.c"
+#include "meta_match_tdfa.c"
 #include "meta_match_btnfa.c"
 #include "meta_match_static_dfa.c"
 
