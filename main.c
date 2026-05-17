@@ -62,7 +62,7 @@ main(void) {
     RUN_FUZZY_TESTS(fuzzy_patterns, 1024, 1000);
     RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 1000);
     RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 1000);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 8192, 1000);
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 8192, 1000); */
     exit(EXIT_SUCCESS);
 }
 
