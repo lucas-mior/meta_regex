@@ -87,7 +87,7 @@ run_tdfa_epsilon_closure(MetaOp *ops, int32 start_pc, int32 src_idx,
 
         if (visited[curr_pc]) {
             continue;
-            }
+        }
         visited[curr_pc] = 1;
 
         cop = &ops[curr_pc];
@@ -227,6 +227,7 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
     int32 last_accept;
     int32 prev_is_word;
     int32 best_tags[64];
+    int32 tags_bytes;
     (void)input_len;
 
     ldfa = (LazyTdfa *)regex->lazy_dfa;
@@ -245,6 +246,7 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
         best_tags[k] = -1;
     }
     last_accept = -1;
+    tags_bytes = regex->num_tags * SIZEOF(int32);
 
     if (offset > 0) {
         prev_is_word = is_word_char2((uchar)input[offset - 1]);
@@ -333,16 +335,12 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
     }
 
     for (int32 i = 0; i < ldfa->states[current_state_id].num_pcs; i += 1) {
-        for (int32 t = 0; t < regex->num_tags; t += 1) {
-            ldfa->tag_buffers[0][i][t] = ldfa->init_tags[i][t];
-        }
+        memcpy(ldfa->tag_buffers[0][i], ldfa->init_tags[i], tags_bytes);
         if (regex->ops[ldfa->states[current_state_id].pcs[i]].type
             == META_OP_END) {
             if (last_accept < offset) {
                 last_accept = offset;
-                for (int32 t = 0; t < regex->num_tags; t += 1) {
-                    best_tags[t] = ldfa->init_tags[i][t];
-                }
+                memcpy(best_tags, ldfa->init_tags[i], tags_bytes);
             }
         }
     }
@@ -529,7 +527,8 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
             int32 dest_buf;
             int32 next_pcs_count;
 
-            trans = &ldfa->transitions_pool[state->transition_idx[lookup_idx]];
+            trans = &ldfa->transitions_pool[
+                state->transition_idx[lookup_idx]];
             num_cmds = trans->num_commands;
             src_buf = ldfa->current_buf_idx;
             dest_buf = 1 - src_buf;
@@ -539,19 +538,22 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                 int32 src;
                 int32 dest;
                 uint64 mask;
+                uint64 m;
 
                 cmd = &ldfa->commands_pool[trans->command_start + c_idx];
                 src = cmd->src_idx;
                 dest = cmd->dest_idx;
                 mask = cmd->set_mask;
 
-                for (int32 t = 0; t < regex->num_tags; t += 1) {
-                    if ((mask & (1ULL << t)) != 0) {
-                        ldfa->tag_buffers[dest_buf][dest][t] = i + 1;
-                    } else {
-                        ldfa->tag_buffers[dest_buf][dest][t]
-                            = ldfa->tag_buffers[src_buf][src][t];
-                    }
+                memcpy(ldfa->tag_buffers[dest_buf][dest],
+                       ldfa->tag_buffers[src_buf][src],
+                       tags_bytes);
+
+                m = mask;
+                while (m != 0) {
+                    int32 t = __builtin_ctzll(m);
+                    ldfa->tag_buffers[dest_buf][dest][t] = i + 1;
+                    m &= m - 1;
                 }
             }
 
@@ -563,9 +565,9 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                     == META_OP_END) {
                     if (last_accept < i + 1) {
                         last_accept = i + 1;
-                        for (int32 t = 0; t < regex->num_tags; t += 1) {
-                            best_tags[t] = ldfa->tag_buffers[dest_buf][k][t];
-                        }
+                        memcpy(best_tags,
+                               ldfa->tag_buffers[dest_buf][k],
+                               tags_bytes);
                     }
                 }
             }
