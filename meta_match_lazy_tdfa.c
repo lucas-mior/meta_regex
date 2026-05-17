@@ -5,6 +5,7 @@
 #include "meta.h"
 #include <regex.h>
 #include <string.h>
+#include "meta_util.c"
 
 typedef struct LazyTdfaKey {
     int16 num_pcs;
