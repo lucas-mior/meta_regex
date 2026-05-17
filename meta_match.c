@@ -103,8 +103,6 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
     }
 #endif
 
-    error("algorithm: %s\n", MATCH_ALGO_str(algorithm));
-
     if (algorithm == MATCH_ALGO_BTNFA) {
         if (regex->has_start_anchor) {
             result = try_match_btnfa(regex, input, input_len, 0, nmatch,
