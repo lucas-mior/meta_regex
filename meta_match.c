@@ -133,27 +133,31 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
             }
         }
     } else if (algorithm == MATCH_ALGO_TDFA) {
-        int32 ovector[64];
-        int32 ovecsize;
-
-        ovecsize = 64;
-        for (int32 i = 0; i < ovecsize; i += 1) {
-            ovector[i] = -1;
+        if (regex->has_start_anchor) {
+            result = try_match_tdfa(regex, input, input_len, 0, nmatch, pmatch);
+            if (result == 0) {
+                return 0;
+            }
+            return REG_NOMATCH;
         }
 
-        result = meta_match_tdfa(regex, (char *)input, input_len, ovector,
-                                 ovecsize);
+        for (int32 j = 0;; j += 1) {
+            uchar b;
+            int32 bit_match;
 
-        if (result == 1) {
-            if (pmatch != NULL) {
-                for (int64 k = 0; k < nmatch; k += 1) {
-                    if ((k * 2 + 1) < regex->num_tags && (k * 2 + 1) < ovecsize) {
-                        pmatch[k].rm_so = ovector[k * 2];
-                        pmatch[k].rm_eo = ovector[k * 2 + 1];
-                    }
+            b = (uchar)input[j];
+            bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
+
+            if (bit_match || regex->can_be_null) {
+                result = try_match_tdfa(regex, input, input_len, j, nmatch, pmatch);
+                if (result == 0) {
+                    return 0;
                 }
             }
-            return 0;
+
+            if (b == '\0') {
+                break;
+            }
         }
     } else if (algorithm == MATCH_ALGO_LAZY_DFA) {
         if (regex->has_start_anchor) {

@@ -923,14 +923,60 @@ main(int32 argc, char **argv) {
             int32 save0;
             int32 save1;
 
-            tdfa_nfa_count = temp_ops_count + 1;
-            tdfa_entry = 0;
+            ParsedOp expanded_ops[PREPROC_MAX_TEMP_OPS * 2] = {0};
+            int32 exp_count = 0;
 
             for (int32 i = 0; i < temp_ops_count; i += 1) {
+                if (i + 1 < temp_ops_count) {
+                    enum MetaOpType qt = temp_ops[i + 1].type;
+                    if (qt == META_OP_STAR || qt == META_OP_PLUS || qt == META_OP_OPTIONAL) {
+                        if (temp_ops[i].type == META_OP_LITERAL || temp_ops[i].type == META_OP_CLASS || temp_ops[i].type == META_OP_ANY) {
+                            if (qt == META_OP_STAR) {
+                                expanded_ops[exp_count].type = META_OP_SPLIT;
+                                expanded_ops[exp_count].value = 1;
+                                expanded_ops[exp_count].min = 3;
+                                exp_count += 1;
+                                expanded_ops[exp_count] = temp_ops[i];
+                                exp_count += 1;
+                                expanded_ops[exp_count].type = META_OP_JUMP;
+                                expanded_ops[exp_count].value = -2;
+                                exp_count += 1;
+                                i += 1;
+                                continue;
+                            } else if (qt == META_OP_PLUS) {
+                                expanded_ops[exp_count] = temp_ops[i];
+                                exp_count += 1;
+                                expanded_ops[exp_count].type = META_OP_SPLIT;
+                                expanded_ops[exp_count].value = -1;
+                                expanded_ops[exp_count].min = 1;
+                                exp_count += 1;
+                                i += 1;
+                                continue;
+                            } else if (qt == META_OP_OPTIONAL) {
+                                expanded_ops[exp_count].type = META_OP_SPLIT;
+                                expanded_ops[exp_count].value = 1;
+                                expanded_ops[exp_count].min = 2;
+                                exp_count += 1;
+                                expanded_ops[exp_count] = temp_ops[i];
+                                exp_count += 1;
+                                i += 1;
+                                continue;
+                            }
+                        }
+                    }
+                }
+                expanded_ops[exp_count] = temp_ops[i];
+                exp_count += 1;
+            }
+
+            tdfa_nfa_count = exp_count + 1;
+            tdfa_entry = 0;
+
+            for (int32 i = 0; i < exp_count; i += 1) {
                 ParsedOp *op;
                 MetaNfaState *s;
 
-                op = &temp_ops[i];
+                op = &expanded_ops[i];
                 s = &tdfa_nfa[i];
 
                 for (int32 k = 0; k < META_CHAR_BITMASK_WORDS; k += 1) {
@@ -975,28 +1021,28 @@ main(int32 argc, char **argv) {
                 }
             }
 
-            tdfa_nfa[temp_ops_count].type = META_NFA_MATCH;
-            tdfa_nfa[temp_ops_count].next1 = -1;
-            tdfa_nfa[temp_ops_count].next2 = -1;
+            tdfa_nfa[exp_count].type = META_NFA_MATCH;
+            tdfa_nfa[exp_count].next1 = -1;
+            tdfa_nfa[exp_count].next2 = -1;
 
-            for (int32 i = 0; i < temp_ops_count; i += 1) {
+            for (int32 i = 0; i < exp_count; i += 1) {
                 int32 is_start;
                 int32 group_end;
 
                 is_start = 0;
-                group_end = temp_ops_count;
+                group_end = exp_count;
 
                 if (i == 0) {
                     is_start = 1;
-                } else if (temp_ops[i - 1].type == META_OP_GROUP_START) {
+                } else if (expanded_ops[i - 1].type == META_OP_GROUP_START) {
                     int32 depth;
 
                     depth = 0;
                     is_start = 1;
-                    for (int32 k = i; k < temp_ops_count; k += 1) {
-                        if (temp_ops[k].type == META_OP_GROUP_START) {
+                    for (int32 k = i; k < exp_count; k += 1) {
+                        if (expanded_ops[k].type == META_OP_GROUP_START) {
                             depth += 1;
-                        } else if (temp_ops[k].type == META_OP_GROUP_END) {
+                        } else if (expanded_ops[k].type == META_OP_GROUP_END) {
                             if (depth == 0) {
                                 group_end = k;
                                 break;
@@ -1015,11 +1061,11 @@ main(int32 argc, char **argv) {
                     depth = 0;
 
                     for (int32 k = i; k < group_end; k += 1) {
-                        if (temp_ops[k].type == META_OP_GROUP_START) {
+                        if (expanded_ops[k].type == META_OP_GROUP_START) {
                             depth += 1;
-                        } else if (temp_ops[k].type == META_OP_GROUP_END) {
+                        } else if (expanded_ops[k].type == META_OP_GROUP_END) {
                             depth -= 1;
-                        } else if (temp_ops[k].type == META_OP_ALTERNATION
+                        } else if (expanded_ops[k].type == META_OP_ALTERNATION
                                    && depth == 0) {
                             alts[num_alts] = k;
                             num_alts += 1;
@@ -1075,9 +1121,9 @@ main(int32 argc, char **argv) {
             tdfa_nfa[save0].next1 = tdfa_entry;
             tdfa_nfa[save0].next2 = -1;
 
-            tdfa_nfa[temp_ops_count].type = META_NFA_SAVE;
-            tdfa_nfa[temp_ops_count].value = 1;
-            tdfa_nfa[temp_ops_count].next1 = save1;
+            tdfa_nfa[exp_count].type = META_NFA_SAVE;
+            tdfa_nfa[exp_count].value = 1;
+            tdfa_nfa[exp_count].next1 = save1;
 
             tdfa_nfa[save1].type = META_NFA_MATCH;
             tdfa_nfa[save1].next1 = -1;

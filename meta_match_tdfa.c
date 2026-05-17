@@ -7,13 +7,13 @@ typedef struct TdfaThread {
 } TdfaThread;
 
 static int32
-meta_match_tdfa(MetaRegex *regex, char *input, int32 input_len, int32 *ovector,
-                int32 ovecsize) {
+try_match_tdfa(MetaRegex *regex, uchar *input, int32 input_len, int32 start_idx,
+               int64 nmatch, regmatch_t pmatch[]) {
     if (regex == NULL) {
-        return 0;
+        return REG_NOMATCH;
     }
     if (input == NULL) {
-        return 0;
+        return REG_NOMATCH;
     }
 
     if (regex->tdfa_nfa != NULL) {
@@ -44,25 +44,17 @@ meta_match_tdfa(MetaRegex *regex, char *input, int32 input_len, int32 *ovector,
             thread_gen[i] = 0;
         }
 
-        for (int32 idx = 0; idx <= input_len; idx += 1) {
+        next_threads[0].pc = regex->tdfa_nfa_start;
+        for (int32 k = 0; k < regex->num_tags && k < 64; k += 1) {
+            next_threads[0].tags[k] = -1;
+        }
+        next_count = 1;
+
+        for (int32 idx = start_idx; idx <= input_len; idx += 1) {
             int32 eval_count = 0;
             int32 stack_ptr = 0;
 
             gen += 1;
-
-            if (!regex->has_start_anchor) {
-                stack[stack_ptr].pc = regex->tdfa_nfa_start;
-                for (int32 k = 0; k < regex->num_tags && k < 64; k += 1) {
-                    stack[stack_ptr].tags[k] = -1;
-                }
-                stack_ptr += 1;
-            } else if (idx == 0) {
-                stack[stack_ptr].pc = regex->tdfa_nfa_start;
-                for (int32 k = 0; k < regex->num_tags && k < 64; k += 1) {
-                    stack[stack_ptr].tags[k] = -1;
-                }
-                stack_ptr += 1;
-            }
 
             for (int32 i = next_count - 1; i >= 0; i -= 1) {
                 stack[stack_ptr].pc = next_threads[i].pc;
@@ -243,20 +235,21 @@ meta_match_tdfa(MetaRegex *regex, char *input, int32 input_len, int32 *ovector,
         free2(thread_gen, max_states * sizeof(int32));
 
         if (matched) {
-            if (ovector != NULL) {
-                for (int32 i = 0; i < regex->num_tags && i < ovecsize; i += 1) {
-                    ovector[i] = best_tags[i];
+            if (pmatch != NULL) {
+                for (int64 k = 0; k < nmatch; k += 1) {
+                    if ((k * 2 + 1) < regex->num_tags) {
+                        pmatch[k].rm_so = best_tags[k * 2];
+                        pmatch[k].rm_eo = best_tags[k * 2 + 1];
+                    }
                 }
             }
-            return 1;
+            return 0;
         }
         
-        return 0;
+        return REG_NOMATCH;
     }
     
-    // Add fallback routine block here if you still want standard 
-    // engine or classic DFA operation when tdfa_nfa is null.
-    return 0;
+    return REG_NOMATCH;
 }
 
 #endif /* META_MATCH_TDFA */
