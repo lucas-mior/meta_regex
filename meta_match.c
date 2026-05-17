@@ -137,7 +137,6 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
     } else if (algorithm == MATCH_ALGO_TDFA) {
         int32 ovector[64];
         int32 ovecsize;
-        HERE;
 
         ovecsize = 64;
         for (int32 i = 0; i < ovecsize; i += 1) {
