@@ -917,6 +917,192 @@ main(int32 argc, char **argv) {
         printf("}");
 
         {
+            MetaNfaState tdfa_nfa[2048] = {0};
+            int32 tdfa_nfa_count;
+            int32 tdfa_entry;
+            int32 save0;
+            int32 save1;
+
+            tdfa_nfa_count = temp_ops_count + 1;
+            tdfa_entry = 0;
+
+            for (int32 i = 0; i < temp_ops_count; i += 1) {
+                ParsedOp *op;
+                MetaNfaState *s;
+
+                op = &temp_ops[i];
+                s = &tdfa_nfa[i];
+
+                for (int32 k = 0; k < META_CHAR_BITMASK_WORDS; k += 1) {
+                    s->mask[k] = op->mask[k];
+                }
+                s->value = op->value;
+                s->next1 = i + 1;
+                s->next2 = -1;
+
+                if (op->type == META_OP_LITERAL) {
+                    s->type = META_NFA_LITERAL;
+                } else if (op->type == META_OP_CLASS) {
+                    s->type = META_NFA_CLASS;
+                } else if (op->type == META_OP_ANY) {
+                    s->type = META_NFA_ANY;
+                } else if (op->type == META_OP_GROUP_START) {
+                    s->type = META_NFA_SAVE;
+                    s->value = op->value * 2;
+                } else if (op->type == META_OP_GROUP_END) {
+                    s->type = META_NFA_SAVE;
+                    s->value = op->value * 2 + 1;
+                } else if (op->type == META_OP_SPLIT) {
+                    s->type = META_NFA_SPLIT;
+                    s->next1 = i + op->value;
+                    s->next2 = i + op->min;
+                } else if (op->type == META_OP_JUMP) {
+                    s->type = META_NFA_EMPTY;
+                    s->next1 = i + op->value;
+                } else if (op->type == META_OP_ALTERNATION) {
+                    s->type = META_NFA_EMPTY;
+                    s->next1 = -1;
+                } else if (op->type == META_OP_WORD_BOUNDARY) {
+                    s->type = META_NFA_WORD_BOUNDARY;
+                } else if (op->type == META_OP_NON_WORD_BOUNDARY) {
+                    s->type = META_NFA_NON_WORD_BOUNDARY;
+                } else if (op->type == META_OP_WORD_START) {
+                    s->type = META_NFA_WORD_START;
+                } else if (op->type == META_OP_WORD_END) {
+                    s->type = META_NFA_WORD_END;
+                } else {
+                    s->type = META_NFA_EMPTY;
+                }
+            }
+
+            tdfa_nfa[temp_ops_count].type = META_NFA_MATCH;
+            tdfa_nfa[temp_ops_count].next1 = -1;
+            tdfa_nfa[temp_ops_count].next2 = -1;
+
+            for (int32 i = 0; i < temp_ops_count; i += 1) {
+                int32 is_start;
+                int32 group_end;
+
+                is_start = 0;
+                group_end = temp_ops_count;
+
+                if (i == 0) {
+                    is_start = 1;
+                } else if (temp_ops[i - 1].type == META_OP_GROUP_START) {
+                    int32 depth;
+
+                    depth = 0;
+                    is_start = 1;
+                    for (int32 k = i; k < temp_ops_count; k += 1) {
+                        if (temp_ops[k].type == META_OP_GROUP_START) {
+                            depth += 1;
+                        } else if (temp_ops[k].type == META_OP_GROUP_END) {
+                            if (depth == 0) {
+                                group_end = k;
+                                break;
+                            }
+                            depth -= 1;
+                        }
+                    }
+                }
+
+                if (is_start) {
+                    int32 alts[256];
+                    int32 num_alts;
+                    int32 depth;
+
+                    num_alts = 0;
+                    depth = 0;
+
+                    for (int32 k = i; k < group_end; k += 1) {
+                        if (temp_ops[k].type == META_OP_GROUP_START) {
+                            depth += 1;
+                        } else if (temp_ops[k].type == META_OP_GROUP_END) {
+                            depth -= 1;
+                        } else if (temp_ops[k].type == META_OP_ALTERNATION
+                                   && depth == 0) {
+                            alts[num_alts] = k;
+                            num_alts += 1;
+                        }
+                    }
+
+                    if (num_alts > 0) {
+                        int32 branches[256];
+                        int32 current_split;
+                        int32 tree_root;
+
+                        branches[0] = i;
+                        for (int32 a = 0; a < num_alts; a += 1) {
+                            branches[a + 1] = alts[a] + 1;
+                            tdfa_nfa[alts[a]].next1 = group_end;
+                        }
+
+                        current_split = tdfa_nfa_count;
+                        tdfa_nfa_count += 1;
+                        tree_root = current_split;
+
+                        for (int32 a = 0; a < num_alts; a += 1) {
+                            tdfa_nfa[current_split].type = META_NFA_SPLIT;
+                            tdfa_nfa[current_split].next1 = branches[a];
+                            if (a == num_alts - 1) {
+                                tdfa_nfa[current_split].next2 = branches[a + 1];
+                            } else {
+                                int32 next_split;
+
+                                next_split = tdfa_nfa_count;
+                                tdfa_nfa_count += 1;
+                                tdfa_nfa[current_split].next2 = next_split;
+                                current_split = next_split;
+                            }
+                        }
+
+                        if (i == 0) {
+                            tdfa_entry = tree_root;
+                        } else {
+                            tdfa_nfa[i - 1].next1 = tree_root;
+                        }
+                    }
+                }
+            }
+
+            save0 = tdfa_nfa_count;
+            tdfa_nfa_count += 1;
+            save1 = tdfa_nfa_count;
+            tdfa_nfa_count += 1;
+
+            tdfa_nfa[save0].type = META_NFA_SAVE;
+            tdfa_nfa[save0].value = 0;
+            tdfa_nfa[save0].next1 = tdfa_entry;
+            tdfa_nfa[save0].next2 = -1;
+
+            tdfa_nfa[temp_ops_count].type = META_NFA_SAVE;
+            tdfa_nfa[temp_ops_count].value = 1;
+            tdfa_nfa[temp_ops_count].next1 = save1;
+
+            tdfa_nfa[save1].type = META_NFA_MATCH;
+            tdfa_nfa[save1].next1 = -1;
+            tdfa_nfa[save1].next2 = -1;
+
+            tdfa_entry = save0;
+
+            printf(", .num_tags = %d", (group_counter + 1) * 2);
+            printf(", .tdfa_nfa_start = %d", tdfa_entry);
+            printf(", .tdfa_nfa_count = %d", tdfa_nfa_count);
+            printf(", .tdfa_nfa = (MetaNfaState[]){\n");
+            for (int32 i = 0; i < tdfa_nfa_count; i += 1) {
+                printf("{%d, %d, {%u, %u, %u, %u, %u, %u, %u, %u}, %d, %d}%s\n",
+                       tdfa_nfa[i].type, tdfa_nfa[i].value,
+                       tdfa_nfa[i].mask[0], tdfa_nfa[i].mask[1],
+                       tdfa_nfa[i].mask[2], tdfa_nfa[i].mask[3],
+                       tdfa_nfa[i].mask[4], tdfa_nfa[i].mask[5],
+                       tdfa_nfa[i].mask[6], tdfa_nfa[i].mask[7],
+                       tdfa_nfa[i].next1, tdfa_nfa[i].next2,
+                       (i == tdfa_nfa_count - 1) ? "" : ",");
+            }
+            printf("}");
+        }
+
+        {
             int32 unsupported = 0;
             if (group_counter > 0) {
                 unsupported = 1;
