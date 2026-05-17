@@ -12,10 +12,10 @@
 #include "meta_match_static_dfa.c"
 
 #if !defined(ALGO_LAZY_DFA)
-#define ALGO_LAZY_DFA 0
+#define ALGO_LAZY_DFA 1
 #endif
 #if !defined(ALGO_STATIC_DFA)
-#define ALGO_STATIC_DFA 1
+#define ALGO_STATIC_DFA 0
 #endif
 
 #if !ALGO_STATIC_DFA && !ALGO_LAZY_DFA
@@ -63,6 +63,8 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
         int32 has_unsupported;
 
         has_unsupported = 0;
+
+#if !ALGO_LAZY_DFA
         for (int32 i = 0; regex->ops[i].type != META_OP_END; i += 1) {
             if (regex->ops[i].type == META_OP_WORD_BOUNDARY
                 || regex->ops[i].type == META_OP_WORD_START
@@ -72,6 +74,7 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
                 break;
             }
         }
+#endif
 
         if (has_unsupported || (regex->re_nsub > 0 && nmatch > 1)
             || input_len < USE_DFA_THRESHOLD) {
