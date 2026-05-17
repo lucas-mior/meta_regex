@@ -4,7 +4,6 @@
 #include "primitives.h"
 #include "meta.h"
 #include <regex.h>
-#include "meta_util.c"
 
 typedef struct LazyDfaKey {
     uint32 bits[META_PC_WORDS];
@@ -31,6 +30,23 @@ typedef struct LazyDfa {
     int32 num_states;
     LazyDfaState states[META_MAX_LAZY_DFA_STATES];
 } LazyDfa;
+
+static int32
+is_word_char2(int32 c) {
+    if (c >= 'a' && c <= 'z') {
+        return 1;
+    }
+    if (c >= 'A' && c <= 'Z') {
+        return 1;
+    }
+    if (c >= '0' && c <= '9') {
+        return 1;
+    }
+    if (c == '_') {
+        return 1;
+    }
+    return 0;
+}
 
 static void add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                                 int32 *is_accepting, int32 prev_is_word,

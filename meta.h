@@ -9,7 +9,6 @@
 #define META_FASTMAP_SIZE 32
 #define META_CHAR_BITMASK_WORDS 8
 #define META_MAX_LAZY_DFA_STATES 2048
-#define META_MAX_NFA_STATES 1024
 #define META_PC_WORDS (META_MAX_OPS / 32)
 
 enum MetaOpType {
@@ -33,20 +32,6 @@ enum MetaOpType {
     META_OP_BACKREF
 };
 
-enum MetaNfaStateType {
-    META_NFA_MATCH,
-    META_NFA_LITERAL,
-    META_NFA_CLASS,
-    META_NFA_ANY,
-    META_NFA_SPLIT,
-    META_NFA_EMPTY,
-    META_NFA_SAVE,
-    META_NFA_WORD_BOUNDARY,
-    META_NFA_NON_WORD_BOUNDARY,
-    META_NFA_WORD_START,
-    META_NFA_WORD_END
-};
-
 typedef struct MetaOp {
     enum MetaOpType type;
     int32 value;
@@ -54,14 +39,6 @@ typedef struct MetaOp {
     int32 max;
     uint32 mask[META_CHAR_BITMASK_WORDS];
 } MetaOp;
-
-typedef struct MetaNfaState {
-    int32 type;
-    int32 value;
-    uint32 mask[META_CHAR_BITMASK_WORDS];
-    int32 next1;
-    int32 next2;
-} MetaNfaState;
 
 typedef struct DfaState {
     int32 is_accepting;
@@ -88,10 +65,6 @@ typedef struct MetaRegex {
     int32 has_backref;
     int32 can_be_null;
     uint8 fastmap[META_FASTMAP_SIZE];
-    int32 num_tags;
-    int32 tdfa_nfa_start;
-    int32 tdfa_nfa_count;
-    MetaNfaState *tdfa_nfa;
     Dfa *dfa;
     void *lazy_dfa;
 } MetaRegex;
