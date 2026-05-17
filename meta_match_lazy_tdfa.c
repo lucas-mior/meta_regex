@@ -1,5 +1,5 @@
-#if !defined(META_MATCH_TDFA)
-#define META_MATCH_TDFA
+#if !defined(META_MATCH_LAZY_TDFA)
+#define META_MATCH_LAZY_TDFA
 
 #include "primitives.h"
 #include "meta.h"
@@ -547,4 +547,4 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
     return REG_NOMATCH;
 }
 
-#endif /* META_MATCH_TDFA */
+#endif /* META_MATCH_LAZY_TDFA */
