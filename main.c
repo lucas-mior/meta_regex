@@ -36,9 +36,11 @@ static void run_meta_only(RegexTest *tests, int32 count, char *description);
 #define FUZZY_PRECOMPILE_POSIX 1
 
 int32
-main(void) {
+main(int argc, char **argv) {
     setlocale(LC_ALL, "C");
     srand((uint32)42);
+    program = argv[0];
+    (void)argc;
 
     RUN_POSIX_VS_META(ascii_no_group_no_backref);
     RUN_POSIX_VS_META(ascii_with_group_no_backref);
