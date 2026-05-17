@@ -12,19 +12,22 @@
 #include "meta_match_btnfa.c"
 #include "meta_match_static_dfa.c"
 
+#if !defined(ALGO_TDFA)
+#define ALGO_TDFA 1
+#endif
 #if !defined(ALGO_LAZY_DFA)
-#define ALGO_LAZY_DFA 1
+#define ALGO_LAZY_DFA 0
 #endif
 #if !defined(ALGO_STATIC_DFA)
 #define ALGO_STATIC_DFA 0
 #endif
 
-#if !ALGO_STATIC_DFA && !ALGO_LAZY_DFA
+#if !ALGO_STATIC_DFA && !ALGO_LAZY_DFA && !ALGO_TDFA
 #define ALGO_BTNFA_ALWAYS 1
 #endif
 
-#if ALGO_LAZY_DFA && ALGO_STATIC_DFA
-#error "Cannot define both ALGO_LAZY_DFA and ALGO_STATIC_DFA"
+#if (ALGO_LAZY_DFA && ALGO_STATIC_DFA) || (ALGO_LAZY_DFA && ALGO_TDFA) || (ALGO_STATIC_DFA && ALGO_TDFA)
+#error "Cannot define more than one of ALGO_TDFA, ALGO_LAZY_DFA, and ALGO_STATIC_DFA"
 #endif
 
 #define ENUM_PREFIX_ MATCH_ALGO_
@@ -32,6 +35,7 @@
 #define ENUM_BITFLAGS 0
 #define ENUM_FIELDS \
     X(BTNFA) \
+    X(TDFA) \
     X(LAZY_DFA) \
     X(STATIC_DFA)
 #include "xenums.c"
@@ -61,6 +65,13 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
     if (regex->has_backref) {
         algorithm = MATCH_ALGO_BTNFA;
     } else {
+#if ALGO_TDFA
+        if (regex->tdfa_nfa == NULL) {
+            algorithm = MATCH_ALGO_BTNFA;
+        } else {
+            algorithm = MATCH_ALGO_TDFA;
+        }
+#else
         int32 has_unsupported;
 
         has_unsupported = 0;
@@ -88,8 +99,11 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
             }
 #endif
         }
+#endif
     }
 #endif
+
+    error("algorithm: %s\n", MATCH_ALGO_str(algorithm));
 
     if (algorithm == MATCH_ALGO_BTNFA) {
         if (regex->has_start_anchor) {
@@ -119,6 +133,30 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
             if (b == '\0') {
                 break;
             }
+        }
+    } else if (algorithm == MATCH_ALGO_TDFA) {
+        int32 ovector[64];
+        int32 ovecsize;
+        HERE;
+
+        ovecsize = 64;
+        for (int32 i = 0; i < ovecsize; i += 1) {
+            ovector[i] = -1;
+        }
+
+        result = meta_match_tdfa(regex, (char *)input, input_len, ovector,
+                                 ovecsize);
+
+        if (result == 1) {
+            if (pmatch != NULL) {
+                for (int64 k = 0; k < nmatch; k += 1) {
+                    if ((k * 2 + 1) < regex->num_tags && (k * 2 + 1) < ovecsize) {
+                        pmatch[k].rm_so = ovector[k * 2];
+                        pmatch[k].rm_eo = ovector[k * 2 + 1];
+                    }
+                }
+            }
+            return 0;
         }
     } else if (algorithm == MATCH_ALGO_LAZY_DFA) {
         if (regex->has_start_anchor) {
