@@ -923,14 +923,17 @@ main(int32 argc, char **argv) {
             int32 save0;
             int32 save1;
 
-            ParsedOp expanded_ops[PREPROC_MAX_TEMP_OPS * 2] = {0};
+            ParsedOp expanded_ops[PREPROC_MAX_TEMP_OPS*2] = {0};
             int32 exp_count = 0;
 
             for (int32 i = 0; i < temp_ops_count; i += 1) {
                 if (i + 1 < temp_ops_count) {
                     enum MetaOpType qt = temp_ops[i + 1].type;
-                    if (qt == META_OP_STAR || qt == META_OP_PLUS || qt == META_OP_OPTIONAL) {
-                        if (temp_ops[i].type == META_OP_LITERAL || temp_ops[i].type == META_OP_CLASS || temp_ops[i].type == META_OP_ANY) {
+                    if (qt == META_OP_STAR || qt == META_OP_PLUS
+                        || qt == META_OP_OPTIONAL) {
+                        if (temp_ops[i].type == META_OP_LITERAL
+                            || temp_ops[i].type == META_OP_CLASS
+                            || temp_ops[i].type == META_OP_ANY) {
                             if (qt == META_OP_STAR) {
                                 expanded_ops[exp_count].type = META_OP_SPLIT;
                                 expanded_ops[exp_count].value = 1;
@@ -994,10 +997,10 @@ main(int32 argc, char **argv) {
                     s->type = META_NFA_ANY;
                 } else if (op->type == META_OP_GROUP_START) {
                     s->type = META_NFA_SAVE;
-                    s->value = op->value * 2;
+                    s->value = op->value*2;
                 } else if (op->type == META_OP_GROUP_END) {
                     s->type = META_NFA_SAVE;
-                    s->value = op->value * 2 + 1;
+                    s->value = op->value*2 + 1;
                 } else if (op->type == META_OP_SPLIT) {
                     s->type = META_NFA_SPLIT;
                     s->next1 = i + op->value;
@@ -1131,19 +1134,18 @@ main(int32 argc, char **argv) {
 
             tdfa_entry = save0;
 
-            printf(", .num_tags = %d", (group_counter + 1) * 2);
+            printf(", .num_tags = %d", (group_counter + 1)*2);
             printf(", .tdfa_nfa_start = %d", tdfa_entry);
             printf(", .tdfa_nfa_count = %d", tdfa_nfa_count);
             printf(", .tdfa_nfa = (MetaNfaState[]){\n");
             for (int32 i = 0; i < tdfa_nfa_count; i += 1) {
                 printf("{%d, %d, {%u, %u, %u, %u, %u, %u, %u, %u}, %d, %d}%s\n",
-                       tdfa_nfa[i].type, tdfa_nfa[i].value,
-                       tdfa_nfa[i].mask[0], tdfa_nfa[i].mask[1],
-                       tdfa_nfa[i].mask[2], tdfa_nfa[i].mask[3],
-                       tdfa_nfa[i].mask[4], tdfa_nfa[i].mask[5],
-                       tdfa_nfa[i].mask[6], tdfa_nfa[i].mask[7],
-                       tdfa_nfa[i].next1, tdfa_nfa[i].next2,
-                       (i == tdfa_nfa_count - 1) ? "" : ",");
+                       tdfa_nfa[i].type, tdfa_nfa[i].value, tdfa_nfa[i].mask[0],
+                       tdfa_nfa[i].mask[1], tdfa_nfa[i].mask[2],
+                       tdfa_nfa[i].mask[3], tdfa_nfa[i].mask[4],
+                       tdfa_nfa[i].mask[5], tdfa_nfa[i].mask[6],
+                       tdfa_nfa[i].mask[7], tdfa_nfa[i].next1,
+                       tdfa_nfa[i].next2, (i == tdfa_nfa_count - 1) ? "" : ",");
             }
             printf("}");
         }
