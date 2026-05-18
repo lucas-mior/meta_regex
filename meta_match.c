@@ -11,29 +11,18 @@
 #include "meta_match_btnfa.c"
 #include "meta_match_static_dfa.c"
 
-#if !defined(ALGO_LAZY_DFA)
-#define ALGO_LAZY_DFA 0
-#endif
-#if !defined(ALGO_STATIC_DFA)
-#define ALGO_STATIC_DFA 1
-#endif
-
-#if !ALGO_STATIC_DFA && !ALGO_LAZY_DFA
-#define ALGO_BTNFA_ALWAYS 1
-#endif
-
-#if ALGO_LAZY_DFA && ALGO_STATIC_DFA
-#error "Cannot define both ALGO_LAZY_DFA and ALGO_STATIC_DFA"
-#endif
-
 #define ENUM_PREFIX_ MATCH_ALGO_
 #define ENUM_NAME MatchAlgorithm
-#define ENUM_BITFLAGS 0
+#define ENUM_BITFLAGS 1
 #define ENUM_FIELDS \
     X(BTNFA) \
     X(LAZY_DFA) \
     X(STATIC_DFA)
 #include "xenums.c"
+
+#if !defined(SUPPORTED_MATCHERS)
+#define SUPPORTED_MATCHERS (MATCH_ALGO_BTNFA | MATCH_ALGO_LAZY_DFA | MATCH_ALGO_STATIC_DFA)
+#endif
 
 #define USE_DFA_THRESHOLD 1
 
@@ -54,45 +43,33 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
         }
     }
 
-#if defined(ALGO_BTNFA_ALWAYS)
-    algorithm = MATCH_ALGO_BTNFA;
-#else
-    if (regex->has_backref) {
-        algorithm = MATCH_ALGO_BTNFA;
-    } else {
-        int32 has_unsupported = 0;
-
-#if !ALGO_LAZY_DFA
-        for (int32 i = 0; regex->ops[i].type != META_OP_END; i += 1) {
-            if (regex->ops[i].type == META_OP_WORD_BOUNDARY
-                || regex->ops[i].type == META_OP_WORD_START
-                || regex->ops[i].type == META_OP_WORD_END
-                || regex->ops[i].type == META_OP_NON_WORD_BOUNDARY) {
-                has_unsupported = 1;
-                break;
+    if (!regex->has_backref && input_len >= USE_DFA_THRESHOLD
+        && !(regex->re_nsub > 0 && nmatch > 1)) {
+        if ((SUPPORTED_MATCHERS & MATCH_ALGO_STATIC_DFA)
+            && regex->dfa != NULL) {
+            int32 has_unsupported = 0;
+            for (int32 i = 0; regex->ops[i].type != META_OP_END; i += 1) {
+                if (regex->ops[i].type == META_OP_WORD_BOUNDARY
+                    || regex->ops[i].type == META_OP_WORD_START
+                    || regex->ops[i].type == META_OP_WORD_END
+                    || regex->ops[i].type == META_OP_NON_WORD_BOUNDARY) {
+                    has_unsupported = 1;
+                    break;
+                }
             }
-        }
-#endif
-
-        if (has_unsupported || input_len < USE_DFA_THRESHOLD) {
-            algorithm = MATCH_ALGO_BTNFA;
-        } else if (regex->re_nsub > 0 && nmatch > 1) {
-            algorithm = MATCH_ALGO_BTNFA;
-        } else {
-#if ALGO_LAZY_DFA
-            algorithm = MATCH_ALGO_LAZY_DFA;
-#elif ALGO_STATIC_DFA
-            if (regex->dfa == NULL) {
-                algorithm = MATCH_ALGO_BTNFA;
-            } else {
+            if (!has_unsupported) {
                 algorithm = MATCH_ALGO_STATIC_DFA;
             }
-#endif
+        }
+
+        if (algorithm == MATCH_ALGO_BTNFA
+            && (SUPPORTED_MATCHERS & MATCH_ALGO_LAZY_DFA)) {
+            algorithm = MATCH_ALGO_LAZY_DFA;
         }
     }
-#endif
 
-    if (algorithm == MATCH_ALGO_BTNFA) {
+    switch (algorithm) {
+    case MATCH_ALGO_BTNFA: {
         if (regex->has_start_anchor) {
             result
                 = try_match_btnfa(regex, input, input_len, 0, nmatch, pmatch);
@@ -118,7 +95,9 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
                 break;
             }
         }
-    } else if (algorithm == MATCH_ALGO_LAZY_DFA) {
+        break;
+    }
+    case MATCH_ALGO_LAZY_DFA: {
         if (regex->has_start_anchor) {
             result = try_match_lazy_dfa(regex, input, input_len, 0, nmatch,
                                         pmatch);
@@ -144,7 +123,9 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
                 break;
             }
         }
-    } else if (algorithm == MATCH_ALGO_STATIC_DFA) {
+        break;
+    }
+    case MATCH_ALGO_STATIC_DFA: {
         if (regex->has_start_anchor) {
             result = try_match_static_dfa(regex, input, input_len, 0, nmatch,
                                           pmatch);
@@ -170,9 +151,12 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
                 break;
             }
         }
-    } else {
+        break;
+    }
+    default: {
         error("Undefined matching algorithm.\n");
         exit(EXIT_FAILURE);
+    }
     }
 
     return REG_NOMATCH;
