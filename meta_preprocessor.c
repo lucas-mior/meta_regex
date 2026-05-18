@@ -854,7 +854,8 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
     if (fail_reasons) {
         fprintf(stderr,
                 "Warning: DFA conversion failed for %.*s because of %s.\n",
-                original_string_length, quote_start, PREPROC_FAIL_str(fail_reasons));
+                original_string_length, quote_start,
+                PREPROC_FAIL_str(fail_reasons));
         fprintf(stderr, "static dfa will not be available at runtime.\n");
         printf(", .static_dfa = NULL } }");
     } else {
