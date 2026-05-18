@@ -3,9 +3,8 @@
 
 static int32
 is_word_char(uchar c) {
-    int32 match;
+    int32 match = 0;
 
-    match = 0;
     if (c >= 'a' && c <= 'z') {
         match = 1;
     } else if (c >= 'A' && c <= 'Z') {
