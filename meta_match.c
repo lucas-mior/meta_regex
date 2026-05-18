@@ -149,8 +149,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
             int32 bit_match = (regex->fastmap[b >> 3] & (1 << (b % 8)));
 
             if (bit_match || regex->can_be_null) {
-                result = match_static_dfa(regex, input, input_len, j,
-                                          pmatch, pmatch_len);
+                result = match_static_dfa(regex, input, input_len, j, pmatch,
+                                          pmatch_len);
                 if (result == 0) {
                     return 0;
                 }
