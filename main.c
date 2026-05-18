@@ -52,6 +52,7 @@ main(void) {
     setlocale(LC_ALL, "C");
     srand((uint32)42);
     enum MatchAlgorithm enabled = MATCH_ALGO_BTNFA;
+    FILE *csv;
 
     if (ENABLE_LAZY_DFA) {
         enabled |= MATCH_ALGO_LAZY_DFA;
@@ -62,11 +63,12 @@ main(void) {
     SNPRINTF(csv_file, "benchmarks/timings-%lld-%s.csv", (llong)time(NULL),
              MATCH_ALGO_str(enabled));
 
-    FILE *csv = fopen(csv_file, "w");
-    if (csv != NULL) {
-        fprintf(csv, "suite,case,count,posix_time,meta_time\n");
-        fclose(csv);
+    if ((csv = fopen(csv_file, "w")) == NULL) {
+        error("Error opening %s for writing: %s.\n", csv_file, strerror(errno));
+        fatal(EXIT_FAILURE);
     }
+    fprintf(csv, "suite,case,count,posix_time,meta_time\n");
+    fclose(csv);
 
     printf(RED("\nTests with known (input, regex) pairs ...\n"));
     RUN_KNOWN_PAIRS(ascii_no_group_no_backref);
