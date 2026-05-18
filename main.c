@@ -81,8 +81,8 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
     struct timespec t1_posix;
     struct timespec t0_meta;
     struct timespec t1_meta;
-    RegexTest *tests_posix = xmemdup(tests, count*SIZEOF(RegexTest));
-    RegexTest *tests_meta = xmemdup(tests, count*SIZEOF(RegexTest));
+    RegexTest *tests_posix = xmemdup(tests, count*SIZEOF(*tests_posix));
+    RegexTest *tests_meta = xmemdup(tests, count*SIZEOF(*tests_meta));
     bool failed = false;
 
     printf("\n----- Running %s (POSIX vs Meta) -----\n", description);
@@ -155,8 +155,8 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
     PRINT_TIMINGS(count, t0_posix, t1_posix, "posix");
     PRINT_TIMINGS(count, t0_meta, t1_meta, "meta");
 
-    free2(tests_posix, count*SIZEOF(RegexTest));
-    free2(tests_meta, count*SIZEOF(RegexTest));
+    free2(tests_posix, count*SIZEOF(*tests_posix));
+    free2(tests_meta, count*SIZEOF(*tests_meta));
     return;
 }
 
@@ -210,7 +210,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     struct timespec t1_meta;
     bool failed = false;
 #if FUZZY_PRECOMPILE_POSIX
-    regex_t *posix_regexes = malloc2(tests_len*SIZEOF(regex_t));
+    regex_t *posix_regexes = malloc2(tests_len*SIZEOF(*posix_regexes));
 #endif
 
     for (int32 i = 0; i < ntests; i += 1) {
@@ -339,7 +339,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     for (int32 i = 0; i < tests_len; i += 1) {
         regfree(&posix_regexes[i]);
     }
-    free2(posix_regexes, tests_len*SIZEOF(regex_t));
+    free2(posix_regexes, tests_len*SIZEOF(*posix_regexes));
 #endif
 
     for (int32 i = 0; i < ntests; i += 1) {
@@ -366,7 +366,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
     }
 
 #if FUZZY_PRECOMPILE_POSIX
-    regex_t *posix_regexes = malloc2(tests_len*SIZEOF(regex_t));
+    regex_t *posix_regexes = malloc2(tests_len*SIZEOF(*posix_regexes));
     for (int32 i = 0; i < tests_len; i += 1) {
         char *pattern_str = tests[i]->string;
         if (regcomp(&posix_regexes[i], pattern_str, REG_EXTENDED) != 0) {
@@ -404,11 +404,12 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
         fclose(file);
         int32 input_len = (int32)file_size;
 
-        int32 *results_posix = malloc2(tests_len*SIZEOF(int32));
-        int32 *results_meta = malloc2(tests_len*SIZEOF(int32));
+        int32 *results_posix = malloc2(tests_len*SIZEOF(*results_posix));
+        int32 *results_meta = malloc2(tests_len*SIZEOF(*results_meta));
 
-        int64 pm_sz = tests_len*MAX_MATCHES * SIZEOF(regmatch_t);
-        regmatch_t *pm_posix = malloc2(pm_sz);
+        regmatch_t *pm_posix = NULL;
+        int64 pm_sz = tests_len*MAX_MATCHES * SIZEOF(*pm_posix);
+        pm_posix = malloc2(pm_sz);
         regmatch_t *pm_meta = malloc2(pm_sz);
 
         struct timespec t0_posix;
@@ -505,8 +506,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
         PRINT_TIMINGS(tests_len, t0_posix, t1_posix, name_posix);
         PRINT_TIMINGS(tests_len, t0_meta, t1_meta, name_meta);
 
-        free2(results_posix, tests_len*SIZEOF(int32));
-        free2(results_meta, tests_len*SIZEOF(int32));
+        free2(results_posix, tests_len*SIZEOF(*results_posix));
+        free2(results_meta, tests_len*SIZEOF(*results_meta));
         free2(pm_posix, pm_sz);
         free2(pm_meta, pm_sz);
         free2(input, file_size + 1);
@@ -516,7 +517,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
     for (int32 i = 0; i < tests_len; i += 1) {
         regfree(&posix_regexes[i]);
     }
-    free2(posix_regexes, tests_len*SIZEOF(regex_t));
+    free2(posix_regexes, tests_len*SIZEOF(*posix_regexes));
 #endif
 
     closedir(dir);
