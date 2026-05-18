@@ -129,7 +129,7 @@ sort_alternations(ParsedOp *ops, int32 count) {
             }
             branch_starts[num_branches] = current_start;
             branch_ends[num_branches] = j;
-            
+
             int32 key;
             key = 98;
             for (int32 k = current_start; k < j; k += 1) {
@@ -146,7 +146,7 @@ sort_alternations(ParsedOp *ops, int32 count) {
 
     branch_starts[num_branches] = current_start;
     branch_ends[num_branches] = count;
-    
+
     int32 final_key;
     final_key = 98;
     for (int32 k = current_start; k < count; k += 1) {

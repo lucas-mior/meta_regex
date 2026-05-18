@@ -57,11 +57,10 @@ is_word_char_tdfa(int32 c) {
     return 0;
 }
 
-static void tdfa_add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
-                                     int32 *is_accepting, int32 prev_is_word,
-                                     int32 curr_is_word, int32 src_tags[META_MAX_TAGS],
-                                     int32 closed_tags[META_MAX_OPS][META_MAX_TAGS],
-                                     int32 current_string_idx);
+static void tdfa_add_epsilon_closure(
+    MetaOp *ops, int32 pc, NfaStateSet *set, int32 *is_accepting,
+    int32 prev_is_word, int32 curr_is_word, int32 src_tags[META_MAX_TAGS],
+    int32 closed_tags[META_MAX_OPS][META_MAX_TAGS], int32 current_string_idx);
 static void tdfa_compute_core_transitions(MetaOp *ops,
                                           NfaStateSet *current_closed_set,
                                           int32 c, NfaStateSet *next_core_set);
@@ -168,7 +167,8 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                     if ((state->key.bits[k / 32] & (1u << (k % 32))) != 0) {
                         tdfa_add_epsilon_closure(
                             regex->ops, k, &closed_set, &is_acc,
-                            state->key.prev_is_word, 0, current_core_tags[k], closed_tags, i);
+                            state->key.prev_is_word, 0, current_core_tags[k],
+                            closed_tags, i);
                     }
                 }
                 if (is_acc) {
@@ -212,9 +212,10 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
 
             for (int32 k = 0; k < META_MAX_OPS; k += 1) {
                 if ((state->key.bits[k / 32] & (1u << (k % 32))) != 0) {
-                    tdfa_add_epsilon_closure(
-                        regex->ops, k, &closed_set, &is_acc,
-                        state->key.prev_is_word, curr_is_word, current_core_tags[k], closed_tags, i);
+                    tdfa_add_epsilon_closure(regex->ops, k, &closed_set,
+                                             &is_acc, state->key.prev_is_word,
+                                             curr_is_word, current_core_tags[k],
+                                             closed_tags, i);
                 }
             }
 
@@ -285,18 +286,26 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                         }
 
                         if (dest_pc1 != -1) {
-                            if ((next_core.bits[dest_pc1 / 32] & (1u << (dest_pc1 % 32))) == 0) {
-                                next_core.bits[dest_pc1 / 32] |= (1u << (dest_pc1 % 32));
+                            if ((next_core.bits[dest_pc1 / 32]
+                                 & (1u << (dest_pc1 % 32)))
+                                == 0) {
+                                next_core.bits[dest_pc1 / 32]
+                                    |= (1u << (dest_pc1 % 32));
                                 for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                                    next_core_tags[dest_pc1][t] = closed_tags[k][t];
+                                    next_core_tags[dest_pc1][t]
+                                        = closed_tags[k][t];
                                 }
                             }
                         }
                         if (dest_pc2 != -1) {
-                            if ((next_core.bits[dest_pc2 / 32] & (1u << (dest_pc2 % 32))) == 0) {
-                                next_core.bits[dest_pc2 / 32] |= (1u << (dest_pc2 % 32));
+                            if ((next_core.bits[dest_pc2 / 32]
+                                 & (1u << (dest_pc2 % 32)))
+                                == 0) {
+                                next_core.bits[dest_pc2 / 32]
+                                    |= (1u << (dest_pc2 % 32));
                                 for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                                    next_core_tags[dest_pc2][t] = closed_tags[k][t];
+                                    next_core_tags[dest_pc2][t]
+                                        = closed_tags[k][t];
                                 }
                             }
                         }
