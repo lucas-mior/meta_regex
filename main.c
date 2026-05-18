@@ -52,19 +52,19 @@ main(void) {
     RUN_POSIX_VS_META(ascii_catastrophic_with_group_and_backref);
     /* /1* exit(0); *1/ */
 
-    /* run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8"); */
+    run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
 
     /* printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n"); */
-    RUN_FUZZY_TESTS(fuzzy_patterns, 8, 10);
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 32, 1000); */
+    RUN_FUZZY_TESTS(fuzzy_patterns, 8, 100);
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 32, 100); */
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 64, 100); */
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 128, 1000); */
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 256, 1000); */
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 512, 1000); */
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 1024, 1000); */
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 1000); */
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 1000); */
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 8192, 1000); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 128, 100); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 256, 100); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 512, 100); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 1024, 100); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 100); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 100); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 8192, 100); */
 
     printf("\n----- Starting Fuzzy Testing (File input) -----\n");
     run_file_fuzzy_tests(fuzzy_patterns, LENGTH(fuzzy_patterns));
