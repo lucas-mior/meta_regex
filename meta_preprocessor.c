@@ -191,7 +191,7 @@ static int32
 compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uint8 *fastmap,
                   uint8 *visited) {
     enum MetaOpType type = 0;
-    int32 is_null = 0;
+    bool is_null = false;
 
     if (pc >= temp_ops_count) {
         return 1;
@@ -249,10 +249,10 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uint8 *fastmap,
         }
         return 0;
     } else if (type == META_OP_SPLIT) {
-        int32 p1 = compute_first_set(ops, pc + ops[pc].value, temp_ops_count,
-                                     fastmap, visited);
-        int32 p2 = compute_first_set(ops, pc + ops[pc].min, temp_ops_count,
-                                     fastmap, visited);
+        bool p1 = compute_first_set(ops, pc + ops[pc].value, temp_ops_count,
+                                    fastmap, visited);
+        bool p2 = compute_first_set(ops, pc + ops[pc].min, temp_ops_count,
+                                    fastmap, visited);
         return (p1 || p2);
     } else if (type == META_OP_JUMP) {
         return compute_first_set(ops, pc + ops[pc].value, temp_ops_count,
@@ -290,7 +290,7 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uint8 *fastmap,
             } else if (ops[scan].type == META_OP_ALTERNATION && depth == 0) {
                 if (compute_first_set(ops, scan + 1, temp_ops_count, fastmap,
                                       visited)) {
-                    is_null = 1;
+                    is_null = true;
                 }
             }
             scan += 1;
@@ -312,7 +312,7 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uint8 *fastmap,
 static void
 populate_posix_class_mask(char *class_name, uint32 *mask) {
     for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
-        int32 match = 0;
+        bool match = false;
         if (strcmp(class_name, "alnum") == 0) {
             match = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
                      || (c >= '0' && c <= '9'));
@@ -356,7 +356,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
     int32 nfa_count = 0;
     NfaItem items[PREPROC_MAX_NFA_ITEMS];
     int32 item_count = 0;
-    int32 nfa_failed = 0;
+    bool nfa_failed = false;
     int32 nfa_accept = 0;
     int32 branch_starts[PREPROC_MAX_BRANCHES];
     int32 branch_count = 0;
@@ -434,7 +434,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                 branch_starts[branch_count] = b_start;
                 branch_count += 1;
             } else {
-                nfa_failed = 1;
+                nfa_failed = true;
             }
 
             b_start = -1;
@@ -445,7 +445,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
         int32 s_base = nfa_count;
         nfa_count += 1;
         if (nfa_count > PREPROC_MAX_NFA_STATES) {
-            nfa_failed = 1;
+            nfa_failed = true;
             break;
         }
 
@@ -474,7 +474,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
             int32 s_split = nfa_count;
             nfa_count += 1;
             if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                nfa_failed = 1;
+                nfa_failed = true;
                 break;
             }
             nfa[s_split].type = NFA_STATE_SPLIT;
@@ -487,7 +487,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
             int32 s_split = nfa_count;
             nfa_count += 1;
             if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                nfa_failed = 1;
+                nfa_failed = true;
                 break;
             }
             nfa[s_split].type = NFA_STATE_SPLIT;
@@ -502,7 +502,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
             int32 s_merge = nfa_count;
             nfa_count += 1;
             if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                nfa_failed = 1;
+                nfa_failed = true;
                 break;
             }
             nfa[s_split].type = NFA_STATE_SPLIT;
@@ -521,7 +521,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                 int32 copy = nfa_count;
                 nfa_count += 1;
                 if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                    nfa_failed = 1;
+                    nfa_failed = true;
                     break;
                 }
                 nfa[copy] = nfa[s_base];
@@ -545,7 +545,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                 int32 copy = nfa_count;
                 nfa_count += 1;
                 if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                    nfa_failed = 1;
+                    nfa_failed = true;
                     break;
                 }
                 nfa[copy] = nfa[s_base];
@@ -575,7 +575,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                     int32 s_merge = nfa_count;
                     nfa_count += 1;
                     if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                        nfa_failed = 1;
+                        nfa_failed = true;
                         break;
                     }
                     nfa[copy] = nfa[s_base];
@@ -605,7 +605,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                 f_start = nfa_count;
                 nfa_count += 1;
                 if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                    nfa_failed = 1;
+                    nfa_failed = true;
                     break;
                 }
                 nfa[f_start].type = NFA_STATE_EMPTY;
@@ -636,7 +636,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
             int32 s = nfa_count;
             nfa_count += 1;
             if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                nfa_failed = 1;
+                nfa_failed = true;
                 break;
             }
             nfa[s].type = NFA_STATE_SPLIT;
@@ -645,7 +645,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
             nfa_start_state = s;
         }
     } else {
-        nfa_failed = 1;
+        nfa_failed = true;
     }
 
     if (!nfa_failed) {
@@ -660,9 +660,9 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
         }
         start_set.bits[nfa_start_state / 32] |= (1u << (nfa_start_state % 32));
 
-        int32 changed = 1;
+        bool changed = true;
         while (changed) {
-            changed = 0;
+            changed = false;
             for (int32 i = 0; i < nfa_count; i += 1) {
                 if (!(start_set.bits[i / 32] & (1u << (i % 32)))) {
                     continue;
@@ -676,24 +676,24 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                          & (1u << (nfa[i].next1 % 32)))) {
                     start_set.bits[nfa[i].next1 / 32]
                         |= (1u << (nfa[i].next1 % 32));
-                    changed = 1;
+                    changed = true;
                 }
                 if (nfa[i].type == NFA_STATE_SPLIT && nfa[i].next2 != -1
                     && !(start_set.bits[nfa[i].next2 / 32]
                          & (1u << (nfa[i].next2 % 32)))) {
                     start_set.bits[nfa[i].next2 / 32]
                         |= (1u << (nfa[i].next2 % 32));
-                    changed = 1;
+                    changed = true;
                 }
             }
         }
 
         int32 match_id = -1;
         for (int32 i = 1; i < dfa_count; i += 1) {
-            int32 match = 1;
+            bool match = true;
             for (int32 k = 0; k < PREPROC_NFA_BITSET_WORDS; k += 1) {
                 if (dfa_sets[i].bits[k] != start_set.bits[k]) {
-                    match = 0;
+                    match = false;
                     break;
                 }
             }
@@ -715,7 +715,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
             start_dfa = dfa_count;
             dfa_count += 1;
         } else {
-            nfa_failed = 1;
+            nfa_failed = true;
         }
 
         if (!nfa_failed) {
@@ -728,31 +728,31 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                     for (int32 i = 0; i < PREPROC_NFA_BITSET_WORDS; i += 1) {
                         next_set.bits[i] = 0;
                     }
-                    int32 has_next = 0;
+                    bool has_next = false;
                     for (int32 i = 0; i < nfa_count; i += 1) {
                         if (!(dfa_sets[d].bits[i / 32] & (1u << (i % 32)))) {
                             continue;
                         }
-                        int32 match = 0;
+                        bool match = false;
                         if (nfa[i].type == NFA_STATE_LITERAL && nfa[i].c == c) {
-                            match = 1;
+                            match = true;
                         } else if (nfa[i].type == NFA_STATE_CLASS
                                    && (nfa[i].mask[c / 32]
                                        & (1u << (c % 32)))) {
-                            match = 1;
+                            match = true;
                         } else if (nfa[i].type == NFA_STATE_ANY) {
-                            match = 1;
+                            match = true;
                         }
                         if (match) {
                             next_set.bits[nfa[i].next1 / 32]
                                 |= (1u << (nfa[i].next1 % 32));
-                            has_next = 1;
+                            has_next = true;
                         }
                     }
                     if (has_next) {
-                        changed = 1;
+                        changed = true;
                         while (changed) {
-                            changed = 0;
+                            changed = false;
                             for (int32 i = 0; i < nfa_count; i += 1) {
                                 if (!(next_set.bits[i / 32]
                                       & (1u << (i % 32)))) {
@@ -767,7 +767,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                                          & (1u << (nfa[i].next1 % 32)))) {
                                     next_set.bits[nfa[i].next1 / 32]
                                         |= (1u << (nfa[i].next1 % 32));
-                                    changed = 1;
+                                    changed = true;
                                 }
                                 if (nfa[i].type == NFA_STATE_SPLIT
                                     && nfa[i].next2 != -1
@@ -775,18 +775,18 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                                          & (1u << (nfa[i].next2 % 32)))) {
                                     next_set.bits[nfa[i].next2 / 32]
                                         |= (1u << (nfa[i].next2 % 32));
-                                    changed = 1;
+                                    changed = true;
                                 }
                             }
                         }
 
                         int32 match_id2 = -1;
                         for (int32 i = 1; i < dfa_count; i += 1) {
-                            int32 match = 1;
+                            bool match = true;
                             for (int32 k = 0; k < PREPROC_NFA_BITSET_WORDS;
                                  k += 1) {
                                 if (dfa_sets[i].bits[k] != next_set.bits[k]) {
-                                    match = 0;
+                                    match = false;
                                     break;
                                 }
                             }
@@ -810,7 +810,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                             dfa_transitions[d][c] = dfa_count;
                             dfa_count += 1;
                         } else {
-                            nfa_failed = 1;
+                            nfa_failed = true;
                         }
                     }
                 }
@@ -826,15 +826,15 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
         printf(", .static_dfa = NULL } }");
     } else {
         printf(", .static_dfa = &(StaticDfa){ .num_states = %d, "
-               ".start_state = %d, .states = {\n",
-               dfa_count, start_dfa);
+                ".start_state = %d, .states = {\n",
+                dfa_count, start_dfa);
         for (int32 i = 0; i < dfa_count; i += 1) {
-            int32 has_transitions = 0;
+            bool has_transitions = false;
 
             printf("{ .is_accepting = %d, .next = {", dfa_accept[i]);
             for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                 if (dfa_transitions[i][c] != 0) {
-                    has_transitions = 1;
+                    has_transitions = true;
                     break;
                 }
             }
@@ -903,38 +903,38 @@ main(int32 argc, char **argv) {
         char *op_ptr = op_buffer;
         int32 space = SIZEOF(op_buffer);
         int32 prefix_length = 0;
-        int32 has_start = 0;
-        int32 has_end = 0;
+        bool has_start = false;
+        bool has_end = false;
         int32 regex_index = 0;
         int32 original_string_length = 0;
         int32 group_counter = 0;
         int32 group_stack[PREPROC_MAX_GROUP_STACK] = {0};
         int32 group_stack_ptr = 0;
-        int32 has_alternation = 0;
-        int32 has_backref = 0;
+        bool has_alternation = false;
+        bool has_backref = false;
         ParsedOp temp_ops[PREPROC_MAX_TEMP_OPS] = {0};
         int32 temp_ops_count = 0;
         uint8 fastmap[META_FASTMAP_SIZE] = {0};
-        int32 can_be_null = 0;
+        bool can_be_null = false;
 
         {
             char *scan = cursor;
-            int32 in_line_comment = 0;
-            int32 in_block_comment = 0;
-            int32 in_string = 0;
-            int32 in_char = 0;
+            bool in_line_comment = false;
+            bool in_block_comment = false;
+            bool in_string = false;
+            bool in_char = false;
 
             while (*scan != '\0') {
                 if (in_line_comment) {
                     if (*scan == '\n') {
-                        in_line_comment = 0;
+                        in_line_comment = false;
                     }
                     scan += 1;
                     continue;
                 }
                 if (in_block_comment) {
                     if (scan[0] == '*' && scan[1] == '/') {
-                        in_block_comment = 0;
+                        in_block_comment = false;
                         scan += 2;
                     } else {
                         scan += 1;
@@ -945,7 +945,7 @@ main(int32 argc, char **argv) {
                     if (scan[0] == '\\' && scan[1] != '\0') {
                         scan += 2;
                     } else if (scan[0] == '"') {
-                        in_string = 0;
+                        in_string = false;
                         scan += 1;
                     } else {
                         scan += 1;
@@ -956,7 +956,7 @@ main(int32 argc, char **argv) {
                     if (scan[0] == '\\' && scan[1] != '\0') {
                         scan += 2;
                     } else if (scan[0] == '\'') {
-                        in_char = 0;
+                        in_char = false;
                         scan += 1;
                     } else {
                         scan += 1;
@@ -964,16 +964,16 @@ main(int32 argc, char **argv) {
                     continue;
                 }
                 if (scan[0] == '/' && scan[1] == '/') {
-                    in_line_comment = 1;
+                    in_line_comment = true;
                     scan += 2;
                 } else if (scan[0] == '/' && scan[1] == '*') {
-                    in_block_comment = 1;
+                    in_block_comment = true;
                     scan += 2;
                 } else if (scan[0] == '"') {
-                    in_string = 1;
+                    in_string = true;
                     scan += 1;
                 } else if (scan[0] == '\'') {
-                    in_char = 1;
+                    in_char = true;
                     scan += 1;
                 } else if (scan[0] == macro_start[0]
                            && scan[1] == macro_start[1]) {
@@ -1059,7 +1059,7 @@ main(int32 argc, char **argv) {
         }
 
         if (regex_string[regex_index] == '^') {
-            has_start = 1;
+            has_start = true;
             regex_index += 1;
         }
 
@@ -1069,7 +1069,7 @@ main(int32 argc, char **argv) {
             switch (cp) {
             case '$': {
                 if (regex_string[regex_index + 1] == '\0') {
-                    has_end = 1;
+                    has_end = true;
                     regex_index += 1;
                     break;
                 }
@@ -1080,9 +1080,9 @@ main(int32 argc, char **argv) {
                 break;
             }
             case '*': {
-                int32 is_group = (temp_ops_count > 0
-                                  && temp_ops[temp_ops_count - 1].type
-                                         == META_OP_GROUP_END);
+                bool is_group = (temp_ops_count > 0
+                                 && temp_ops[temp_ops_count - 1].type
+                                       == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -1122,9 +1122,9 @@ main(int32 argc, char **argv) {
                 break;
             }
             case '+': {
-                int32 is_group = (temp_ops_count > 0
-                                  && temp_ops[temp_ops_count - 1].type
-                                         == META_OP_GROUP_END);
+                bool is_group = (temp_ops_count > 0
+                                 && temp_ops[temp_ops_count - 1].type
+                                       == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -1155,9 +1155,9 @@ main(int32 argc, char **argv) {
                 break;
             }
             case '?': {
-                int32 is_group = (temp_ops_count > 0
-                                  && temp_ops[temp_ops_count - 1].type
-                                         == META_OP_GROUP_END);
+                bool is_group = (temp_ops_count > 0
+                                 && temp_ops[temp_ops_count - 1].type
+                                       == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -1196,12 +1196,12 @@ main(int32 argc, char **argv) {
                 int32 temp_idx = regex_index + 1;
                 int32 m = 0;
                 int32 n = -1;
-                int32 has_m = 0;
-                int32 valid = 0;
+                bool has_m = false;
+                bool valid = false;
                 while (regex_string[temp_idx] >= '0'
                        && regex_string[temp_idx] <= '9') {
                     m = m*10 + (regex_string[temp_idx] - '0');
-                    has_m = 1;
+                    has_m = true;
                     temp_idx += 1;
                 }
                 if (regex_string[temp_idx] == ',') {
@@ -1219,13 +1219,13 @@ main(int32 argc, char **argv) {
                     n = m;
                 }
                 if (regex_string[temp_idx] == '}' && has_m) {
-                    valid = 1;
+                    valid = true;
                     temp_idx += 1;
                 }
 
                 if (valid && temp_ops_count > 0) {
-                    int32 is_group = (temp_ops[temp_ops_count - 1].type
-                                      == META_OP_GROUP_END);
+                    bool is_group = (temp_ops[temp_ops_count - 1].type
+                                     == META_OP_GROUP_END);
                     if (is_group) {
                         int32 target_start = temp_ops_count - 1;
                         int32 depth = 0;
@@ -1329,7 +1329,7 @@ main(int32 argc, char **argv) {
             case '|': {
                 temp_ops[temp_ops_count].type = META_OP_ALTERNATION;
                 temp_ops_count += 1;
-                has_alternation = 1;
+                has_alternation = true;
                 regex_index += 1;
                 break;
             }
@@ -1359,12 +1359,12 @@ main(int32 argc, char **argv) {
                 break;
             }
             case '[': {
-                int32 is_negated = 0;
+                bool is_negated = false;
                 uint32 mask[META_CHAR_BITMASK_WORDS] = {0};
-                int32 first_char = 1;
+                bool first_char = true;
                 regex_index += 1;
                 if (regex_string[regex_index] == '^') {
-                    is_negated = 1;
+                    is_negated = true;
                     regex_index += 1;
                 }
                 while (regex_string[regex_index] != '\0') {
@@ -1374,11 +1374,11 @@ main(int32 argc, char **argv) {
                     if (regex_string[regex_index] == '['
                         && regex_string[regex_index + 1] == ':') {
                         int32 colon_idx = regex_index + 2;
-                        int32 found_end = 0;
+                        bool found_end = false;
                         while (regex_string[colon_idx] != '\0') {
                             if (regex_string[colon_idx] == ':'
                                 && regex_string[colon_idx + 1] == ']') {
-                                found_end = 1;
+                                found_end = true;
                                 break;
                             }
                             colon_idx += 1;
@@ -1393,7 +1393,7 @@ main(int32 argc, char **argv) {
                                 populate_posix_class_mask(class_name, mask);
                             }
                             regex_index = colon_idx + 2;
-                            first_char = 0;
+                            first_char = false;
                             continue;
                         }
                     }
@@ -1421,7 +1421,7 @@ main(int32 argc, char **argv) {
                     for (int32 c = c1; c <= c2; c += 1) {
                         mask[c / 32] |= (1u << (c % 32));
                     }
-                    first_char = 0;
+                    first_char = false;
                 }
                 if (regex_string[regex_index] == ']') {
                     regex_index += 1;
@@ -1469,7 +1469,7 @@ main(int32 argc, char **argv) {
                         }
                         temp_ops_count += 1;
                     } else if (c_cp >= '1' && c_cp <= '9') {
-                        has_backref = 1;
+                        has_backref = true;
                         temp_ops[temp_ops_count].type = META_OP_BACKREF;
                         temp_ops[temp_ops_count].value = c_cp - '0';
                         temp_ops_count += 1;
@@ -1535,7 +1535,7 @@ main(int32 argc, char **argv) {
                         if (compute_first_set(temp_ops, scan + 1,
                                               temp_ops_count, fastmap,
                                               visited)) {
-                            can_be_null = 1;
+                            can_be_null = true;
                         }
                     }
                     scan += 1;
@@ -1633,33 +1633,33 @@ main(int32 argc, char **argv) {
         }
         printf("}");
 
-        int32 unsupported = 0;
+        bool unsupported = false;
         if (group_counter > 0) {
-            unsupported = 1;
+            unsupported = true;
         }
         if (has_backref > 0) {
-            unsupported = 1;
+            unsupported = true;
         }
 
         for (int32 i = 0; i < temp_ops_count; i += 1) {
             if (temp_ops[i].type == META_OP_WORD_BOUNDARY) {
-                unsupported = 1;
+                unsupported = true;
                 break;
             }
             if (temp_ops[i].type == META_OP_WORD_START) {
-                unsupported = 1;
+                unsupported = true;
                 break;
             }
             if (temp_ops[i].type == META_OP_WORD_END) {
-                unsupported = 1;
+                unsupported = true;
                 break;
             }
             if (temp_ops[i].type == META_OP_NON_WORD_BOUNDARY) {
-                unsupported = 1;
+                unsupported = true;
                 break;
             }
             if (temp_ops[i].type == META_OP_BACKREF) {
-                unsupported = 1;
+                unsupported = true;
                 break;
             }
         }
