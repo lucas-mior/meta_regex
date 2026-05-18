@@ -253,16 +253,13 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
     for (int32 i = 0; i < fuzzy_len; i += 1) {
 #if FUZZY_PRECOMPILE_POSIX
-        int32 idx;
-
-        idx = fuzzy[i].regex_idx;
+        int32 idx = fuzzy[i].regex_idx;
         fuzzy[i].result_posix = regexec(&posix_regexes[idx], fuzzy[i].input,
                                         MAX_MATCHES, fuzzy[i].pmatch_posix, 0);
 #else
         regex_t compiled;
-        char *pattern_str;
+        char *pattern_str = tests[fuzzy[i].regex_idx]->string;
 
-        pattern_str = tests[fuzzy[i].regex_idx]->string;
         if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
             fuzzy[i].result_posix
                 = regexec(&compiled, fuzzy[i].input, MAX_MATCHES,
