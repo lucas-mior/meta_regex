@@ -22,16 +22,10 @@
 
 #define USE_DFA_THRESHOLD 128
 
-static struct Matcher {
-    enum MetaOpType supports;
-
-    // can the matcher return the offsets of subgroups in pmatch?
-    bool extracts;
-} matchers[] = {
-    [MATCH_ALGO_BTNFA] = {match_btnfa_supports, match_btnfa_extracts},
-    [MATCH_ALGO_LAZY_DFA] = {match_lazy_dfa_supports, match_lazy_dfa_extracts},
-    [MATCH_ALGO_STATIC_DFA]
-    = {match_static_dfa_supports, match_static_dfa_extracts},
+MatcherFeatures matchers[] = {
+    [MATCH_ALGO_BTNFA] = match_btnfa_features,
+    [MATCH_ALGO_LAZY_DFA] = match_lazy_dfa_features,
+    [MATCH_ALGO_STATIC_DFA] = match_static_dfa_features,
 };
 
 static int32
@@ -58,7 +52,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
     if (input_len >= USE_DFA_THRESHOLD) {
         if ((enabled & MATCH_ALGO_STATIC_DFA) && regex->static_dfa) {
             if (!needs_extraction || matchers[MATCH_ALGO_STATIC_DFA].extracts) {
-                if ((regex->used_ops & ~matchers[MATCH_ALGO_STATIC_DFA].supports)
+                if ((regex->used_ops
+                     & ~matchers[MATCH_ALGO_STATIC_DFA].supports)
                     == 0) {
                     algorithm = MATCH_ALGO_STATIC_DFA;
                 }

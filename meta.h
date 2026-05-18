@@ -73,6 +73,13 @@ typedef struct MetaRegex {
     LazyDfa *lazy_dfa;
 } MetaRegex;
 
+typedef struct MatcherFeatures {
+    enum MetaOpType supports;
+
+    // can the matcher return the offsets of subgroups in pmatch?
+    bool extracts;
+} MatcherFeatures;
+
 #define R(...) (&(MetaRegex){ .string = __VA_ARGS__ })
 
 #endif /* META_REGEX_H */
