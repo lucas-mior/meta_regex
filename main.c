@@ -474,6 +474,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
 
     while ((entry = readdir(dir)) != NULL) {
         char path[512];
+        char case_name[768];
         FILE *file;
         int64 file_size;
         uint8 *input;
@@ -494,6 +495,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
         fseek(file, 0, SEEK_END);
         file_size = ftell(file);
         fseek(file, 0, SEEK_SET);
+
+        SNPRINTF(case_name, "%s[%lldB]", entry->d_name, (llong)file_size);
 
         input = malloc2(file_size + 1);
         if (fread64(input, 1, file_size, file) != file_size) {
@@ -601,7 +604,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
 
         double t_posix = timediff(t0_posix, t1_posix);
         double t_meta = timediff(t0_meta, t1_meta);
-        fprintf(csv, "file_fuzzy,%s,%d,%f,%f\n", entry->d_name, tests_len,
+        fprintf(csv, "file_fuzzy,%s,%d,%f,%f\n", case_name, tests_len,
                 t_posix, t_meta);
 
         free2(results_posix, tests_len*SIZEOF(*results_posix));
