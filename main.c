@@ -90,6 +90,11 @@ main(void) {
     printf(RED("\nTests from inputs/ against extensive regex array ...\n"));
     run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive));
 
+    if (fclose(csv)) {
+        error("Error closing %s: %s.\n", csv_file, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
 #if 1
     switch (fork()) {
     case -1:
@@ -118,10 +123,6 @@ main(void) {
     }
 #endif
 
-    if (fclose(csv)) {
-        error("Error closing %s: %s.\n", csv_file, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
     exit(EXIT_SUCCESS);
 }
 
