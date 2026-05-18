@@ -4,7 +4,7 @@
 #include "cbase/util.c"
 
 #define META_ALPHABET_SIZE 256
-#define META_MAX_DFA_STATES 256
+#define META_MAX_DFA_STATES 1024
 #define META_MAX_OPS 512
 #define META_FASTMAP_SIZE 32
 #define META_CHAR_BITMASK_WORDS 8
@@ -44,13 +44,14 @@ typedef struct MetaOp {
 } MetaOp;
 
 typedef struct StaticDfaState {
-    int32 is_accepting;
+    uint8 is_accepting[META_ALPHABET_SIZE];
     int32 next[META_ALPHABET_SIZE];
 } StaticDfaState;
 
 typedef struct StaticDfa {
     int32 num_states;
-    int32 start_state;
+    int32 start_state_w;
+    int32 start_state_nw;
     StaticDfaState *states;
 } StaticDfa;
 
