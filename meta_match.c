@@ -80,8 +80,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
     switch (algorithm) {
     case MATCH_ALGO_BTNFA: {
         if (regex->has_start_anchor) {
-            result = try_match_btnfa(regex, input, input_len, 0, pmatch_len,
-                                     pmatch);
+            result = match_btnfa(regex, input, input_len, 0, pmatch_len,
+                                 pmatch);
             if (result == 0) {
                 return 0;
             }
@@ -93,8 +93,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
             int32 bit_match = (regex->fastmap[b >> 3] & (1 << (b % 8)));
 
             if (bit_match || regex->can_be_null) {
-                result = try_match_btnfa(regex, input, input_len, j, pmatch_len,
-                                         pmatch);
+                result = match_btnfa(regex, input, input_len, j, pmatch_len,
+                                     pmatch);
                 if (result == 0) {
                     return 0;
                 }
@@ -108,8 +108,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
     }
     case MATCH_ALGO_LAZY_DFA: {
         if (regex->has_start_anchor) {
-            result = try_match_lazy_dfa(regex, input, input_len, 0, pmatch_len,
-                                        pmatch);
+            result = match_lazy_dfa(regex, input, input_len, 0, pmatch_len,
+                                    pmatch);
             if (result == 0) {
                 return 0;
             }
@@ -121,8 +121,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
             int32 bit_match = (regex->fastmap[b >> 3] & (1 << (b % 8)));
 
             if (bit_match || regex->can_be_null) {
-                result = try_match_lazy_dfa(regex, input, input_len, j,
-                                            pmatch_len, pmatch);
+                result = match_lazy_dfa(regex, input, input_len, j,
+                                        pmatch_len, pmatch);
                 if (result == 0) {
                     return 0;
                 }
@@ -136,8 +136,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
     }
     case MATCH_ALGO_STATIC_DFA: {
         if (regex->has_start_anchor) {
-            result = try_match_static_dfa(regex, input, input_len, 0,
-                                          pmatch_len, pmatch);
+            result = match_static_dfa(regex, input, input_len, 0,
+                                      pmatch_len, pmatch);
             if (result == 0) {
                 return 0;
             }
@@ -149,8 +149,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
             int32 bit_match = (regex->fastmap[b >> 3] & (1 << (b % 8)));
 
             if (bit_match || regex->can_be_null) {
-                result = try_match_static_dfa(regex, input, input_len, j,
-                                              pmatch_len, pmatch);
+                result = match_static_dfa(regex, input, input_len, j,
+                                          pmatch_len, pmatch);
                 if (result == 0) {
                     return 0;
                 }

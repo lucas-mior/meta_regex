@@ -39,8 +39,8 @@ btnfa_quick_lookahead_fails(MetaOp *next_op, uint8 *curr_str) {
 }
 
 static int32
-try_match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
-                int64 nmatch, regmatch_t pmatch[]) {
+match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
+            int64 nmatch, regmatch_t pmatch[]) {
     uint8 *search_ptr = &string[offset];
     int32 match_len = -1;
     static int32 stack_cap = 8192;
