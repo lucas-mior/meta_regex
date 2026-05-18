@@ -1,5 +1,7 @@
 #!/bin/sh -e
 
+# shellcheck disable=SC2086
+
 set -e
 alias trace_on='set -x'
 alias trace_off='{ set +x; } 2>/dev/null'
@@ -24,7 +26,7 @@ CFLAGS="$CFLAGS -Wno-unused-variable"
 CFLAGS="$CFLAGS -Wno-type-limits"
 
 CPPFLAGS="$CPPFLAGS -D_DEFAULT_SOURCE"
-CPPFLAGS="$CPPFLAGS -I "$dir/$cbase" -I "$dir""
+CPPFLAGS="$CPPFLAGS -I${dir}/${cbase} -I $dir"
 LDFLAGS="$LDFLAGS -lmagic -lm"
 
 OS=$(uname -a)
