@@ -68,7 +68,8 @@ get_branch_weight(ParsedOp *ops, int32 count) {
 
     weight = 0;
     for (int32 i = 0; i < count; i += 1) {
-        if (ops[i].type == META_OP_LITERAL || ops[i].type == META_OP_CLASS || ops[i].type == META_OP_ANY || ops[i].type == META_OP_BACKREF) {
+        if (ops[i].type == META_OP_LITERAL || ops[i].type == META_OP_CLASS
+            || ops[i].type == META_OP_ANY || ops[i].type == META_OP_BACKREF) {
             weight += 1;
         }
     }
@@ -128,15 +129,17 @@ sort_alternations(ParsedOp *ops, int32 count) {
             }
             branch_starts[num_branches] = current_start;
             branch_ends[num_branches] = j;
-            branch_weights[num_branches] = get_branch_weight(ops + current_start, j - current_start);
+            branch_weights[num_branches]
+                = get_branch_weight(ops + current_start, j - current_start);
             num_branches += 1;
             current_start = j + 1;
         }
     }
-    
+
     branch_starts[num_branches] = current_start;
     branch_ends[num_branches] = count;
-    branch_weights[num_branches] = get_branch_weight(ops + current_start, count - current_start);
+    branch_weights[num_branches]
+        = get_branch_weight(ops + current_start, count - current_start);
     num_branches += 1;
 
     if (num_branches > 1) {
@@ -185,7 +188,8 @@ sort_alternations(ParsedOp *ops, int32 count) {
 }
 
 static int32
-compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uchar *fastmap, uint8 *visited) {
+compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uchar *fastmap,
+                  uint8 *visited) {
     enum MetaOpType type;
     int32 is_null;
 
@@ -281,8 +285,8 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uchar *fastmap,
         int32 scan;
 
         depth = 0;
-        is_null = compute_first_set(ops, pc + 1, temp_ops_count, fastmap,
-                                    visited);
+        is_null
+            = compute_first_set(ops, pc + 1, temp_ops_count, fastmap, visited);
         scan = pc + 1;
         while (scan < temp_ops_count) {
             if (ops[scan].type == META_OP_GROUP_START) {
@@ -655,7 +659,7 @@ main(int32 argc, char **argv) {
                 int32 valid = 0;
                 while (regex_string[temp_idx] >= '0'
                        && regex_string[temp_idx] <= '9') {
-                    m = m * 10 + (regex_string[temp_idx] - '0');
+                    m = m*10 + (regex_string[temp_idx] - '0');
                     has_m = 1;
                     temp_idx += 1;
                 }
@@ -666,7 +670,7 @@ main(int32 argc, char **argv) {
                         n = 0;
                         while (regex_string[temp_idx] >= '0'
                                && regex_string[temp_idx] <= '9') {
-                            n = n * 10 + (regex_string[temp_idx] - '0');
+                            n = n*10 + (regex_string[temp_idx] - '0');
                             temp_idx += 1;
                         }
                     }
@@ -743,7 +747,7 @@ main(int32 argc, char **argv) {
                         int32 target_start = temp_ops_count - 1;
                         ParsedOp op_to_repeat = temp_ops[target_start];
 
-                        if (temp_ops_count + m + (n == -1 ? 2 : (n - m) * 2)
+                        if (temp_ops_count + m + (n == -1 ? 2 : (n - m)*2)
                             >= PREPROC_MAX_TEMP_OPS) {
                             fprintf(stderr, "Error: Quantifier unrolling "
                                             "exceeds max ops.\n");

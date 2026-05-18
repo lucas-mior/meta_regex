@@ -211,6 +211,20 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                     }
                 }
                 state->accepts_before[b] = is_acc;
+
+                /*
+                 * Clear orphaned group-start tags: if a GROUP_START tag was
+                 * set during epsilon closure but its matching GROUP_END tag
+                 * was not, the group was skipped via an optional/star branch.
+                 * Applying an unmatched start tag corrupts future group
+                 * reporting, so we suppress it here.
+                 */
+                for (int32 g = 0; g + 1 < META_MAX_TAGS; g += 2) {
+                    if (edge_cmd.set_tag[g] && !edge_cmd.set_tag[g + 1]) {
+                        edge_cmd.set_tag[g] = 0;
+                    }
+                }
+
                 state->commands[b] = edge_cmd;
 
                 tdfa_compute_core_transitions(regex->ops, &closed_set, b,
@@ -287,14 +301,27 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                 for (int64 k = 1; k < nmatch && k <= regex->re_nsub; k += 1) {
                     int32 start_tag_idx;
                     int32 end_tag_idx;
+                    int32 so;
+                    int32 eo;
 
                     start_tag_idx = (k*2) - 2;
                     end_tag_idx = (k*2) - 1;
 
                     if (start_tag_idx < META_MAX_TAGS
                         && end_tag_idx < META_MAX_TAGS) {
-                        pmatch[k].rm_so = best_tags[start_tag_idx];
-                        pmatch[k].rm_eo = best_tags[end_tag_idx];
+                        so = best_tags[start_tag_idx];
+                        eo = best_tags[end_tag_idx];
+                        /*
+                         * Sanitize: if only one endpoint was recorded the
+                         * group was never fully matched (e.g. skipped via ?).
+                         * Report both as -1 to match POSIX semantics.
+                         */
+                        if (so == -1 || eo == -1) {
+                            so = -1;
+                            eo = -1;
+                        }
+                        pmatch[k].rm_so = so;
+                        pmatch[k].rm_eo = eo;
                     }
                 }
             }

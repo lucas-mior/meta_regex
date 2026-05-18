@@ -1,1 +1,8 @@
 #define PRIMITIVES_H typedef unsigned char uchar; typedef unsigned short ushort; typedef unsigned int uint; typedef typedef unsigned long long ullong; typedef signed char schar; typedef llong llong; #if !defined(__CPROC__) typedef long double ldouble #else
+
+Mismatch in input
+"#define PRIMITIVES_H typedef unsigned char uchar; typedef unsigned short ushort; typedef unsigned int uint; typedef typedef unsigned long long ullong; typedef signed char schar; typedef llong llong; #if !defined(__CPROC__) typedef long double ldouble #else"
+against regex "a(bc)?"
+
+posix res: 0, meta res: 0
+   Group 1: posix[-1, -1], meta[41, -1]
