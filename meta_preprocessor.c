@@ -950,7 +950,7 @@ main(int32 argc, char **argv) {
         int32 temp_ops_count = 0;
         uint8 fastmap[META_FASTMAP_SIZE] = {0};
         bool can_be_null = false;
-        uint32 used_ops = 0;
+        enum MetaOpType used_ops = 0;
 
         {
             char *scan = cursor;
@@ -1663,7 +1663,7 @@ main(int32 argc, char **argv) {
         printf(".has_end_anchor = %d, ", has_end);
         printf(".re_nsub = %d, ", group_counter);
         printf(".can_be_null = %d, ", can_be_null);
-        printf(".used_ops = %u, ", used_ops);
+        printf(".used_ops = (enum MetaOpType)%u, ", used_ops);
         printf(".fastmap = {");
 
         for (int32 i = 0; i < META_FASTMAP_SIZE; i += 1) {
