@@ -383,7 +383,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
         }
 
         char path[512];
-        snprintf2(path, SIZEOF(path), "inputs/%s", entry->d_name);
+        SNPRINTF(path, "inputs/%s", entry->d_name);
 
         FILE *file = fopen(path, "rb");
         if (file == NULL) {
