@@ -211,20 +211,6 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                     }
                 }
                 state->accepts_before[b] = is_acc;
-
-                /*
-                 * Clear orphaned group-start tags: if a GROUP_START tag was
-                 * set during epsilon closure but its matching GROUP_END tag
-                 * was not, the group was skipped via an optional/star branch.
-                 * Applying an unmatched start tag corrupts future group
-                 * reporting, so we suppress it here.
-                 */
-                for (int32 g = 0; g + 1 < META_MAX_TAGS; g += 2) {
-                    if (edge_cmd.set_tag[g] && !edge_cmd.set_tag[g + 1]) {
-                        edge_cmd.set_tag[g] = 0;
-                    }
-                }
-
                 state->commands[b] = edge_cmd;
 
                 tdfa_compute_core_transitions(regex->ops, &closed_set, b,
@@ -305,7 +291,7 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                     int32 eo;
 
                     start_tag_idx = (k*2) - 2;
-                    end_tag_idx = (k*2) - 1;
+                    end_tag_idx   = (k*2) - 1;
 
                     if (start_tag_idx < META_MAX_TAGS
                         && end_tag_idx < META_MAX_TAGS) {
