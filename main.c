@@ -265,9 +265,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
                   pattern_str);
             exit(EXIT_FAILURE);
         }
-        fuzzy[i].result_posix
-            = regexec(&compiled, fuzzy[i].input, MAX_MATCHES,
-                      fuzzy[i].pmatch_posix, 0);
+        fuzzy[i].result_posix = regexec(&compiled, fuzzy[i].input, MAX_MATCHES,
+                                        fuzzy[i].pmatch_posix, 0);
         regfree(&compiled);
 #endif
     }
