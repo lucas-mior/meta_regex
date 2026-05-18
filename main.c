@@ -43,7 +43,7 @@ static FILE *csv;
 #define ENABLE_LAZY_DFA 1
 #endif
 #if !defined(ENABLE_STATIC_DFA)
-#define ENABLE_STATIC_DFA 0
+#define ENABLE_STATIC_DFA 1
 #endif
 
 int32
