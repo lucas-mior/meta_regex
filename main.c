@@ -31,8 +31,10 @@ static void run_meta_only(RegexTest *tests, int32 count, char *description, bool
 static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract);
 
 #define RUN_KNOWN_PAIRS(ARRAY) \
+    run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, true); \
     run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, false)
 #define RUN_FUZZY_TESTS(ARRAY, MAX_STR_SIZE, NTESTS) \
+    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS, true); \
     run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS, false)
 
 #define FUZZY_PRECOMPILE_POSIX 1
@@ -40,7 +42,7 @@ static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extrac
 static FILE *csv;
 
 #if !defined(ENABLE_LAZY_DFA)
-#define ENABLE_LAZY_DFA 1
+#define ENABLE_LAZY_DFA 0
 #endif
 #if !defined(ENABLE_STATIC_DFA)
 #define ENABLE_STATIC_DFA 0
@@ -69,27 +71,27 @@ main(void) {
     fprintf(csv, "suite,case,count,posix_time,meta_time\n");
 
     printf(RED("\nTests with known (input, regex) pairs ...\n"));
-    /* RUN_KNOWN_PAIRS(ascii_no_group_no_backref); */
-    /* RUN_KNOWN_PAIRS(ascii_with_group_no_backref); */
-    /* RUN_KNOWN_PAIRS(ascii_with_group_and_backref); */
-    /* RUN_KNOWN_PAIRS(utf8_against_ascii); */
-    /* RUN_KNOWN_PAIRS(utf8_against_utf8); */
-    /* RUN_KNOWN_PAIRS(ascii_catastrophic_no_group_no_backref); */
+    RUN_KNOWN_PAIRS(ascii_no_group_no_backref);
+    RUN_KNOWN_PAIRS(ascii_with_group_no_backref);
+    RUN_KNOWN_PAIRS(ascii_with_group_and_backref);
+    RUN_KNOWN_PAIRS(utf8_against_ascii);
+    RUN_KNOWN_PAIRS(utf8_against_utf8);
+    RUN_KNOWN_PAIRS(ascii_catastrophic_no_group_no_backref);
     RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_no_backref);
-    /* RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_and_backref); */
+    RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_and_backref);
 
-    /* run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8", true); */
-    /* run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8", false); */
+    run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8", true);
+    run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8", false);
 
-    /* printf( */
-    /*     RED("\nTests with random inputs against extensive regex array ...\n")); */
-    /* for (int32 max_input_len = 1; max_input_len <= 4096; max_input_len *= 2) { */
-    /*     RUN_FUZZY_TESTS(regexes_extensive, max_input_len, 200); */
-    /* } */
+    printf(
+        RED("\nTests with random inputs against extensive regex array ...\n"));
+    for (int32 max_input_len = 1; max_input_len <= 4096; max_input_len *= 2) {
+        RUN_FUZZY_TESTS(regexes_extensive, max_input_len, 200);
+    }
 
-    /* printf(RED("\nTests from inputs/ against extensive regex array ...\n")); */
-    /* run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive), true); */
-    /* run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive), false); */
+    printf(RED("\nTests from inputs/ against extensive regex array ...\n"));
+    run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive), true);
+    run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive), false);
 
     if (fclose(csv)) {
         error("Error closing %s: %s.\n", csv_file, strerror(errno));
