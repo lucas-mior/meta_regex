@@ -55,6 +55,8 @@ typedef struct NfaStateSet {
     uint32 bits[META_PC_WORDS];
 } NfaStateSet;
 
+typedef struct LazyDfa LazyDfa;
+
 typedef struct MetaRegex {
     char *string;
     MetaOp ops[META_MAX_OPS];
@@ -66,7 +68,7 @@ typedef struct MetaRegex {
     int32 can_be_null;
     uint8 fastmap[META_FASTMAP_SIZE];
     Dfa *dfa;
-    void *lazy_dfa;
+    LazyDfa *lazy_dfa;
 } MetaRegex;
 
 #define R(...) (&(MetaRegex){ .string = __VA_ARGS__ })
