@@ -370,6 +370,10 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
     int32 start_dfa = 0;
 
     for (int32 i = 0; i < temp_ops_count; i += 1) {
+        if (item_count >= PREPROC_MAX_NFA_ITEMS) {
+            nfa_failed = true;
+            break;
+        }
         if (temp_ops[i].type == META_OP_ALTERNATION) {
             items[item_count].base_op.type = META_OP_ALTERNATION;
             items[item_count].quant = 0;
@@ -401,11 +405,17 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
         }
     }
 
-    nfa_accept = nfa_count;
-    nfa_count += 1;
-    nfa[nfa_accept].type = NFA_STATE_ACCEPT;
-    nfa[nfa_accept].next1 = -1;
-    nfa[nfa_accept].next2 = -1;
+    if (nfa_count >= PREPROC_MAX_NFA_STATES) {
+        nfa_failed = true;
+    }
+
+    if (!nfa_failed) {
+        nfa_accept = nfa_count;
+        nfa_count += 1;
+        nfa[nfa_accept].type = NFA_STATE_ACCEPT;
+        nfa[nfa_accept].next1 = -1;
+        nfa[nfa_accept].next2 = -1;
+    }
 
     for (int32 i = 0; i <= item_count; i += 1) {
         if (nfa_failed) {
@@ -413,6 +423,10 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
         }
         if (i == item_count || items[i].base_op.type == META_OP_ALTERNATION) {
             if (b_start == -1) {
+                if (nfa_count >= PREPROC_MAX_NFA_STATES) {
+                    nfa_failed = true;
+                    break;
+                }
                 b_start = nfa_count;
                 nfa_count += 1;
                 nfa[b_start].type = NFA_STATE_EMPTY;
@@ -539,6 +553,9 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                 }
                 l_out = copy;
             }
+            if (nfa_failed) {
+                break;
+            }
             if (items[i].max == -1) {
                 int32 s_star = nfa_count;
                 nfa_count += 1;
@@ -599,6 +616,9 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                         }
                     }
                     l_out = s_merge;
+                }
+                if (nfa_failed) {
+                    break;
                 }
             }
             if (f_start == -1) {

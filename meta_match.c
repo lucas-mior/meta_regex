@@ -21,7 +21,7 @@
 #include "xenums.c"
 
 #if !defined(ENABLE_LAZY_DFA)
-#define ENABLE_LAZY_DFA 0
+#define ENABLE_LAZY_DFA 1
 #endif
 #if !defined(ENABLE_STATIC_DFA)
 #define ENABLE_STATIC_DFA 1
