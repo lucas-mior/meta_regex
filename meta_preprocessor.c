@@ -1128,13 +1128,16 @@ main(int32 argc, char **argv) {
 
         paren_end = strchr(quote_end, ')');
         original_string_length = (int32)(quote_end - quote_start) + 1;
-        printf("&(MetaRegex){ .string = %.*s, .ops = { %s }, "
-               ".has_start_anchor = %d, .has_end_anchor = %d, "
-               ".has_alternation = %d, .re_nsub = %d, .has_backref = %d, "
-               ".can_be_null = %d, .fastmap = {",
-               original_string_length, quote_start, op_buffer, has_start,
-               has_end, has_alternation, group_counter, has_backref,
-               can_be_null);
+        printf("&(MetaRegex){ .string = %.*s, ",
+               original_string_length, quote_start);
+        printf(".ops = { %s }, ", op_buffer);
+        printf(".has_start_anchor = %d, ", has_start);
+        printf(".has_end_anchor = %d, ", has_end);
+        printf(".has_alternation = %d, ", has_alternation);
+        printf(".re_nsub = %d, ", group_counter);
+        printf(".has_backref = %d, ", has_backref);
+        printf(".can_be_null = %d, ", can_be_null);
+        printf(".fastmap = {");
 
         for (int32 i = 0; i < META_FASTMAP_SIZE; i += 1) {
             printf("0x%02x%s", fastmap[i],
