@@ -10,7 +10,7 @@ static const MatcherFeatures match_features_static_dfa = {
         META_OP_END | META_OP_LITERAL | META_OP_ANY | META_OP_CLASS
         | META_OP_GROUP_START | META_OP_GROUP_END | META_OP_STAR | META_OP_PLUS
         | META_OP_OPTIONAL | META_OP_ALTERNATION | META_OP_BOUNDED
-        | META_OP_SPLIT | META_OP_JUMP | META_OP_WORD_BOUNDARY 
+        | META_OP_SPLIT | META_OP_JUMP | META_OP_WORD_BOUNDARY
         | META_OP_NON_WORD_BOUNDARY | META_OP_WORD_START | META_OP_WORD_END),
     .extracts = false,
 };
@@ -20,13 +20,11 @@ match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
                  regmatch_t *pmatch, int32 pmatch_len) {
     StaticDfaState *states = regex->static_dfa->states;
     int32 start_idx = regex->static_dfa->start_state_nw;
-    
+
     if (offset > 0) {
         uint8 prev_b = input[offset - 1];
-        if ((prev_b >= 'a' && prev_b <= 'z') || 
-            (prev_b >= 'A' && prev_b <= 'Z') || 
-            (prev_b >= '0' && prev_b <= '9') || 
-            prev_b == '_') {
+        if ((prev_b >= 'a' && prev_b <= 'z') || (prev_b >= 'A' && prev_b <= 'Z')
+            || (prev_b >= '0' && prev_b <= '9') || prev_b == '_') {
             start_idx = regex->static_dfa->start_state_w;
         }
     }

@@ -103,19 +103,22 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
         if (op->type == META_OP_SPLIT) {
             int32 t1 = pc + op->value;
             int32 t2 = pc + op->min;
-            if (t1 >= 0 && t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+            if (t1 >= 0 && t1 <= ops_count
+                && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                 set->bits[t1 / 32] |= (1u << (t1 % 32));
                 stack[stack_ptr] = t1;
                 stack_ptr += 1;
             }
-            if (t2 >= 0 && t2 <= ops_count && !(set->bits[t2 / 32] & (1u << (t2 % 32)))) {
+            if (t2 >= 0 && t2 <= ops_count
+                && !(set->bits[t2 / 32] & (1u << (t2 % 32)))) {
                 set->bits[t2 / 32] |= (1u << (t2 % 32));
                 stack[stack_ptr] = t2;
                 stack_ptr += 1;
             }
         } else if (op->type == META_OP_JUMP) {
             int32 t1 = pc + op->value;
-            if (t1 >= 0 && t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+            if (t1 >= 0 && t1 <= ops_count
+                && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                 set->bits[t1 / 32] |= (1u << (t1 % 32));
                 stack[stack_ptr] = t1;
                 stack_ptr += 1;
@@ -123,7 +126,8 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
         } else if (op->type == META_OP_WORD_BOUNDARY) {
             if (prev_is_w != curr_is_w) {
                 int32 t1 = pc + 1;
-                if (t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+                if (t1 <= ops_count
+                    && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                     set->bits[t1 / 32] |= (1u << (t1 % 32));
                     stack[stack_ptr] = t1;
                     stack_ptr += 1;
@@ -132,7 +136,8 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
         } else if (op->type == META_OP_NON_WORD_BOUNDARY) {
             if (prev_is_w == curr_is_w) {
                 int32 t1 = pc + 1;
-                if (t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+                if (t1 <= ops_count
+                    && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                     set->bits[t1 / 32] |= (1u << (t1 % 32));
                     stack[stack_ptr] = t1;
                     stack_ptr += 1;
@@ -141,7 +146,8 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
         } else if (op->type == META_OP_WORD_START) {
             if (!prev_is_w && curr_is_w) {
                 int32 t1 = pc + 1;
-                if (t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+                if (t1 <= ops_count
+                    && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                     set->bits[t1 / 32] |= (1u << (t1 % 32));
                     stack[stack_ptr] = t1;
                     stack_ptr += 1;
@@ -150,7 +156,8 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
         } else if (op->type == META_OP_WORD_END) {
             if (prev_is_w && !curr_is_w) {
                 int32 t1 = pc + 1;
-                if (t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+                if (t1 <= ops_count
+                    && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                     set->bits[t1 / 32] |= (1u << (t1 % 32));
                     stack[stack_ptr] = t1;
                     stack_ptr += 1;
@@ -174,7 +181,8 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
                     depth -= 1;
                 } else if (ops[i].type == META_OP_ALTERNATION && depth == 0) {
                     int32 t2 = i + 1;
-                    if (t2 <= ops_count && !(set->bits[t2 / 32] & (1u << (t2 % 32)))) {
+                    if (t2 <= ops_count
+                        && !(set->bits[t2 / 32] & (1u << (t2 % 32)))) {
                         set->bits[t2 / 32] |= (1u << (t2 % 32));
                         stack[stack_ptr] = t2;
                         stack_ptr += 1;
@@ -215,9 +223,11 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
                 ParsedOp *next_op = &ops[pc + 1];
                 if (next_op->type == META_OP_STAR
                     || next_op->type == META_OP_OPTIONAL
-                    || (next_op->type == META_OP_BOUNDED && next_op->min == 0)) {
+                    || (next_op->type == META_OP_BOUNDED
+                        && next_op->min == 0)) {
                     int32 t1 = pc + 2;
-                    if (t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+                    if (t1 <= ops_count
+                        && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                         set->bits[t1 / 32] |= (1u << (t1 % 32));
                         stack[stack_ptr] = t1;
                         stack_ptr += 1;
@@ -588,7 +598,8 @@ static void
 generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                          int32 original_string_length, char *quote_start) {
     enum PreprocFailReason fail_reasons = 0;
-    static int32 dfa_transitions[META_MAX_STATIC_DFA_STATES][META_ALPHABET_SIZE];
+    static int32 dfa_transitions[META_MAX_STATIC_DFA_STATES]
+                                [META_ALPHABET_SIZE];
     static uint8 dfa_accept[META_MAX_STATIC_DFA_STATES][META_ALPHABET_SIZE];
     static DfaSet dfa_sets[META_MAX_STATIC_DFA_STATES];
     int32 dfa_count = 1;
@@ -702,8 +713,8 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
         }
     }
 
-    error2("regex "BLUE("%.*s")" created %d states.\n", 
-            original_string_length, quote_start, dfa_count);
+    error2("regex " BLUE("%.*s") " created %d states.\n",
+           original_string_length, quote_start, dfa_count);
 
     if (fail_reasons) {
         fprintf(stderr,
@@ -1567,4 +1578,3 @@ main(int32 argc, char **argv) {
     free2(buffer, file_size + 1);
     exit(EXIT_SUCCESS);
 }
-

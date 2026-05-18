@@ -24,11 +24,14 @@
 #define BENCHMARK 0
 #endif
 
-static void run_known_pairs(RegexTest *tests, int32 count, char *description, bool extract);
+static void run_known_pairs(RegexTest *tests, int32 count, char *description,
+                            bool extract);
 static void run_fuzzy_tests(MetaRegex **patterns, int32 tests_len,
                             int32 max_str_size, int32 ntests, bool extract);
-static void run_meta_only(RegexTest *tests, int32 count, char *description, bool extract);
-static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract);
+static void run_meta_only(RegexTest *tests, int32 count, char *description,
+                          bool extract);
+static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len,
+                                 bool extract);
 
 #define RUN_KNOWN_PAIRS(ARRAY) \
     run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, true); \
@@ -133,7 +136,8 @@ main(void) {
 #undef RUN_KNOWN_PAIRS
 
 static void
-run_known_pairs(RegexTest *tests, int32 count, char *description, bool extract) {
+run_known_pairs(RegexTest *tests, int32 count, char *description,
+                bool extract) {
     struct timespec t0_posix;
     struct timespec t1_posix;
     struct timespec t0_meta;
@@ -150,7 +154,8 @@ run_known_pairs(RegexTest *tests, int32 count, char *description, bool extract) 
         enabled |= MATCHER_STATIC_DFA;
     }
 
-    printf("\n----- Running %s (%s) (POSIX vs Meta) -----\n", description, extract ? "extracting" : "non-extracting");
+    printf("\n----- Running %s (%s) (POSIX vs Meta) -----\n", description,
+           extract ? "extracting" : "non-extracting");
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
     for (int32 i = 0; i < count; i += 1) {
@@ -189,8 +194,7 @@ run_known_pairs(RegexTest *tests, int32 count, char *description, bool extract) 
         regmatch_t *m_pmatch_ptr = extract ? tests_meta[i].pmatch : NULL;
 
         tests_meta[i].result = meta_regex_match(
-            meta_regex, input, input_len, m_pmatch_ptr,
-            m_pmatch_len, enabled);
+            meta_regex, input, input_len, m_pmatch_ptr, m_pmatch_len, enabled);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
@@ -229,7 +233,8 @@ run_known_pairs(RegexTest *tests, int32 count, char *description, bool extract) 
 
     double t_posix = timediff(t0_posix, t1_posix);
     double t_meta = timediff(t0_meta, t1_meta);
-    fprintf(csv, "%s,%s,%d,%f,%f\n", extract ? "known_pairs_extract" : "known_pairs_no_extract",
+    fprintf(csv, "%s,%s,%d,%f,%f\n",
+            extract ? "known_pairs_extract" : "known_pairs_no_extract",
             description, count, t_posix, t_meta);
 
     free2(tests_posix, count*SIZEOF(*tests_posix));
@@ -241,7 +246,8 @@ static void
 run_meta_only(RegexTest *tests, int32 count, char *description, bool extract) {
     struct timespec t0;
     struct timespec t1;
-    printf("\n----- Running %s (%s) (Meta Only) -----\n", description, extract ? "extracting" : "non-extracting");
+    printf("\n----- Running %s (%s) (Meta Only) -----\n", description,
+           extract ? "extracting" : "non-extracting");
     bool failed = false;
     enum Matcher enabled = MATCHER_BTNFA;
 
@@ -288,8 +294,9 @@ run_meta_only(RegexTest *tests, int32 count, char *description, bool extract) {
     }
 
     double t_meta = timediff(t0, t1);
-    fprintf(csv, "%s,%s,%d,0.0,%f\n", extract ? "meta_only_extract" : "meta_only_no_extract",
-            description, count, t_meta);
+    fprintf(csv, "%s,%s,%d,0.0,%f\n",
+            extract ? "meta_only_extract" : "meta_only_no_extract", description,
+            count, t_meta);
 
     return;
 }
@@ -349,9 +356,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         regmatch_t *pmatch_ptr = extract ? fuzzy[i].pmatch_posix : NULL;
 #if FUZZY_PRECOMPILE_POSIX
         int32 idx = fuzzy[i].regex_idx;
-        fuzzy[i].result_posix
-            = regexec(&posix_regexes[idx], fuzzy[i].input,
-                      pmatch_len, pmatch_ptr, 0);
+        fuzzy[i].result_posix = regexec(&posix_regexes[idx], fuzzy[i].input,
+                                        pmatch_len, pmatch_ptr, 0);
 #else
         regex_t compiled;
         char *pattern_str = tests[fuzzy[i].regex_idx]->string;
@@ -362,8 +368,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
             exit(EXIT_FAILURE);
         }
         fuzzy[i].result_posix
-            = regexec(&compiled, fuzzy[i].input, pmatch_len,
-                      pmatch_ptr, 0);
+            = regexec(&compiled, fuzzy[i].input, pmatch_len, pmatch_ptr, 0);
         regfree(&compiled);
 #endif
     }
@@ -377,9 +382,9 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         int32 m_pmatch_len = extract ? LENGTH(fuzzy[i].pmatch_meta) : 0;
         regmatch_t *m_pmatch_ptr = extract ? fuzzy[i].pmatch_meta : NULL;
 
-        fuzzy[i].result_meta = meta_regex_match(
-            meta_pattern, input, input_len, m_pmatch_ptr,
-            m_pmatch_len, enabled);
+        fuzzy[i].result_meta
+            = meta_regex_match(meta_pattern, input, input_len, m_pmatch_ptr,
+                               m_pmatch_len, enabled);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
@@ -410,7 +415,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
             error2("posix result: %d, meta result: %d\n", fuzzy[i].result_posix,
                    fuzzy[i].result_meta);
 
-            if (fuzzy[i].result_posix == 0 && fuzzy[i].result_meta == 0 && extract) {
+            if (fuzzy[i].result_posix == 0 && fuzzy[i].result_meta == 0
+                && extract) {
                 for (int32 m = 0; m < LENGTH(fuzzy[i].pmatch_posix); m += 1) {
                     regmatch_t p_m = fuzzy[i].pmatch_posix[m];
                     regmatch_t m_m = fuzzy[i].pmatch_meta[m];
@@ -435,8 +441,9 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         }
     }
 
-    fprintf(csv, "%s,%d,%d,%f,%f\n", extract ? "fuzzy_extract" : "fuzzy_no_extract",
-            max_str_size, fuzzy_len, t_posix, t_meta);
+    fprintf(csv, "%s,%d,%d,%f,%f\n",
+            extract ? "fuzzy_extract" : "fuzzy_no_extract", max_str_size,
+            fuzzy_len, t_posix, t_meta);
 
 #if FUZZY_PRECOMPILE_POSIX
     for (int32 i = 0; i < tests_len; i += 1) {
@@ -529,7 +536,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         int32 *results_posix = malloc2(tests_len*SIZEOF(*results_posix));
         int32 *results_meta = malloc2(tests_len*SIZEOF(*results_meta));
 
-        int64 pm_sz = tests_len*LENGTH(dummy_test.pmatch) * SIZEOF(regmatch_t);
+        int64 pm_sz
+            = tests_len*LENGTH(dummy_test.pmatch) * SIZEOF(regmatch_t);
         regmatch_t *pm_posix = malloc2(pm_sz);
         regmatch_t *pm_meta = malloc2(pm_sz);
 
@@ -541,7 +549,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
         for (int32 j = 0; j < tests_len; j += 1) {
             int32 pmatch_len = extract ? LENGTH(dummy_test.pmatch) : 0;
-            regmatch_t *curr_pm = extract ? &pm_posix[j*LENGTH(dummy_test.pmatch)] : NULL;
+            regmatch_t *curr_pm
+                = extract ? &pm_posix[j*LENGTH(dummy_test.pmatch)] : NULL;
             if (extract) {
                 for (int32 m = 0; m < LENGTH(dummy_test.pmatch); m += 1) {
                     curr_pm[m].rm_so = -1;
@@ -555,8 +564,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             regex_t compiled;
             char *pattern_str = tests[j]->string;
             if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
-                results_posix[j] = regexec(
-                    &compiled, (char *)input, pmatch_len, curr_pm, 0);
+                results_posix[j]
+                    = regexec(&compiled, (char *)input, pmatch_len, curr_pm, 0);
                 regfree(&compiled);
             } else {
                 results_posix[j] = REG_NOMATCH;
@@ -568,7 +577,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
         for (int32 j = 0; j < tests_len; j += 1) {
             int32 m_pmatch_len = extract ? LENGTH(dummy_test.pmatch) : 0;
-            regmatch_t *curr_m_pm = extract ? &pm_meta[j*LENGTH(dummy_test.pmatch)] : NULL;
+            regmatch_t *curr_m_pm
+                = extract ? &pm_meta[j*LENGTH(dummy_test.pmatch)] : NULL;
             if (extract) {
                 for (int32 m = 0; m < LENGTH(dummy_test.pmatch); m += 1) {
                     curr_m_pm[m].rm_so = -1;
@@ -578,15 +588,17 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             uint8 *meta_input = input;
             MetaRegex *meta_pattern = tests[j];
             results_meta[j]
-                = meta_regex_match(meta_pattern, meta_input, input_len, curr_m_pm,
-                                   m_pmatch_len, enabled);
+                = meta_regex_match(meta_pattern, meta_input, input_len,
+                                   curr_m_pm, m_pmatch_len, enabled);
         }
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
         for (int32 j = 0; j < tests_len; j += 1) {
             int32 mismatch = 0;
-            regmatch_t *curr_posix = extract ? &pm_posix[j*LENGTH(dummy_test.pmatch)] : NULL;
-            regmatch_t *curr_meta = extract ? &pm_meta[j*LENGTH(dummy_test.pmatch)] : NULL;
+            regmatch_t *curr_posix
+                = extract ? &pm_posix[j*LENGTH(dummy_test.pmatch)] : NULL;
+            regmatch_t *curr_meta
+                = extract ? &pm_meta[j*LENGTH(dummy_test.pmatch)] : NULL;
 
             if (results_posix[j] != results_meta[j]) {
                 mismatch = 1;
@@ -627,7 +639,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
 
         double t_posix = timediff(t0_posix, t1_posix);
         double t_meta = timediff(t0_meta, t1_meta);
-        fprintf(csv, "%s,%s,%d,%f,%f\n", extract ? "file_fuzzy_extract" : "file_fuzzy_no_extract",
+        fprintf(csv, "%s,%s,%d,%f,%f\n",
+                extract ? "file_fuzzy_extract" : "file_fuzzy_no_extract",
                 case_name, tests_len, t_posix, t_meta);
 
         free2(results_posix, tests_len*SIZEOF(*results_posix));
