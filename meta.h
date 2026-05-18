@@ -69,6 +69,7 @@ typedef struct MetaRegex {
     int32 re_nsub;
     int32 has_backref;
     int32 can_be_null;
+    enum MetaOpType used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
     StaticDfa *static_dfa;
     LazyDfa *lazy_dfa;
