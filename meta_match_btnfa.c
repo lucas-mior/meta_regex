@@ -21,11 +21,11 @@ btnfa_quick_lookahead_fails(MetaOp *next_op, uint8 *curr_str) {
             if (*curr_str == '\0') {
                 return 1;
             }
-            if ((int32)(uint8)*curr_str != next_op->value) {
+            if ((int32)*curr_str != next_op->value) {
                 return 1;
             }
         } else if (next_op->type == META_OP_CLASS) {
-            uint8 fb = (uint8)*curr_str;
+            uint8 fb = *curr_str;
 
             if (fb == '\0') {
                 return 1;
@@ -466,14 +466,14 @@ try_match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                             if (s[count] == '\0') {
                                 break;
                             }
-                            if ((int32)(uint8)s[count] != token.value) {
+                            if ((int32)s[count] != token.value) {
                                 break;
                             }
                             count += 1;
                         }
                     } else if (token.type == META_OP_CLASS) {
                         while (max_req == -1 || count < max_req) {
-                            uint8 fb = (uint8)s[count];
+                            uint8 fb = s[count];
 
                             if (fb == '\0') {
                                 break;
@@ -528,7 +528,7 @@ try_match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                     break;
                 } else {
                     int32 is_match = 0;
-                    uint8 fb = (uint8)input[0];
+                    uint8 fb = input[0];
                     int32 consumed = 0;
 
                     if (fb == '\0') {

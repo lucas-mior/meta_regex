@@ -11,7 +11,7 @@ try_match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len,
     (void)input_len;
 
     for (int32 i = offset;; i += 1) {
-        uint8 b = (uint8)input[i];
+        uint8 b = input[i];
 
         if (current_state_ptr->is_accepting) {
             last_accept = i;

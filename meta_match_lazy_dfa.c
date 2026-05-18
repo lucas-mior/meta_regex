@@ -46,7 +46,7 @@ try_match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len,
     int32 current_state_id;
     int32 last_accept = -1;
     int32 prev_is_word
-        = (offset > 0) ? is_word_char((uint8)input[offset - 1]) : 0;
+        = (offset > 0) ? is_word_char(input[offset - 1]) : 0;
     (void)input_len;
 
     if (ldfa == NULL) {
@@ -97,7 +97,7 @@ try_match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len,
     }
 
     for (int32 i = offset;; i += 1) {
-        uint8 b = (uint8)input[i];
+        uint8 b = input[i];
 
         if (b == '\0') {
             if (current_state_id > 0
