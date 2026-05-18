@@ -6,7 +6,7 @@
 #include "meta_util.c"
 #include <regex.h>
 
-static const MatcherFeatures match_lazy_dfa_features = {
+static const MatcherFeatures match_features_lazy_dfa = {
     .supports = (enum MetaOpType)(
         META_OP_END | META_OP_LITERAL | META_OP_ANY | META_OP_CLASS
         | META_OP_GROUP_START | META_OP_GROUP_END | META_OP_STAR | META_OP_PLUS

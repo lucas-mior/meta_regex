@@ -23,9 +23,9 @@
 #define USE_DFA_THRESHOLD 128
 
 static MatcherFeatures matchers[] = {
-    [MATCHER_BTNFA] = match_btnfa_features,
-    [MATCHER_LAZY_DFA] = match_lazy_dfa_features,
-    [MATCHER_STATIC_DFA] = match_static_dfa_features,
+    [MATCHER_BTNFA] = match_features_btnfa,
+    [MATCHER_LAZY_DFA] = match_features_lazy_dfa,
+    [MATCHER_STATIC_DFA] = match_features_static_dfa,
 };
 
 static int32

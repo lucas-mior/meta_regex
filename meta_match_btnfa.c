@@ -1,7 +1,7 @@
 #if !defined(META_MATCH_BTNFA)
 #define META_MATCH_BTNFA
 
-static const MatcherFeatures match_btnfa_features = {
+static const MatcherFeatures match_features_btnfa = {
     .supports = (enum MetaOpType)(
         META_OP_END | META_OP_LITERAL | META_OP_ANY | META_OP_CLASS
         | META_OP_GROUP_START | META_OP_GROUP_END | META_OP_STAR | META_OP_PLUS
