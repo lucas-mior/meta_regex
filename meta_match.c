@@ -41,7 +41,7 @@ static int32
 meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len, int64 nmatch,
                  regmatch_t pmatch[]) {
     enum MatchAlgorithm algorithm = MATCH_ALGO_BTNFA;
-    int32 result;
+    int32 result = 0;
 
     if (regex == NULL) {
         return REG_NOMATCH;
@@ -60,9 +60,7 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len, int64 nmatch,
     if (regex->has_backref) {
         algorithm = MATCH_ALGO_BTNFA;
     } else {
-        int32 has_unsupported;
-
-        has_unsupported = 0;
+        int32 has_unsupported = 0;
 
 #if !ALGO_LAZY_DFA
         for (int32 i = 0; regex->ops[i].type != META_OP_END; i += 1) {
@@ -105,11 +103,8 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len, int64 nmatch,
         }
 
         for (int32 j = 0;; j += 1) {
-            uchar b;
-            int32 bit_match;
-
-            b = (uchar)input[j];
-            bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
+            uchar b = (uchar)input[j];
+            int32 bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
 
             if (bit_match || regex->can_be_null) {
                 result = try_match_btnfa(regex, input, input_len, j, nmatch,
@@ -134,11 +129,8 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len, int64 nmatch,
         }
 
         for (int32 j = 0;; j += 1) {
-            uchar b;
-            int32 bit_match;
-
-            b = (uchar)input[j];
-            bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
+            uchar b = (uchar)input[j];
+            int32 bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
 
             if (bit_match || regex->can_be_null) {
                 result = try_match_lazy_dfa(regex, input, input_len, j, nmatch,
@@ -163,11 +155,8 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len, int64 nmatch,
         }
 
         for (int32 j = 0;; j += 1) {
-            uchar b;
-            int32 bit_match;
-
-            b = (uchar)input[j];
-            bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
+            uchar b = (uchar)input[j];
+            int32 bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
 
             if (bit_match || regex->can_be_null) {
                 result = try_match_static_dfa(regex, input, input_len, j,
