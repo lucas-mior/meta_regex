@@ -64,9 +64,8 @@ set_fastmap_bit(uchar *fastmap, int32 c) {
 
 static int32
 get_branch_weight(ParsedOp *ops, int32 count) {
-    int32 weight;
+    int32 weight = 0;
 
-    weight = 0;
     for (int32 i = 0; i < count; i += 1) {
         if (ops[i].type == META_OP_LITERAL || ops[i].type == META_OP_CLASS
             || ops[i].type == META_OP_ANY || ops[i].type == META_OP_BACKREF) {
@@ -78,22 +77,19 @@ get_branch_weight(ParsedOp *ops, int32 count) {
 
 static void
 sort_alternations(ParsedOp *ops, int32 count) {
-    int32 i;
+    int32 i = 0;
     int32 branch_starts[PREPROC_MAX_BRANCHES];
     int32 branch_ends[PREPROC_MAX_BRANCHES];
     int32 branch_keys[PREPROC_MAX_BRANCHES];
-    int32 num_branches;
-    int32 current_start;
-    int32 depth;
+    int32 num_branches = 0;
+    int32 current_start = 0;
+    int32 depth = 0;
 
-    i = 0;
     while (i < count) {
         if (ops[i].type == META_OP_GROUP_START) {
-            int32 depth_inner;
-            int32 end;
+            int32 depth_inner = 0;
+            int32 end = i + 1;
 
-            depth_inner = 0;
-            end = i + 1;
             while (end < count) {
                 if (ops[end].type == META_OP_GROUP_START) {
                     depth_inner += 1;
@@ -114,10 +110,6 @@ sort_alternations(ParsedOp *ops, int32 count) {
         }
     }
 
-    num_branches = 0;
-    current_start = 0;
-    depth = 0;
-
     for (int32 j = 0; j < count; j += 1) {
         if (ops[j].type == META_OP_GROUP_START) {
             depth += 1;
@@ -130,8 +122,7 @@ sort_alternations(ParsedOp *ops, int32 count) {
             branch_starts[num_branches] = current_start;
             branch_ends[num_branches] = j;
 
-            int32 key;
-            key = 98;
+            int32 key = 98;
             for (int32 k = current_start; k < j; k += 1) {
                 if (ops[k].type == META_OP_LITERAL) {
                     key = ops[k].value;
@@ -147,8 +138,7 @@ sort_alternations(ParsedOp *ops, int32 count) {
     branch_starts[num_branches] = current_start;
     branch_ends[num_branches] = count;
 
-    int32 final_key;
-    final_key = 98;
+    int32 final_key = 98;
     for (int32 k = current_start; k < count; k += 1) {
         if (ops[k].type == META_OP_LITERAL) {
             final_key = ops[k].value;
@@ -161,20 +151,17 @@ sort_alternations(ParsedOp *ops, int32 count) {
     if (num_branches > 1) {
         ParsedOp temp_buf[PREPROC_MAX_TEMP_OPS];
         int32 sorted_indices[PREPROC_MAX_BRANCHES];
-        int32 write_idx;
+        int32 write_idx = 0;
 
         for (int32 b = 0; b < num_branches; b += 1) {
             sorted_indices[b] = b;
         }
 
         for (int32 b1 = 1; b1 < num_branches; b1 += 1) {
-            int32 key_item;
-            int32 idx_item;
-            int32 b2;
+            int32 idx_item = sorted_indices[b1];
+            int32 key_item = branch_keys[idx_item];
+            int32 b2 = b1 - 1;
 
-            idx_item = sorted_indices[b1];
-            key_item = branch_keys[idx_item];
-            b2 = b1 - 1;
             while (b2 >= 0 && branch_keys[sorted_indices[b2]] > key_item) {
                 sorted_indices[b2 + 1] = sorted_indices[b2];
                 b2 -= 1;
@@ -182,15 +169,11 @@ sort_alternations(ParsedOp *ops, int32 count) {
             sorted_indices[b2 + 1] = idx_item;
         }
 
-        write_idx = 0;
         for (int32 b = 0; b < num_branches; b += 1) {
-            int32 idx;
-            int32 b_start;
-            int32 b_end;
+            int32 idx = sorted_indices[b];
+            int32 b_start = branch_starts[idx];
+            int32 b_end = branch_ends[idx];
 
-            idx = sorted_indices[b];
-            b_start = branch_starts[idx];
-            b_end = branch_ends[idx];
             for (int32 j = b_start; j < b_end; j += 1) {
                 temp_buf[write_idx] = ops[j];
                 write_idx += 1;
@@ -210,8 +193,8 @@ sort_alternations(ParsedOp *ops, int32 count) {
 static int32
 compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uchar *fastmap,
                   uint8 *visited) {
-    enum MetaOpType type;
-    int32 is_null;
+    enum MetaOpType type = 0;
+    int32 is_null = 0;
 
     if (pc >= temp_ops_count) {
         return 1;
@@ -271,23 +254,18 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uchar *fastmap,
         }
         return 0;
     } else if (type == META_OP_SPLIT) {
-        int32 p1;
-        int32 p2;
-
-        p1 = compute_first_set(ops, pc + ops[pc].value, temp_ops_count, fastmap,
+        int32 p1 = compute_first_set(ops, pc + ops[pc].value, temp_ops_count, fastmap,
                                visited);
-        p2 = compute_first_set(ops, pc + ops[pc].min, temp_ops_count, fastmap,
+        int32 p2 = compute_first_set(ops, pc + ops[pc].min, temp_ops_count, fastmap,
                                visited);
         return (p1 || p2);
     } else if (type == META_OP_JUMP) {
         return compute_first_set(ops, pc + ops[pc].value, temp_ops_count,
                                  fastmap, visited);
     } else if (type == META_OP_ALTERNATION) {
-        int32 depth;
-        int32 target;
+        int32 depth = 0;
+        int32 target = pc;
 
-        depth = 0;
-        target = pc;
         while (target < temp_ops_count) {
             if (ops[target].type == META_OP_GROUP_START) {
                 depth += 1;
@@ -301,13 +279,11 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uchar *fastmap,
         }
         return compute_first_set(ops, target, temp_ops_count, fastmap, visited);
     } else if (type == META_OP_GROUP_START) {
-        int32 depth;
-        int32 scan;
+        int32 depth = 0;
+        int32 scan = pc + 1;
 
-        depth = 0;
         is_null
             = compute_first_set(ops, pc + 1, temp_ops_count, fastmap, visited);
-        scan = pc + 1;
         while (scan < temp_ops_count) {
             if (ops[scan].type == META_OP_GROUP_START) {
                 depth += 1;
@@ -340,10 +316,10 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uchar *fastmap,
 
 int32
 main(int32 argc, char **argv) {
-    FILE *input_file;
-    int64 file_size;
-    char *buffer;
-    char *cursor;
+    FILE *input_file = NULL;
+    int64 file_size = 0;
+    char *buffer = NULL;
+    char *cursor = NULL;
     char *macro_start = "R(";
 
     if (argc < 2) {
@@ -377,20 +353,20 @@ main(int32 argc, char **argv) {
     cursor = buffer;
 
     while (true) {
-        char *found_macro;
-        char *quote_start;
-        char *quote_end;
-        char *paren_end;
+        char *found_macro = NULL;
+        char *quote_start = NULL;
+        char *quote_end = NULL;
+        char *paren_end = NULL;
         char raw_string[PREPROC_MAX_STRING_LEN] = {0};
         char regex_string[PREPROC_MAX_STRING_LEN] = {0};
         char op_buffer[PREPROC_OP_BUFFER_SIZE] = {0};
         char *op_ptr = op_buffer;
         int32 space = SIZEOF(op_buffer);
-        int32 prefix_length;
+        int32 prefix_length = 0;
         int32 has_start = 0;
         int32 has_end = 0;
         int32 regex_index = 0;
-        int32 original_string_length;
+        int32 original_string_length = 0;
         int32 group_counter = 0;
         int32 group_stack[PREPROC_MAX_GROUP_STACK] = {0};
         int32 group_stack_ptr = 0;
@@ -401,7 +377,6 @@ main(int32 argc, char **argv) {
         uchar fastmap[META_FASTMAP_SIZE] = {0};
         int32 can_be_null = 0;
 
-        found_macro = NULL;
         {
             char *scan = cursor;
             int32 in_line_comment = 0;
@@ -826,9 +801,8 @@ main(int32 argc, char **argv) {
                 break;
             }
             case ')': {
-                int32 current_group;
+                int32 current_group = group_stack[group_stack_ptr - 1];
                 group_stack_ptr -= 1;
-                current_group = group_stack[group_stack_ptr];
                 temp_ops[temp_ops_count].type = META_OP_GROUP_END;
                 temp_ops[temp_ops_count].value = current_group;
                 temp_ops_count += 1;
@@ -979,8 +953,7 @@ main(int32 argc, char **argv) {
             case '\\': {
                 regex_index += 1;
                 if (regex_string[regex_index] != '\0') {
-                    int32 c_cp;
-                    c_cp = (uchar)regex_string[regex_index];
+                    int32 c_cp = (uchar)regex_string[regex_index];
                     if (c_cp == 's' || c_cp == 'S') {
                         temp_ops[temp_ops_count].type = META_OP_CLASS;
                         for (int32 i = 0; i < META_CHAR_BITMASK_WORDS; i += 1) {
@@ -1050,8 +1023,8 @@ main(int32 argc, char **argv) {
 
         {
             uint8 visited[PREPROC_MAX_TEMP_OPS];
-            int32 depth;
-            int32 scan;
+            int32 depth = 0;
+            int32 scan = 0;
 
             for (int32 i = 0; i < PREPROC_MAX_TEMP_OPS; i += 1) {
                 visited[i] = 0;
@@ -1061,8 +1034,6 @@ main(int32 argc, char **argv) {
                                             fastmap, visited);
 
             if (has_alternation) {
-                depth = 0;
-                scan = 0;
                 while (scan < temp_ops_count) {
                     if (temp_ops[scan].type == META_OP_GROUP_START) {
                         depth += 1;
@@ -1136,8 +1107,7 @@ main(int32 argc, char **argv) {
                               "{META_OP_BACKREF, %d, 0, 0, {0}},\n",
                               temp_ops[i].value);
             } else {
-                char *type_str;
-                type_str = "META_OP_UNKNOWN";
+                char *type_str = "META_OP_UNKNOWN";
                 if (temp_ops[i].type == META_OP_STAR) {
                     type_str = "META_OP_STAR";
                 } else if (temp_ops[i].type == META_OP_PLUS) {
@@ -1216,7 +1186,7 @@ main(int32 argc, char **argv) {
                 NfaItem items[PREPROC_MAX_NFA_ITEMS];
                 int32 item_count = 0;
                 int32 nfa_failed = 0;
-                int32 nfa_accept;
+                int32 nfa_accept = 0;
                 int32 branch_starts[PREPROC_MAX_BRANCHES];
                 int32 branch_count = 0;
                 int32 b_start = -1;
@@ -1532,7 +1502,7 @@ main(int32 argc, char **argv) {
                                     || nfa[i].type == NFA_STATE_EMPTY) {
                                     if (nfa[i].next1 != -1
                                         && !(start_set.bits[nfa[i].next1
-                                                            / BITS_PER_UINT32]
+                                                             / BITS_PER_UINT32]
                                              & (1u << (nfa[i].next1
                                                        % BITS_PER_UINT32)))) {
                                         start_set.bits[nfa[i].next1
@@ -1544,7 +1514,7 @@ main(int32 argc, char **argv) {
                                     if (nfa[i].type == NFA_STATE_SPLIT
                                         && nfa[i].next2 != -1
                                         && !(start_set.bits[nfa[i].next2
-                                                            / BITS_PER_UINT32]
+                                                             / BITS_PER_UINT32]
                                              & (1u << (nfa[i].next2
                                                        % BITS_PER_UINT32)))) {
                                         start_set.bits[nfa[i].next2
