@@ -15,9 +15,6 @@
 #define PREPROC_MAX_BRANCHES 128
 #define PREPROC_NFA_BITSET_WORDS 64
 
-#define BITS_PER_UINT8 8
-#define BITS_PER_UINT32 32
-
 enum NfaStateType {
     NFA_STATE_ACCEPT = 0,
     NFA_STATE_LITERAL = 1,
@@ -57,7 +54,7 @@ typedef struct DfaSet {
 static void
 set_fastmap_bit(uint8 *fastmap, int32 c) {
     if (c >= 0 && c < META_ALPHABET_SIZE) {
-        fastmap[c / BITS_PER_UINT8] |= (1 << (c % BITS_PER_UINT8));
+        fastmap[c / 8] |= (1 << (c % 8));
     }
     return;
 }
@@ -223,8 +220,8 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uint8 *fastmap,
         return 0;
     } else if (type == META_OP_CLASS) {
         for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
-            if ((ops[pc].mask[c / BITS_PER_UINT32]
-                 & (1u << (c % BITS_PER_UINT32)))
+            if ((ops[pc].mask[c / 32]
+                 & (1u << (c % 32)))
                 != 0) {
                 set_fastmap_bit(fastmap, c);
             }
@@ -898,8 +895,8 @@ main(int32 argc, char **argv) {
                                                  || (c == 127));
                                     }
                                     if (match) {
-                                        mask[c / BITS_PER_UINT32]
-                                            |= (1u << (c % BITS_PER_UINT32));
+                                        mask[c / 32]
+                                            |= (1u << (c % 32));
                                     }
                                 }
                             }
@@ -930,8 +927,8 @@ main(int32 argc, char **argv) {
                         regex_index += 2;
                     }
                     for (int32 c = c1; c <= c2; c += 1) {
-                        mask[c / BITS_PER_UINT32]
-                            |= (1u << (c % BITS_PER_UINT32));
+                        mask[c / 32]
+                            |= (1u << (c % 32));
                     }
                     first_char = 0;
                 }
@@ -959,18 +956,18 @@ main(int32 argc, char **argv) {
                         for (int32 i = 0; i < META_CHAR_BITMASK_WORDS; i += 1) {
                             temp_ops[temp_ops_count].mask[i] = 0;
                         }
-                        temp_ops[temp_ops_count].mask[' ' / BITS_PER_UINT32]
-                            |= (1u << (' ' % BITS_PER_UINT32));
-                        temp_ops[temp_ops_count].mask['\t' / BITS_PER_UINT32]
-                            |= (1u << ('\t' % BITS_PER_UINT32));
-                        temp_ops[temp_ops_count].mask['\n' / BITS_PER_UINT32]
-                            |= (1u << ('\n' % BITS_PER_UINT32));
-                        temp_ops[temp_ops_count].mask['\r' / BITS_PER_UINT32]
-                            |= (1u << ('\r' % BITS_PER_UINT32));
-                        temp_ops[temp_ops_count].mask['\f' / BITS_PER_UINT32]
-                            |= (1u << ('\f' % BITS_PER_UINT32));
-                        temp_ops[temp_ops_count].mask['\v' / BITS_PER_UINT32]
-                            |= (1u << ('\v' % BITS_PER_UINT32));
+                        temp_ops[temp_ops_count].mask[' ' / 32]
+                            |= (1u << (' ' % 32));
+                        temp_ops[temp_ops_count].mask['\t' / 32]
+                            |= (1u << ('\t' % 32));
+                        temp_ops[temp_ops_count].mask['\n' / 32]
+                            |= (1u << ('\n' % 32));
+                        temp_ops[temp_ops_count].mask['\r' / 32]
+                            |= (1u << ('\r' % 32));
+                        temp_ops[temp_ops_count].mask['\f' / 32]
+                            |= (1u << ('\f' % 32));
+                        temp_ops[temp_ops_count].mask['\v' / 32]
+                            |= (1u << ('\v' % 32));
 
                         if (c_cp == 'S') {
                             for (int32 i = 0; i < META_CHAR_BITMASK_WORDS;
@@ -1492,38 +1489,38 @@ main(int32 argc, char **argv) {
                     for (int32 i = 0; i < PREPROC_NFA_BITSET_WORDS; i += 1) {
                         start_set.bits[i] = 0;
                     }
-                    start_set.bits[nfa_start_state / BITS_PER_UINT32]
-                        |= (1u << (nfa_start_state % BITS_PER_UINT32));
+                    start_set.bits[nfa_start_state / 32]
+                        |= (1u << (nfa_start_state % 32));
 
                     int32 changed = 1;
                     while (changed) {
                         changed = 0;
                         for (int32 i = 0; i < nfa_count; i += 1) {
-                            if ((start_set.bits[i / BITS_PER_UINT32]
-                                 & (1u << (i % BITS_PER_UINT32)))) {
+                            if ((start_set.bits[i / 32]
+                                 & (1u << (i % 32)))) {
                                 if (nfa[i].type == NFA_STATE_SPLIT
                                     || nfa[i].type == NFA_STATE_EMPTY) {
                                     if (nfa[i].next1 != -1
                                         && !(start_set.bits[nfa[i].next1
-                                                            / BITS_PER_UINT32]
+                                                            / 32]
                                              & (1u << (nfa[i].next1
-                                                       % BITS_PER_UINT32)))) {
+                                                       % 32)))) {
                                         start_set.bits[nfa[i].next1
-                                                       / BITS_PER_UINT32]
+                                                       / 32]
                                             |= (1u << (nfa[i].next1
-                                                       % BITS_PER_UINT32));
+                                                       % 32));
                                         changed = 1;
                                     }
                                     if (nfa[i].type == NFA_STATE_SPLIT
                                         && nfa[i].next2 != -1
                                         && !(start_set.bits[nfa[i].next2
-                                                            / BITS_PER_UINT32]
+                                                            / 32]
                                              & (1u << (nfa[i].next2
-                                                       % BITS_PER_UINT32)))) {
+                                                       % 32)))) {
                                         start_set.bits[nfa[i].next2
-                                                       / BITS_PER_UINT32]
+                                                       / 32]
                                             |= (1u << (nfa[i].next2
-                                                       % BITS_PER_UINT32));
+                                                       % 32));
                                         changed = 1;
                                     }
                                 }
@@ -1551,8 +1548,8 @@ main(int32 argc, char **argv) {
                     } else if (dfa_count < META_MAX_DFA_STATES) {
                         dfa_sets[dfa_count] = start_set;
                         dfa_accept[dfa_count]
-                            = (start_set.bits[nfa_accept / BITS_PER_UINT32]
-                               & (1u << (nfa_accept % BITS_PER_UINT32)))
+                            = (start_set.bits[nfa_accept / 32]
+                               & (1u << (nfa_accept % 32)))
                               != 0;
                         for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                             dfa_transitions[dfa_count][c] = 0;
@@ -1576,31 +1573,31 @@ main(int32 argc, char **argv) {
                                 }
                                 int32 has_next = 0;
                                 for (int32 i = 0; i < nfa_count; i += 1) {
-                                    if ((dfa_sets[d].bits[i / BITS_PER_UINT32]
-                                         & (1u << (i % BITS_PER_UINT32)))) {
+                                    if ((dfa_sets[d].bits[i / 32]
+                                         & (1u << (i % 32)))) {
                                         if (nfa[i].type == NFA_STATE_LITERAL
                                             && nfa[i].c == c) {
                                             next_set.bits[nfa[i].next1
-                                                          / BITS_PER_UINT32]
+                                                          / 32]
                                                 |= (1u << (nfa[i].next1
-                                                           % BITS_PER_UINT32));
+                                                           % 32));
                                             has_next = 1;
                                         } else if (
                                             nfa[i].type == NFA_STATE_CLASS
-                                            && (nfa[i].mask[c / BITS_PER_UINT32]
+                                            && (nfa[i].mask[c / 32]
                                                 & (1u
-                                                   << (c % BITS_PER_UINT32)))) {
+                                                   << (c % 32)))) {
                                             next_set.bits[nfa[i].next1
-                                                          / BITS_PER_UINT32]
+                                                          / 32]
                                                 |= (1u << (nfa[i].next1
-                                                           % BITS_PER_UINT32));
+                                                           % 32));
                                             has_next = 1;
                                         } else if (nfa[i].type
                                                    == NFA_STATE_ANY) {
                                             next_set.bits[nfa[i].next1
-                                                          / BITS_PER_UINT32]
+                                                          / 32]
                                                 |= (1u << (nfa[i].next1
-                                                           % BITS_PER_UINT32));
+                                                           % 32));
                                             has_next = 1;
                                         }
                                     }
@@ -1612,10 +1609,10 @@ main(int32 argc, char **argv) {
                                         for (int32 i = 0; i < nfa_count;
                                              i += 1) {
                                             if ((next_set
-                                                     .bits[i / BITS_PER_UINT32]
+                                                     .bits[i / 32]
                                                  & (1u
                                                     << (i
-                                                        % BITS_PER_UINT32)))) {
+                                                        % 32)))) {
                                                 if (nfa[i].type
                                                         == NFA_STATE_SPLIT
                                                     || nfa[i].type
@@ -1624,16 +1621,16 @@ main(int32 argc, char **argv) {
                                                         && !(
                                                             next_set.bits
                                                                 [nfa[i].next1
-                                                                 / BITS_PER_UINT32]
+                                                                 / 32]
                                                             & (1u
                                                                << (nfa[i].next1
-                                                                   % BITS_PER_UINT32)))) {
+                                                                   % 32)))) {
                                                         next_set.bits
                                                             [nfa[i].next1
-                                                             / BITS_PER_UINT32]
+                                                             / 32]
                                                             |= (1u
                                                                 << (nfa[i].next1
-                                                                    % BITS_PER_UINT32));
+                                                                    % 32));
                                                         changed = 1;
                                                     }
                                                     if (nfa[i].type
@@ -1642,16 +1639,16 @@ main(int32 argc, char **argv) {
                                                         && !(
                                                             next_set.bits
                                                                 [nfa[i].next2
-                                                                 / BITS_PER_UINT32]
+                                                                 / 32]
                                                             & (1u
                                                                << (nfa[i].next2
-                                                                   % BITS_PER_UINT32)))) {
+                                                                   % 32)))) {
                                                         next_set.bits
                                                             [nfa[i].next2
-                                                             / BITS_PER_UINT32]
+                                                             / 32]
                                                             |= (1u
                                                                 << (nfa[i].next2
-                                                                    % BITS_PER_UINT32));
+                                                                    % 32));
                                                         changed = 1;
                                                     }
                                                 }
@@ -1684,9 +1681,9 @@ main(int32 argc, char **argv) {
                                         dfa_sets[dfa_count] = next_set;
                                         dfa_accept[dfa_count]
                                             = (next_set.bits[nfa_accept
-                                                             / BITS_PER_UINT32]
+                                                             / 32]
                                                & (1u << (nfa_accept
-                                                         % BITS_PER_UINT32)))
+                                                         % 32)))
                                               != 0;
                                         for (int32 k = 0;
                                              k < META_ALPHABET_SIZE; k += 1) {
