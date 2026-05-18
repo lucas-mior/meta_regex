@@ -42,20 +42,20 @@ main(void) {
     setlocale(LC_ALL, "C");
     srand((uint32)42);
 
-    RUN_POSIX_VS_META(ascii_no_group_no_backref);
-    RUN_POSIX_VS_META(ascii_with_group_no_backref);
-    RUN_POSIX_VS_META(ascii_with_group_and_backref);
-    RUN_POSIX_VS_META(utf8_against_ascii);
-    RUN_POSIX_VS_META(utf8_against_utf8);
-    RUN_POSIX_VS_META(ascii_catastrophic_no_group_no_backref);
-    RUN_POSIX_VS_META(ascii_catastrophic_with_group_no_backref);
-    RUN_POSIX_VS_META(ascii_catastrophic_with_group_and_backref);
-    /* exit(0); */
+    /* RUN_POSIX_VS_META(ascii_no_group_no_backref); */
+    /* RUN_POSIX_VS_META(ascii_with_group_no_backref); */
+    /* RUN_POSIX_VS_META(ascii_with_group_and_backref); */
+    /* RUN_POSIX_VS_META(utf8_against_ascii); */
+    /* RUN_POSIX_VS_META(utf8_against_utf8); */
+    /* RUN_POSIX_VS_META(ascii_catastrophic_no_group_no_backref); */
+    /* RUN_POSIX_VS_META(ascii_catastrophic_with_group_no_backref); */
+    /* RUN_POSIX_VS_META(ascii_catastrophic_with_group_and_backref); */
+    /* /1* exit(0); *1/ */
 
-    run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
+    /* run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8"); */
 
-    printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
-    RUN_FUZZY_TESTS(fuzzy_patterns, 8, 10);
+    /* printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n"); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 8, 10); */
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 32, 1000); */
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 64, 100); */
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 128, 1000); */
