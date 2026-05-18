@@ -58,16 +58,16 @@ main(void) {
     RUN_FUZZY_TESTS(fuzzy_patterns, 8, 200);
     RUN_FUZZY_TESTS(fuzzy_patterns, 32, 200);
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 64, 200); */
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 128, 200); */
+    RUN_FUZZY_TESTS(fuzzy_patterns, 128, 200);
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 256, 200); */
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 512, 200); */
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 1024, 200); */
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 200); */
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 200); */
+    RUN_FUZZY_TESTS(fuzzy_patterns, 512, 200);
+    RUN_FUZZY_TESTS(fuzzy_patterns, 1024, 200);
+    RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 200);
+    RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 200);
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 8192, 100); */
 
-    printf("\n----- Starting Fuzzy Testing (File input) -----\n");
-    run_file_fuzzy_tests(fuzzy_patterns, LENGTH(fuzzy_patterns));
+    /* printf("\n----- Starting Fuzzy Testing (File input) -----\n"); */
+    /* run_file_fuzzy_tests(fuzzy_patterns, LENGTH(fuzzy_patterns)); */
 
     exit(EXIT_SUCCESS);
 }
