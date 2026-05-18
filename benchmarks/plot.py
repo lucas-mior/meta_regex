@@ -35,7 +35,7 @@ def generate_plots(csv_filename):
         f_nx = {int(r['case']): r for r in data if r['suite'] == 'fuzzy_no_extract'}
 
         plt.figure(figsize=(10, 6))
-        
+
         if f_ex:
             p_ex_t = [f_ex[s]['posix_time'] for s in fuzzy_cases if s in f_ex]
             m_ex_t = [f_ex[s]['meta_time'] for s in fuzzy_cases if s in f_ex]
