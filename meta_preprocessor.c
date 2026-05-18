@@ -63,8 +63,129 @@ set_fastmap_bit(uchar *fastmap, int32 c) {
 }
 
 static int32
-compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uchar *fastmap,
-                  uint8 *visited) {
+get_branch_weight(ParsedOp *ops, int32 count) {
+    int32 weight;
+
+    weight = 0;
+    for (int32 i = 0; i < count; i += 1) {
+        if (ops[i].type == META_OP_LITERAL || ops[i].type == META_OP_CLASS || ops[i].type == META_OP_ANY || ops[i].type == META_OP_BACKREF) {
+            weight += 1;
+        }
+    }
+    return weight;
+}
+
+static void
+sort_alternations(ParsedOp *ops, int32 count) {
+    int32 i;
+    int32 branch_starts[PREPROC_MAX_BRANCHES];
+    int32 branch_ends[PREPROC_MAX_BRANCHES];
+    int32 branch_weights[PREPROC_MAX_BRANCHES];
+    int32 num_branches;
+    int32 current_start;
+    int32 depth;
+
+    i = 0;
+    while (i < count) {
+        if (ops[i].type == META_OP_GROUP_START) {
+            int32 depth_inner;
+            int32 end;
+
+            depth_inner = 0;
+            end = i + 1;
+            while (end < count) {
+                if (ops[end].type == META_OP_GROUP_START) {
+                    depth_inner += 1;
+                } else if (ops[end].type == META_OP_GROUP_END) {
+                    if (depth_inner == 0) {
+                        break;
+                    }
+                    depth_inner -= 1;
+                }
+                end += 1;
+            }
+            if (end < count) {
+                sort_alternations(ops + i + 1, end - (i + 1));
+            }
+            i = end + 1;
+        } else {
+            i += 1;
+        }
+    }
+
+    num_branches = 0;
+    current_start = 0;
+    depth = 0;
+
+    for (int32 j = 0; j < count; j += 1) {
+        if (ops[j].type == META_OP_GROUP_START) {
+            depth += 1;
+        } else if (ops[j].type == META_OP_GROUP_END) {
+            depth -= 1;
+        } else if (ops[j].type == META_OP_ALTERNATION && depth == 0) {
+            if (num_branches >= PREPROC_MAX_BRANCHES - 1) {
+                return;
+            }
+            branch_starts[num_branches] = current_start;
+            branch_ends[num_branches] = j;
+            branch_weights[num_branches] = get_branch_weight(ops + current_start, j - current_start);
+            num_branches += 1;
+            current_start = j + 1;
+        }
+    }
+    
+    branch_starts[num_branches] = current_start;
+    branch_ends[num_branches] = count;
+    branch_weights[num_branches] = get_branch_weight(ops + current_start, count - current_start);
+    num_branches += 1;
+
+    if (num_branches > 1) {
+        ParsedOp temp_buf[PREPROC_MAX_TEMP_OPS];
+        int32 sorted_indices[PREPROC_MAX_BRANCHES];
+        int32 write_idx;
+
+        for (int32 b = 0; b < num_branches; b += 1) {
+            sorted_indices[b] = b;
+        }
+        for (int32 b1 = 0; b1 < num_branches - 1; b1 += 1) {
+            for (int32 b2 = b1 + 1; b2 < num_branches; b2 += 1) {
+                if (branch_weights[sorted_indices[b2]] > branch_weights[sorted_indices[b1]]) {
+                    int32 tmp;
+
+                    tmp = sorted_indices[b1];
+                    sorted_indices[b1] = sorted_indices[b2];
+                    sorted_indices[b2] = tmp;
+                }
+            }
+        }
+
+        write_idx = 0;
+        for (int32 b = 0; b < num_branches; b += 1) {
+            int32 idx;
+            int32 b_start;
+            int32 b_end;
+
+            idx = sorted_indices[b];
+            b_start = branch_starts[idx];
+            b_end = branch_ends[idx];
+            for (int32 j = b_start; j < b_end; j += 1) {
+                temp_buf[write_idx] = ops[j];
+                write_idx += 1;
+            }
+            if (b < num_branches - 1) {
+                temp_buf[write_idx].type = META_OP_ALTERNATION;
+                write_idx += 1;
+            }
+        }
+        for (int32 j = 0; j < count; j += 1) {
+            ops[j] = temp_buf[j];
+        }
+    }
+    return;
+}
+
+static int32
+compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uchar *fastmap, uint8 *visited) {
     enum MetaOpType type;
     int32 is_null;
 
@@ -897,6 +1018,10 @@ main(int32 argc, char **argv) {
                 break;
             }
             }
+        }
+
+        if (has_alternation) {
+            sort_alternations(temp_ops, temp_ops_count);
         }
 
         {
