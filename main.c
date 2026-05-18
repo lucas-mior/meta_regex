@@ -102,10 +102,14 @@ run_known_pairs(RegexTest *tests, int32 count, char *description) {
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
 
+    for (int32 i = 0; i < count; i += 1) {
+        tests_meta[i].input_len = strlen32((char *)tests_meta[i].input);
+    }
+
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
     for (int32 i = 0; i < count; i += 1) {
         uint8 *input = (uint8 *)tests_meta[i].input;
-        int32 input_len = strlen32((char *)input);
+        int32 input_len = tests_meta[i].input_len;
         MetaRegex *meta_regex = tests_meta[i].meta_regex;
 
         tests_meta[i].result = meta_regex_match(
@@ -161,10 +165,14 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
     printf("\n----- Running %s (Meta Only) -----\n", description);
     bool failed = false;
 
+    for (int32 i = 0; i < count; i += 1) {
+        tests[i].input_len = strlen32((char *)tests[i].input);
+    }
+
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
     for (int32 i = 0; i < count; i += 1) {
         char *input = tests[i].input;
-        int32 input_len = strlen32((char *)input);
+        int32 input_len = tests[i].input_len;
         MetaRegex *meta_regex = tests[i].meta_regex;
         int32 result = meta_regex_match(meta_regex, (uint8 *)input, input_len,
                                         MAX_MATCHES, tests[i].pmatch);

@@ -11,6 +11,7 @@ typedef struct RegexTest {
     int32 result;
     regmatch_t pmatch[MAX_MATCHES];
     bool expected;
+    int32 input_len;
 } RegexTest;
 
 typedef struct FuzzyTest {
