@@ -1,19 +1,14 @@
-.......if (waitpid(child, &status, 0) < 0) {
-.......    error("Error waiting for the forked child: %s.\n", strerror(errno));
-.......    fatal(EXIT_FAILURE);
-.......}
-.......if (!WIFEXITED(status)) {
-.......    error("Command exited abnormally.\n");
-.......}
+.......    ...........ab..............
+........
 
 Mismatch in input 
-".......if (waitpid(child, &status, 0) < 0) {
-.......    error("Error waiting for the forked child: %s.\n", strerror(errno));
-.......    fatal(EXIT_FAILURE);
-.......}
-.......if (!WIFEXITED(status)) {
-.......    error("Command exited abnormally.\n");
-.......}"
+"............................................
+...............................................................................
+...............................
+........
+................................
+.......    ..................... ab..............
+........"
 against regex "(a|ab)b"
 
 posix res: 0, meta res: 0
