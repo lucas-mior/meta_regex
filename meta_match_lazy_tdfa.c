@@ -340,17 +340,163 @@ add_tdfa_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                          int32 *is_accepting, int32 prev_is_word,
                          int32 curr_is_word, LazyTdfaKey *key,
                          int32 *next_reg_id) {
-    /* TODO: Implemented epsilon closure with tag tracking */
+    int32 stack[META_MAX_OPS];
+    int32 sp;
+    
+    sp = 0;
+    stack[sp] = pc;
+    sp += 1;
+
+    while (sp > 0) {
+        int32 curr;
+        enum MetaOpType type;
+        
+        sp -= 1;
+        curr = stack[sp];
+        
+        if ((set->bits[curr / 32] & (1u << (curr % 32))) != 0) {
+            continue;
+        }
+        
+        set->bits[curr / 32] |= (1u << (curr % 32));
+        type = ops[curr].type;
+        
+        if (type == META_OP_END) {
+            *is_accepting = 1;
+        } else if (type == META_OP_GROUP_START || type == META_OP_GROUP_END) {
+            int32 reg;
+            
+            reg = ops[curr].value;
+            if (type == META_OP_GROUP_START) {
+                reg = reg * 2;
+            } else {
+                reg = reg * 2 + 1;
+            }
+            
+            if (reg >= 0 && reg < 32) {
+                key->tags[curr][reg] = *next_reg_id;
+                *next_reg_id += 1;
+            }
+            
+            stack[sp] = curr + 1;
+            sp += 1;
+        } else if (type == META_OP_STAR || type == META_OP_PLUS || type == META_OP_OPTIONAL) {
+            stack[sp] = curr + 1;
+            sp += 1;
+            if (type == META_OP_STAR || type == META_OP_OPTIONAL) {
+                stack[sp] = ops[curr].value;
+                sp += 1;
+            }
+        } else if (type == META_OP_ALTERNATION) {
+            stack[sp] = curr + 1;
+            sp += 1;
+            stack[sp] = ops[curr].value;
+            sp += 1;
+        } else if (type == META_OP_JUMP) {
+            stack[sp] = ops[curr].value;
+            sp += 1;
+        } else if (type == META_OP_WORD_BOUNDARY) {
+            if (prev_is_word != curr_is_word) {
+                stack[sp] = curr + 1;
+                sp += 1;
+            }
+        } else if (type == META_OP_NON_WORD_BOUNDARY) {
+            if (prev_is_word == curr_is_word) {
+                stack[sp] = curr + 1;
+                sp += 1;
+            }
+        } else if (type == META_OP_WORD_START) {
+            if (!prev_is_word && curr_is_word) {
+                stack[sp] = curr + 1;
+                sp += 1;
+            }
+        } else if (type == META_OP_WORD_END) {
+            if (prev_is_word && !curr_is_word) {
+                stack[sp] = curr + 1;
+                sp += 1;
+            }
+        }
+    }
+    
     return;
 }
 
 static void
-compute_tdfa_core_transitions(MetaOp *ops, NfaStateSet *current_closed_set,
-                              int32 c, NfaStateSet *next_core_set,
-                              LazyTdfaKey *current_key, LazyTdfaKey *next_key,
-                              TdfaRegCmd *cmds, int32 *num_cmds,
+compute_tdfa_core_transitions(MetaOp *ops,
+                              NfaStateSet *current_closed_set, int32 c,
+                              NfaStateSet *next_core_set,
+                              LazyTdfaKey *current_key,
+                              LazyTdfaKey *next_key,
+                              TdfaRegCmd *cmds,
+                              int32 *num_cmds,
                               int32 *next_reg_id) {
-    /* TODO: Implemented core transitions with tag updating and resolving */
+    int32 cmds_count;
+    
+    cmds_count = 0;
+    
+    for (int32 i = 0; i < META_PC_WORDS; i += 1) {
+        next_core_set->bits[i] = 0;
+    }
+
+    for (int32 pc = 0; pc < META_MAX_OPS; pc += 1) {
+        if ((current_closed_set->bits[pc / 32] & (1u << (pc % 32))) != 0) {
+            int32 match;
+            enum MetaOpType type;
+            
+            match = 0;
+            type = ops[pc].type;
+
+            if (type == META_OP_LITERAL) {
+                if (ops[pc].value == c) {
+                    match = 1;
+                }
+            } else if (type == META_OP_ANY) {
+                if (c != '\n' && c != '\r') {
+                    match = 1;
+                }
+            } else if (type == META_OP_CLASS) {
+                if ((ops[pc].mask[c / 32] & (1u << (c % 32))) != 0) {
+                    match = 1;
+                }
+            }
+
+            if (match) {
+                int32 next_pc;
+                
+                next_pc = pc + 1;
+                next_core_set->bits[next_pc / 32] |= (1u << (next_pc % 32));
+                
+                for (int32 reg = 0; reg < 32; reg += 1) {
+                    int32 tag_src;
+                    
+                    tag_src = current_key->tags[pc][reg];
+                    if (tag_src != -1 && tag_src != reg) {
+                        TdfaRegCmd cmd;
+                        
+                        cmd.dest = tag_src;
+                        cmd.src = reg;
+                        cmd.set_pos = 1;
+                        
+                        if (cmds_count < 16) {
+                            cmds[cmds_count] = cmd;
+                            cmds_count += 1;
+                        }
+                        
+                        next_key->tags[next_pc][reg] = tag_src;
+                    } else {
+                        next_key->tags[next_pc][reg] = reg;
+                    }
+                }
+            }
+        }
+        
+        if (ops[pc].type == META_OP_END) {
+            break;
+        }
+    }
+    
+    *num_cmds = cmds_count;
+    
     return;
 }
 
