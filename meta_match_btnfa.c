@@ -25,9 +25,8 @@ btnfa_quick_lookahead_fails(MetaOp *next_op, uchar *curr_str) {
                 return 1;
             }
         } else if (next_op->type == META_OP_CLASS) {
-            uchar fb;
+            uchar fb = (uchar)*curr_str;
 
-            fb = (uchar)*curr_str;
             if (fb == '\0') {
                 return 1;
             }
@@ -42,26 +41,17 @@ btnfa_quick_lookahead_fails(MetaOp *next_op, uchar *curr_str) {
 static int32
 try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
                 int64 nmatch, regmatch_t pmatch[]) {
-    uchar *search_ptr;
-    int32 match_len;
+    uchar *search_ptr = &string[offset];
+    int32 match_len = -1;
     static int32 stack_cap = 8192;
     static BtnfaState *stack = NULL;
     int32 stack_ptr = 0;
-    int64 copy_size;
+    int64 copy_size = (nmatch > 32) ? 32 : nmatch;
     regmatch_t best_pmatch[32];
     uint32 *memo = NULL;
     int32 memo_size = 0;
     int32 step_count = 0;
     int32 is_catastrophic = 0;
-
-    search_ptr = &string[offset];
-    match_len = -1;
-
-    if (nmatch > 32) {
-        copy_size = 32;
-    } else {
-        copy_size = nmatch;
-    }
 
     if (stack == NULL) {
         stack = realloc2(NULL, 0, stack_cap, SIZEOF(*stack));
@@ -69,16 +59,12 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
 
     if (regex->has_alternation) {
         MetaOp *alts[128];
-        int32 num_alts;
-        int32 depth;
-        MetaOp *scan;
-
-        num_alts = 0;
+        int32 num_alts = 0;
         alts[num_alts] = regex->ops;
         num_alts += 1;
 
-        depth = 0;
-        scan = regex->ops;
+        int32 depth = 0;
+        MetaOp *scan = regex->ops;
         while (scan->type != META_OP_END) {
             if (scan->type == META_OP_GROUP_START) {
                 depth += 1;
@@ -162,24 +148,17 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
 
         while (1) {
             if (is_catastrophic) {
-                int32 pc_idx;
-
-                pc_idx = (int32)(pc - regex->ops);
+                int32 pc_idx = (int32)(pc - regex->ops);
                 if ((visited_empty[pc_idx / 32] & (1u << (pc_idx % 32))) != 0) {
                     break;
                 }
                 visited_empty[pc_idx / 32] |= (1u << (pc_idx % 32));
 
                 if (memo != NULL) {
-                    int32 in_idx;
-
-                    in_idx = (int32)(input - string);
+                    int32 in_idx = (int32)(input - string);
                     if (in_idx >= 0 && in_idx <= string_len) {
-                        int32 word_idx;
-                        int32 bit_idx;
-
-                        word_idx = in_idx*META_PC_WORDS + (pc_idx / 32);
-                        bit_idx = pc_idx % 32;
+                        int32 word_idx = in_idx*META_PC_WORDS + (pc_idx / 32);
+                        int32 bit_idx = pc_idx % 32;
 
                         if ((memo[word_idx] & (1u << bit_idx)) != 0) {
                             break;
@@ -190,9 +169,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
             }
 
             if (pc->type == META_OP_END) {
-                int32 curr_match_len;
-
-                curr_match_len = (int32)(input - string);
+                int32 curr_match_len = (int32)(input - string);
                 if (curr_match_len > match_len) {
                     match_len = curr_match_len;
                     if (pmatch_copy_valid) {
@@ -205,11 +182,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
             }
 
             if (pc->type == META_OP_WORD_START) {
-                int32 curr_is_word;
-                int32 prev_is_word;
-
-                curr_is_word = is_word_char(*input);
-                prev_is_word = 0;
+                int32 curr_is_word = is_word_char(*input);
+                int32 prev_is_word = 0;
                 if (input > string) {
                     prev_is_word = is_word_char(*(input - 1));
                 }
@@ -221,11 +195,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
             }
 
             if (pc->type == META_OP_WORD_END) {
-                int32 curr_is_word;
-                int32 prev_is_word;
-
-                curr_is_word = is_word_char(*input);
-                prev_is_word = 0;
+                int32 curr_is_word = is_word_char(*input);
+                int32 prev_is_word = 0;
                 if (input > string) {
                     prev_is_word = is_word_char(*(input - 1));
                 }
@@ -237,11 +208,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
             }
 
             if (pc->type == META_OP_WORD_BOUNDARY) {
-                int32 curr_is_word;
-                int32 prev_is_word;
-
-                curr_is_word = is_word_char(*input);
-                prev_is_word = 0;
+                int32 curr_is_word = is_word_char(*input);
+                int32 prev_is_word = 0;
                 if (input > string) {
                     prev_is_word = is_word_char(*(input - 1));
                 }
@@ -253,11 +221,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
             }
 
             if (pc->type == META_OP_NON_WORD_BOUNDARY) {
-                int32 curr_is_word;
-                int32 prev_is_word;
-
-                curr_is_word = is_word_char(*input);
-                prev_is_word = 0;
+                int32 curr_is_word = is_word_char(*input);
+                int32 prev_is_word = 0;
                 if (input > string) {
                     prev_is_word = is_word_char(*(input - 1));
                 }
@@ -269,11 +234,10 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
             }
 
             if (pc->type == META_OP_BACKREF) {
-                int32 group_id;
+                int32 group_id = pc->value;
                 int32 backref_len;
                 uchar *backref_ptr;
 
-                group_id = pc->value;
                 if (pmatch_copy_valid && group_id < nmatch
                     && current_pmatch[group_id].rm_so != -1) {
                     backref_len = current_pmatch[group_id].rm_eo
@@ -297,11 +261,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
             }
 
             if (pc->type == META_OP_ALTERNATION) {
-                int32 depth;
-                MetaOp *end_op;
-
-                depth = 0;
-                end_op = pc;
+                int32 depth = 0;
+                MetaOp *end_op = pc;
                 while (end_op->type != META_OP_END) {
                     if (end_op->type == META_OP_GROUP_START) {
                         depth += 1;
@@ -318,11 +279,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
             }
 
             if (pc->type == META_OP_SPLIT) {
-                int32 skip_1;
-                int32 skip_2;
-
-                skip_1 = btnfa_quick_lookahead_fails(pc + pc->value, input);
-                skip_2 = btnfa_quick_lookahead_fails(pc + pc->min, input);
+                int32 skip_1 = btnfa_quick_lookahead_fails(pc + pc->value, input);
+                int32 skip_2 = btnfa_quick_lookahead_fails(pc + pc->min, input);
 
                 if (!skip_2) {
                     if (stack_ptr >= stack_cap) {
@@ -378,19 +336,14 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
             }
 
             if (pc->type == META_OP_GROUP_START) {
-                int32 group_id;
-                int32 has_alt;
-                int32 depth;
-                MetaOp *scan;
-
-                group_id = pc->value;
+                int32 group_id = pc->value;
                 if (pmatch_copy_valid && group_id < nmatch) {
                     current_pmatch[group_id].rm_so = (int32)(input - string);
                 }
 
-                has_alt = 0;
-                depth = 0;
-                scan = pc + 1;
+                int32 has_alt = 0;
+                int32 depth = 0;
+                MetaOp *scan = pc + 1;
                 while (scan->type != META_OP_END) {
                     if (scan->type == META_OP_GROUP_START) {
                         depth += 1;
@@ -409,9 +362,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
 
                 if (has_alt) {
                     MetaOp *alts[128];
-                    int32 num_alts;
-
-                    num_alts = 0;
+                    int32 num_alts = 0;
                     alts[num_alts] = pc + 1;
                     num_alts += 1;
 
@@ -466,9 +417,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
             }
 
             if (pc->type == META_OP_GROUP_END) {
-                int32 group_id;
-
-                group_id = pc->value;
+                int32 group_id = pc->value;
                 if (pmatch_copy_valid && group_id < nmatch) {
                     current_pmatch[group_id].rm_eo = (int32)(input - string);
                 }
@@ -477,30 +426,18 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
             }
 
             {
-                int32 is_star;
-                int32 is_plus;
-                int32 is_opt;
-                int32 is_bound;
-
-                is_star = (pc[1].type == META_OP_STAR);
-                is_plus = (pc[1].type == META_OP_PLUS);
-                is_opt = (pc[1].type == META_OP_OPTIONAL);
-                is_bound = (pc[1].type == META_OP_BOUNDED);
+                int32 is_star = (pc[1].type == META_OP_STAR);
+                int32 is_plus = (pc[1].type == META_OP_PLUS);
+                int32 is_opt = (pc[1].type == META_OP_OPTIONAL);
+                int32 is_bound = (pc[1].type == META_OP_BOUNDED);
 
                 if (is_star || is_plus || is_opt || is_bound) {
-                    MetaOp token;
-                    MetaOp *next_ops;
-                    uchar *s;
-                    int32 min_req;
-                    int32 max_req;
-                    int32 count;
-
-                    token = pc[0];
-                    next_ops = pc + 2;
-                    s = input;
-                    min_req = 0;
-                    max_req = -1;
-                    count = 0;
+                    MetaOp token = pc[0];
+                    MetaOp *next_ops = pc + 2;
+                    uchar *s = input;
+                    int32 min_req = 0;
+                    int32 max_req = -1;
+                    int32 count = 0;
 
                     if (is_star) {
                         min_req = 0;
@@ -535,9 +472,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
                         }
                     } else if (token.type == META_OP_CLASS) {
                         while (max_req == -1 || count < max_req) {
-                            uchar fb;
+                            uchar fb = (uchar)s[count];
 
-                            fb = (uchar)s[count];
                             if (fb == '\0') {
                                 break;
                             }
@@ -550,11 +486,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
                     }
 
                     if (count >= min_req) {
-                        uchar *min_s;
-                        uchar *max_s_ptr;
-
-                        min_s = s + min_req;
-                        max_s_ptr = s + count;
+                        uchar *min_s = s + min_req;
+                        uchar *max_s_ptr = s + count;
 
                         for (uchar *p = min_s; p <= max_s_ptr; p += 1) {
                             if (!btnfa_quick_lookahead_fails(next_ops, p)) {
@@ -593,12 +526,10 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
                     }
                     break;
                 } else {
-                    int32 is_match;
-                    uchar fb;
-                    int32 consumed;
+                    int32 is_match = 0;
+                    uchar fb = (uchar)input[0];
+                    int32 consumed = 0;
 
-                    consumed = 0;
-                    fb = (uchar)input[0];
                     if (fb == '\0') {
                         is_match = 0;
                     } else {
