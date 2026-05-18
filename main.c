@@ -240,9 +240,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 #if FUZZY_PRECOMPILE_POSIX
     posix_regexes = malloc2(tests_len*SIZEOF(regex_t));
     for (int32 i = 0; i < tests_len; i += 1) {
-        char *pattern_str;
+        char *pattern_str = tests[i]->string;
 
-        pattern_str = tests[i]->string;
         if (regcomp(&posix_regexes[i], pattern_str, REG_EXTENDED) != 0) {
             error("Pre-compilation failed for " BLUE("\"%s\"") "\n",
                   pattern_str);
