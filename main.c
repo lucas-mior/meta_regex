@@ -211,6 +211,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     struct timespec t1_posix;
     struct timespec t0_meta;
     struct timespec t1_meta;
+    bool failed = false;
 #if FUZZY_PRECOMPILE_POSIX
     regex_t *posix_regexes = NULL;
 #endif
@@ -304,6 +305,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         }
 
         if (mismatch) {
+            failed = true;
             fprintf(stderr,
                     "Error: mismatch for input \"%s\" "
                     "against regex \"%s\"\n",
@@ -366,6 +368,9 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         free2(fuzzy[idx].input, fuzzy[idx].input_len + 1);
     }
     free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
+    if (failed) {
+        exit(EXIT_FAILURE);
+    }
     return;
 }
 
@@ -373,6 +378,7 @@ static void
 run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
     DIR *dir = opendir("inputs");
     struct dirent *entry = NULL;
+    bool failed = false;
 
     if (dir == NULL) {
         error("Error opening inputs directory: %s\n", strerror(errno));
@@ -486,6 +492,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
             }
 
             if (mismatch) {
+                failed = true;
                 char *regex_str = tests[j]->string;
                 fprintf(stderr,
                         "File Error: mismatch in file \"%s\" "
@@ -536,5 +543,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
 #endif
 
     closedir(dir);
+    if (failed) {
+        exit(EXIT_FAILURE);
+    }
     return;
 }
