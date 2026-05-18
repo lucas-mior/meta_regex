@@ -20,7 +20,7 @@
     X(STATIC_DFA)
 #include "xenums.c"
 
-#define USE_DFA_THRESHOLD 128
+#define USE_DFA_THRESHOLD 1
 
 static MatcherFeatures matchers[] = {
     [MATCHER_BTNFA] = match_features_btnfa,
