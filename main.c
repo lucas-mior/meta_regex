@@ -46,7 +46,6 @@ static FILE *csv;
 #define ENABLE_STATIC_DFA 1
 #endif
 
-
 int32
 main(void) {
     setlocale(LC_ALL, "C");
@@ -103,7 +102,7 @@ main(void) {
     case 0: {
         char *python[] = {
             "python",
-            "benchmarks/plot.py", 
+            "benchmarks/plot.py",
             csv_file,
             NULL,
         };
@@ -116,7 +115,7 @@ main(void) {
             error("Error executing\n%s\n%s\n", cmd, strerror(errno));
             _exit(EXIT_FAILURE);
         }
-            }
+    }
     default:
         wait(NULL);
         break;
@@ -181,10 +180,9 @@ run_known_pairs(RegexTest *tests, int32 count, char *description) {
         int32 input_len = tests_meta[i].input_len;
         MetaRegex *meta_regex = tests_meta[i].meta_regex;
 
-        tests_meta[i].result = meta_regex_match(meta_regex, input, input_len,
-                                                tests_meta[i].pmatch,
-                                                LENGTH(tests_meta[i].pmatch),
-                                                enabled);
+        tests_meta[i].result = meta_regex_match(
+            meta_regex, input, input_len, tests_meta[i].pmatch,
+            LENGTH(tests_meta[i].pmatch), enabled);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
@@ -255,10 +253,9 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
         char *input = tests[i].input;
         int32 input_len = tests[i].input_len;
         MetaRegex *meta_regex = tests[i].meta_regex;
-        int32 result
-            = meta_regex_match(meta_regex, (uint8 *)input, input_len,
-                               tests[i].pmatch, LENGTH(tests[i].pmatch),
-                               enabled);
+        int32 result = meta_regex_match(meta_regex, (uint8 *)input, input_len,
+                                        tests[i].pmatch,
+                                        LENGTH(tests[i].pmatch), enabled);
         bool matched = !result;
         bool expected = (bool)tests[i].result;
 
@@ -364,10 +361,9 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         uint8 *input = (uint8 *)fuzzy[i].input;
         int32 input_len = fuzzy[i].input_len;
         MetaRegex *meta_pattern = tests[fuzzy[i].regex_idx];
-        fuzzy[i].result_meta = meta_regex_match(meta_pattern, input, input_len,
-                                                fuzzy[i].pmatch_meta,
-                                                LENGTH(fuzzy[i].pmatch_meta),
-                                                enabled);
+        fuzzy[i].result_meta = meta_regex_match(
+            meta_pattern, input, input_len, fuzzy[i].pmatch_meta,
+            LENGTH(fuzzy[i].pmatch_meta), enabled);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
