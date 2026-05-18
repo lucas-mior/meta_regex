@@ -52,15 +52,15 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
     if (input_len >= USE_DFA_THRESHOLD) {
         if ((matchers_enabled & MATCHER_STATIC_DFA) && regex->static_dfa) {
             if (!needs_extraction || matchers[MATCHER_STATIC_DFA].extracts) {
-                if ((regex->used_ops
-                     & ~matchers[MATCHER_STATIC_DFA].supports)
+                if ((regex->used_ops & ~matchers[MATCHER_STATIC_DFA].supports)
                     == 0) {
                     algorithm = MATCHER_STATIC_DFA;
                 }
             }
         }
 
-        if (algorithm == MATCHER_BTNFA && (matchers_enabled & MATCHER_LAZY_DFA)) {
+        if (algorithm == MATCHER_BTNFA
+            && (matchers_enabled & MATCHER_LAZY_DFA)) {
             if (!needs_extraction || matchers[MATCHER_LAZY_DFA].extracts) {
                 if ((regex->used_ops & ~matchers[MATCHER_LAZY_DFA].supports)
                     == 0) {

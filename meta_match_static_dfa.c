@@ -7,10 +7,10 @@
 
 static const MatcherFeatures match_static_dfa_features = {
     .supports = (enum MetaOpType)(
-    META_OP_END | META_OP_LITERAL | META_OP_ANY | META_OP_CLASS
-    | META_OP_GROUP_START | META_OP_GROUP_END | META_OP_STAR | META_OP_PLUS
-    | META_OP_OPTIONAL | META_OP_ALTERNATION | META_OP_BOUNDED | META_OP_SPLIT
-    | META_OP_JUMP),
+        META_OP_END | META_OP_LITERAL | META_OP_ANY | META_OP_CLASS
+        | META_OP_GROUP_START | META_OP_GROUP_END | META_OP_STAR | META_OP_PLUS
+        | META_OP_OPTIONAL | META_OP_ALTERNATION | META_OP_BOUNDED
+        | META_OP_SPLIT | META_OP_JUMP),
     .extracts = false,
 };
 
