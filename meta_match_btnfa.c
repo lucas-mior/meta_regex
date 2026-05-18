@@ -57,7 +57,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
         stack = realloc2(NULL, 0, stack_cap, SIZEOF(*stack));
     }
 
-    if (regex->has_alternation) {
+    if (regex->used_ops & META_OP_ALTERNATION) {
         MetaOp *alts[128];
         int32 num_alts = 0;
         alts[num_alts] = regex->ops;
@@ -115,7 +115,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
         step_count += 1;
         if (step_count > 4096 && !is_catastrophic) {
             is_catastrophic = 1;
-            if (!regex->has_backref) {
+            if (!(regex->used_ops & META_OP_BACKREF)) {
                 memo_size = (string_len + 1)*META_PC_WORDS;
                 memo = malloc2(memo_size*SIZEOF(*memo));
                 for (int32 i = 0; i < memo_size; i += 1) {

@@ -65,9 +65,7 @@ typedef struct MetaRegex {
     MetaOp ops[META_MAX_OPS];
     int32 has_start_anchor;
     int32 has_end_anchor;
-    int32 has_alternation;
     int32 re_nsub;
-    int32 has_backref;
     int32 can_be_null;
     enum MetaOpType used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];

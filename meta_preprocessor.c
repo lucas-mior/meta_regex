@@ -1661,9 +1661,7 @@ main(int32 argc, char **argv) {
         printf(".ops = { %s }, ", op_buffer);
         printf(".has_start_anchor = %d, ", has_start);
         printf(".has_end_anchor = %d, ", has_end);
-        printf(".has_alternation = %d, ", has_alternation);
         printf(".re_nsub = %d, ", group_counter);
-        printf(".has_backref = %d, ", has_backref);
         printf(".can_be_null = %d, ", can_be_null);
         printf(".used_ops = %u, ", used_ops);
         printf(".fastmap = {");

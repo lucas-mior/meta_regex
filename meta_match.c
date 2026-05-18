@@ -54,7 +54,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
         enabled |= MATCH_ALGO_STATIC_DFA;
     }
 
-    if (!regex->has_backref && input_len >= USE_DFA_THRESHOLD
+    if (!(regex->used_ops & META_OP_BACKREF) && input_len >= USE_DFA_THRESHOLD
         && !(regex->re_nsub > 0 && pmatch_len > 1)) {
         if ((enabled & MATCH_ALGO_STATIC_DFA) && regex->static_dfa) {
             int32 has_unsupported = 0;
