@@ -349,8 +349,12 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
     for (int32 i = 0; i < fuzzy_len; i += 1) {
-        int32 pmatch_len = extract ? LENGTH(fuzzy[i].pmatch_posix) : 0;
-        regmatch_t *pmatch_ptr = extract ? fuzzy[i].pmatch_posix : NULL;
+        regmatch_t *pmatch_ptr = NULL;
+        int32 pmatch_len = 0;
+        if (extract) {
+            pmatch_ptr = fuzzy[i].pmatch_posix;
+            pmatch_len = LENGTH(fuzzy[i].pmatch_posix);
+        }
 #if FUZZY_PRECOMPILE_POSIX
         int32 idx = fuzzy[i].regex_idx;
         fuzzy[i].result_posix = regexec(&posix_regexes[idx], fuzzy[i].input,
