@@ -31,7 +31,7 @@
 
 static int32
 meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
-                 int64 pmatch_len, regmatch_t *pmatch) {
+                 int32 pmatch_len, regmatch_t *pmatch) {
     enum MatchAlgorithm enabled = MATCH_ALGO_BTNFA;
     enum MatchAlgorithm algorithm = MATCH_ALGO_BTNFA;
     int32 result = 0;
@@ -41,7 +41,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
     }
 
     if (pmatch != NULL) {
-        for (int64 k = 0; k < pmatch_len; k += 1) {
+        for (int32 k = 0; k < pmatch_len; k += 1) {
             pmatch[k].rm_so = -1;
             pmatch[k].rm_eo = -1;
         }
