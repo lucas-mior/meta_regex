@@ -1,0 +1,5 @@
+...ab...
+
+Mismatch in input "...ab..." against regex "(|a|b|)[a-z]+(|c|d)"
+posix res: 0, meta res: 0
+   Group 1: posix[3, 4], meta[3, 3]
