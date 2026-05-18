@@ -143,19 +143,19 @@ sort_alternations(ParsedOp *ops, int32 count) {
         ParsedOp temp_buf[PREPROC_MAX_TEMP_OPS];
         int32 sorted_indices[PREPROC_MAX_BRANCHES];
         int32 write_idx;
+        int32 idx_ptr;
 
+        idx_ptr = 0;
         for (int32 b = 0; b < num_branches; b += 1) {
-            sorted_indices[b] = b;
+            if (branch_weights[b] > 0) {
+                sorted_indices[idx_ptr] = b;
+                idx_ptr += 1;
+            }
         }
-        for (int32 b1 = 0; b1 < num_branches - 1; b1 += 1) {
-            for (int32 b2 = b1 + 1; b2 < num_branches; b2 += 1) {
-                if (branch_weights[sorted_indices[b2]] > branch_weights[sorted_indices[b1]]) {
-                    int32 tmp;
-
-                    tmp = sorted_indices[b1];
-                    sorted_indices[b1] = sorted_indices[b2];
-                    sorted_indices[b2] = tmp;
-                }
+        for (int32 b = 0; b < num_branches; b += 1) {
+            if (branch_weights[b] == 0) {
+                sorted_indices[idx_ptr] = b;
+                idx_ptr += 1;
             }
         }
 
