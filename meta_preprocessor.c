@@ -821,7 +821,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
     if (nfa_failed) {
         fprintf(stderr,
                 "Warning: DFA conversion failed for %.*s, "
-                "falling back to NFA.\n",
+                "static nfa will not be available at runtime.\n",
                 original_string_length, quote_start);
         printf(", .dfa = NULL } }");
     } else {
@@ -1667,7 +1667,7 @@ main(int32 argc, char **argv) {
         if (unsupported) {
             fprintf(stderr,
                     "Warning: Unsupported regex feature in %.*s, "
-                    "falling back to NFA.\n",
+                    "static nfa will not be available at runtime.\n",
                     original_string_length, quote_start);
             printf(", .dfa = NULL }");
         } else {
