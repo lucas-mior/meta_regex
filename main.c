@@ -55,8 +55,8 @@ main(void) {
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
 
     /* printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n"); */
-    for (int32 i = 1; i <= 4096; i *= 2) {
-        RUN_FUZZY_TESTS(fuzzy_patterns, i, 200);
+    for (int32 max_input_len = 1; max_input_len <= 4096; max_input_len *= 2) {
+        RUN_FUZZY_TESTS(fuzzy_patterns, max_input_len, 200);
     }
 
     /* printf("\n----- Starting Fuzzy Testing (File input) -----\n"); */
