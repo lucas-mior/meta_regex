@@ -183,7 +183,7 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
         regmatch_t *pmatch_ptr = extract ? tests_posix[i].pmatch : NULL;
 
         tests_posix[i].result
-            = regexec(&compiled_regex, input, pmatch_len, pmatch_ptr, 0);
+            = regexec(&compiled_regex, input, (size_t)pmatch_len, pmatch_ptr, 0);
         regfree(&compiled_regex);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
@@ -354,7 +354,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 #if FUZZY_PRECOMPILE_POSIX
         int32 idx = fuzzy[i].regex_idx;
         fuzzy[i].result_posix = regexec(&posix_regexes[idx], fuzzy[i].input,
-                                        pmatch_len, pmatch_ptr, 0);
+                                        (size_t)pmatch_len, pmatch_ptr, 0);
 #else
         regex_t compiled;
         char *pattern_str = tests[fuzzy[i].regex_idx]->string;
@@ -551,7 +551,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             }
 #if FUZZY_PRECOMPILE_POSIX
             results_posix[j] = regexec(&posix_regexes[j], (char *)input,
-                                       pmatch_len, curr_pm, 0);
+                                       (size_t)pmatch_len, curr_pm, 0);
 #else
             regex_t compiled;
             char *pattern_str = tests[j]->string;
