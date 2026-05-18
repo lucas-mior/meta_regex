@@ -39,8 +39,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
                  regmatch_t *pmatch, int32 pmatch_len,
                  enum MatchAlgorithm enabled) {
     enum MatchAlgorithm algorithm = MATCH_ALGO_BTNFA;
-    int32 result = 0;
-    int32 needs_extraction = 0;
+    int32 result;
+    int32 needs_extraction;
 
     if (regex == NULL) {
         return REG_NOMATCH;
