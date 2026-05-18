@@ -15,7 +15,7 @@
 #define ALGO_LAZY_DFA 0
 #endif
 #if !defined(ALGO_STATIC_DFA)
-#define ALGO_STATIC_DFA 0
+#define ALGO_STATIC_DFA 1
 #endif
 
 #if !ALGO_STATIC_DFA && !ALGO_LAZY_DFA
