@@ -6,6 +6,7 @@
 #include <time.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <dirent.h>
 
 #include "util.c"
 #include "meta.h"
@@ -27,6 +28,7 @@ static void run_posix_vs_meta(RegexTest *tests, int32 count, char *description);
 static void run_fuzzy_tests(MetaRegex **patterns, int32 tests_len,
                             int32 max_str_size, int32 ntests);
 static void run_meta_only(RegexTest *tests, int32 count, char *description);
+static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len);
 
 #define RUN_POSIX_VS_META(ARRAY) \
     run_posix_vs_meta(ARRAY, LENGTH(ARRAY), #ARRAY)
@@ -63,6 +65,10 @@ main(void) {
     RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 1000);
     RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 1000);
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 8192, 1000); */
+
+    printf("\n----- Starting Fuzzy Testing (File input) -----\n");
+    run_file_fuzzy_tests(fuzzy_patterns, LENGTH(fuzzy_patterns));
+
     exit(EXIT_SUCCESS);
 }
 
@@ -92,8 +98,8 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
             char error_message[256];
             regerror(compiled, &compiled_regex, error_message,
                      SIZEOF(error_message));
-            error("Regex compilation failed for"
-                  RED("\"%s\"")": %s\n", regex, error_message);
+            error("Regex compilation failed for" RED("\"%s\"") ": %s\n", regex,
+                  error_message);
             exit(EXIT_FAILURE);
         }
         tests_posix[i].result = regexec(&compiled_regex, input, MAX_MATCHES,
@@ -105,12 +111,11 @@ run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
     for (int32 i = 0; i < count; i += 1) {
         uchar *input = (uchar *)tests_meta[i].input;
-        int32 input_len = strlen32((char*)input);
+        int32 input_len = strlen32((char *)input);
         MetaRegex *meta_regex = tests_meta[i].meta_regex;
 
-        tests_meta[i].result = meta_regex_match(meta_regex, input, input_len,
-                                                MAX_MATCHES,
-                                                tests_meta[i].pmatch);
+        tests_meta[i].result = meta_regex_match(
+            meta_regex, input, input_len, MAX_MATCHES, tests_meta[i].pmatch);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
@@ -165,7 +170,7 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
     for (int32 i = 0; i < count; i += 1) {
         char *input = tests[i].input;
-        int32 input_len = strlen32((char*)input);
+        int32 input_len = strlen32((char *)input);
         MetaRegex *meta_regex = tests[i].meta_regex;
         int32 result;
         bool matched;
@@ -211,8 +216,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     regex_t *posix_regexes = NULL;
 #endif
 
-    fuzzy_len = ntests * tests_len;
-    fuzzy = malloc2(SIZEOF(*fuzzy) * fuzzy_len);
+    fuzzy_len = ntests*tests_len;
+    fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
 
     if ((mismatches = fopen("mismatches_ascii.txt", "w")) == NULL) {
         error("Error opening file: %s.\n", strerror(errno));
@@ -230,7 +235,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         for (int32 j = 0; j < tests_len; j += 1) {
             int32 idx;
 
-            idx = i * tests_len + j;
+            idx = i*tests_len + j;
             fuzzy[idx].input_len = input_len;
             fuzzy[idx].input = input;
             fuzzy[idx].regex_idx = j;
@@ -238,13 +243,12 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     }
 
 #if FUZZY_PRECOMPILE_POSIX
-    posix_regexes = malloc2(tests_len * SIZEOF(regex_t));
+    posix_regexes = malloc2(tests_len*SIZEOF(regex_t));
     for (int32 i = 0; i < tests_len; i += 1) {
         char *pattern_str;
 
         pattern_str = tests[i]->string;
-        if (regcomp(&posix_regexes[i], pattern_str,
-                    REG_EXTENDED) != 0) {
+        if (regcomp(&posix_regexes[i], pattern_str, REG_EXTENDED) != 0) {
             error("Pre-compilation failed for: %s\n", pattern_str);
             exit(EXIT_FAILURE);
         }
@@ -257,9 +261,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         int32 idx;
 
         idx = fuzzy[i].regex_idx;
-        fuzzy[i].result_posix
-            = regexec(&posix_regexes[idx], fuzzy[i].input,
-                      MAX_MATCHES, fuzzy[i].pmatch_posix, 0);
+        fuzzy[i].result_posix = regexec(&posix_regexes[idx], fuzzy[i].input,
+                                        MAX_MATCHES, fuzzy[i].pmatch_posix, 0);
 #else
         regex_t compiled;
         char *pattern_str;
@@ -282,9 +285,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         uchar *input = (uchar *)fuzzy[i].input;
         int32 input_len = fuzzy[i].input_len;
         MetaRegex *meta_pattern = tests[fuzzy[i].regex_idx];
-        fuzzy[i].result_meta
-            = meta_regex_match(meta_pattern, input, input_len,
-                               MAX_MATCHES, fuzzy[i].pmatch_meta);
+        fuzzy[i].result_meta = meta_regex_match(
+            meta_pattern, input, input_len, MAX_MATCHES, fuzzy[i].pmatch_meta);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
@@ -325,7 +327,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 
                     if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
                         fprintf(mismatches,
-                                "  Group %d: posix[%d, %d], "
+                                "   Group %d: posix[%d, %d], "
                                 "meta[%d, %d]\n",
                                 m, (int32)p_m.rm_so, (int32)p_m.rm_eo,
                                 (int32)m_m.rm_so, (int32)m_m.rm_eo);
@@ -345,8 +347,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
             double t_meta = timediff(t0_meta, t1_meta);
 
             if (t_posix < t_meta) {
-                fprintf(stderr,
-                        "\nPerformance regression at max_str_size=%d\n",
+                fprintf(stderr, "\nPerformance regression at max_str_size=%d\n",
                         max_str_size);
             }
         }
@@ -361,16 +362,193 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     for (int32 i = 0; i < tests_len; i += 1) {
         regfree(&posix_regexes[i]);
     }
-    free2(posix_regexes, tests_len * SIZEOF(regex_t));
+    free2(posix_regexes, tests_len*SIZEOF(regex_t));
 #endif
 
     for (int32 i = 0; i < ntests; i += 1) {
         int32 idx;
 
-        idx = i * tests_len;
+        idx = i*tests_len;
         free2(fuzzy[idx].input, fuzzy[idx].input_len + 1);
     }
-    free2(fuzzy, SIZEOF(*fuzzy) * fuzzy_len);
+    free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
     fclose(mismatches);
+    return;
+}
+
+static void
+run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
+    DIR *dir = opendir("inputs");
+    struct dirent *entry = NULL;
+    FILE *mismatches = fopen("mismatches_file.txt", "w");
+
+    if (dir == NULL) {
+        error("Error opening inputs directory: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    if (mismatches == NULL) {
+        error("Error opening mismatches file: %s.\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+#if FUZZY_PRECOMPILE_POSIX
+    regex_t *posix_regexes = malloc2(tests_len*SIZEOF(regex_t));
+    for (int32 i = 0; i < tests_len; i += 1) {
+        char *pattern_str = tests[i]->string;
+        if (regcomp(&posix_regexes[i], pattern_str, REG_EXTENDED) != 0) {
+            error("Pre-compilation failed for: %s\n", pattern_str);
+            exit(EXIT_FAILURE);
+        }
+    }
+#endif
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0
+            || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+
+        char path[512];
+        snprintf2(path, SIZEOF(path), "inputs/%s", entry->d_name);
+
+        FILE *file = fopen(path, "rb");
+        if (file == NULL) {
+            continue;
+        }
+
+        fseek(file, 0, SEEK_END);
+        int64 file_size = ftell(file);
+        fseek(file, 0, SEEK_SET);
+
+        char *input = malloc2(file_size + 1);
+        if (fread64(input, 1, file_size, file) != file_size) {
+            free2(input, file_size + 1);
+            fclose(file);
+            continue;
+        }
+        input[file_size] = '\0';
+        fclose(file);
+        int32 input_len = (int32)file_size;
+
+        int32 *results_posix = malloc2(tests_len*SIZEOF(int32));
+        int32 *results_meta = malloc2(tests_len*SIZEOF(int32));
+
+        int64 pm_sz = tests_len*MAX_MATCHES * SIZEOF(regmatch_t);
+        regmatch_t *pm_posix = malloc2(pm_sz);
+        regmatch_t *pm_meta = malloc2(pm_sz);
+
+        struct timespec t0_posix;
+        struct timespec t1_posix;
+        struct timespec t0_meta;
+        struct timespec t1_meta;
+
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t0_posix);
+        for (int32 j = 0; j < tests_len; j += 1) {
+            regmatch_t *curr_pm = &pm_posix[j*MAX_MATCHES];
+            for (int32 m = 0; m < MAX_MATCHES; m += 1) {
+                curr_pm[m].rm_so = -1;
+                curr_pm[m].rm_eo = -1;
+            }
+#if FUZZY_PRECOMPILE_POSIX
+            results_posix[j]
+                = regexec(&posix_regexes[j], input, MAX_MATCHES, curr_pm, 0);
+#else
+            regex_t compiled;
+            char *pattern_str = tests[j]->string;
+            if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
+                results_posix[j]
+                    = regexec(&compiled, input, MAX_MATCHES, curr_pm, 0);
+                regfree(&compiled);
+            } else {
+                results_posix[j] = REG_NOMATCH;
+            }
+#endif
+        }
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
+
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
+        for (int32 j = 0; j < tests_len; j += 1) {
+            regmatch_t *curr_pm = &pm_meta[j*MAX_MATCHES];
+            for (int32 m = 0; m < MAX_MATCHES; m += 1) {
+                curr_pm[m].rm_so = -1;
+                curr_pm[m].rm_eo = -1;
+            }
+            uchar *meta_input = (uchar *)input;
+            MetaRegex *meta_pattern = tests[j];
+            results_meta[j] = meta_regex_match(meta_pattern, meta_input,
+                                               input_len, MAX_MATCHES, curr_pm);
+        }
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
+
+        for (int32 j = 0; j < tests_len; j += 1) {
+            int32 mismatch = 0;
+            regmatch_t *curr_posix = &pm_posix[j*MAX_MATCHES];
+            regmatch_t *curr_meta = &pm_meta[j*MAX_MATCHES];
+
+            if (results_posix[j] != results_meta[j]) {
+                mismatch = 1;
+            } else if (results_posix[j] == 0) {
+                for (int32 m = 0; m < MAX_MATCHES; m += 1) {
+                    if (curr_posix[m].rm_so != curr_meta[m].rm_so
+                        || curr_posix[m].rm_eo != curr_meta[m].rm_eo) {
+                        mismatch = 1;
+                        break;
+                    }
+                }
+            }
+
+            if (mismatch) {
+                char *regex_str = tests[j]->string;
+                fprintf(mismatches,
+                        "File Error: mismatch in file \"%s\" "
+                        "against regex \"%s\"\n",
+                        entry->d_name, regex_str);
+                fprintf(mismatches, "posix res: %d, meta res: %d\n",
+                        results_posix[j], results_meta[j]);
+
+                if (results_posix[j] == 0 && results_meta[j] == 0) {
+                    for (int32 m = 0; m < MAX_MATCHES; m += 1) {
+                        regmatch_t p_m = curr_posix[m];
+                        regmatch_t m_m = curr_meta[m];
+
+                        if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
+                            fprintf(mismatches,
+                                    "   Group %d: posix[%d, %d], "
+                                    "meta[%d, %d]\n",
+                                    m, (int32)p_m.rm_so, (int32)p_m.rm_eo,
+                                    (int32)m_m.rm_so, (int32)m_m.rm_eo);
+                        }
+                    }
+                }
+                fprintf(mismatches, "------------------------------------\n");
+            }
+        }
+
+        char name_posix[256];
+        char name_meta[256];
+
+        SNPRINTF(name_posix, YELLOW("posix [%s]"), entry->d_name);
+        SNPRINTF(name_meta, GREEN("meta [%s]"), entry->d_name);
+
+        PRINT_TIMINGS(tests_len, t0_posix, t1_posix, name_posix);
+        PRINT_TIMINGS(tests_len, t0_meta, t1_meta, name_meta);
+
+        free2(results_posix, tests_len*SIZEOF(int32));
+        free2(results_meta, tests_len*SIZEOF(int32));
+        free2(pm_posix, pm_sz);
+        free2(pm_meta, pm_sz);
+        free2(input, file_size + 1);
+    }
+
+#if FUZZY_PRECOMPILE_POSIX
+    for (int32 i = 0; i < tests_len; i += 1) {
+        regfree(&posix_regexes[i]);
+    }
+    free2(posix_regexes, tests_len*SIZEOF(regex_t));
+#endif
+
+    fclose(mismatches);
+    closedir(dir);
     return;
 }
