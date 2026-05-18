@@ -1128,8 +1128,8 @@ main(int32 argc, char **argv) {
 
         paren_end = strchr(quote_end, ')');
         original_string_length = (int32)(quote_end - quote_start) + 1;
-        printf("&(MetaRegex){ .string = %.*s, ",
-               original_string_length, quote_start);
+        printf("&(MetaRegex){ .string = %.*s, ", original_string_length,
+               quote_start);
         printf(".ops = { %s }, ", op_buffer);
         printf(".has_start_anchor = %d, ", has_start);
         printf(".has_end_anchor = %d, ", has_end);
