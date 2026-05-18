@@ -207,7 +207,6 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
                 int32 ntests) {
     int32 fuzzy_len;
     FuzzyTest *fuzzy;
-    FILE *mismatches;
     struct timespec t0_posix;
     struct timespec t1_posix;
     struct timespec t0_meta;
@@ -218,11 +217,6 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 
     fuzzy_len = ntests*tests_len;
     fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
-
-    if ((mismatches = fopen("mismatches_ascii.txt", "w")) == NULL) {
-        error("Error opening file: %s.\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
 
     for (int32 i = 0; i < ntests; i += 1) {
         char *input;
@@ -310,11 +304,11 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         }
 
         if (mismatch) {
-            fprintf(mismatches,
+            fprintf(stderr,
                     "Error: mismatch for input \"%s\" "
                     "against regex \"%s\"\n",
                     input, regex);
-            fprintf(mismatches, "posix res: %d, meta res: %d\n",
+            fprintf(stderr, "posix res: %d, meta res: %d\n",
                     fuzzy[i].result_posix, fuzzy[i].result_meta);
 
             if (fuzzy[i].result_posix == 0 && fuzzy[i].result_meta == 0) {
@@ -326,7 +320,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
                     m_m = fuzzy[i].pmatch_meta[m];
 
                     if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
-                        fprintf(mismatches,
+                        fprintf(stderr,
                                 "   Group %d: posix[%d, %d], "
                                 "meta[%d, %d]\n",
                                 m, (int32)p_m.rm_so, (int32)p_m.rm_eo,
@@ -334,7 +328,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
                     }
                 }
             }
-            fprintf(mismatches, "------------------------------------\n");
+            fprintf(stderr, "------------------------------------\n");
         }
     }
 
@@ -372,7 +366,6 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         free2(fuzzy[idx].input, fuzzy[idx].input_len + 1);
     }
     free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
-    fclose(mismatches);
     return;
 }
 
@@ -380,15 +373,9 @@ static void
 run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
     DIR *dir = opendir("inputs");
     struct dirent *entry = NULL;
-    FILE *mismatches = fopen("mismatches_file.txt", "w");
 
     if (dir == NULL) {
         error("Error opening inputs directory: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    if (mismatches == NULL) {
-        error("Error opening mismatches file: %s.\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -500,11 +487,11 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
 
             if (mismatch) {
                 char *regex_str = tests[j]->string;
-                fprintf(mismatches,
+                fprintf(stderr,
                         "File Error: mismatch in file \"%s\" "
                         "against regex \"%s\"\n",
                         entry->d_name, regex_str);
-                fprintf(mismatches, "posix res: %d, meta res: %d\n",
+                fprintf(stderr, "posix res: %d, meta res: %d\n",
                         results_posix[j], results_meta[j]);
 
                 if (results_posix[j] == 0 && results_meta[j] == 0) {
@@ -513,7 +500,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
                         regmatch_t m_m = curr_meta[m];
 
                         if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
-                            fprintf(mismatches,
+                            fprintf(stderr,
                                     "   Group %d: posix[%d, %d], "
                                     "meta[%d, %d]\n",
                                     m, (int32)p_m.rm_so, (int32)p_m.rm_eo,
@@ -521,7 +508,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
                         }
                     }
                 }
-                fprintf(mismatches, "------------------------------------\n");
+                fprintf(stderr, "------------------------------------\n");
             }
         }
 
@@ -548,7 +535,6 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
     free2(posix_regexes, tests_len*SIZEOF(regex_t));
 #endif
 
-    fclose(mismatches);
     closedir(dir);
     return;
 }
