@@ -42,14 +42,14 @@ static void compute_core_transitions(MetaOp *ops,
 static int32
 try_match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len,
                    int32 offset, int64 nmatch, regmatch_t *pmatch) {
-    LazyDfa *ldfa = (LazyDfa *)regex->lazy_dfa;
+    LazyDfa *ldfa = regex->lazy_dfa;
     int32 current_state_id;
     int32 last_accept = -1;
     int32 prev_is_word = (offset > 0) ? is_word_char(input[offset - 1]) : 0;
     (void)input_len;
 
     if (ldfa == NULL) {
-        ldfa = malloc2(SIZEOF(LazyDfa));
+        ldfa = malloc2(SIZEOF(*ldfa));
         ldfa->state_map = hash_create_map(META_MAX_LAZY_DFA_STATES, "dfa");
         ldfa->num_states = 1;
         regex->lazy_dfa = ldfa;
