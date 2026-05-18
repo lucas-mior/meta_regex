@@ -826,8 +826,8 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
         printf(", .static_dfa = NULL } }");
     } else {
         printf(", .static_dfa = &(StaticDfa){ .num_states = %d, "
-                ".start_state = %d, .states = {\n",
-                dfa_count, start_dfa);
+               ".start_state = %d, .states = {\n",
+               dfa_count, start_dfa);
         for (int32 i = 0; i < dfa_count; i += 1) {
             bool has_transitions = false;
 
@@ -1082,7 +1082,7 @@ main(int32 argc, char **argv) {
             case '*': {
                 bool is_group = (temp_ops_count > 0
                                  && temp_ops[temp_ops_count - 1].type
-                                       == META_OP_GROUP_END);
+                                        == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -1124,7 +1124,7 @@ main(int32 argc, char **argv) {
             case '+': {
                 bool is_group = (temp_ops_count > 0
                                  && temp_ops[temp_ops_count - 1].type
-                                       == META_OP_GROUP_END);
+                                        == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -1157,7 +1157,7 @@ main(int32 argc, char **argv) {
             case '?': {
                 bool is_group = (temp_ops_count > 0
                                  && temp_ops[temp_ops_count - 1].type
-                                       == META_OP_GROUP_END);
+                                        == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
