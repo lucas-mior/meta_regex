@@ -443,7 +443,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
         int64 file_size = ftell(file);
         fseek(file, 0, SEEK_SET);
 
-        char *input = malloc2(file_size + 1);
+        uint8 *input = malloc2(file_size + 1);
         if (fread64(input, 1, file_size, file) != file_size) {
             free2(input, file_size + 1);
             fclose(file);
@@ -474,7 +474,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
                 curr_pm[m].rm_eo = -1;
             }
 #if FUZZY_PRECOMPILE_POSIX
-            results_posix[j] = regexec(&posix_regexes[j], input,
+            results_posix[j] = regexec(&posix_regexes[j], (char *)input,
                                        LENGTH(dummy_test.pmatch), curr_pm, 0);
 #else
             regex_t compiled;
@@ -497,7 +497,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
                 curr_pm[m].rm_so = -1;
                 curr_pm[m].rm_eo = -1;
             }
-            uint8 *meta_input = (uint8 *)input;
+            uint8 *meta_input = input;
             MetaRegex *meta_pattern = tests[j];
             results_meta[j]
                 = meta_regex_match(meta_pattern, meta_input, input_len, curr_pm,
