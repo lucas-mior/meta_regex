@@ -279,7 +279,8 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
             }
 
             if (pc->type == META_OP_SPLIT) {
-                int32 skip_1 = btnfa_quick_lookahead_fails(pc + pc->value, input);
+                int32 skip_1
+                    = btnfa_quick_lookahead_fails(pc + pc->value, input);
                 int32 skip_2 = btnfa_quick_lookahead_fails(pc + pc->min, input);
 
                 if (!skip_2) {
