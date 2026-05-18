@@ -27,12 +27,12 @@
 #include "xenums.c"
 
 enum NfaStateType {
-    NFA_STATE_ACCEPT = 0,
-    NFA_STATE_LITERAL = 1,
-    NFA_STATE_CLASS = 2,
-    NFA_STATE_ANY = 3,
-    NFA_STATE_SPLIT = 4,
-    NFA_STATE_EMPTY = 5
+    NFA_STATE_ACCEPT,
+    NFA_STATE_LITERAL,
+    NFA_STATE_CLASS,
+    NFA_STATE_ANY,
+    NFA_STATE_SPLIT,
+    NFA_STATE_EMPTY,
 };
 
 typedef struct ParsedOp {
