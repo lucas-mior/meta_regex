@@ -24,10 +24,10 @@
 #define ENABLE_LAZY_DFA 1
 #endif
 #if !defined(ENABLE_STATIC_DFA)
-#define ENABLE_STATIC_DFA 1
+#define ENABLE_STATIC_DFA 0
 #endif
 
-#define USE_DFA_THRESHOLD 1
+#define USE_DFA_THRESHOLD 128
 
 static int32
 meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
