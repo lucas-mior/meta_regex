@@ -306,7 +306,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
             error2("Error: mismatch for input " RED(
                        "\"%s\"") " against regex " BLUE("\"%s\"") "\n",
                    input, regex);
-            error2("posix res: %d, meta res: %d\n", fuzzy[i].result_posix,
+            error2("posix result: %d, meta result: %d\n", fuzzy[i].result_posix,
                    fuzzy[i].result_meta);
 
             if (fuzzy[i].result_posix == 0 && fuzzy[i].result_meta == 0) {
@@ -488,7 +488,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
                 error2("File Error: mismatch in file " GREEN(
                            "\"%s\"") " against regex " BLUE("\"%s\"") "\n",
                        entry->d_name, regex_str);
-                error2("posix res: %d, meta res: %d\n", results_posix[j],
+                error2("posix result: %d, meta result: %d\n", results_posix[j],
                        results_meta[j]);
 
                 if (results_posix[j] == 0 && results_meta[j] == 0) {
