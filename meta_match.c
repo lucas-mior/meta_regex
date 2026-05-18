@@ -24,6 +24,8 @@
 
 static struct Matcher {
     enum MetaOpType supports;
+
+    // can the matcher return the offsets of subgroups in pmatch?
     bool extracts;
 } matchers[] = {
     [MATCH_ALGO_BTNFA] = {match_btnfa_supports, match_btnfa_extracts},
