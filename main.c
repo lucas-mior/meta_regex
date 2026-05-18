@@ -54,12 +54,13 @@ main(void) {
 
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
 
-    printf(RED("\nTests with random inputs against all regex array ...\n"));
+    printf(
+        RED("\nTests with random inputs against extensive regex array ...\n"));
     for (int32 max_input_len = 1; max_input_len <= 4096; max_input_len *= 2) {
         RUN_FUZZY_TESTS(regexes_extensive, max_input_len, 200);
     }
 
-    printf(RED("\nTests from inputs/ against all regex array ...\n"));
+    printf(RED("\nTests from inputs/ against extensive regex array ...\n"));
     run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive));
 
     exit(EXIT_SUCCESS);
