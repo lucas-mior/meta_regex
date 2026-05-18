@@ -426,17 +426,19 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
 #endif
 
     while ((entry = readdir(dir)) != NULL) {
+        char path[512];
+        FILE *file;
+
         if (strcmp(entry->d_name, ".") == 0
             || strcmp(entry->d_name, "..") == 0) {
             continue;
         }
 
-        char path[512];
         SNPRINTF(path, "inputs/%s", entry->d_name);
 
-        FILE *file = fopen(path, "rb");
-        if (file == NULL) {
-            continue;
+        if ((file = fopen(path, "rb")) == NULL) {
+            error("Error opening file %s: %s.\n", path, strerror(errno));
+            fatal(EXIT_FAILURE);
         }
 
         fseek(file, 0, SEEK_END);
