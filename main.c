@@ -329,7 +329,6 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
                     }
                 }
             }
-            error2("------------------------------------\n");
         }
     }
 
