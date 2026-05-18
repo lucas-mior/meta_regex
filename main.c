@@ -39,6 +39,14 @@ static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len);
 
 static char csv_file[1024];
 
+#if !defined(ENABLE_LAZY_DFA)
+#define ENABLE_LAZY_DFA 1
+#endif
+#if !defined(ENABLE_STATIC_DFA)
+#define ENABLE_STATIC_DFA 1
+#endif
+
+
 int32
 main(void) {
     setlocale(LC_ALL, "C");
@@ -110,6 +118,14 @@ run_known_pairs(RegexTest *tests, int32 count, char *description) {
     RegexTest *tests_posix = xmemdup(tests, count*SIZEOF(*tests_posix));
     RegexTest *tests_meta = xmemdup(tests, count*SIZEOF(*tests_meta));
     bool failed = false;
+    enum MatchAlgorithm enabled = MATCH_ALGO_BTNFA;
+
+    if (ENABLE_LAZY_DFA) {
+        enabled |= MATCH_ALGO_LAZY_DFA;
+    }
+    if (ENABLE_STATIC_DFA) {
+        enabled |= MATCH_ALGO_STATIC_DFA;
+    }
 
     printf("\n----- Running %s (POSIX vs Meta) -----\n", description);
 
@@ -147,7 +163,8 @@ run_known_pairs(RegexTest *tests, int32 count, char *description) {
 
         tests_meta[i].result = meta_regex_match(meta_regex, input, input_len,
                                                 tests_meta[i].pmatch,
-                                                LENGTH(tests_meta[i].pmatch));
+                                                LENGTH(tests_meta[i].pmatch),
+                                                enabled);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
@@ -204,6 +221,14 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
     struct timespec t1;
     printf("\n----- Running %s (Meta Only) -----\n", description);
     bool failed = false;
+    enum MatchAlgorithm enabled = MATCH_ALGO_BTNFA;
+
+    if (ENABLE_LAZY_DFA) {
+        enabled |= MATCH_ALGO_LAZY_DFA;
+    }
+    if (ENABLE_STATIC_DFA) {
+        enabled |= MATCH_ALGO_STATIC_DFA;
+    }
 
     for (int32 i = 0; i < count; i += 1) {
         tests[i].input_len = strlen32((char *)tests[i].input);
@@ -216,7 +241,8 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
         MetaRegex *meta_regex = tests[i].meta_regex;
         int32 result
             = meta_regex_match(meta_regex, (uint8 *)input, input_len,
-                               tests[i].pmatch, LENGTH(tests[i].pmatch));
+                               tests[i].pmatch, LENGTH(tests[i].pmatch),
+                               enabled);
         bool matched = !result;
         bool expected = (bool)tests[i].result;
 
@@ -258,9 +284,17 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     struct timespec t0_meta;
     struct timespec t1_meta;
     bool failed = false;
+    enum MatchAlgorithm enabled = MATCH_ALGO_BTNFA;
 #if FUZZY_PRECOMPILE_POSIX
     regex_t *posix_regexes = malloc2(tests_len*SIZEOF(*posix_regexes));
 #endif
+
+    if (ENABLE_LAZY_DFA) {
+        enabled |= MATCH_ALGO_LAZY_DFA;
+    }
+    if (ENABLE_STATIC_DFA) {
+        enabled |= MATCH_ALGO_STATIC_DFA;
+    }
 
     for (int32 i = 0; i < ntests; i += 1) {
         int32 input_len = 1 + (rand() % max_str_size);
@@ -320,7 +354,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         MetaRegex *meta_pattern = tests[fuzzy[i].regex_idx];
         fuzzy[i].result_meta = meta_regex_match(meta_pattern, input, input_len,
                                                 fuzzy[i].pmatch_meta,
-                                                LENGTH(fuzzy[i].pmatch_meta));
+                                                LENGTH(fuzzy[i].pmatch_meta),
+                                                enabled);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
@@ -408,10 +443,18 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
     struct dirent *entry = NULL;
     bool failed = false;
     RegexTest dummy_test;
+    enum MatchAlgorithm enabled = MATCH_ALGO_BTNFA;
 
     if (dir == NULL) {
         error("Error opening inputs directory: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
+    }
+
+    if (ENABLE_LAZY_DFA) {
+        enabled |= MATCH_ALGO_LAZY_DFA;
+    }
+    if (ENABLE_STATIC_DFA) {
+        enabled |= MATCH_ALGO_STATIC_DFA;
     }
 
 #if FUZZY_PRECOMPILE_POSIX
@@ -506,7 +549,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
             MetaRegex *meta_pattern = tests[j];
             results_meta[j]
                 = meta_regex_match(meta_pattern, meta_input, input_len, curr_pm,
-                                   LENGTH(dummy_test.pmatch));
+                                   LENGTH(dummy_test.pmatch), enabled);
         }
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 
