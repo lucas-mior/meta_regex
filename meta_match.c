@@ -20,9 +20,14 @@
     X(STATIC_DFA)
 #include "xenums.c"
 
-#if !defined(SUPPORTED_MATCHERS)
-#define SUPPORTED_MATCHERS (MATCH_ALGO_BTNFA | MATCH_ALGO_LAZY_DFA | MATCH_ALGO_STATIC_DFA)
+#if !defined(ENABLE_LAZY_DFA)
+#define ENABLE_LAZY_DFA 1
 #endif
+#if !defined(ENABLE_STATIC_DFA)
+#define ENABLE_STATIC_DFA 1
+#endif
+
+static enum MatchAlgorithm enabled = ENABLE_LAZY_DFA | ENABLE_STATIC_DFA;
 
 #define USE_DFA_THRESHOLD 1
 
@@ -45,7 +50,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
 
     if (!regex->has_backref && input_len >= USE_DFA_THRESHOLD
         && !(regex->re_nsub > 0 && nmatch > 1)) {
-        if ((SUPPORTED_MATCHERS & MATCH_ALGO_STATIC_DFA)
+        if ((enabled & MATCH_ALGO_STATIC_DFA)
             && regex->dfa != NULL) {
             int32 has_unsupported = 0;
             for (int32 i = 0; regex->ops[i].type != META_OP_END; i += 1) {
@@ -63,7 +68,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
         }
 
         if (algorithm == MATCH_ALGO_BTNFA
-            && (SUPPORTED_MATCHERS & MATCH_ALGO_LAZY_DFA)) {
+            && (enabled & MATCH_ALGO_LAZY_DFA)) {
             algorithm = MATCH_ALGO_LAZY_DFA;
         }
     }
@@ -153,6 +158,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
         }
         break;
     }
+    case MATCH_ALGO_LAST:
+    case MATCH_ALGO_NONE:
     default: {
         error("Undefined matching algorithm.\n");
         exit(EXIT_FAILURE);
