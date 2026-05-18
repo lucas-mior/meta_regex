@@ -42,6 +42,7 @@ main(void) {
     setlocale(LC_ALL, "C");
     srand((uint32)42);
 
+    printf("\n----- starting known (input, regex) tests...\n");
     RUN_POSIX_VS_META(ascii_no_group_no_backref);
     RUN_POSIX_VS_META(ascii_with_group_no_backref);
     RUN_POSIX_VS_META(ascii_with_group_and_backref);
@@ -50,11 +51,10 @@ main(void) {
     RUN_POSIX_VS_META(ascii_catastrophic_no_group_no_backref);
     RUN_POSIX_VS_META(ascii_catastrophic_with_group_no_backref);
     RUN_POSIX_VS_META(ascii_catastrophic_with_group_and_backref);
-    /* exit(0); */
 
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
 
-    /* printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n"); */
+    printf("\n----- starting unknown input against array of regex tests...\n");
     for (int32 max_input_len = 1; max_input_len <= 4096; max_input_len *= 2) {
         RUN_FUZZY_TESTS(fuzzy_patterns, max_input_len, 200);
     }
