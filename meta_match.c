@@ -22,7 +22,7 @@
 
 #define USE_DFA_THRESHOLD 128
 
-struct Matcher {
+static struct Matcher {
     enum MetaOpType supports;
 } matchers[] = {
     [MATCH_ALGO_BTNFA] = { match_btnfa_supports },
