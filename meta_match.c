@@ -46,8 +46,8 @@
 #define USE_DFA_THRESHOLD 256
 
 static int32
-meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
-                 int64 nmatch, regmatch_t pmatch[]) {
+meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len, int64 nmatch,
+                 regmatch_t pmatch[]) {
     enum MatchAlgorithm algorithm = MATCH_ALGO_BTNFA;
     int32 result;
 
@@ -108,8 +108,8 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
 
     if (algorithm == MATCH_ALGO_BTNFA) {
         if (regex->has_start_anchor) {
-            result = try_match_btnfa(regex, input, input_len, 0, nmatch,
-                                     pmatch);
+            result
+                = try_match_btnfa(regex, input, input_len, 0, nmatch, pmatch);
             if (result == 0) {
                 return 0;
             }
@@ -153,8 +153,8 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
             bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
 
             if (bit_match || regex->can_be_null) {
-                result = try_match_lazy_tdfa(regex, input, input_len, j,
-                                             nmatch, pmatch);
+                result = try_match_lazy_tdfa(regex, input, input_len, j, nmatch,
+                                             pmatch);
                 if (result == 0) {
                     return 0;
                 }
@@ -182,8 +182,8 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
             bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
 
             if (bit_match || regex->can_be_null) {
-                result = try_match_lazy_dfa(regex, input, input_len, j,
-                                            nmatch, pmatch);
+                result = try_match_lazy_dfa(regex, input, input_len, j, nmatch,
+                                            pmatch);
                 if (result == 0) {
                     return 0;
                 }
@@ -211,8 +211,8 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len,
             bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
 
             if (bit_match || regex->can_be_null) {
-                result = try_match_static_dfa(regex, input, input_len, j, nmatch,
-                                              pmatch);
+                result = try_match_static_dfa(regex, input, input_len, j,
+                                              nmatch, pmatch);
                 if (result == 0) {
                     return 0;
                 }
