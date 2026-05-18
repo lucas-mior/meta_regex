@@ -27,7 +27,8 @@
 #define ENABLE_STATIC_DFA 1
 #endif
 
-static enum MatchAlgorithm enabled = ENABLE_LAZY_DFA | ENABLE_STATIC_DFA;
+static enum MatchAlgorithm
+    enabled = MATCH_ALGO_LAZY_DFA | MATCH_ALGO_STATIC_DFA;
 
 #define USE_DFA_THRESHOLD 1
 
