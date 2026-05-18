@@ -475,6 +475,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
     while ((entry = readdir(dir)) != NULL) {
         char path[512];
         char case_name[768];
+        char size_pretty[32];
         FILE *file;
         int64 file_size;
         uint8 *input;
@@ -496,7 +497,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
         file_size = ftell(file);
         fseek(file, 0, SEEK_SET);
 
-        SNPRINTF(case_name, "%s[%lldB]", entry->d_name, (llong)file_size);
+        bytes_pretty(size_pretty, file_size);
+        SNPRINTF(case_name, "%s[%s]", entry->d_name, size_pretty);
 
         input = malloc2(file_size + 1);
         if (fread64(input, 1, file_size, file) != file_size) {
