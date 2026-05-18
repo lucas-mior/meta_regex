@@ -56,11 +56,11 @@ main(void) {
 
     printf(RED("\nTests with random inputs against all regex array ...\n"));
     for (int32 max_input_len = 1; max_input_len <= 4096; max_input_len *= 2) {
-        RUN_FUZZY_TESTS(fuzzy_patterns, max_input_len, 200);
+        RUN_FUZZY_TESTS(regexes_extensive, max_input_len, 200);
     }
 
     printf(RED("\nTests from inputs/ against all regex array ...\n"));
-    run_file_fuzzy_tests(fuzzy_patterns, LENGTH(fuzzy_patterns));
+    run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive));
 
     exit(EXIT_SUCCESS);
 }

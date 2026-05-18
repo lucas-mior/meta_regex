@@ -264,7 +264,7 @@ static RegexTest utf8_against_utf8[] = {
     {"aéc", R("a.*c"), true},
 };
 
-static MetaRegex *fuzzy_patterns[] = {
+static MetaRegex *regexes_extensive[] = {
     // --- Basic & Anchor Patterns ---
     R("a"),
     R("a.c"),
