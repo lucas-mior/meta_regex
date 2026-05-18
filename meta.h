@@ -11,26 +11,29 @@
 #define META_MAX_LAZY_DFA_STATES 2048
 #define META_PC_WORDS (META_MAX_OPS / 32)
 
-enum MetaOpType {
-    META_OP_END,
-    META_OP_LITERAL,
-    META_OP_ANY,
-    META_OP_CLASS,
-    META_OP_GROUP_START,
-    META_OP_GROUP_END,
-    META_OP_STAR,
-    META_OP_PLUS,
-    META_OP_OPTIONAL,
-    META_OP_ALTERNATION,
-    META_OP_BOUNDED,
-    META_OP_SPLIT,
-    META_OP_JUMP,
-    META_OP_WORD_START,
-    META_OP_WORD_END,
-    META_OP_WORD_BOUNDARY,
-    META_OP_NON_WORD_BOUNDARY,
-    META_OP_BACKREF
-};
+#define ENUM_PREFIX_ META_OP_
+#define ENUM_NAME MetaOpType
+#define ENUM_BITFLAGS 1
+#define ENUM_FIELDS \
+    X(END) \
+    X(LITERAL) \
+    X(ANY) \
+    X(CLASS) \
+    X(GROUP_START) \
+    X(GROUP_END) \
+    X(STAR) \
+    X(PLUS) \
+    X(OPTIONAL) \
+    X(ALTERNATION) \
+    X(BOUNDED) \
+    X(SPLIT) \
+    X(JUMP) \
+    X(WORD_START) \
+    X(WORD_END) \
+    X(WORD_BOUNDARY) \
+    X(NON_WORD_BOUNDARY) \
+    X(BACKREF)
+#include "xenums.c"
 
 typedef struct MetaOp {
     enum MetaOpType type;
