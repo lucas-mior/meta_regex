@@ -24,17 +24,15 @@
 #define ENABLE_LAZY_DFA 1
 #endif
 #if !defined(ENABLE_STATIC_DFA)
-#define ENABLE_STATIC_DFA 1
+#define ENABLE_STATIC_DFA 0
 #endif
-
-static enum MatchAlgorithm
-    enabled = MATCH_ALGO_LAZY_DFA | MATCH_ALGO_STATIC_DFA;
 
 #define USE_DFA_THRESHOLD 1
 
 static int32
 meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
                  regmatch_t pmatch[]) {
+    enum MatchAlgorithm enabled;
     enum MatchAlgorithm algorithm = MATCH_ALGO_BTNFA;
     int32 result = 0;
 
@@ -47,6 +45,13 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
             pmatch[k].rm_so = -1;
             pmatch[k].rm_eo = -1;
         }
+    }
+
+    if (ENABLE_LAZY_DFA) {
+        enabled |= MATCH_ALGO_LAZY_DFA;
+    }
+    if (ENABLE_STATIC_DFA) {
+        enabled |= MATCH_ALGO_STATIC_DFA;
     }
 
     if (!regex->has_backref && input_len >= USE_DFA_THRESHOLD
