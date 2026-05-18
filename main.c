@@ -45,7 +45,10 @@ static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len,
 static FILE *csv;
 
 #if !defined(ENABLE_LAZY_DFA)
-#define ENABLE_LAZY_DFA 1
+#define ENABLE_LAZY_DFA 0
+#endif
+#if !defined(ENABLE_LAZY_TDFA)
+#define ENABLE_LAZY_TDFA 1
 #endif
 #if !defined(ENABLE_STATIC_DFA)
 #define ENABLE_STATIC_DFA 0
@@ -60,6 +63,9 @@ main(void) {
 
     if (ENABLE_LAZY_DFA) {
         enabled |= MATCHER_LAZY_DFA;
+    }
+    if (ENABLE_LAZY_TDFA) {
+        enabled |= MATCHER_LAZY_TDFA;
     }
     if (ENABLE_STATIC_DFA) {
         enabled |= MATCHER_STATIC_DFA;
