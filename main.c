@@ -172,12 +172,9 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
         char *input = tests[i].input;
         int32 input_len = strlen32((char *)input);
         MetaRegex *meta_regex = tests[i].meta_regex;
-        int32 result;
-        bool matched;
-
-        result = meta_regex_match(meta_regex, (uchar *)input, input_len,
-                                  MAX_MATCHES, tests[i].pmatch);
-        matched = !result;
+        int32 result = meta_regex_match(meta_regex, (uchar *)input, input_len,
+                                        MAX_MATCHES, tests[i].pmatch);
+        bool matched = !result;
         bool expected = (bool)tests[i].result;
 
         if (matched != expected) {
@@ -205,32 +202,26 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
 static void
 run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
                 int32 ntests) {
-    int32 fuzzy_len;
-    FuzzyTest *fuzzy;
+    int32 fuzzy_len = ntests*tests_len;
+    FuzzyTest *fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
     struct timespec t0_posix;
     struct timespec t1_posix;
     struct timespec t0_meta;
     struct timespec t1_meta;
     bool failed = false;
 #if FUZZY_PRECOMPILE_POSIX
-    regex_t *posix_regexes = NULL;
+    regex_t *posix_regexes = malloc2(tests_len*SIZEOF(regex_t));
 #endif
 
-    fuzzy_len = ntests*tests_len;
-    fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
-
     for (int32 i = 0; i < ntests; i += 1) {
-        char *input;
-        int32 input_len;
+        int32 input_len = 1 + (rand() % max_str_size);
+        char *input = malloc2(input_len + 1);
 
-        input_len = 1 + (rand() % max_str_size);
-        input = malloc2(input_len + 1);
         random_ascii_string(input, input_len, 1);
 
         for (int32 j = 0; j < tests_len; j += 1) {
-            int32 idx;
+            int32 idx = i*tests_len + j;
 
-            idx = i*tests_len + j;
             fuzzy[idx].input_len = input_len;
             fuzzy[idx].input = input;
             fuzzy[idx].regex_idx = j;
@@ -238,7 +229,6 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     }
 
 #if FUZZY_PRECOMPILE_POSIX
-    posix_regexes = malloc2(tests_len*SIZEOF(regex_t));
     for (int32 i = 0; i < tests_len; i += 1) {
         char *pattern_str = tests[i]->string;
 
@@ -353,9 +343,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 #endif
 
     for (int32 i = 0; i < ntests; i += 1) {
-        int32 idx;
+        int32 idx = i*tests_len;
 
-        idx = i*tests_len;
         free2(fuzzy[idx].input, fuzzy[idx].input_len + 1);
     }
     free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
