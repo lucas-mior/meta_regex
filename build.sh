@@ -42,7 +42,7 @@ debug)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=1 $GNUSOURCE"
     CFLAGS="$CFLAGS -g3"
     ;;
-build_preprocessor|build_preprocessor_and_main|build_everything_and_run)
+preprocessor|preprocessor_and_main|build_everything_and_run)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
     CFLAGS="$CFLAGS -g -O2 -flto"
     ;;
@@ -86,7 +86,7 @@ trace_on
 $CC $CPPFLAGS -O2 -flto $CFLAGS meta_preprocessor.c -o bin/meta_preproc $LDFLAGS
 trace_off
 
-if [ "$target" = "build_preprocessor" ]; then
+if [ "$target" = "preprocessor" ]; then
     exit 0
 fi
 
@@ -100,7 +100,7 @@ trace_on
 $CC $CPPFLAGS $CFLAGS main.c -o bin/regex_test $LDFLAGS
 trace_off
 
-if [ "$target" = "build_preprocessor_and_main" ]; then
+if [ "$target" = "preprocessor_and_main" ]; then
     exit 0
 fi
 
