@@ -38,7 +38,7 @@
 #define USE_DFA_THRESHOLD 1
 
 static int32
-meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len, int64 nmatch,
+meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
                  regmatch_t pmatch[]) {
     enum MatchAlgorithm algorithm = MATCH_ALGO_BTNFA;
     int32 result = 0;
@@ -103,7 +103,7 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len, int64 nmatch,
         }
 
         for (int32 j = 0;; j += 1) {
-            uchar b = (uchar)input[j];
+            uint8 b = (uint8)input[j];
             int32 bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
 
             if (bit_match || regex->can_be_null) {
@@ -129,7 +129,7 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len, int64 nmatch,
         }
 
         for (int32 j = 0;; j += 1) {
-            uchar b = (uchar)input[j];
+            uint8 b = (uint8)input[j];
             int32 bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
 
             if (bit_match || regex->can_be_null) {
@@ -155,7 +155,7 @@ meta_regex_match(MetaRegex *regex, uchar *input, int32 input_len, int64 nmatch,
         }
 
         for (int32 j = 0;; j += 1) {
-            uchar b = (uchar)input[j];
+            uint8 b = (uint8)input[j];
             int32 bit_match = (regex->fastmap[b >> 3] & (1 << (b & 7)));
 
             if (bit_match || regex->can_be_null) {

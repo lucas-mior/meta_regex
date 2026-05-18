@@ -2,7 +2,7 @@
 #define META_UTIL_C
 
 static int32
-is_word_char(uchar c) {
+is_word_char(uint8 c) {
     int32 match = 0;
 
     if (c >= 'a' && c <= 'z') {

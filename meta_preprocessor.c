@@ -55,7 +55,7 @@ typedef struct DfaSet {
 } DfaSet;
 
 static void
-set_fastmap_bit(uchar *fastmap, int32 c) {
+set_fastmap_bit(uint8 *fastmap, int32 c) {
     if (c >= 0 && c < META_ALPHABET_SIZE) {
         fastmap[c / BITS_PER_UINT8] |= (1 << (c % BITS_PER_UINT8));
     }
@@ -191,7 +191,7 @@ sort_alternations(ParsedOp *ops, int32 count) {
 }
 
 static int32
-compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uchar *fastmap,
+compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uint8 *fastmap,
                   uint8 *visited) {
     enum MetaOpType type = 0;
     int32 is_null = 0;
@@ -374,7 +374,7 @@ main(int32 argc, char **argv) {
         int32 has_backref = 0;
         ParsedOp temp_ops[PREPROC_MAX_TEMP_OPS] = {0};
         int32 temp_ops_count = 0;
-        uchar fastmap[META_FASTMAP_SIZE] = {0};
+        uint8 fastmap[META_FASTMAP_SIZE] = {0};
         int32 can_be_null = 0;
 
         {
@@ -518,7 +518,7 @@ main(int32 argc, char **argv) {
         }
 
         while (regex_string[regex_index] != '\0') {
-            int32 cp = (uchar)regex_string[regex_index];
+            int32 cp = (uint8)regex_string[regex_index];
 
             switch (cp) {
             case '$': {
@@ -908,7 +908,7 @@ main(int32 argc, char **argv) {
                             continue;
                         }
                     }
-                    int32 c1 = (uchar)regex_string[regex_index];
+                    int32 c1 = (uint8)regex_string[regex_index];
                     if (c1 >= 128) {
                         fprintf(stderr,
                                 "Error: Non-ASCII character inside bracket "
@@ -920,7 +920,7 @@ main(int32 argc, char **argv) {
                     if (regex_string[regex_index] == '-'
                         && regex_string[regex_index + 1] != ']'
                         && regex_string[regex_index + 1] != '\0') {
-                        c2 = (uchar)regex_string[regex_index + 1];
+                        c2 = (uint8)regex_string[regex_index + 1];
                         if (c2 >= 128) {
                             fprintf(stderr,
                                     "Error: Non-ASCII character inside "
@@ -953,7 +953,7 @@ main(int32 argc, char **argv) {
             case '\\': {
                 regex_index += 1;
                 if (regex_string[regex_index] != '\0') {
-                    int32 c_cp = (uchar)regex_string[regex_index];
+                    int32 c_cp = (uint8)regex_string[regex_index];
                     if (c_cp == 's' || c_cp == 'S') {
                         temp_ops[temp_ops_count].type = META_OP_CLASS;
                         for (int32 i = 0; i < META_CHAR_BITMASK_WORDS; i += 1) {

@@ -3,13 +3,13 @@
 
 typedef struct BtnfaState {
     MetaOp *pc;
-    uchar *input;
+    uint8 *input;
     regmatch_t pmatch[32];
     uint32 visited_empty[META_PC_WORDS];
 } BtnfaState;
 
 static int32
-btnfa_quick_lookahead_fails(MetaOp *next_op, uchar *curr_str) {
+btnfa_quick_lookahead_fails(MetaOp *next_op, uint8 *curr_str) {
     if (next_op->type == META_OP_LITERAL || next_op->type == META_OP_CLASS) {
         if (next_op[1].type == META_OP_STAR
             || next_op[1].type == META_OP_OPTIONAL
@@ -21,11 +21,11 @@ btnfa_quick_lookahead_fails(MetaOp *next_op, uchar *curr_str) {
             if (*curr_str == '\0') {
                 return 1;
             }
-            if ((int32)(uchar)*curr_str != next_op->value) {
+            if ((int32)(uint8)*curr_str != next_op->value) {
                 return 1;
             }
         } else if (next_op->type == META_OP_CLASS) {
-            uchar fb = (uchar)*curr_str;
+            uint8 fb = (uint8)*curr_str;
 
             if (fb == '\0') {
                 return 1;
@@ -39,9 +39,9 @@ btnfa_quick_lookahead_fails(MetaOp *next_op, uchar *curr_str) {
 }
 
 static int32
-try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
+try_match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                 int64 nmatch, regmatch_t pmatch[]) {
-    uchar *search_ptr = &string[offset];
+    uint8 *search_ptr = &string[offset];
     int32 match_len = -1;
     static int32 stack_cap = 8192;
     static BtnfaState *stack = NULL;
@@ -107,7 +107,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
 
     while (stack_ptr > 0) {
         MetaOp *pc;
-        uchar *input;
+        uint8 *input;
         regmatch_t current_pmatch[32];
         uint32 visited_empty[META_PC_WORDS];
         int32 pmatch_copy_valid;
@@ -236,7 +236,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
             if (pc->type == META_OP_BACKREF) {
                 int32 group_id = pc->value;
                 int32 backref_len;
-                uchar *backref_ptr;
+                uint8 *backref_ptr;
 
                 if (pmatch_copy_valid && group_id < nmatch
                     && current_pmatch[group_id].rm_so != -1) {
@@ -435,7 +435,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
                 if (is_star || is_plus || is_opt || is_bound) {
                     MetaOp token = pc[0];
                     MetaOp *next_ops = pc + 2;
-                    uchar *s = input;
+                    uint8 *s = input;
                     int32 min_req = 0;
                     int32 max_req = -1;
                     int32 count = 0;
@@ -466,14 +466,14 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
                             if (s[count] == '\0') {
                                 break;
                             }
-                            if ((int32)(uchar)s[count] != token.value) {
+                            if ((int32)(uint8)s[count] != token.value) {
                                 break;
                             }
                             count += 1;
                         }
                     } else if (token.type == META_OP_CLASS) {
                         while (max_req == -1 || count < max_req) {
-                            uchar fb = (uchar)s[count];
+                            uint8 fb = (uint8)s[count];
 
                             if (fb == '\0') {
                                 break;
@@ -487,10 +487,10 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
                     }
 
                     if (count >= min_req) {
-                        uchar *min_s = s + min_req;
-                        uchar *max_s_ptr = s + count;
+                        uint8 *min_s = s + min_req;
+                        uint8 *max_s_ptr = s + count;
 
-                        for (uchar *p = min_s; p <= max_s_ptr; p += 1) {
+                        for (uint8 *p = min_s; p <= max_s_ptr; p += 1) {
                             if (!btnfa_quick_lookahead_fails(next_ops, p)) {
                                 if (stack_ptr >= stack_cap) {
                                     int32 new_cap = stack_cap*2;
@@ -528,7 +528,7 @@ try_match_btnfa(MetaRegex *regex, uchar *string, int32 string_len, int32 offset,
                     break;
                 } else {
                     int32 is_match = 0;
-                    uchar fb = (uchar)input[0];
+                    uint8 fb = (uint8)input[0];
                     int32 consumed = 0;
 
                     if (fb == '\0') {

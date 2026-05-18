@@ -17,6 +17,7 @@ for f in *.c *.h; do
 
     s/\<unsigned ([a-z]+)/u\1/g;
 
+    s/\<uchar\>/uint8/g;
     s/\<ushort\>/uint16/g;
     s/\<short\>/int16/g;
     s/\<uint\>/uint32/g;
