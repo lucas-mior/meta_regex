@@ -22,7 +22,7 @@
 
 #define USE_DFA_THRESHOLD 128
 
-MatcherFeatures matchers[] = {
+static MatcherFeatures matchers[] = {
     [MATCH_ALGO_BTNFA] = match_btnfa_features,
     [MATCH_ALGO_LAZY_DFA] = match_lazy_dfa_features,
     [MATCH_ALGO_STATIC_DFA] = match_static_dfa_features,
