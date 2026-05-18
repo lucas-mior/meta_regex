@@ -40,6 +40,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
                  enum MatchAlgorithm enabled) {
     enum MatchAlgorithm algorithm = MATCH_ALGO_BTNFA;
     int32 result = 0;
+    int32 needs_extraction = 0;
 
     if (regex == NULL) {
         return REG_NOMATCH;
@@ -52,19 +53,24 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
         }
     }
 
-    if (input_len >= USE_DFA_THRESHOLD
-        && !(regex->re_nsub > 0 && pmatch_len > 1)) {
+    needs_extraction = (regex->re_nsub > 0 && pmatch_len > 1);
+
+    if (input_len >= USE_DFA_THRESHOLD) {
         if ((enabled & MATCH_ALGO_STATIC_DFA) && regex->static_dfa) {
-            if ((regex->used_ops & ~matchers[MATCH_ALGO_STATIC_DFA].supports)
-                == 0) {
-                algorithm = MATCH_ALGO_STATIC_DFA;
+            if (!needs_extraction || matchers[MATCH_ALGO_STATIC_DFA].extracts) {
+                if ((regex->used_ops & ~matchers[MATCH_ALGO_STATIC_DFA].supports)
+                    == 0) {
+                    algorithm = MATCH_ALGO_STATIC_DFA;
+                }
             }
         }
 
         if (algorithm == MATCH_ALGO_BTNFA && (enabled & MATCH_ALGO_LAZY_DFA)) {
-            if ((regex->used_ops & ~matchers[MATCH_ALGO_LAZY_DFA].supports)
-                == 0) {
-                algorithm = MATCH_ALGO_LAZY_DFA;
+            if (!needs_extraction || matchers[MATCH_ALGO_LAZY_DFA].extracts) {
+                if ((regex->used_ops & ~matchers[MATCH_ALGO_LAZY_DFA].supports)
+                    == 0) {
+                    algorithm = MATCH_ALGO_LAZY_DFA;
+                }
             }
         }
     }
