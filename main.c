@@ -95,10 +95,23 @@ main(void) {
     case -1:
         error("Error forking: %s.\n", strerror(errno));
         exit(EXIT_FAILURE);
-    case 0:
-        execlp("python", "python", "benchmarks/plot.py", csv_file, NULL);
-        error("Error executing python: %s.\n", strerror(errno));
-        _exit(EXIT_FAILURE);
+    case 0: {
+        char *python[] = {
+            "python",
+            "benchmarks/plot.py", 
+            csv_file,
+            NULL,
+        };
+
+        execvp(python[0], python);
+
+        {
+            char cmd[256];
+            STRING_FROM_ARRAY(cmd, " ", python, LENGTH(python));
+            error("Error executing\n%s\n%s\n", cmd, strerror(errno));
+            _exit(EXIT_FAILURE);
+        }
+            }
     default:
         wait(NULL);
         break;
