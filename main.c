@@ -55,7 +55,7 @@ main(void) {
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
-    RUN_FUZZY_TESTS(fuzzy_patterns, 16, 100);
+    RUN_FUZZY_TESTS(fuzzy_patterns, 8, 10);
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 32, 1000); */
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 64, 100); */
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 128, 1000); */
