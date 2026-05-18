@@ -50,7 +50,7 @@ main(void) {
     RUN_POSIX_VS_META(ascii_catastrophic_no_group_no_backref);
     RUN_POSIX_VS_META(ascii_catastrophic_with_group_no_backref);
     RUN_POSIX_VS_META(ascii_catastrophic_with_group_and_backref);
-    /* /1* exit(0); *1/ */
+    /* exit(0); */
 
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
 
