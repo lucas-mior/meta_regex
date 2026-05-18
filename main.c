@@ -156,6 +156,9 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
     if (ENABLE_LAZY_DFA) {
         enabled |= MATCHER_LAZY_DFA;
     }
+    if (ENABLE_LAZY_TDFA) {
+        enabled |= MATCHER_LAZY_TDFA;
+    }
     if (ENABLE_STATIC_DFA) {
         enabled |= MATCHER_STATIC_DFA;
     }
@@ -260,6 +263,9 @@ run_meta_only(RegexTest *tests, int32 count, char *description, bool extract) {
     if (ENABLE_LAZY_DFA) {
         enabled |= MATCHER_LAZY_DFA;
     }
+    if (ENABLE_LAZY_TDFA) {
+        enabled |= MATCHER_LAZY_TDFA;
+    }
     if (ENABLE_STATIC_DFA) {
         enabled |= MATCHER_STATIC_DFA;
     }
@@ -324,6 +330,9 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 
     if (ENABLE_LAZY_DFA) {
         enabled |= MATCHER_LAZY_DFA;
+    }
+    if (ENABLE_LAZY_TDFA) {
+        enabled |= MATCHER_LAZY_TDFA;
     }
     if (ENABLE_STATIC_DFA) {
         enabled |= MATCHER_STATIC_DFA;
@@ -485,6 +494,9 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
 
     if (ENABLE_LAZY_DFA) {
         enabled |= MATCHER_LAZY_DFA;
+    }
+    if (ENABLE_LAZY_TDFA) {
+        enabled |= MATCHER_LAZY_TDFA;
     }
     if (ENABLE_STATIC_DFA) {
         enabled |= MATCHER_STATIC_DFA;
