@@ -314,30 +314,24 @@ populate_posix_class_mask(char *class_name, uint32 *mask) {
     for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
         int32 match = 0;
         if (strcmp(class_name, "alnum") == 0) {
-            match = ((c >= 'a' && c <= 'z')
-                     || (c >= 'A' && c <= 'Z')
+            match = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
                      || (c >= '0' && c <= '9'));
         } else if (strcmp(class_name, "alpha") == 0) {
-            match = ((c >= 'a' && c <= 'z')
-                     || (c >= 'A' && c <= 'Z'));
+            match = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
         } else if (strcmp(class_name, "digit") == 0) {
             match = (c >= '0' && c <= '9');
         } else if (strcmp(class_name, "space") == 0) {
-            match = (c == ' ' || c == '\t'
-                     || c == '\n' || c == '\r'
+            match = (c == ' ' || c == '\t' || c == '\n' || c == '\r'
                      || c == '\v' || c == '\f');
         } else if (strcmp(class_name, "lower") == 0) {
             match = (c >= 'a' && c <= 'z');
         } else if (strcmp(class_name, "upper") == 0) {
             match = (c >= 'A' && c <= 'Z');
         } else if (strcmp(class_name, "punct") == 0) {
-            match = ((c >= 33 && c <= 47)
-                     || (c >= 58 && c <= 64)
-                     || (c >= 91 && c <= 96)
-                     || (c >= 123 && c <= 126));
+            match = ((c >= 33 && c <= 47) || (c >= 58 && c <= 64)
+                     || (c >= 91 && c <= 96) || (c >= 123 && c <= 126));
         } else if (strcmp(class_name, "xdigit") == 0) {
-            match = ((c >= '0' && c <= '9')
-                     || (c >= 'a' && c <= 'f')
+            match = ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')
                      || (c >= 'A' && c <= 'F'));
         } else if (strcmp(class_name, "print") == 0) {
             match = (c >= 32 && c <= 126);
@@ -346,8 +340,7 @@ populate_posix_class_mask(char *class_name, uint32 *mask) {
         } else if (strcmp(class_name, "blank") == 0) {
             match = (c == ' ' || c == '\t');
         } else if (strcmp(class_name, "cntrl") == 0) {
-            match = ((c >= 0 && c <= 31)
-                     || (c == 127));
+            match = ((c >= 0 && c <= 31) || (c == 127));
         }
         if (match) {
             mask[c / 32] |= (1u << (c % 32));
@@ -357,7 +350,8 @@ populate_posix_class_mask(char *class_name, uint32 *mask) {
 }
 
 static void
-generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count, int32 original_string_length, char *quote_start) {
+generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
+                         int32 original_string_length, char *quote_start) {
     NfaState nfa[PREPROC_MAX_NFA_STATES];
     int32 nfa_count = 0;
     NfaItem items[PREPROC_MAX_NFA_ITEMS];
@@ -417,8 +411,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count, int32 origina
         if (nfa_failed) {
             break;
         }
-        if (i == item_count
-            || items[i].base_op.type == META_OP_ALTERNATION) {
+        if (i == item_count || items[i].base_op.type == META_OP_ALTERNATION) {
             if (b_start == -1) {
                 b_start = nfa_count;
                 nfa_count += 1;
@@ -674,15 +667,22 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count, int32 origina
                 if (!(start_set.bits[i / 32] & (1u << (i % 32)))) {
                     continue;
                 }
-                if (nfa[i].type != NFA_STATE_SPLIT && nfa[i].type != NFA_STATE_EMPTY) {
+                if (nfa[i].type != NFA_STATE_SPLIT
+                    && nfa[i].type != NFA_STATE_EMPTY) {
                     continue;
                 }
-                if (nfa[i].next1 != -1 && !(start_set.bits[nfa[i].next1 / 32] & (1u << (nfa[i].next1 % 32)))) {
-                    start_set.bits[nfa[i].next1 / 32] |= (1u << (nfa[i].next1 % 32));
+                if (nfa[i].next1 != -1
+                    && !(start_set.bits[nfa[i].next1 / 32]
+                         & (1u << (nfa[i].next1 % 32)))) {
+                    start_set.bits[nfa[i].next1 / 32]
+                        |= (1u << (nfa[i].next1 % 32));
                     changed = 1;
                 }
-                if (nfa[i].type == NFA_STATE_SPLIT && nfa[i].next2 != -1 && !(start_set.bits[nfa[i].next2 / 32] & (1u << (nfa[i].next2 % 32)))) {
-                    start_set.bits[nfa[i].next2 / 32] |= (1u << (nfa[i].next2 % 32));
+                if (nfa[i].type == NFA_STATE_SPLIT && nfa[i].next2 != -1
+                    && !(start_set.bits[nfa[i].next2 / 32]
+                         & (1u << (nfa[i].next2 % 32)))) {
+                    start_set.bits[nfa[i].next2 / 32]
+                        |= (1u << (nfa[i].next2 % 32));
                     changed = 1;
                 }
             }
@@ -706,7 +706,9 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count, int32 origina
             start_dfa = match_id;
         } else if (dfa_count < META_MAX_DFA_STATES) {
             dfa_sets[dfa_count] = start_set;
-            dfa_accept[dfa_count] = (start_set.bits[nfa_accept / 32] & (1u << (nfa_accept % 32))) != 0;
+            dfa_accept[dfa_count]
+                = (start_set.bits[nfa_accept / 32] & (1u << (nfa_accept % 32)))
+                  != 0;
             for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                 dfa_transitions[dfa_count][c] = 0;
             }
@@ -734,13 +736,16 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count, int32 origina
                         int32 match = 0;
                         if (nfa[i].type == NFA_STATE_LITERAL && nfa[i].c == c) {
                             match = 1;
-                        } else if (nfa[i].type == NFA_STATE_CLASS && (nfa[i].mask[c / 32] & (1u << (c % 32)))) {
+                        } else if (nfa[i].type == NFA_STATE_CLASS
+                                   && (nfa[i].mask[c / 32]
+                                       & (1u << (c % 32)))) {
                             match = 1;
                         } else if (nfa[i].type == NFA_STATE_ANY) {
                             match = 1;
                         }
                         if (match) {
-                            next_set.bits[nfa[i].next1 / 32] |= (1u << (nfa[i].next1 % 32));
+                            next_set.bits[nfa[i].next1 / 32]
+                                |= (1u << (nfa[i].next1 % 32));
                             has_next = 1;
                         }
                     }
@@ -749,18 +754,27 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count, int32 origina
                         while (changed) {
                             changed = 0;
                             for (int32 i = 0; i < nfa_count; i += 1) {
-                                if (!(next_set.bits[i / 32] & (1u << (i % 32)))) {
+                                if (!(next_set.bits[i / 32]
+                                      & (1u << (i % 32)))) {
                                     continue;
                                 }
-                                if (nfa[i].type != NFA_STATE_SPLIT && nfa[i].type != NFA_STATE_EMPTY) {
+                                if (nfa[i].type != NFA_STATE_SPLIT
+                                    && nfa[i].type != NFA_STATE_EMPTY) {
                                     continue;
                                 }
-                                if (nfa[i].next1 != -1 && !(next_set.bits[nfa[i].next1 / 32] & (1u << (nfa[i].next1 % 32)))) {
-                                    next_set.bits[nfa[i].next1 / 32] |= (1u << (nfa[i].next1 % 32));
+                                if (nfa[i].next1 != -1
+                                    && !(next_set.bits[nfa[i].next1 / 32]
+                                         & (1u << (nfa[i].next1 % 32)))) {
+                                    next_set.bits[nfa[i].next1 / 32]
+                                        |= (1u << (nfa[i].next1 % 32));
                                     changed = 1;
                                 }
-                                if (nfa[i].type == NFA_STATE_SPLIT && nfa[i].next2 != -1 && !(next_set.bits[nfa[i].next2 / 32] & (1u << (nfa[i].next2 % 32)))) {
-                                    next_set.bits[nfa[i].next2 / 32] |= (1u << (nfa[i].next2 % 32));
+                                if (nfa[i].type == NFA_STATE_SPLIT
+                                    && nfa[i].next2 != -1
+                                    && !(next_set.bits[nfa[i].next2 / 32]
+                                         & (1u << (nfa[i].next2 % 32)))) {
+                                    next_set.bits[nfa[i].next2 / 32]
+                                        |= (1u << (nfa[i].next2 % 32));
                                     changed = 1;
                                 }
                             }
@@ -769,7 +783,8 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count, int32 origina
                         int32 match_id2 = -1;
                         for (int32 i = 1; i < dfa_count; i += 1) {
                             int32 match = 1;
-                            for (int32 k = 0; k < PREPROC_NFA_BITSET_WORDS; k += 1) {
+                            for (int32 k = 0; k < PREPROC_NFA_BITSET_WORDS;
+                                 k += 1) {
                                 if (dfa_sets[i].bits[k] != next_set.bits[k]) {
                                     match = 0;
                                     break;
@@ -785,7 +800,10 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count, int32 origina
                             dfa_transitions[d][c] = match_id2;
                         } else if (dfa_count < META_MAX_DFA_STATES) {
                             dfa_sets[dfa_count] = next_set;
-                            dfa_accept[dfa_count] = (next_set.bits[nfa_accept / 32] & (1u << (nfa_accept % 32))) != 0;
+                            dfa_accept[dfa_count]
+                                = (next_set.bits[nfa_accept / 32]
+                                   & (1u << (nfa_accept % 32)))
+                                  != 0;
                             for (int32 k = 0; k < META_ALPHABET_SIZE; k += 1) {
                                 dfa_transitions[dfa_count][k] = 0;
                             }
@@ -813,8 +831,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count, int32 origina
         for (int32 i = 0; i < dfa_count; i += 1) {
             int32 has_transitions = 0;
 
-            printf("{ .is_accepting = %d, .next = {",
-                   dfa_accept[i]);
+            printf("{ .is_accepting = %d, .next = {", dfa_accept[i]);
             for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                 if (dfa_transitions[i][c] != 0) {
                     has_transitions = 1;
@@ -824,8 +841,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count, int32 origina
             if (has_transitions) {
                 for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                     if (dfa_transitions[i][c] != 0) {
-                        printf("[%d]=%d,", c,
-                               dfa_transitions[i][c]);
+                        printf("[%d]=%d,", c, dfa_transitions[i][c]);
                     }
                 }
             } else {
@@ -1208,7 +1224,8 @@ main(int32 argc, char **argv) {
                 }
 
                 if (valid && temp_ops_count > 0) {
-                    int32 is_group = (temp_ops[temp_ops_count - 1].type == META_OP_GROUP_END);
+                    int32 is_group = (temp_ops[temp_ops_count - 1].type
+                                      == META_OP_GROUP_END);
                     if (is_group) {
                         int32 target_start = temp_ops_count - 1;
                         int32 depth = 0;
@@ -1370,7 +1387,9 @@ main(int32 argc, char **argv) {
                             char class_name[PREPROC_MAX_CLASS_NAME] = {0};
                             int32 name_len = colon_idx - (regex_index + 2);
                             if (name_len < PREPROC_MAX_CLASS_NAME) {
-                                strncpy32(class_name, &regex_string[regex_index + 2], name_len);
+                                strncpy32(class_name,
+                                          &regex_string[regex_index + 2],
+                                          name_len);
                                 populate_posix_class_mask(class_name, mask);
                             }
                             regex_index = colon_idx + 2;
@@ -1652,7 +1671,8 @@ main(int32 argc, char **argv) {
                     original_string_length, quote_start);
             printf(", .dfa = NULL }");
         } else {
-            generate_dfa_or_fallback(temp_ops, temp_ops_count, original_string_length, quote_start);
+            generate_dfa_or_fallback(temp_ops, temp_ops_count,
+                                     original_string_length, quote_start);
         }
 
         if (paren_end != NULL) {
