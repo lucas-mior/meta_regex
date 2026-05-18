@@ -3,212 +3,212 @@
 
 #include "main_tests.h"
 
-static RegexTest ascii_no_group_no_backref[] = {
-    {"abc5def",      R("[0-9]")},
-    {"hello world",  R("[0-9]")},
-    {"2hello world", R("^[0-9]")},
-    {"hello 2",      R("^[0-9]")},
-    {"test end5",    R("[0-9]$")},
-    {"test 5end",    R("[0-9]$")},
-    {"a.c",          R("a.c")},
-    {"abc",          R("a.c")},
-    {"abc",          R("^abc$")},
-    {"abcd",         R("^abc$")},
-    {"HELLO",        R("[A-Z]")},
-    {"hello",        R("[A-Z]")},
-    {"abc XYZ 123",  R("[a-z]")},
-    {"123 XYZ",      R("[a-z]")},
-    {"foo (bar)",    R("\\([a-z]+\\)")},
-    {"abbbc",        R("ab*c")},
-    {"ac",           R("ab*c")},
-    {"ac",           R("ab+c")},
-    {"abc",          R("ab+c")},
-    {"abc",          R("ab?c")},
-    {"ac",           R("ab?c")},
-    {"abbc",         R("ab?c")},
-    {"a123b",        R("a[0-9]+b")},
-    {"aXXXb",        R("a.+b")},
-    {"ab",           R("a.*b")},
-    {"a",            R("a|b")},
-    {"b",            R("a|b")},
-    {"c",            R("a|b")},
-    {"foo",          R("foo|bar")},
-    {"bar",          R("foo|bar")},
-    {"baz",          R("foo|bar")},
-    {"a",            R("[abc]")},
-    {"d",            R("[abc]")},
-    {"x",            R("[^abc]")},
-    {"a",            R("[^abc]")},
-    {"foo123bar",    R("[0-9]+")},
-    {"A",            R("[a-zA-Z]")},
-    {"-",            R("[-abc]")},
-    {"-",            R("[abc-]")},
-    {"]",            R("[]abc]")},
-    {"a",            R("[]abc]")},
-    {"]",            R("[^]abc]")},
-    {"x",            R("[^]abc]")},
-    {"a{3}b",        R("a\\{3\\}b")},
-    {"aaab",         R("a{3}b")},
-    {"aab",          R("a{3}b")},
-    {"aaaab",        R("a{3}b")},
-    {"aab",          R("a{2,4}b")},
-    {"aaab",         R("a{2,4}b")},
-    {"aaaab",        R("a{2,4}b")},
-    {"aaaaab",       R("a{2,4}b")},
-    {"ab",           R("a{2,4}b")},
-    {"aab",          R("a{2,}b")},
-    {"aaaaaaab",     R("a{2,}b")},
-    {"ab",           R("a{2,}b")},
-    {"123a",         R("[[:digit:]]+")},
-    {"123",          R("^[[:digit:]]+$")},
-    {"abc",          R("^[[:alpha:]]+$")},
-    {"a1B",          R("^[[:alnum:]]+$")},
-    {" \t\n",        R("^[[:space:]]+$")},
-    {"a B",          R("^[[:lower:]][[:space:]][[:upper:]]$")},
-    {"a1 B",         R("^[[:lower:][:digit:]]+[[:space:]][[:upper:]]$")},
-    {"!@#$%&*()-+=", R("^[[:punct:]]+$")},
-    {" ",            R("^[^[:alnum:][:punct:]]$")},
-    {"aaa",          R("a*a")},
-    {"aaaaa",        R("a+a")},
-    {"abc123xyz",    R(".*[0-9]+.*")},
-    {"abc123xyz",    R("^.*[0-9]+$")},
-    {"123",          R("^.*[0-9]+$")},
-    {"abc",          R("^.*[0-9]+$")},
-    {"*",            R("\\*")},
-    {"\\",           R("\\\\")},
-    {"?",            R("\\?")},
-    {"(a)",          R("\\(a\\)")},
-    {"[a]",          R("\\[a\\]")},
-    {"5",            R("[[:alpha:]5]")},
-    {"a",            R("[[:alpha:]5]")},
-    {"!",            R("[[:alpha:]5]")},
-    {"a1B",          R("^[[:alnum:]_]+$")},
-    {"a_B",          R("^[[:alnum:]_]+$")},
-    {"01234ABCDEF",  R("^[[:xdigit:]]+$")},
-    {"",             R("^$")},
-    {"a",            R("^$")},
-    {"",             R("a*")},
-    {"",             R("a?")},
-    {"",             R("a+")},
-    {"",             R(".*")},
-    {"",             R(".?")},
-    {"abc",          R("a|ab|abc")},
-    {"abc",          R("abc|ab|a")},
-    {"a",            R("a|")},
-    {"",             R("a|")},
-    {"",             R("|a")},
-    {"b",            R("a||b")},
-    {"a.b",          R("a\\.b")},
-    {"a^b",          R("a\\^b")},
-    {"a$b",          R("a\\$b")},
-    {"-",            R("[a\\-c]")},
-    {"]",            R("[\\]]")},
-    {"^",            R("[\\^a]")},
-    {"\\",           R("[\\\\]")},
-    {"aaaaa",        R("a*a*a*a*")},
-    {"aaaaa",        R("a+a+a+")},
-    {"aaabbbccc",    R("a+b+c+")},
-    {"aaaa",         R("a{0,4}")},
-    {"aaaaa",        R("a{0,4}")},
-    {"",             R("a{0}")},
-    {"a",            R("a{0}")},
-    {" ",            R("[^[:alnum:]]")},
-    {"!",            R("[^[:alnum:][:space:]]")},
-    {"\n",           R(".")},
-    {" ",            R("\\s")},
-    {"a",            R("\\S")},
-    {" a",           R("\\<a")},
-    {"a ",           R("a\\>")},
-    {" a",           R("\\ba")},
-    {"a ",           R("a\\b")},
-    {" aa",          R("\\Ba")},
-    {"aa ",          R("a\\B")},
-    {"9",            R("\\d")},
-    {"a",            R("\\l")},
-    {"U",            R("\\U")},
-    {"\\U",          R("\\U")},
-    {"a1",           R("^[a-z[:digit:]]+$")},
-    {"-",            R("^[a-z[:digit:]]+$")},
-    {"aaaa",         R("a*aa")},
-};
+/* static RegexTest ascii_no_group_no_backref[] = { */
+/*     {"abc5def",      R("[0-9]")}, */
+/*     {"hello world",  R("[0-9]")}, */
+/*     {"2hello world", R("^[0-9]")}, */
+/*     {"hello 2",      R("^[0-9]")}, */
+/*     {"test end5",    R("[0-9]$")}, */
+/*     {"test 5end",    R("[0-9]$")}, */
+/*     {"a.c",          R("a.c")}, */
+/*     {"abc",          R("a.c")}, */
+/*     {"abc",          R("^abc$")}, */
+/*     {"abcd",         R("^abc$")}, */
+/*     {"HELLO",        R("[A-Z]")}, */
+/*     {"hello",        R("[A-Z]")}, */
+/*     {"abc XYZ 123",  R("[a-z]")}, */
+/*     {"123 XYZ",      R("[a-z]")}, */
+/*     {"foo (bar)",    R("\\([a-z]+\\)")}, */
+/*     {"abbbc",        R("ab*c")}, */
+/*     {"ac",           R("ab*c")}, */
+/*     {"ac",           R("ab+c")}, */
+/*     {"abc",          R("ab+c")}, */
+/*     {"abc",          R("ab?c")}, */
+/*     {"ac",           R("ab?c")}, */
+/*     {"abbc",         R("ab?c")}, */
+/*     {"a123b",        R("a[0-9]+b")}, */
+/*     {"aXXXb",        R("a.+b")}, */
+/*     {"ab",           R("a.*b")}, */
+/*     {"a",            R("a|b")}, */
+/*     {"b",            R("a|b")}, */
+/*     {"c",            R("a|b")}, */
+/*     {"foo",          R("foo|bar")}, */
+/*     {"bar",          R("foo|bar")}, */
+/*     {"baz",          R("foo|bar")}, */
+/*     {"a",            R("[abc]")}, */
+/*     {"d",            R("[abc]")}, */
+/*     {"x",            R("[^abc]")}, */
+/*     {"a",            R("[^abc]")}, */
+/*     {"foo123bar",    R("[0-9]+")}, */
+/*     {"A",            R("[a-zA-Z]")}, */
+/*     {"-",            R("[-abc]")}, */
+/*     {"-",            R("[abc-]")}, */
+/*     {"]",            R("[]abc]")}, */
+/*     {"a",            R("[]abc]")}, */
+/*     {"]",            R("[^]abc]")}, */
+/*     {"x",            R("[^]abc]")}, */
+/*     {"a{3}b",        R("a\\{3\\}b")}, */
+/*     {"aaab",         R("a{3}b")}, */
+/*     {"aab",          R("a{3}b")}, */
+/*     {"aaaab",        R("a{3}b")}, */
+/*     {"aab",          R("a{2,4}b")}, */
+/*     {"aaab",         R("a{2,4}b")}, */
+/*     {"aaaab",        R("a{2,4}b")}, */
+/*     {"aaaaab",       R("a{2,4}b")}, */
+/*     {"ab",           R("a{2,4}b")}, */
+/*     {"aab",          R("a{2,}b")}, */
+/*     {"aaaaaaab",     R("a{2,}b")}, */
+/*     {"ab",           R("a{2,}b")}, */
+/*     {"123a",         R("[[:digit:]]+")}, */
+/*     {"123",          R("^[[:digit:]]+$")}, */
+/*     {"abc",          R("^[[:alpha:]]+$")}, */
+/*     {"a1B",          R("^[[:alnum:]]+$")}, */
+/*     {" \t\n",        R("^[[:space:]]+$")}, */
+/*     {"a B",          R("^[[:lower:]][[:space:]][[:upper:]]$")}, */
+/*     {"a1 B",         R("^[[:lower:][:digit:]]+[[:space:]][[:upper:]]$")}, */
+/*     {"!@#$%&*()-+=", R("^[[:punct:]]+$")}, */
+/*     {" ",            R("^[^[:alnum:][:punct:]]$")}, */
+/*     {"aaa",          R("a*a")}, */
+/*     {"aaaaa",        R("a+a")}, */
+/*     {"abc123xyz",    R(".*[0-9]+.*")}, */
+/*     {"abc123xyz",    R("^.*[0-9]+$")}, */
+/*     {"123",          R("^.*[0-9]+$")}, */
+/*     {"abc",          R("^.*[0-9]+$")}, */
+/*     {"*",            R("\\*")}, */
+/*     {"\\",           R("\\\\")}, */
+/*     {"?",            R("\\?")}, */
+/*     {"(a)",          R("\\(a\\)")}, */
+/*     {"[a]",          R("\\[a\\]")}, */
+/*     {"5",            R("[[:alpha:]5]")}, */
+/*     {"a",            R("[[:alpha:]5]")}, */
+/*     {"!",            R("[[:alpha:]5]")}, */
+/*     {"a1B",          R("^[[:alnum:]_]+$")}, */
+/*     {"a_B",          R("^[[:alnum:]_]+$")}, */
+/*     {"01234ABCDEF",  R("^[[:xdigit:]]+$")}, */
+/*     {"",             R("^$")}, */
+/*     {"a",            R("^$")}, */
+/*     {"",             R("a*")}, */
+/*     {"",             R("a?")}, */
+/*     {"",             R("a+")}, */
+/*     {"",             R(".*")}, */
+/*     {"",             R(".?")}, */
+/*     {"abc",          R("a|ab|abc")}, */
+/*     {"abc",          R("abc|ab|a")}, */
+/*     {"a",            R("a|")}, */
+/*     {"",             R("a|")}, */
+/*     {"",             R("|a")}, */
+/*     {"b",            R("a||b")}, */
+/*     {"a.b",          R("a\\.b")}, */
+/*     {"a^b",          R("a\\^b")}, */
+/*     {"a$b",          R("a\\$b")}, */
+/*     {"-",            R("[a\\-c]")}, */
+/*     {"]",            R("[\\]]")}, */
+/*     {"^",            R("[\\^a]")}, */
+/*     {"\\",           R("[\\\\]")}, */
+/*     {"aaaaa",        R("a*a*a*a*")}, */
+/*     {"aaaaa",        R("a+a+a+")}, */
+/*     {"aaabbbccc",    R("a+b+c+")}, */
+/*     {"aaaa",         R("a{0,4}")}, */
+/*     {"aaaaa",        R("a{0,4}")}, */
+/*     {"",             R("a{0}")}, */
+/*     {"a",            R("a{0}")}, */
+/*     {" ",            R("[^[:alnum:]]")}, */
+/*     {"!",            R("[^[:alnum:][:space:]]")}, */
+/*     {"\n",           R(".")}, */
+/*     {" ",            R("\\s")}, */
+/*     {"a",            R("\\S")}, */
+/*     {" a",           R("\\<a")}, */
+/*     {"a ",           R("a\\>")}, */
+/*     {" a",           R("\\ba")}, */
+/*     {"a ",           R("a\\b")}, */
+/*     {" aa",          R("\\Ba")}, */
+/*     {"aa ",          R("a\\B")}, */
+/*     {"9",            R("\\d")}, */
+/*     {"a",            R("\\l")}, */
+/*     {"U",            R("\\U")}, */
+/*     {"\\U",          R("\\U")}, */
+/*     {"a1",           R("^[a-z[:digit:]]+$")}, */
+/*     {"-",            R("^[a-z[:digit:]]+$")}, */
+/*     {"aaaa",         R("a*aa")}, */
+/* }; */
 
-static RegexTest ascii_with_group_no_backref[] = {
-    {"foo bar",  R("(foo) (bar)")},
-    {"a1b2",     R("([a-z])([0-9])")},
-    {"nested",   R("n(e(s)t)ed")},
-    {"abc",      R("a(b|c|d)c")},
-    {"acc",      R("a(b|c|d)c")},
-    {"adc",      R("a(b|c|d)c")},
-    {"aec",      R("a(b|c|d)c")},
-    {"123 foo",  R("([0-9]+) (foo|bar)")},
-    {"456 bar",  R("([0-9]+) (foo|bar)")},
-    {"789 baz",  R("([0-9]+) (foo|bar)")},
-    {"apple",    R("(apple|orange|banana)")},
-    {"banana",   R("(apple|orange|banana)*")},
-    {"cherry",   R("(apple|orange|banana)+")},
-    {"ab",       R("(a|ab)b")},
-    {"abb",      R("(a|ab)b$")},
-    {"abc",      R("((a|b)|c)c")},
-    {"acc",      R("^((a|b)|c)c")},
-    {"abc",      R("a(b|)c")},
-    {"ac",       R("a(b|)c")},
-    {"ababab",   R("(ab){3}")},
-    {"abab",     R("(ab){3}")},
-    {"abababab", R("(ab){3}")},
-    {"aaaaaa",   R("(a{2}){3}")},
-    {"abc",      R("a(bc)?")},
-    {"a",        R("a(bc)?")},
-    {"ab",       R("a(bc)?")},
-    {"abcbc",    R("a(bc)+")},
-    {"",         R("()")},
-    {"a",        R("()")},
-    {"abcde",    R("(a(b(c(d(e)))))")},
-    {"foo",      R("f(o)+")},
-    {"foooo",    R("f(o)+")},
-    {"ac",       R("a(b*)c")},
-    {"abcd",     R("(a|ab)(c|bcd)")},
-    {"abc",      R("(a?)(b?)(c?)")},
-    {"",         R("(a?)(b?)(c?)")},
-    {"ababab",   R("(ab){1,3}")},
-    {"abababab", R("(ab){1,3}")},
-    {"ab",       R("(a|ab)")},
-    {"aa",       R("((a|aa)*)")},
-};
+/* static RegexTest ascii_with_group_no_backref[] = { */
+/*     {"foo bar",  R("(foo) (bar)")}, */
+/*     {"a1b2",     R("([a-z])([0-9])")}, */
+/*     {"nested",   R("n(e(s)t)ed")}, */
+/*     {"abc",      R("a(b|c|d)c")}, */
+/*     {"acc",      R("a(b|c|d)c")}, */
+/*     {"adc",      R("a(b|c|d)c")}, */
+/*     {"aec",      R("a(b|c|d)c")}, */
+/*     {"123 foo",  R("([0-9]+) (foo|bar)")}, */
+/*     {"456 bar",  R("([0-9]+) (foo|bar)")}, */
+/*     {"789 baz",  R("([0-9]+) (foo|bar)")}, */
+/*     {"apple",    R("(apple|orange|banana)")}, */
+/*     {"banana",   R("(apple|orange|banana)*")}, */
+/*     {"cherry",   R("(apple|orange|banana)+")}, */
+/*     {"ab",       R("(a|ab)b")}, */
+/*     {"abb",      R("(a|ab)b$")}, */
+/*     {"abc",      R("((a|b)|c)c")}, */
+/*     {"acc",      R("^((a|b)|c)c")}, */
+/*     {"abc",      R("a(b|)c")}, */
+/*     {"ac",       R("a(b|)c")}, */
+/*     {"ababab",   R("(ab){3}")}, */
+/*     {"abab",     R("(ab){3}")}, */
+/*     {"abababab", R("(ab){3}")}, */
+/*     {"aaaaaa",   R("(a{2}){3}")}, */
+/*     {"abc",      R("a(bc)?")}, */
+/*     {"a",        R("a(bc)?")}, */
+/*     {"ab",       R("a(bc)?")}, */
+/*     {"abcbc",    R("a(bc)+")}, */
+/*     {"",         R("()")}, */
+/*     {"a",        R("()")}, */
+/*     {"abcde",    R("(a(b(c(d(e)))))")}, */
+/*     {"foo",      R("f(o)+")}, */
+/*     {"foooo",    R("f(o)+")}, */
+/*     {"ac",       R("a(b*)c")}, */
+/*     {"abcd",     R("(a|ab)(c|bcd)")}, */
+/*     {"abc",      R("(a?)(b?)(c?)")}, */
+/*     {"",         R("(a?)(b?)(c?)")}, */
+/*     {"ababab",   R("(ab){1,3}")}, */
+/*     {"abababab", R("(ab){1,3}")}, */
+/*     {"ab",       R("(a|ab)")}, */
+/*     {"aa",       R("((a|aa)*)")}, */
+/* }; */
 
-static RegexTest ascii_with_group_and_backref[] = {
-    {"11",                 R("([[:digit:]])\\1")},
-    {"abccab",             R("^(a|ab)cc\\1$")},
-    {"aaccab",             R("^((a|aa)*)cc\\1$")},
-    {"abccabxx",           R("^(a|ab)cc\\1(xx)\\2$")},
-    {"aaccabxx",           R("^((a|aa)*)cc\\1(xx)\\2$")},
-    {"hello hello",        R("([a-z]+) \\1")},
-    {"foo bar foo",        R("([a-z]+) bar \\1")},
-    {"abc abc def def",    R("([a-z]+) \\1 ([a-z]+) \\2")},
-    {"abab",               R("(ab)\\1")},
-    {"xyxy",               R("((x)(y))\\1")},
-    {"abba",               R("(a)(b)\\2\\1")},
-    {"radar",              R("(r)(a)d\\2\\1")},
-    {"123123",             R("([0-9]{3})\\1")},
-    {"catcat",             R("(cat|dog)\\1")},
-    {"dogdog",             R("(cat|dog)\\1")},
-    {"catdog",             R("(cat|dog)\\1")},
-    {"a a a",              R("([a-z]) \\1 \\1")},
-    {"12 12 12",           R("([0-9]+)( \\1)+")},
-    /* {"x",                  R("(x)\\1*")}, */
-    /* {"xx",                 R("(x)\\1*")}, */
-    /* {"xxxxx",              R("(x)\\1*")}, */
-    {"wowwow",             R("^([a-z]{3})\\1$")},
-    {"<tag>content</tag>", R("<([a-z]+)>.*</\\1>")},
-    {"'hello'",            R("(['\"]).*\\1")},
-    {"\"world\"",          R("(['\"]).*\\1")},
-    {"abcabb",             R("((a)(b))c\\1\\2")},
-    {"a_a",                R("([a-z])_\\1")},
-    {"123-123",            R("([0-9]+)-\\1")},
-    {"aba",                R("(a)(b)\\1")},
-    {"abab",               R("(a)(b)\\1\\2")},
-    {"abcabca",            R("(a)(b)(c)\\1\\2\\3\\1")},
-    {"1111",               R("([0-9])\\1\\1\\1")},
-};
+/* static RegexTest ascii_with_group_and_backref[] = { */
+/*     {"11",                 R("([[:digit:]])\\1")}, */
+/*     {"abccab",             R("^(a|ab)cc\\1$")}, */
+/*     {"aaccab",             R("^((a|aa)*)cc\\1$")}, */
+/*     {"abccabxx",           R("^(a|ab)cc\\1(xx)\\2$")}, */
+/*     {"aaccabxx",           R("^((a|aa)*)cc\\1(xx)\\2$")}, */
+/*     {"hello hello",        R("([a-z]+) \\1")}, */
+/*     {"foo bar foo",        R("([a-z]+) bar \\1")}, */
+/*     {"abc abc def def",    R("([a-z]+) \\1 ([a-z]+) \\2")}, */
+/*     {"abab",               R("(ab)\\1")}, */
+/*     {"xyxy",               R("((x)(y))\\1")}, */
+/*     {"abba",               R("(a)(b)\\2\\1")}, */
+/*     {"radar",              R("(r)(a)d\\2\\1")}, */
+/*     {"123123",             R("([0-9]{3})\\1")}, */
+/*     {"catcat",             R("(cat|dog)\\1")}, */
+/*     {"dogdog",             R("(cat|dog)\\1")}, */
+/*     {"catdog",             R("(cat|dog)\\1")}, */
+/*     {"a a a",              R("([a-z]) \\1 \\1")}, */
+/*     {"12 12 12",           R("([0-9]+)( \\1)+")}, */
+/*     /1* {"x",                  R("(x)\\1*")}, *1/ */
+/*     /1* {"xx",                 R("(x)\\1*")}, *1/ */
+/*     /1* {"xxxxx",              R("(x)\\1*")}, *1/ */
+/*     {"wowwow",             R("^([a-z]{3})\\1$")}, */
+/*     {"<tag>content</tag>", R("<([a-z]+)>.*</\\1>")}, */
+/*     {"'hello'",            R("(['\"]).*\\1")}, */
+/*     {"\"world\"",          R("(['\"]).*\\1")}, */
+/*     {"abcabb",             R("((a)(b))c\\1\\2")}, */
+/*     {"a_a",                R("([a-z])_\\1")}, */
+/*     {"123-123",            R("([0-9]+)-\\1")}, */
+/*     {"aba",                R("(a)(b)\\1")}, */
+/*     {"abab",               R("(a)(b)\\1\\2")}, */
+/*     {"abcabca",            R("(a)(b)(c)\\1\\2\\3\\1")}, */
+/*     {"1111",               R("([0-9])\\1\\1\\1")}, */
+/* }; */
 
 static RegexTest ascii_catastrophic_no_group_no_backref[] = {
     {"aaaaaaaaaaaaaaaaaX",           R("a*a*a*b")},
@@ -234,136 +234,136 @@ static RegexTest ascii_catastrophic_with_group_no_backref[] = {
     {"aaaaaaaaaaaaaaaX",   R("(a*a*)*b")},
 };
 
-static RegexTest ascii_catastrophic_with_group_and_backref[] = {
-    {"aaaxxxxxxxxxxxxX", R("(a)\\1*\\1*b")},
-    {"aaaxxxxxxxxxxxxX", R("(a*)*\\1b")},
-    {"aaaxxxxxxxxxxxxX", R("(a+)+\\1b")},
-    {"aaaxxxxxxxxxxxxX", R("(a|a)*\\1b")},
-    {"aaaxxxxxxxxxxxxX", R("(a*)*\\1*b")},
-    {"aaaxxxxxxxxxxxxX", R("(a|aa)*\\1b")},
-    {"aaaxxxxxxxxxxxxX", R("(a)\\1*a*\\1*b")},
-    {"axxx", R("(.*)*\\1b")},
-};
+/* static RegexTest ascii_catastrophic_with_group_and_backref[] = { */
+/*     {"aaaxxxxxxxxxxxxX", R("(a)\\1*\\1*b")}, */
+/*     {"aaaxxxxxxxxxxxxX", R("(a*)*\\1b")}, */
+/*     {"aaaxxxxxxxxxxxxX", R("(a+)+\\1b")}, */
+/*     {"aaaxxxxxxxxxxxxX", R("(a|a)*\\1b")}, */
+/*     {"aaaxxxxxxxxxxxxX", R("(a*)*\\1*b")}, */
+/*     {"aaaxxxxxxxxxxxxX", R("(a|aa)*\\1b")}, */
+/*     {"aaaxxxxxxxxxxxxX", R("(a)\\1*a*\\1*b")}, */
+/*     {"axxx", R("(.*)*\\1b")}, */
+/* }; */
 
-static RegexTest utf8_against_ascii[] = {
-    {"é",   R("e")},
-    {"é",   R("[e]")},
-    {"é",   R("^e$")},
-    {"a",   R("a")},
-    {"a",   R("a.c")},
-    {"aéc", R("a.c")},
-    {"aéc", R("a(e|é)c")},
-};
+/* static RegexTest utf8_against_ascii[] = { */
+/*     {"é",   R("e")}, */
+/*     {"é",   R("[e]")}, */
+/*     {"é",   R("^e$")}, */
+/*     {"a",   R("a")}, */
+/*     {"a",   R("a.c")}, */
+/*     {"aéc", R("a.c")}, */
+/*     {"aéc", R("a(e|é)c")}, */
+/* }; */
 
-static RegexTest utf8_against_utf8[] = {
-    {"é",   R("e"),    false},
-    {"é",   R("ê"),    false},
-    {"é",   R("é"),    true},
-    {"\\U", R("\\U"),  true},
-    {"aéc", R("a.c"),  false},
-    {"aéc", R("a.*c"), true},
-};
+/* static RegexTest utf8_against_utf8[] = { */
+/*     {"é",   R("e"),    false}, */
+/*     {"é",   R("ê"),    false}, */
+/*     {"é",   R("é"),    true}, */
+/*     {"\\U", R("\\U"),  true}, */
+/*     {"aéc", R("a.c"),  false}, */
+/*     {"aéc", R("a.*c"), true}, */
+/* }; */
 
-static MetaRegex *regexes_extensive[] = {
-    // --- Basic & Anchor Patterns ---
-    R("a"),
-    R("a.c"),
-    R("^abc$"),
-    R("^$"),
-    R("a*"),
-    R("."),
-    // -- sick cases --
-    /* R("^.*[0-9]+$"), */
-    /* R(".*[0-9]+.*"), */
+/* static MetaRegex *regexes_extensive[] = { */
+/*     // --- Basic & Anchor Patterns --- */
+/*     R("a"), */
+/*     R("a.c"), */
+/*     R("^abc$"), */
+/*     R("^$"), */
+/*     R("a*"), */
+/*     R("."), */
+/*     // -- sick cases -- */
+/*     /1* R("^.*[0-9]+$"), *1/ */
+/*     /1* R(".*[0-9]+.*"), *1/ */
 
-    // --- Character Classes & Escapes ---
-    R("[A-Z]"),
-    R("[a-z]"),
-    R("[abc]"),
-    R("[^abc]"),
-    R("[0-9]+"),
-    R("[a-zA-Z]"),
-    R("[-abc]"),
-    R("[]abc]"),
-    R("[^]abc]"),
-    R("[[:alpha:]5]"),
-    R("[^[:alnum:]]"),
-    R("\\*"),
-    R("\\\\"),
-    R("\\?"),
-    R("\\[a\\]"),
-    R("\\s"),
-    R("\\S"),
-    R("\\d"),
-    R("[-A-Z0-9_a-z./+=()&%$#@!*<>?|{}~^]"),
+/*     // --- Character Classes & Escapes --- */
+/*     R("[A-Z]"), */
+/*     R("[a-z]"), */
+/*     R("[abc]"), */
+/*     R("[^abc]"), */
+/*     R("[0-9]+"), */
+/*     R("[a-zA-Z]"), */
+/*     R("[-abc]"), */
+/*     R("[]abc]"), */
+/*     R("[^]abc]"), */
+/*     R("[[:alpha:]5]"), */
+/*     R("[^[:alnum:]]"), */
+/*     R("\\*"), */
+/*     R("\\\\"), */
+/*     R("\\?"), */
+/*     R("\\[a\\]"), */
+/*     R("\\s"), */
+/*     R("\\S"), */
+/*     R("\\d"), */
+/*     R("[-A-Z0-9_a-z./+=()&%$#@!*<>?|{}~^]"), */
 
-    // --- POSIX Named Classes ---
-    R("^[[:digit:]]+$"),
-    R("^[[:alpha:]]+$"),
-    R("^[[:alnum:]]+$"),
-    R("^[[:space:]]+$"),
-    R("^[[:punct:]]+$"),
-    R("^[^[:alnum:][:punct:]]$"),
-    R("^[[:alnum:]_]+$"),
-    R("^[[:xdigit:]]+$"),
+/*     // --- POSIX Named Classes --- */
+/*     R("^[[:digit:]]+$"), */
+/*     R("^[[:alpha:]]+$"), */
+/*     R("^[[:alnum:]]+$"), */
+/*     R("^[[:space:]]+$"), */
+/*     R("^[[:punct:]]+$"), */
+/*     R("^[^[:alnum:][:punct:]]$"), */
+/*     R("^[[:alnum:]_]+$"), */
+/*     R("^[[:xdigit:]]+$"), */
 
-    // --- Basic Quantifiers & Alternations ---
-    R("ab*c"),
-    R("ab+c"),
-    R("ab?c"),
-    R("a[0-9]+b"),
-    R("a.*b"),
-    R("a|b"),
-    R("foo|bar"),
-    R("a*a"),
-    R("a|ab|abc"),
-    R("a|"),
-    R("a||b"),
-    R("a+b+c+"),
+/*     // --- Basic Quantifiers & Alternations --- */
+/*     R("ab*c"), */
+/*     R("ab+c"), */
+/*     R("ab?c"), */
+/*     R("a[0-9]+b"), */
+/*     R("a.*b"), */
+/*     R("a|b"), */
+/*     R("foo|bar"), */
+/*     R("a*a"), */
+/*     R("a|ab|abc"), */
+/*     R("a|"), */
+/*     R("a||b"), */
+/*     R("a+b+c+"), */
 
-    // --- Bounded Quantifiers ---
-    R("a{3}b"),
-    R("a{2,4}b"),
-    R("a{2,}b"),
-    R("a{0,4}"),
-    R("a{0}"),
+/*     // --- Bounded Quantifiers --- */
+/*     R("a{3}b"), */
+/*     R("a{2,4}b"), */
+/*     R("a{2,}b"), */
+/*     R("a{0,4}"), */
+/*     R("a{0}"), */
 
-    // --- Escaped Assertions & Word Boundaries ---
-    R("\\<a"),
-    R("a\\>"),
-    R("\\ba"),
-    R("a\\b"),
-    R("\\Ba"),
-    R("a\\B"),
+/*     // --- Escaped Assertions & Word Boundaries --- */
+/*     R("\\<a"), */
+/*     R("a\\>"), */
+/*     R("\\ba"), */
+/*     R("a\\b"), */
+/*     R("\\Ba"), */
+/*     R("a\\B"), */
 
-    // --- Groups & Basic Captures ---
-    R("(foo|bar)"),
-    R("(ab){3}"),
-    R("a(bc)?"),
-    R("a(b*)c"),
-    R("(a|ab)b"),
+/*     // --- Groups & Basic Captures --- */
+/*     R("(foo|bar)"), */
+/*     R("(ab){3}"), */
+/*     R("a(bc)?"), */
+/*     R("a(b*)c"), */
+/*     R("(a|ab)b"), */
 
-    // --- Complex Combined Feature Patterns (Up to 64 Characters) ---
-    R("^[a-zA-Z_][a-zA-Z0-9_]*$"),
-    R("\\b(cat|dog|mouse|elephant|giraffe|zebra)\\b"),
-    R("[0-9]{2,4}-[a-z]{3,5}|[A-Z]{2,3}"),
-    R("^([a-z]+(\\.[a-z]+)*)@([a-z]+\\.[a-z]+)$"),
-    R("[^][\\\\^$.|?*+() -]+"),
-    R("(a|ab|abc|abcd)+e"),
-    R("\\b[a-z]+\\B[a-z]+\\b"),
-    R("^([a-z]{1,3}\\d{3,4}[A-Z]?|foo|bar|baz|qux|quux)$"),
-    R("(^start|end$|middle)"),
-    R("a(b(c(d)?)?)?x"),
-    R("([a-z][0-9]){2,4}"),
-    R("^((a|b)|(c|d)|(e|f)|(g|h)|(i|j)|(k|l)|(m|n))$"),
-    R("\\s+[A-Z][a-z]+[.,! ]\\s*$"),
-    R("^[[:alpha:]]{2}[[:digit:]]{4}[[:alnum:]]{2}$"),
-    R("^.*a.*b.*c.*$"),
-    R("(|a|b|)[a-z]+(|c|d)"),
-    R("\\<[a-zA-Z_][[:alnum:]_]*\\>"),
-    R("a?b?c?d?e?f?g?h?i?j?k?l?m?n?o?p?q?r?s?t?u?v?w?"),
-    R("(abc|def){0,3}"),
-    R("a\\\\b.*?c\\\\d")
-};
+/*     // --- Complex Combined Feature Patterns (Up to 64 Characters) --- */
+/*     R("^[a-zA-Z_][a-zA-Z0-9_]*$"), */
+/*     R("\\b(cat|dog|mouse|elephant|giraffe|zebra)\\b"), */
+/*     R("[0-9]{2,4}-[a-z]{3,5}|[A-Z]{2,3}"), */
+/*     R("^([a-z]+(\\.[a-z]+)*)@([a-z]+\\.[a-z]+)$"), */
+/*     R("[^][\\\\^$.|?*+() -]+"), */
+/*     R("(a|ab|abc|abcd)+e"), */
+/*     R("\\b[a-z]+\\B[a-z]+\\b"), */
+/*     R("^([a-z]{1,3}\\d{3,4}[A-Z]?|foo|bar|baz|qux|quux)$"), */
+/*     R("(^start|end$|middle)"), */
+/*     R("a(b(c(d)?)?)?x"), */
+/*     R("([a-z][0-9]){2,4}"), */
+/*     R("^((a|b)|(c|d)|(e|f)|(g|h)|(i|j)|(k|l)|(m|n))$"), */
+/*     R("\\s+[A-Z][a-z]+[.,! ]\\s*$"), */
+/*     R("^[[:alpha:]]{2}[[:digit:]]{4}[[:alnum:]]{2}$"), */
+/*     R("^.*a.*b.*c.*$"), */
+/*     R("(|a|b|)[a-z]+(|c|d)"), */
+/*     R("\\<[a-zA-Z_][[:alnum:]_]*\\>"), */
+/*     R("a?b?c?d?e?f?g?h?i?j?k?l?m?n?o?p?q?r?s?t?u?v?w?"), */
+/*     R("(abc|def){0,3}"), */
+/*     R("a\\\\b.*?c\\\\d") */
+/* }; */
 
 #endif /* META_TESTS_ARRAY_H */

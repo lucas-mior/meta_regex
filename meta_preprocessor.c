@@ -702,6 +702,9 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
         }
     }
 
+    error2("regex "BLUE("%.*s")" created %d states.\n", 
+            original_string_length, quote_start, dfa_count);
+
     if (fail_reasons) {
         fprintf(stderr,
                 "Warning: DFA conversion failed for %.*s because of %s.\n",

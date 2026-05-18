@@ -70,6 +70,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
         }
     }
 
+    ASSERT(algorithm == MATCHER_STATIC_DFA);
+
     switch (algorithm) {
     case MATCHER_BTNFA: {
         if (regex->has_start_anchor) {

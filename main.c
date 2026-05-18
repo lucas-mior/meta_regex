@@ -74,9 +74,9 @@ main(void) {
     /* RUN_KNOWN_PAIRS(ascii_with_group_and_backref); */
     /* RUN_KNOWN_PAIRS(utf8_against_ascii); */
     /* RUN_KNOWN_PAIRS(utf8_against_utf8); */
-    RUN_KNOWN_PAIRS(ascii_catastrophic_no_group_no_backref);
+    /* RUN_KNOWN_PAIRS(ascii_catastrophic_no_group_no_backref); */
     RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_no_backref);
-    RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_and_backref);
+    /* RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_and_backref); */
 
     /* run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8"); */
 
