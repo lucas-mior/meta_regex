@@ -62,6 +62,137 @@ set_fastmap_bit(uchar *fastmap, int32 c) {
     return;
 }
 
+static int32
+compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uchar *fastmap,
+                  uint8 *visited) {
+    enum MetaOpType type;
+    int32 is_null;
+
+    if (pc >= temp_ops_count) {
+        return 1;
+    }
+    if (pc < 0) {
+        return 0;
+    }
+    if (visited[pc]) {
+        return 0;
+    }
+    visited[pc] = 1;
+
+    type = ops[pc].type;
+
+    if (type == META_OP_LITERAL) {
+        set_fastmap_bit(fastmap, ops[pc].value);
+        if (pc + 1 < temp_ops_count) {
+            if (ops[pc + 1].type == META_OP_STAR
+                || ops[pc + 1].type == META_OP_OPTIONAL
+                || (ops[pc + 1].type == META_OP_BOUNDED
+                    && ops[pc + 1].min == 0)) {
+                return compute_first_set(ops, pc + 2, temp_ops_count, fastmap,
+                                         visited);
+            }
+        }
+        return 0;
+    } else if (type == META_OP_CLASS) {
+        for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
+            if ((ops[pc].mask[c / BITS_PER_UINT32]
+                 & (1u << (c % BITS_PER_UINT32)))
+                != 0) {
+                set_fastmap_bit(fastmap, c);
+            }
+        }
+        if (pc + 1 < temp_ops_count) {
+            if (ops[pc + 1].type == META_OP_STAR
+                || ops[pc + 1].type == META_OP_OPTIONAL
+                || (ops[pc + 1].type == META_OP_BOUNDED
+                    && ops[pc + 1].min == 0)) {
+                return compute_first_set(ops, pc + 2, temp_ops_count, fastmap,
+                                         visited);
+            }
+        }
+        return 0;
+    } else if (type == META_OP_ANY) {
+        for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
+            set_fastmap_bit(fastmap, c);
+        }
+        if (pc + 1 < temp_ops_count) {
+            if (ops[pc + 1].type == META_OP_STAR
+                || ops[pc + 1].type == META_OP_OPTIONAL
+                || (ops[pc + 1].type == META_OP_BOUNDED
+                    && ops[pc + 1].min == 0)) {
+                return compute_first_set(ops, pc + 2, temp_ops_count, fastmap,
+                                         visited);
+            }
+        }
+        return 0;
+    } else if (type == META_OP_SPLIT) {
+        int32 p1;
+        int32 p2;
+
+        p1 = compute_first_set(ops, pc + ops[pc].value, temp_ops_count, fastmap,
+                               visited);
+        p2 = compute_first_set(ops, pc + ops[pc].min, temp_ops_count, fastmap,
+                               visited);
+        return (p1 || p2);
+    } else if (type == META_OP_JUMP) {
+        return compute_first_set(ops, pc + ops[pc].value, temp_ops_count,
+                                 fastmap, visited);
+    } else if (type == META_OP_ALTERNATION) {
+        int32 depth;
+        int32 target;
+
+        depth = 0;
+        target = pc;
+        while (target < temp_ops_count) {
+            if (ops[target].type == META_OP_GROUP_START) {
+                depth += 1;
+            } else if (ops[target].type == META_OP_GROUP_END) {
+                if (depth == 0) {
+                    break;
+                }
+                depth -= 1;
+            }
+            target += 1;
+        }
+        return compute_first_set(ops, target, temp_ops_count, fastmap, visited);
+    } else if (type == META_OP_GROUP_START) {
+        int32 depth;
+        int32 scan;
+
+        depth = 0;
+        is_null = compute_first_set(ops, pc + 1, temp_ops_count, fastmap,
+                                    visited);
+        scan = pc + 1;
+        while (scan < temp_ops_count) {
+            if (ops[scan].type == META_OP_GROUP_START) {
+                depth += 1;
+            } else if (ops[scan].type == META_OP_GROUP_END) {
+                if (depth == 0) {
+                    break;
+                }
+                depth -= 1;
+            } else if (ops[scan].type == META_OP_ALTERNATION && depth == 0) {
+                if (compute_first_set(ops, scan + 1, temp_ops_count, fastmap,
+                                      visited)) {
+                    is_null = 1;
+                }
+            }
+            scan += 1;
+        }
+        return is_null;
+    } else if (type == META_OP_GROUP_END || type == META_OP_WORD_START
+               || type == META_OP_WORD_END || type == META_OP_WORD_BOUNDARY
+               || type == META_OP_NON_WORD_BOUNDARY
+               || type == META_OP_BACKREF) {
+        return compute_first_set(ops, pc + 1, temp_ops_count, fastmap, visited);
+    } else if (type == META_OP_STAR || type == META_OP_PLUS
+               || type == META_OP_OPTIONAL || type == META_OP_BOUNDED) {
+        return compute_first_set(ops, pc + 1, temp_ops_count, fastmap, visited);
+    }
+
+    return 0;
+}
+
 int32
 main(int32 argc, char **argv) {
     FILE *input_file;
@@ -403,7 +534,7 @@ main(int32 argc, char **argv) {
                 int32 valid = 0;
                 while (regex_string[temp_idx] >= '0'
                        && regex_string[temp_idx] <= '9') {
-                    m = m*10 + (regex_string[temp_idx] - '0');
+                    m = m * 10 + (regex_string[temp_idx] - '0');
                     has_m = 1;
                     temp_idx += 1;
                 }
@@ -414,7 +545,7 @@ main(int32 argc, char **argv) {
                         n = 0;
                         while (regex_string[temp_idx] >= '0'
                                && regex_string[temp_idx] <= '9') {
-                            n = n*10 + (regex_string[temp_idx] - '0');
+                            n = n * 10 + (regex_string[temp_idx] - '0');
                             temp_idx += 1;
                         }
                     }
@@ -491,7 +622,7 @@ main(int32 argc, char **argv) {
                         int32 target_start = temp_ops_count - 1;
                         ParsedOp op_to_repeat = temp_ops[target_start];
 
-                        if (temp_ops_count + m + (n == -1 ? 2 : (n - m)*2)
+                        if (temp_ops_count + m + (n == -1 ? 2 : (n - m) * 2)
                             >= PREPROC_MAX_TEMP_OPS) {
                             fprintf(stderr, "Error: Quantifier unrolling "
                                             "exceeds max ops.\n");
@@ -754,8 +885,8 @@ main(int32 argc, char **argv) {
                         temp_ops[temp_ops_count].value = c_cp;
                         temp_ops_count += 1;
                     }
-                    regex_index += 1;
                 }
+                regex_index += 1;
                 break;
             }
             default: {
@@ -769,63 +900,39 @@ main(int32 argc, char **argv) {
         }
 
         {
-            int32 current_branch_nullable = 1;
-            int32 regex_is_nullable = 0;
+            uint8 visited[PREPROC_MAX_TEMP_OPS];
+            int32 depth;
+            int32 scan;
 
-            for (int32 i = 0; i < temp_ops_count; i += 1) {
-                enum MetaOpType type = temp_ops[i].type;
-                int32 op_is_quantified_nullable = 0;
+            for (int32 i = 0; i < PREPROC_MAX_TEMP_OPS; i += 1) {
+                visited[i] = 0;
+            }
 
-                if (i + 1 < temp_ops_count) {
-                    enum MetaOpType next = temp_ops[i + 1].type;
-                    if (next == META_OP_STAR || next == META_OP_OPTIONAL
-                        || (next == META_OP_BOUNDED
-                            && temp_ops[i + 1].min == 0)) {
-                        op_is_quantified_nullable = 1;
-                    }
-                }
+            can_be_null = compute_first_set(temp_ops, 0, temp_ops_count,
+                                            fastmap, visited);
 
-                if (type == META_OP_ALTERNATION) {
-                    if (current_branch_nullable) {
-                        regex_is_nullable = 1;
-                    }
-                    current_branch_nullable = 1;
-                    continue;
-                }
-
-                if (current_branch_nullable) {
-                    if (type == META_OP_LITERAL) {
-                        set_fastmap_bit(fastmap, temp_ops[i].value);
-                        if (!op_is_quantified_nullable) {
-                            current_branch_nullable = 0;
+            if (has_alternation) {
+                depth = 0;
+                scan = 0;
+                while (scan < temp_ops_count) {
+                    if (temp_ops[scan].type == META_OP_GROUP_START) {
+                        depth += 1;
+                    } else if (temp_ops[scan].type == META_OP_GROUP_END) {
+                        depth -= 1;
+                    } else if (temp_ops[scan].type == META_OP_ALTERNATION
+                               && depth == 0) {
+                        for (int32 i = 0; i < PREPROC_MAX_TEMP_OPS; i += 1) {
+                            visited[i] = 0;
                         }
-                    } else if (type == META_OP_CLASS) {
-                        for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
-                            if (temp_ops[i].mask[c / BITS_PER_UINT32]
-                                & (1u << (c % BITS_PER_UINT32))) {
-                                set_fastmap_bit(fastmap, c);
-                            }
-                        }
-                        if (!op_is_quantified_nullable) {
-                            current_branch_nullable = 0;
-                        }
-                    } else if (type == META_OP_ANY) {
-                        memset64(fastmap, 0xff, META_FASTMAP_SIZE);
-                        if (!op_is_quantified_nullable) {
-                            current_branch_nullable = 0;
-                        }
-                    } else if (type == META_OP_BOUNDED
-                               || type == META_OP_PLUS) {
-                        if (temp_ops[i].min > 0) {
-                            current_branch_nullable = 0;
+                        if (compute_first_set(temp_ops, scan + 1,
+                                              temp_ops_count, fastmap,
+                                              visited)) {
+                            can_be_null = 1;
                         }
                     }
+                    scan += 1;
                 }
             }
-            if (current_branch_nullable) {
-                regex_is_nullable = 1;
-            }
-            can_be_null = regex_is_nullable;
         }
 
         for (int32 i = 0; i <= temp_ops_count; i += 1) {
