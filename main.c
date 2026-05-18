@@ -37,10 +37,28 @@ static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len);
 
 #define FUZZY_PRECOMPILE_POSIX 1
 
+static char csv_file[1024];
+
 int32
 main(void) {
     setlocale(LC_ALL, "C");
     srand((uint32)42);
+    enum MatchAlgorithm enabled = MATCH_ALGO_BTNFA;
+
+    if (ENABLE_LAZY_DFA) {
+        enabled |= MATCH_ALGO_LAZY_DFA;
+    }
+    if (ENABLE_STATIC_DFA) {
+        enabled |= MATCH_ALGO_STATIC_DFA;
+    }
+    SNPRINTF(csv_file, "benchmarks/timings-%lld-%s.csv",
+                       (llong)time(NULL), MATCH_ALGO_str(enabled));
+
+    FILE *csv = fopen(csv_file, "w");
+    if (csv != NULL) {
+        fprintf(csv, "suite,case,count,posix_time,meta_time\n");
+        fclose(csv);
+    }
 
     printf(RED("\nTests with known (input, regex) pairs ...\n"));
     RUN_KNOWN_PAIRS(ascii_no_group_no_backref);
@@ -62,6 +80,18 @@ main(void) {
 
     printf(RED("\nTests from inputs/ against extensive regex array ...\n"));
     run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive));
+
+    switch (fork()) {
+    case -1:
+        error("Error forking: %s.\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    case 0:
+        execlp("python", "python", "benchmarks/plot.py", csv_file, NULL);
+        error("Error executing python: %s.\n", strerror(errno));
+        _exit(EXIT_FAILURE);
+    default:
+        break;
+    }
 
     exit(EXIT_SUCCESS);
 }
@@ -150,8 +180,14 @@ run_known_pairs(RegexTest *tests, int32 count, char *description) {
         exit(EXIT_FAILURE);
     }
 
-    PRINT_TIMINGS(count, t0_posix, t1_posix, "posix");
-    PRINT_TIMINGS(count, t0_meta, t1_meta, "meta");
+    double t_posix = timediff(t0_posix, t1_posix);
+    double t_meta = timediff(t0_meta, t1_meta);
+    FILE *csv = fopen(csv_file, "a");
+    if (csv != NULL) {
+        fprintf(csv, "known_pairs,%s,%d,%f,%f\n", description, count, t_posix,
+                t_meta);
+        fclose(csv);
+    }
 
     free2(tests_posix, count*SIZEOF(*tests_posix));
     free2(tests_meta, count*SIZEOF(*tests_meta));
@@ -197,7 +233,13 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
         exit(EXIT_FAILURE);
     }
 
-    PRINT_TIMINGS(count, t0, t1, "meta (exclusive)");
+    double t_meta = timediff(t0, t1);
+    FILE *csv = fopen(csv_file, "a");
+    if (csv != NULL) {
+        fprintf(csv, "meta_only,%s,%d,0.0,%f\n", description, count, t_meta);
+        fclose(csv);
+    }
+
     return;
 }
 
@@ -317,24 +359,20 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         }
     }
 
-    {
-        char name_posix[256];
-        char name_meta[256];
-
-        if (max_str_size < 2048) {
-            double t_posix = timediff(t0_posix, t1_posix);
-            double t_meta = timediff(t0_meta, t1_meta);
-
-            if (t_posix < t_meta) {
-                error2("\nPerformance regression at max_str_size=%d\n",
-                       max_str_size);
-            }
+    double t_posix = timediff(t0_posix, t1_posix);
+    double t_meta = timediff(t0_meta, t1_meta);
+    if (max_str_size < 2048) {
+        if (t_posix < t_meta) {
+            error2("\nPerformance regression at max_str_size=%d\n",
+                   max_str_size);
         }
-        SNPRINTF(name_posix, YELLOW("posix [max_str_size=%d]"), max_str_size);
-        SNPRINTF(name_meta, GREEN("meta [max_str_size=%d]"), max_str_size);
+    }
 
-        PRINT_TIMINGS(fuzzy_len, t0_posix, t1_posix, name_posix);
-        PRINT_TIMINGS(fuzzy_len, t0_meta, t1_meta, name_meta);
+    FILE *csv = fopen(csv_file, "a");
+    if (csv != NULL) {
+        fprintf(csv, "fuzzy,%d,%d,%f,%f\n", max_str_size, fuzzy_len, t_posix,
+                t_meta);
+        fclose(csv);
     }
 
 #if FUZZY_PRECOMPILE_POSIX
@@ -499,14 +537,14 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
             }
         }
 
-        char name_posix[256];
-        char name_meta[256];
-
-        SNPRINTF(name_posix, YELLOW("posix [%s]"), entry->d_name);
-        SNPRINTF(name_meta, GREEN("meta [%s]"), entry->d_name);
-
-        PRINT_TIMINGS(tests_len, t0_posix, t1_posix, name_posix);
-        PRINT_TIMINGS(tests_len, t0_meta, t1_meta, name_meta);
+        double t_posix = timediff(t0_posix, t1_posix);
+        double t_meta = timediff(t0_meta, t1_meta);
+        FILE *csv = fopen(csv_file, "a");
+        if (csv != NULL) {
+            fprintf(csv, "file_fuzzy,%s,%d,%f,%f\n", entry->d_name, tests_len,
+                    t_posix, t_meta);
+            fclose(csv);
+        }
 
         free2(results_posix, tests_len*SIZEOF(*results_posix));
         free2(results_meta, tests_len*SIZEOF(*results_meta));
