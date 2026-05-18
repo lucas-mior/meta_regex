@@ -40,13 +40,13 @@ btnfa_quick_lookahead_fails(MetaOp *next_op, uint8 *curr_str) {
 
 static int32
 match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
-            int64 nmatch, regmatch_t pmatch[]) {
+            int64 pmatch_len, regmatch_t *pmatch) {
     uint8 *search_ptr = &string[offset];
     int32 match_len = -1;
     static int32 stack_cap = 8192;
     static BtnfaState *stack = NULL;
     int32 stack_ptr = 0;
-    int64 copy_size = (nmatch > 32) ? 32 : nmatch;
+    int64 copy_size = (pmatch_len > 32) ? 32 : pmatch_len;
     regmatch_t best_pmatch[32];
     uint32 *memo = NULL;
     int32 memo_size = 0;
@@ -238,7 +238,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                 int32 backref_len;
                 uint8 *backref_ptr;
 
-                if (pmatch_copy_valid && group_id < nmatch
+                if (pmatch_copy_valid && group_id < pmatch_len
                     && current_pmatch[group_id].rm_so != -1) {
                     backref_len = current_pmatch[group_id].rm_eo
                                   - current_pmatch[group_id].rm_so;
@@ -338,7 +338,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
 
             if (pc->type == META_OP_GROUP_START) {
                 int32 group_id = pc->value;
-                if (pmatch_copy_valid && group_id < nmatch) {
+                if (pmatch_copy_valid && group_id < pmatch_len) {
                     current_pmatch[group_id].rm_so = (int32)(input - string);
                 }
 
@@ -419,7 +419,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
 
             if (pc->type == META_OP_GROUP_END) {
                 int32 group_id = pc->value;
-                if (pmatch_copy_valid && group_id < nmatch) {
+                if (pmatch_copy_valid && group_id < pmatch_len) {
                     current_pmatch[group_id].rm_eo = (int32)(input - string);
                 }
                 pc += 1;
@@ -569,7 +569,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
 
     if (match_len >= 0) {
         if (!regex->has_end_anchor || string[match_len] == '\0') {
-            if (pmatch != NULL && nmatch > 0) {
+            if (pmatch != NULL && pmatch_len > 0) {
                 pmatch[0].rm_so = offset;
                 pmatch[0].rm_eo = match_len;
                 for (int64 k = 1; k < copy_size; k += 1) {
