@@ -260,14 +260,15 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         regex_t compiled;
         char *pattern_str = tests[fuzzy[i].regex_idx]->string;
 
-        if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
-            fuzzy[i].result_posix
-                = regexec(&compiled, fuzzy[i].input, MAX_MATCHES,
-                          fuzzy[i].pmatch_posix, 0);
-            regfree(&compiled);
-        } else {
-            fuzzy[i].result_posix = REG_NOMATCH;
+        if (regcomp(&compiled, pattern_str, REG_EXTENDED)) {
+            error("Pre-compilation failed for " BLUE("\"%s\"") "\n",
+                  pattern_str);
+            exit(EXIT_FAILURE);
         }
+        fuzzy[i].result_posix
+            = regexec(&compiled, fuzzy[i].input, MAX_MATCHES,
+                      fuzzy[i].pmatch_posix, 0);
+        regfree(&compiled);
 #endif
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
