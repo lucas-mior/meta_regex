@@ -32,7 +32,7 @@
 static int32
 meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
                  regmatch_t pmatch[]) {
-    enum MatchAlgorithm enabled;
+    enum MatchAlgorithm enabled = MATCH_ALGO_BTNFA;
     enum MatchAlgorithm algorithm = MATCH_ALGO_BTNFA;
     int32 result = 0;
 
