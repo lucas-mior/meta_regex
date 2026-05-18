@@ -21,6 +21,7 @@ CFLAGS="$CFLAGS -Wfatal-errors"
 CFLAGS="$CFLAGS -Wno-gnu-union-cast"
 CFLAGS="$CFLAGS -Wno-missing-field-initializers"
 CFLAGS="$CFLAGS -Wno-unused-variable"
+CFLAGS="$CFLAGS -Wno-type-limits"
 
 CPPFLAGS="$CPPFLAGS -D_DEFAULT_SOURCE"
 CPPFLAGS="$CPPFLAGS -I "$dir/$cbase" -I "$dir""
