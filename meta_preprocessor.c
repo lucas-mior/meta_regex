@@ -429,9 +429,9 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
     int32 b_start = -1;
     int32 prev_dangling = -1;
     int32 nfa_start_state = -1;
-    static int32 dfa_transitions[META_MAX_DFA_STATES][META_ALPHABET_SIZE];
-    static uint8 dfa_accept[META_MAX_DFA_STATES][META_ALPHABET_SIZE];
-    static DfaSet dfa_sets[META_MAX_DFA_STATES];
+    static int32 dfa_transitions[META_MAX_STATIC_DFA_STATES][META_ALPHABET_SIZE];
+    static uint8 dfa_accept[META_MAX_STATIC_DFA_STATES][META_ALPHABET_SIZE];
+    static DfaSet dfa_sets[META_MAX_STATIC_DFA_STATES];
     int32 dfa_count = 1;
     int32 start_dfa_w = 0;
     int32 start_dfa_nw = 0;
@@ -840,7 +840,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
 
                     if (match_id != -1) {
                         dfa_transitions[d][c] = match_id;
-                    } else if (dfa_count < META_MAX_DFA_STATES) {
+                    } else if (dfa_count < META_MAX_STATIC_DFA_STATES) {
                         dfa_sets[dfa_count] = next_kernel;
                         for (int32 k = 0; k < META_ALPHABET_SIZE; k += 1) {
                             dfa_transitions[dfa_count][k] = 0;

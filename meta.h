@@ -4,7 +4,7 @@
 #include "cbase/util.c"
 
 #define META_ALPHABET_SIZE 256
-#define META_MAX_DFA_STATES 1024
+#define META_MAX_STATIC_DFA_STATES 1024
 #define META_MAX_OPS 512
 #define META_FASTMAP_SIZE 32
 #define META_CHAR_BITMASK_WORDS 8
@@ -76,8 +76,6 @@ typedef struct MetaRegex {
 
 typedef struct MatcherFeatures {
     enum MetaOpType supports;
-
-    // can the matcher return the offsets of subgroups in pmatch?
     bool extracts;
 } MatcherFeatures;
 
