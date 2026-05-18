@@ -81,6 +81,7 @@ main(void) {
     printf(RED("\nTests from inputs/ against extensive regex array ...\n"));
     run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive));
 
+#if 0
     switch (fork()) {
     case -1:
         error("Error forking: %s.\n", strerror(errno));
@@ -92,6 +93,7 @@ main(void) {
     default:
         break;
     }
+#endif
 
     exit(EXIT_SUCCESS);
 }
