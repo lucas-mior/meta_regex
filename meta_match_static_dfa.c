@@ -4,8 +4,8 @@
 static int32
 try_match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len,
                      int32 offset, int64 nmatch, regmatch_t pmatch[]) {
-    DfaState *states = regex->static_dfa->states;
-    DfaState *current_state_ptr = &states[regex->static_dfa->start_state];
+    StaticDfaState *states = regex->static_dfa->states;
+    StaticDfaState *current_state_ptr = &states[regex->static_dfa->start_state];
     int32 last_accept = -1;
 
     (void)input_len;

@@ -40,15 +40,15 @@ typedef struct MetaOp {
     uint32 mask[META_CHAR_BITMASK_WORDS];
 } MetaOp;
 
-typedef struct DfaState {
+typedef struct StaticDfaState {
     int32 is_accepting;
     int32 next[META_ALPHABET_SIZE];
-} DfaState;
+} StaticDfaState;
 
 typedef struct StaticDfa {
     int32 num_states;
     int32 start_state;
-    DfaState *states;
+    StaticDfaState *states;
 } StaticDfa;
 
 typedef struct NfaStateSet {
