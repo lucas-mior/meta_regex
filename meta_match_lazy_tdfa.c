@@ -28,6 +28,7 @@ typedef struct LazyTdfaState {
     int32 next[META_ALPHABET_SIZE];
     TdfaCommand commands[META_ALPHABET_SIZE];
     int32 accepts_before[META_ALPHABET_SIZE];
+    TdfaCommand accepts_before_cmds[META_ALPHABET_SIZE];
     int32 accepts_on_eof;
     TdfaCommand eof_cmd;
     LazyTdfaKey key;
@@ -129,6 +130,7 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                     ldfa->states[current_state_id].next[c] = 0;
                     ldfa->states[current_state_id].accepts_before[c] = 0;
                     for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                        ldfa->states[current_state_id].accepts_before_cmds[c].set_tag[t] = 0;
                         ldfa->states[current_state_id].commands[c].set_tag[t]
                             = 0;
                     }
@@ -189,7 +191,6 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                                             state->eof_cmd.set_tag[t] = 1;
                                         }
                                     }
-                                    break;
                                 }
                             }
                         }
@@ -222,7 +223,6 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                 NfaStateSet next_core;
                 int32 set_is_empty;
                 uint32 pc_masks[META_MAX_OPS];
-                int32 found_transition_match;
 
                 curr_is_word = is_word_char_tdfa(b);
                 for (int32 k = 0; k < META_PC_WORDS; k += 1) {
@@ -242,6 +242,25 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                 }
                 state->accepts_before[b] = is_acc;
 
+                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                    state->accepts_before_cmds[b].set_tag[t] = 0;
+                }
+                if (is_acc) {
+                    for (int32 k = 0; k < META_MAX_OPS; k += 1) {
+                        if ((closed_set.bits[k / 32] & (1u << (k % 32))) != 0) {
+                            if (regex->ops[k].type == META_OP_END) {
+                                uint32 final_mask;
+                                final_mask = pc_masks[k];
+                                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                                    if ((final_mask & (1u << t)) != 0) {
+                                        state->accepts_before_cmds[b].set_tag[t] = 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 tdfa_compute_core_transitions(regex->ops, &closed_set, b,
                                               &next_core);
 
@@ -249,7 +268,6 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                     state->commands[b].set_tag[t] = 0;
                 }
                 
-                found_transition_match = 0;
                 for (int32 k = 0; k < META_MAX_OPS; k += 1) {
                     if ((closed_set.bits[k / 32] & (1u << (k % 32))) != 0) {
                         MetaOp *op;
@@ -274,15 +292,12 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                         }
 
                         if (match) {
-                            if (!found_transition_match) {
-                                uint32 trans_mask;
-                                trans_mask = pc_masks[k];
-                                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                                    if ((trans_mask & (1u << t)) != 0) {
-                                        state->commands[b].set_tag[t] = 1;
-                                    }
+                            uint32 trans_mask;
+                            trans_mask = pc_masks[k];
+                            for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                                if ((trans_mask & (1u << t)) != 0) {
+                                    state->commands[b].set_tag[t] = 1;
                                 }
-                                found_transition_match = 1;
                             }
                         }
                     }
@@ -320,6 +335,9 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                             for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                                 ldfa->states[next_id].next[c] = 0;
                                 ldfa->states[next_id].accepts_before[c] = 0;
+                                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                                    ldfa->states[next_id].accepts_before_cmds[c].set_tag[t] = 0;
+                                }
                             }
                             ASSERT(hash_insert_tmap(ldfa->state_tmap, &next_key,
                                                     SIZEOF(next_key), next_id));
@@ -341,6 +359,9 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                 last_accept = i;
                 for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
                     best_tags[t] = tags[t];
+                    if (state->accepts_before_cmds[b].set_tag[t]) {
+                        best_tags[t] = i;
+                    }
                 }
             }
             current_state_id = state->next[b];
