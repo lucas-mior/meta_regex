@@ -61,12 +61,24 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
     static int32 stack_cap = 8192;
     static BtnfaState *stack = NULL;
     int32 stack_ptr = 0;
-    int64 copy_size = (pmatch_len > 32) ? 32 : pmatch_len;
+    regmatch_t init_pmatch[32];
     regmatch_t best_pmatch[32];
     uint32 *memo = NULL;
     int32 memo_size = 0;
     int32 step_count = 0;
     int32 is_catastrophic = 0;
+
+    for (int32 k = 0; k < 32; k += 1) {
+        init_pmatch[k].rm_so = -1;
+        init_pmatch[k].rm_eo = -1;
+    }
+
+    if (pmatch != NULL) {
+        int64 ext_copy = (pmatch_len > 32) ? 32 : pmatch_len;
+        for (int64 k = 0; k < ext_copy; k += 1) {
+            init_pmatch[k] = pmatch[k];
+        }
+    }
 
     if (stack == NULL) {
         stack = realloc2(NULL, 0, stack_cap, SIZEOF(*stack));
@@ -99,10 +111,8 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
             if (!btnfa_quick_lookahead_fails(alts[i], search_ptr)) {
                 stack[stack_ptr].pc = alts[i];
                 stack[stack_ptr].input = search_ptr;
-                if (pmatch != NULL) {
-                    for (int64 k = 0; k < copy_size; k += 1) {
-                        stack[stack_ptr].pmatch[k] = pmatch[k];
-                    }
+                for (int32 k = 0; k < 32; k += 1) {
+                    stack[stack_ptr].pmatch[k] = init_pmatch[k];
                 }
                 stack_ptr += 1;
             }
@@ -111,10 +121,8 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
         if (!btnfa_quick_lookahead_fails(regex->ops, search_ptr)) {
             stack[stack_ptr].pc = regex->ops;
             stack[stack_ptr].input = search_ptr;
-            if (pmatch != NULL) {
-                for (int64 k = 0; k < copy_size; k += 1) {
-                    stack[stack_ptr].pmatch[k] = pmatch[k];
-                }
+            for (int32 k = 0; k < 32; k += 1) {
+                stack[stack_ptr].pmatch[k] = init_pmatch[k];
             }
             stack_ptr += 1;
         }
@@ -125,7 +133,6 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
         uint8 *input;
         regmatch_t current_pmatch[32];
         uint32 visited_empty[META_PC_WORDS];
-        int32 pmatch_copy_valid;
 
         step_count += 1;
         if (step_count > 4096 && !is_catastrophic) {
@@ -147,7 +154,6 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
         stack_ptr -= 1;
         pc = stack[stack_ptr].pc;
         input = stack[stack_ptr].input;
-        pmatch_copy_valid = (pmatch != NULL);
 
         if (is_catastrophic) {
             for (int32 w = 0; w < META_PC_WORDS; w += 1) {
@@ -155,10 +161,8 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
             }
         }
 
-        if (pmatch_copy_valid) {
-            for (int64 k = 0; k < copy_size; k += 1) {
-                current_pmatch[k] = stack[stack_ptr].pmatch[k];
-            }
+        for (int32 k = 0; k < 32; k += 1) {
+            current_pmatch[k] = stack[stack_ptr].pmatch[k];
         }
 
         while (1) {
@@ -187,10 +191,8 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                 int32 curr_match_len = (int32)(input - string);
                 if (curr_match_len > match_len) {
                     match_len = curr_match_len;
-                    if (pmatch_copy_valid) {
-                        for (int64 k = 0; k < copy_size; k += 1) {
-                            best_pmatch[k] = current_pmatch[k];
-                        }
+                    for (int32 k = 0; k < 32; k += 1) {
+                        best_pmatch[k] = current_pmatch[k];
                     }
                 }
                 break;
@@ -253,8 +255,9 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                 int32 backref_len;
                 uint8 *backref_ptr;
 
-                if (pmatch_copy_valid && group_id < pmatch_len
-                    && current_pmatch[group_id].rm_so != -1) {
+                if (group_id >= 0 && group_id < 32
+                    && current_pmatch[group_id].rm_so != -1
+                    && current_pmatch[group_id].rm_eo != -1) {
                     backref_len = current_pmatch[group_id].rm_eo
                                   - current_pmatch[group_id].rm_so;
                     backref_ptr = string + current_pmatch[group_id].rm_so;
@@ -313,10 +316,8 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                                 = visited_empty[w];
                         }
                     }
-                    if (pmatch_copy_valid) {
-                        for (int64 k = 0; k < copy_size; k += 1) {
-                            stack[stack_ptr].pmatch[k] = current_pmatch[k];
-                        }
+                    for (int32 k = 0; k < 32; k += 1) {
+                        stack[stack_ptr].pmatch[k] = current_pmatch[k];
                     }
                     stack_ptr += 1;
                 }
@@ -336,10 +337,8 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                                 = visited_empty[w];
                         }
                     }
-                    if (pmatch_copy_valid) {
-                        for (int64 k = 0; k < copy_size; k += 1) {
-                            stack[stack_ptr].pmatch[k] = current_pmatch[k];
-                        }
+                    for (int32 k = 0; k < 32; k += 1) {
+                        stack[stack_ptr].pmatch[k] = current_pmatch[k];
                     }
                     stack_ptr += 1;
                 }
@@ -353,7 +352,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
 
             if (pc->type == META_OP_GROUP_START) {
                 int32 group_id = pc->value;
-                if (pmatch_copy_valid && group_id < pmatch_len) {
+                if (group_id >= 0 && group_id < 32) {
                     current_pmatch[group_id].rm_so = (int32)(input - string);
                 }
 
@@ -416,11 +415,8 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                                         = visited_empty[w];
                                 }
                             }
-                            if (pmatch_copy_valid) {
-                                for (int64 k = 0; k < copy_size; k += 1) {
-                                    stack[stack_ptr].pmatch[k]
-                                        = current_pmatch[k];
-                                }
+                            for (int32 k = 0; k < 32; k += 1) {
+                                stack[stack_ptr].pmatch[k] = current_pmatch[k];
                             }
                             stack_ptr += 1;
                         }
@@ -434,7 +430,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
 
             if (pc->type == META_OP_GROUP_END) {
                 int32 group_id = pc->value;
-                if (pmatch_copy_valid && group_id < pmatch_len) {
+                if (group_id >= 0 && group_id < 32) {
                     current_pmatch[group_id].rm_eo = (int32)(input - string);
                 }
                 pc += 1;
@@ -530,11 +526,9 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                                         }
                                     }
                                 }
-                                if (pmatch_copy_valid) {
-                                    for (int64 k = 0; k < copy_size; k += 1) {
-                                        stack[stack_ptr].pmatch[k]
-                                            = current_pmatch[k];
-                                    }
+                                for (int32 k = 0; k < 32; k += 1) {
+                                    stack[stack_ptr].pmatch[k]
+                                        = current_pmatch[k];
                                 }
                                 stack_ptr += 1;
                             }
@@ -587,7 +581,8 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
             if (pmatch != NULL && pmatch_len > 0) {
                 pmatch[0].rm_so = offset;
                 pmatch[0].rm_eo = match_len;
-                for (int64 k = 1; k < copy_size; k += 1) {
+                int64 ext_copy = (pmatch_len > 32) ? 32 : pmatch_len;
+                for (int64 k = 1; k < ext_copy; k += 1) {
                     pmatch[k] = best_pmatch[k];
                 }
             }
