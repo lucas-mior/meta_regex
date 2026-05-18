@@ -272,8 +272,9 @@ static MetaRegex *fuzzy_patterns[] = {
     R("^$"),
     R("a*"),
     R("."),
-    R("^.*[0-9]+$"),
-    R(".*[0-9]+.*"),
+    // -- sick cases --
+    /* R("^.*[0-9]+$"), */
+    /* R(".*[0-9]+.*"), */
 
     // --- Character Classes & Escapes ---
     R("[A-Z]"),

@@ -62,7 +62,10 @@ static void tdfa_add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                                      int32 curr_is_word, int32 src_tags[META_MAX_TAGS],
                                      int32 closed_tags[META_MAX_OPS][META_MAX_TAGS],
                                      int32 current_string_idx, int32 *closure_counter,
-                                     int32 closed_priorities[META_MAX_OPS]);
+                                     int32 closed_priorities[META_MAX_OPS],
+                                     int32 closed_pcs[META_MAX_OPS], int32 *num_closed_pcs);
+
+
 static void tdfa_compute_core_transitions(MetaOp *ops,
                                           NfaStateSet *current_closed_set,
                                           int32 c, NfaStateSet *next_core_set);
@@ -81,6 +84,10 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
     int32 current_core_priorities[META_MAX_OPS];
     int32 next_core_priorities[META_MAX_OPS];
     int32 closed_priorities[META_MAX_OPS];
+    int32 active_cores[META_MAX_OPS];
+    int32 num_active_cores;
+    int32 next_active_cores[META_MAX_OPS];
+    int32 num_next_active_cores;
     (void)input_len;
 
     ldfa = (LazyTdfa *)regex->lazy_dfa;
@@ -107,8 +114,11 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
             current_core_tags[k][t] = -1;
         }
         current_core_priorities[k] = -1;
+        next_core_priorities[k] = -1;
     }
     current_core_priorities[0] = 0;
+    active_cores[0] = 0;
+    num_active_cores = 1;
 
     {
         LazyTdfaKey start_key;
@@ -164,6 +174,8 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                 int32 closed_tags[META_MAX_OPS][META_MAX_TAGS];
                 int32 is_acc;
                 int32 closure_counter;
+                int32 closed_pcs[META_MAX_OPS];
+                int32 num_closed_pcs;
 
                 state = &ldfa->states[current_state_id];
                 for (int32 k = 0; k < META_PC_WORDS; k += 1) {
@@ -174,31 +186,37 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                 }
                 is_acc = 0;
                 closure_counter = 0;
+                num_closed_pcs = 0;
 
                 while (1) {
                     int32 min_p;
+                    int32 target_idx;
                     int32 target_k;
 
                     min_p = 0x7FFFFFFF;
-                    target_k = -1;
-                    for (int32 k = 0; k < META_MAX_OPS; k += 1) {
+                    target_idx = -1;
+                    for (int32 idx = 0; idx < num_active_cores; idx += 1) {
+                        int32 k;
+                        k = active_cores[idx];
                         if (current_core_priorities[k] != -1) {
                             if (current_core_priorities[k] < min_p) {
                                 min_p = current_core_priorities[k];
-                                target_k = k;
+                                target_idx = idx;
                             }
                         }
                     }
-                    if (target_k == -1) {
+                    if (target_idx == -1) {
                         break;
                     }
+                    target_k = active_cores[target_idx];
                     current_core_priorities[target_k] = -1;
 
                     if ((state->key.bits[target_k / 32] & (1u << (target_k % 32))) != 0) {
                         tdfa_add_epsilon_closure(
                             regex->ops, target_k, &closed_set, &is_acc,
                             state->key.prev_is_word, 0, current_core_tags[target_k],
-                            closed_tags, i, &closure_counter, closed_priorities);
+                            closed_tags, i, &closure_counter, closed_priorities,
+                            closed_pcs, &num_closed_pcs);
                     }
                 }
 
@@ -208,13 +226,13 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
 
                     best_p = 0x7FFFFFFF;
                     best_k = -1;
-                    for (int32 k = 0; k < META_MAX_OPS; k += 1) {
-                        if ((closed_set.bits[k / 32] & (1u << (k % 32))) != 0) {
-                            if (regex->ops[k].type == META_OP_END) {
-                                if (closed_priorities[k] != -1 && closed_priorities[k] < best_p) {
-                                    best_p = closed_priorities[k];
-                                    best_k = k;
-                                }
+                    for (int32 idx = 0; idx < num_closed_pcs; idx += 1) {
+                        int32 k;
+                        k = closed_pcs[idx];
+                        if (regex->ops[k].type == META_OP_END) {
+                            if (closed_priorities[k] != -1 && closed_priorities[k] < best_p) {
+                                best_p = closed_priorities[k];
+                                best_k = k;
                             }
                         }
                     }
@@ -240,6 +258,8 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
             int32 set_is_empty;
             int32 next_id;
             int32 closure_counter;
+            int32 closed_pcs[META_MAX_OPS];
+            int32 num_closed_pcs;
 
             state = &ldfa->states[current_state_id];
 
@@ -252,31 +272,37 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
             }
             is_acc = 0;
             closure_counter = 0;
+            num_closed_pcs = 0;
 
             while (1) {
                 int32 min_p;
+                int32 target_idx;
                 int32 target_k;
 
                 min_p = 0x7FFFFFFF;
-                target_k = -1;
-                for (int32 k = 0; k < META_MAX_OPS; k += 1) {
+                target_idx = -1;
+                for (int32 idx = 0; idx < num_active_cores; idx += 1) {
+                    int32 k;
+                    k = active_cores[idx];
                     if (current_core_priorities[k] != -1) {
                         if (current_core_priorities[k] < min_p) {
                             min_p = current_core_priorities[k];
-                            target_k = k;
+                            target_idx = idx;
                         }
                     }
                 }
-                if (target_k == -1) {
+                if (target_idx == -1) {
                     break;
                 }
+                target_k = active_cores[target_idx];
                 current_core_priorities[target_k] = -1;
 
                 if ((state->key.bits[target_k / 32] & (1u << (target_k % 32))) != 0) {
                     tdfa_add_epsilon_closure(
                         regex->ops, target_k, &closed_set, &is_acc,
                         state->key.prev_is_word, curr_is_word, current_core_tags[target_k],
-                        closed_tags, i, &closure_counter, closed_priorities);
+                        closed_tags, i, &closure_counter, closed_priorities,
+                        closed_pcs, &num_closed_pcs);
                 }
             }
 
@@ -286,13 +312,13 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
 
                 best_p = 0x7FFFFFFF;
                 best_k = -1;
-                for (int32 k = 0; k < META_MAX_OPS; k += 1) {
-                    if ((closed_set.bits[k / 32] & (1u << (k % 32))) != 0) {
-                        if (regex->ops[k].type == META_OP_END) {
-                            if (closed_priorities[k] != -1 && closed_priorities[k] < best_p) {
-                                best_p = closed_priorities[k];
-                                best_k = k;
-                            }
+                for (int32 idx = 0; idx < num_closed_pcs; idx += 1) {
+                    int32 k;
+                    k = closed_pcs[idx];
+                    if (regex->ops[k].type == META_OP_END) {
+                        if (closed_priorities[k] != -1 && closed_priorities[k] < best_p) {
+                            best_p = closed_priorities[k];
+                            best_k = k;
                         }
                     }
                 }
@@ -311,85 +337,84 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
             for (int32 k = 0; k < META_PC_WORDS; k += 1) {
                 next_core.bits[k] = 0;
             }
-            for (int32 k = 0; k < META_MAX_OPS; k += 1) {
-                next_core_priorities[k] = -1;
-                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                    next_core_tags[k][t] = -1;
-                }
-            }
+            num_next_active_cores = 0;
 
-            for (int32 k = 0; k < META_MAX_OPS; k += 1) {
-                if ((closed_set.bits[k / 32] & (1u << (k % 32))) != 0) {
-                    MetaOp *op;
-                    int32 match;
+            for (int32 idx = 0; idx < num_closed_pcs; idx += 1) {
+                int32 k;
+                k = closed_pcs[idx];
+                MetaOp *op;
+                int32 match;
 
-                    op = &regex->ops[k];
-                    match = 0;
+                op = &regex->ops[k];
+                match = 0;
 
-                    if (op->type == META_OP_LITERAL) {
-                        if (b == op->value) {
-                            match = 1;
-                        }
-                    } else if (op->type == META_OP_CLASS) {
-                        if (b >= 0 && b < META_ALPHABET_SIZE) {
-                            if ((op->mask[b / 32] & (1u << (b % 32))) != 0) {
-                                match = 1;
-                            }
-                        }
-                    } else if (op->type == META_OP_ANY) {
-                        if (b != '\0') {
+                if (op->type == META_OP_LITERAL) {
+                    if (b == op->value) {
+                        match = 1;
+                    }
+                } else if (op->type == META_OP_CLASS) {
+                    if (b >= 0 && b < META_ALPHABET_SIZE) {
+                        if ((op->mask[b / 32] & (1u << (b % 32))) != 0) {
                             match = 1;
                         }
                     }
+                } else if (op->type == META_OP_ANY) {
+                    if (b != '\0') {
+                        match = 1;
+                    }
+                }
 
-                    if (match) {
-                        MetaOp *next_op;
-                        int32 dest_pc1;
-                        int32 dest_pc2;
+                if (match) {
+                    MetaOp *next_op;
+                    int32 dest_pc1;
+                    int32 dest_pc2;
 
-                        next_op = &regex->ops[k + 1];
-                        dest_pc1 = -1;
-                        dest_pc2 = -1;
+                    next_op = &regex->ops[k + 1];
+                    dest_pc1 = -1;
+                    dest_pc2 = -1;
 
-                        if (next_op->type == META_OP_STAR
-                            || next_op->type == META_OP_PLUS) {
-                            dest_pc1 = k;
-                            dest_pc2 = k + 2;
-                        } else if (next_op->type == META_OP_OPTIONAL) {
-                            dest_pc1 = k + 2;
+                    if (next_op->type == META_OP_STAR
+                        || next_op->type == META_OP_PLUS) {
+                        dest_pc1 = k;
+                        dest_pc2 = k + 2;
+                    } else if (next_op->type == META_OP_OPTIONAL) {
+                        dest_pc1 = k + 2;
+                    } else {
+                        dest_pc1 = k + 1;
+                    }
+
+                    if (dest_pc1 != -1) {
+                        if ((next_core.bits[dest_pc1 / 32] & (1u << (dest_pc1 % 32))) == 0) {
+                            next_core.bits[dest_pc1 / 32] |= (1u << (dest_pc1 % 32));
+                            next_core_priorities[dest_pc1] = closed_priorities[k];
+                            next_active_cores[num_next_active_cores] = dest_pc1;
+                            num_next_active_cores += 1;
+                            for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                                next_core_tags[dest_pc1][t] = closed_tags[k][t];
+                            }
                         } else {
-                            dest_pc1 = k + 1;
-                        }
-
-                        if (dest_pc1 != -1) {
-                            if ((next_core.bits[dest_pc1 / 32] & (1u << (dest_pc1 % 32))) == 0) {
-                                next_core.bits[dest_pc1 / 32] |= (1u << (dest_pc1 % 32));
+                            if (closed_priorities[k] < next_core_priorities[dest_pc1]) {
                                 next_core_priorities[dest_pc1] = closed_priorities[k];
                                 for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
                                     next_core_tags[dest_pc1][t] = closed_tags[k][t];
                                 }
-                            } else {
-                                if (closed_priorities[k] < next_core_priorities[dest_pc1]) {
-                                    next_core_priorities[dest_pc1] = closed_priorities[k];
-                                    for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                                        next_core_tags[dest_pc1][t] = closed_tags[k][t];
-                                    }
-                                }
                             }
                         }
-                        if (dest_pc2 != -1) {
-                            if ((next_core.bits[dest_pc2 / 32] & (1u << (dest_pc2 % 32))) == 0) {
-                                next_core.bits[dest_pc2 / 32] |= (1u << (dest_pc2 % 32));
+                    }
+                    if (dest_pc2 != -1) {
+                        if ((next_core.bits[dest_pc2 / 32] & (1u << (dest_pc2 % 32))) == 0) {
+                            next_core.bits[dest_pc2 / 32] |= (1u << (dest_pc2 % 32));
+                            next_core_priorities[dest_pc2] = closed_priorities[k];
+                            next_active_cores[num_next_active_cores] = dest_pc2;
+                            num_next_active_cores += 1;
+                            for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                                next_core_tags[dest_pc2][t] = closed_tags[k][t];
+                            }
+                        } else {
+                            if (closed_priorities[k] < next_core_priorities[dest_pc2]) {
                                 next_core_priorities[dest_pc2] = closed_priorities[k];
                                 for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
                                     next_core_tags[dest_pc2][t] = closed_tags[k][t];
-                                }
-                            } else {
-                                if (closed_priorities[k] < next_core_priorities[dest_pc2]) {
-                                    next_core_priorities[dest_pc2] = closed_priorities[k];
-                                    for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                                        next_core_tags[dest_pc2][t] = closed_tags[k][t];
-                                    }
                                 }
                             }
                         }
@@ -443,11 +468,21 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                 break;
             }
 
-            for (int32 k = 0; k < META_MAX_OPS; k += 1) {
+            for (int32 idx = 0; idx < num_active_cores; idx += 1) {
+                int32 k;
+                k = active_cores[idx];
+                current_core_priorities[k] = -1;
+            }
+            num_active_cores = num_next_active_cores;
+            for (int32 idx = 0; idx < num_active_cores; idx += 1) {
+                int32 k;
+                k = next_active_cores[idx];
+                active_cores[idx] = k;
+                current_core_priorities[k] = next_core_priorities[k];
+                next_core_priorities[k] = -1;
                 for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
                     current_core_tags[k][t] = next_core_tags[k][t];
                 }
-                current_core_priorities[k] = next_core_priorities[k];
             }
         } else {
             break;
@@ -496,7 +531,8 @@ tdfa_add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                          int32 curr_is_word, int32 src_tags[META_MAX_TAGS],
                          int32 closed_tags[META_MAX_OPS][META_MAX_TAGS],
                          int32 current_string_idx, int32 *closure_counter,
-                         int32 closed_priorities[META_MAX_OPS]) {
+                         int32 closed_priorities[META_MAX_OPS],
+                         int32 closed_pcs[META_MAX_OPS], int32 *num_closed_pcs) {
     int32 stack[META_MAX_OPS];
     int32 tag_stack[META_MAX_OPS][META_MAX_TAGS];
     int32 stack_ptr;
@@ -524,6 +560,9 @@ tdfa_add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
         }
 
         set->bits[current_pc / 32] |= (1u << (current_pc % 32));
+        closed_pcs[*num_closed_pcs] = current_pc;
+        *num_closed_pcs += 1;
+
         closed_priorities[current_pc] = *closure_counter;
         *closure_counter += 1;
 
@@ -616,8 +655,8 @@ tdfa_add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                 }
             }
 
-            for (int32 b = num_branches - 1; b >= 0; b -= 1) {
-                stack[stack_ptr] = branches[b];
+            for (int32 b_idx = num_branches - 1; b_idx >= 0; b_idx -= 1) {
+                stack[stack_ptr] = branches[b_idx];
                 for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
                     tag_stack[stack_ptr][t] = current_tags[t];
                 }
