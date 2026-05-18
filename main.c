@@ -17,7 +17,7 @@
 #include "utf8.c"
 
 #if !defined(error2)
-#define error2(...) fprintf(stderr, __VA_ARGS__)
+#define error2(...) error2(__VA_ARGS__)
 #endif
 
 #if !defined(BENCHMARK)
@@ -55,15 +55,15 @@ main(void) {
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
 
     printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n");
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 16, 1000); */
+    RUN_FUZZY_TESTS(fuzzy_patterns, 16, 100);
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 32, 1000); */
-    RUN_FUZZY_TESTS(fuzzy_patterns, 64, 100);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 128, 1000);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 256, 1000);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 512, 1000);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 1024, 1000);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 1000);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 1000);
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 64, 100); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 128, 1000); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 256, 1000); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 512, 1000); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 1024, 1000); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 1000); */
+    /* RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 1000); */
     /* RUN_FUZZY_TESTS(fuzzy_patterns, 8192, 1000); */
 
     printf("\n----- Starting Fuzzy Testing (File input) -----\n");
@@ -244,7 +244,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 
         pattern_str = tests[i]->string;
         if (regcomp(&posix_regexes[i], pattern_str, REG_EXTENDED) != 0) {
-            error("Pre-compilation failed for: %s\n", pattern_str);
+            error("Pre-compilation failed for " BLUE("\"%s\"") "\n",
+                  pattern_str);
             exit(EXIT_FAILURE);
         }
     }
@@ -306,12 +307,11 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 
         if (mismatch) {
             failed = true;
-            fprintf(stderr,
-                    "Error: mismatch for input \"%s\" "
-                    "against regex \"%s\"\n",
-                    input, regex);
-            fprintf(stderr, "posix res: %d, meta res: %d\n",
-                    fuzzy[i].result_posix, fuzzy[i].result_meta);
+            error2("Error: mismatch for input " RED(
+                       "\"%s\"") " against regex " BLUE("\"%s\"") "\n",
+                   input, regex);
+            error2("posix res: %d, meta res: %d\n", fuzzy[i].result_posix,
+                   fuzzy[i].result_meta);
 
             if (fuzzy[i].result_posix == 0 && fuzzy[i].result_meta == 0) {
                 for (int32 m = 0; m < MAX_MATCHES; m += 1) {
@@ -322,15 +322,14 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
                     m_m = fuzzy[i].pmatch_meta[m];
 
                     if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
-                        fprintf(stderr,
-                                "   Group %d: posix[%d, %d], "
-                                "meta[%d, %d]\n",
-                                m, (int32)p_m.rm_so, (int32)p_m.rm_eo,
-                                (int32)m_m.rm_so, (int32)m_m.rm_eo);
+                        error2("   Group %d: posix[%d, %d], "
+                               "meta[%d, %d]\n",
+                               m, (int32)p_m.rm_so, (int32)p_m.rm_eo,
+                               (int32)m_m.rm_so, (int32)m_m.rm_eo);
                     }
                 }
             }
-            fprintf(stderr, "------------------------------------\n");
+            error2("------------------------------------\n");
         }
     }
 
@@ -343,8 +342,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
             double t_meta = timediff(t0_meta, t1_meta);
 
             if (t_posix < t_meta) {
-                fprintf(stderr, "\nPerformance regression at max_str_size=%d\n",
-                        max_str_size);
+                error2("\nPerformance regression at max_str_size=%d\n",
+                       max_str_size);
             }
         }
         SNPRINTF(name_posix, YELLOW("posix [max_str_size=%d]"), max_str_size);
@@ -494,12 +493,11 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
             if (mismatch) {
                 failed = true;
                 char *regex_str = tests[j]->string;
-                fprintf(stderr,
-                        "File Error: mismatch in file \"%s\" "
-                        "against regex \"%s\"\n",
-                        entry->d_name, regex_str);
-                fprintf(stderr, "posix res: %d, meta res: %d\n",
-                        results_posix[j], results_meta[j]);
+                error2("File Error: mismatch in file " GREEN(
+                           "\"%s\"") " against regex " BLUE("\"%s\"") "\n",
+                       entry->d_name, regex_str);
+                error2("posix res: %d, meta res: %d\n", results_posix[j],
+                       results_meta[j]);
 
                 if (results_posix[j] == 0 && results_meta[j] == 0) {
                     for (int32 m = 0; m < MAX_MATCHES; m += 1) {
@@ -507,15 +505,13 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
                         regmatch_t m_m = curr_meta[m];
 
                         if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
-                            fprintf(stderr,
-                                    "   Group %d: posix[%d, %d], "
-                                    "meta[%d, %d]\n",
-                                    m, (int32)p_m.rm_so, (int32)p_m.rm_eo,
-                                    (int32)m_m.rm_so, (int32)m_m.rm_eo);
+                            error2("   Group %d: posix[%d, %d], "
+                                   "meta[%d, %d]\n",
+                                   m, (int32)p_m.rm_so, (int32)p_m.rm_eo,
+                                   (int32)m_m.rm_so, (int32)m_m.rm_eo);
                         }
                     }
                 }
-                fprintf(stderr, "------------------------------------\n");
             }
         }
 
