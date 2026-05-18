@@ -3,7 +3,7 @@
 
 static int32
 match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
-                 int64 nmatch, regmatch_t pmatch[]) {
+                 regmatch_t *pmatch, int32 pmatch_len) {
     StaticDfaState *states = regex->static_dfa->states;
     StaticDfaState *current_state_ptr = &states[regex->static_dfa->start_state];
     int32 last_accept = -1;
@@ -33,7 +33,7 @@ match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
 
     if (last_accept >= 0) {
         if (!regex->has_end_anchor || input[last_accept] == '\0') {
-            if (pmatch != NULL && nmatch > 0) {
+            if (pmatch != NULL && pmatch_len > 0) {
                 pmatch[0].rm_so = offset;
                 pmatch[0].rm_eo = last_accept;
             }
