@@ -3,6 +3,7 @@
 
 #include "primitives.h"
 #include "meta.h"
+#include "meta_util.c"
 #include <regex.h>
 
 typedef struct LazyDfaKey {
@@ -31,23 +32,6 @@ typedef struct LazyDfa {
     LazyDfaState states[META_MAX_LAZY_DFA_STATES];
 } LazyDfa;
 
-static int32
-is_word_char2(int32 c) {
-    if (c >= 'a' && c <= 'z') {
-        return 1;
-    }
-    if (c >= 'A' && c <= 'Z') {
-        return 1;
-    }
-    if (c >= '0' && c <= '9') {
-        return 1;
-    }
-    if (c == '_') {
-        return 1;
-    }
-    return 0;
-}
-
 static void add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                                 int32 *is_accepting, int32 prev_is_word,
                                 int32 curr_is_word);
@@ -73,7 +57,7 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *input, int32 input_len,
     }
 
     if (offset > 0) {
-        prev_is_word = is_word_char2((uchar)input[offset - 1]);
+        prev_is_word = is_word_char((uchar)input[offset - 1]);
     } else {
         prev_is_word = 0;
     }
@@ -168,7 +152,7 @@ try_match_lazy_dfa(MetaRegex *regex, uchar *input, int32 input_len,
                 NfaStateSet next_core;
                 int32 set_is_empty;
 
-                curr_is_word = is_word_char2(b);
+                curr_is_word = is_word_char(b);
                 for (int32 k = 0; k < META_PC_WORDS; k += 1) {
                     closed_set.bits[k] = 0;
                 }
