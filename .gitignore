@@ -3,5 +3,4 @@ gen/
 tags
 .tags.vim
 compile_commands.json
-*.txt
 callgrind.out.*
