@@ -291,7 +291,7 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                     int32 eo;
 
                     start_tag_idx = (k*2) - 2;
-                    end_tag_idx   = (k*2) - 1;
+                    end_tag_idx = (k*2) - 1;
 
                     if (start_tag_idx < META_MAX_TAGS
                         && end_tag_idx < META_MAX_TAGS) {

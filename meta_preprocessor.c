@@ -79,12 +79,6 @@ get_branch_weight(ParsedOp *ops, int32 count) {
 static void
 sort_alternations(ParsedOp *ops, int32 count) {
     int32 i;
-    int32 branch_starts[PREPROC_MAX_BRANCHES];
-    int32 branch_ends[PREPROC_MAX_BRANCHES];
-    int32 branch_weights[PREPROC_MAX_BRANCHES];
-    int32 num_branches;
-    int32 current_start;
-    int32 depth;
 
     i = 0;
     while (i < count) {
@@ -111,77 +105,6 @@ sort_alternations(ParsedOp *ops, int32 count) {
             i = end + 1;
         } else {
             i += 1;
-        }
-    }
-
-    num_branches = 0;
-    current_start = 0;
-    depth = 0;
-
-    for (int32 j = 0; j < count; j += 1) {
-        if (ops[j].type == META_OP_GROUP_START) {
-            depth += 1;
-        } else if (ops[j].type == META_OP_GROUP_END) {
-            depth -= 1;
-        } else if (ops[j].type == META_OP_ALTERNATION && depth == 0) {
-            if (num_branches >= PREPROC_MAX_BRANCHES - 1) {
-                return;
-            }
-            branch_starts[num_branches] = current_start;
-            branch_ends[num_branches] = j;
-            branch_weights[num_branches]
-                = get_branch_weight(ops + current_start, j - current_start);
-            num_branches += 1;
-            current_start = j + 1;
-        }
-    }
-
-    branch_starts[num_branches] = current_start;
-    branch_ends[num_branches] = count;
-    branch_weights[num_branches]
-        = get_branch_weight(ops + current_start, count - current_start);
-    num_branches += 1;
-
-    if (num_branches > 1) {
-        ParsedOp temp_buf[PREPROC_MAX_TEMP_OPS];
-        int32 sorted_indices[PREPROC_MAX_BRANCHES];
-        int32 write_idx;
-        int32 idx_ptr;
-
-        idx_ptr = 0;
-        for (int32 b = 0; b < num_branches; b += 1) {
-            if (branch_weights[b] > 0) {
-                sorted_indices[idx_ptr] = b;
-                idx_ptr += 1;
-            }
-        }
-        for (int32 b = 0; b < num_branches; b += 1) {
-            if (branch_weights[b] == 0) {
-                sorted_indices[idx_ptr] = b;
-                idx_ptr += 1;
-            }
-        }
-
-        write_idx = 0;
-        for (int32 b = 0; b < num_branches; b += 1) {
-            int32 idx;
-            int32 b_start;
-            int32 b_end;
-
-            idx = sorted_indices[b];
-            b_start = branch_starts[idx];
-            b_end = branch_ends[idx];
-            for (int32 j = b_start; j < b_end; j += 1) {
-                temp_buf[write_idx] = ops[j];
-                write_idx += 1;
-            }
-            if (b < num_branches - 1) {
-                temp_buf[write_idx].type = META_OP_ALTERNATION;
-                write_idx += 1;
-            }
-        }
-        for (int32 j = 0; j < count; j += 1) {
-            ops[j] = temp_buf[j];
         }
     }
     return;
