@@ -2,6 +2,7 @@ import csv
 import matplotlib.pyplot as plt
 import sys
 
+prefix = 'benchmarks'
 
 def parse_csv(filename):
     data = []
@@ -43,7 +44,7 @@ def generate_plots(csv):
         plt.grid(True, which="both", linestyle="--", alpha=0.5)
         plt.legend()
         plt.tight_layout()
-        plt.savefig('fuzzy_scaling_performance.png')
+        plt.savefig(f'{prefix}/fuzzy_scaling_performance.png')
         plt.close()
 
     # 2. Plot Known Pairs benchmark metrics (Grouped Bar chart)
@@ -64,7 +65,7 @@ def generate_plots(csv):
         plt.legend()
         plt.grid(axis='y', linestyle='--', alpha=0.5)
         plt.tight_layout()
-        plt.savefig('known_pairs_performance.png')
+        plt.savefig(f'{prefix}/known_pairs_performance.png')
         plt.close()
 
     # 3. Plot File Fuzzy input corpus processing (Grouped Bar chart)
@@ -85,7 +86,7 @@ def generate_plots(csv):
         plt.legend()
         plt.grid(axis='y', linestyle='--', alpha=0.5)
         plt.tight_layout()
-        plt.savefig('file_fuzzy_performance.png')
+        plt.savefig(f'{prefix}/file_fuzzy_performance.png')
         plt.close()
 
     print("Success: Generated metric plots tracking performance comparisons.")
