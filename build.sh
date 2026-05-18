@@ -71,6 +71,7 @@ if [ "$CC" = "clang" ]; then
     CFLAGS="$CFLAGS -Wno-float-equal"
     CFLAGS="$CFLAGS -Wno-padded"
     CFLAGS="$CFLAGS -Wno-declaration-after-statement"
+    CFLAGS="$CFLAGS -Wno-c23-extensions"
 fi
 
 trace_on
