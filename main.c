@@ -51,8 +51,8 @@ main(void) {
     if (ENABLE_STATIC_DFA) {
         enabled |= MATCH_ALGO_STATIC_DFA;
     }
-    SNPRINTF(csv_file, "benchmarks/timings-%lld-%s.csv",
-                       (llong)time(NULL), MATCH_ALGO_str(enabled));
+    SNPRINTF(csv_file, "benchmarks/timings-%lld-%s.csv", (llong)time(NULL),
+             MATCH_ALGO_str(enabled));
 
     FILE *csv = fopen(csv_file, "w");
     if (csv != NULL) {
