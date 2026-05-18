@@ -1,5 +1,5 @@
-#if !defined(META_REGEX_MATCH_C)
-#define META_REGEX_MATCH_C
+#if !defined(META_MATCH_C)
+#define META_MATCH_C
 
 #include <regex.h>
 #include <string.h>
@@ -173,4 +173,4 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
     return REG_NOMATCH;
 }
 
-#endif /* META_REGEX_MATCH_C */
+#endif /* META_MATCH_C */

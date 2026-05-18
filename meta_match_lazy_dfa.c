@@ -1,5 +1,5 @@
-#if !defined(META_LAZY_DFA_C)
-#define META_LAZY_DFA_C
+#if !defined(META_MATCH_LAZY_DFA_C)
+#define META_MATCH_LAZY_DFA_C
 
 #include "primitives.h"
 #include "meta.h"
@@ -373,4 +373,4 @@ compute_core_transitions(MetaOp *ops, NfaStateSet *current_closed_set, int32 c,
     return;
 }
 
-#endif /* META_LAZY_DFA_C */
+#endif /* META_MATCH_LAZY_DFA_C */
