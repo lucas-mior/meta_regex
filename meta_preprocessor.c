@@ -1700,7 +1700,8 @@ main(int32 argc, char **argv) {
 
         if (unsupported) {
             fprintf(stderr,
-                    "Warning: Unsupported regex feature in %.*s, "
+                    "Warning: Unsupported regex feature in regex "
+                    BLUE("\"%.*s\"")".\n"
                     "static dfa will not be available at runtime.\n",
                     original_string_length, quote_start);
             printf(", .static_dfa = NULL }");
