@@ -15,6 +15,17 @@
 #define PREPROC_NFA_BITSET_WORDS 64
 #define PREPROC_MAX_NFA_STATES (PREPROC_NFA_BITSET_WORDS*32)
 
+#define ENUM_PREFIX_ PREPROC_FAIL_
+#define ENUM_NAME PreprocFailReason
+#define ENUM_BITFLAGS 1
+#define ENUM_FIELDS \
+    X(ITEMS_EXCEEDED) \
+    X(STATES_EXCEEDED) \
+    X(BRANCHES_EXCEEDED) \
+    X(DFA_STATES_EXCEEDED) \
+    X(NO_BRANCHES)
+#include "xenums.c"
+
 enum NfaStateType {
     NFA_STATE_ACCEPT = 0,
     NFA_STATE_LITERAL = 1,
@@ -356,7 +367,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
     int32 nfa_count = 0;
     NfaItem items[PREPROC_MAX_NFA_ITEMS];
     int32 item_count = 0;
-    bool nfa_failed = false;
+    enum PreprocFailReason fail_reasons = 0;
     int32 nfa_accept = 0;
     int32 branch_starts[PREPROC_MAX_BRANCHES];
     int32 branch_count = 0;
@@ -371,7 +382,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
 
     for (int32 i = 0; i < temp_ops_count; i += 1) {
         if (item_count >= PREPROC_MAX_NFA_ITEMS) {
-            nfa_failed = true;
+            fail_reasons |= PREPROC_FAIL_ITEMS_EXCEEDED;
             break;
         }
         if (temp_ops[i].type == META_OP_ALTERNATION) {
@@ -406,10 +417,10 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
     }
 
     if (nfa_count >= PREPROC_MAX_NFA_STATES) {
-        nfa_failed = true;
+        fail_reasons |= PREPROC_FAIL_STATES_EXCEEDED;
     }
 
-    if (!nfa_failed) {
+    if (fail_reasons == 0) {
         nfa_accept = nfa_count;
         nfa_count += 1;
         nfa[nfa_accept].type = NFA_STATE_ACCEPT;
@@ -418,13 +429,13 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
     }
 
     for (int32 i = 0; i <= item_count; i += 1) {
-        if (nfa_failed) {
+        if (fail_reasons != 0) {
             break;
         }
         if (i == item_count || items[i].base_op.type == META_OP_ALTERNATION) {
             if (b_start == -1) {
                 if (nfa_count >= PREPROC_MAX_NFA_STATES) {
-                    nfa_failed = true;
+                    fail_reasons |= PREPROC_FAIL_STATES_EXCEEDED;
                     break;
                 }
                 b_start = nfa_count;
@@ -448,7 +459,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                 branch_starts[branch_count] = b_start;
                 branch_count += 1;
             } else {
-                nfa_failed = true;
+                fail_reasons |= PREPROC_FAIL_BRANCHES_EXCEEDED;
             }
 
             b_start = -1;
@@ -459,7 +470,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
         int32 s_base = nfa_count;
         nfa_count += 1;
         if (nfa_count > PREPROC_MAX_NFA_STATES) {
-            nfa_failed = true;
+            fail_reasons |= PREPROC_FAIL_STATES_EXCEEDED;
             break;
         }
 
@@ -488,7 +499,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
             int32 s_split = nfa_count;
             nfa_count += 1;
             if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                nfa_failed = true;
+                fail_reasons |= PREPROC_FAIL_STATES_EXCEEDED;
                 break;
             }
             nfa[s_split].type = NFA_STATE_SPLIT;
@@ -501,7 +512,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
             int32 s_split = nfa_count;
             nfa_count += 1;
             if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                nfa_failed = true;
+                fail_reasons |= PREPROC_FAIL_STATES_EXCEEDED;
                 break;
             }
             nfa[s_split].type = NFA_STATE_SPLIT;
@@ -516,7 +527,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
             int32 s_merge = nfa_count;
             nfa_count += 1;
             if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                nfa_failed = true;
+                fail_reasons |= PREPROC_FAIL_STATES_EXCEEDED;
                 break;
             }
             nfa[s_split].type = NFA_STATE_SPLIT;
@@ -535,7 +546,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                 int32 copy = nfa_count;
                 nfa_count += 1;
                 if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                    nfa_failed = true;
+                    fail_reasons |= PREPROC_FAIL_STATES_EXCEEDED;
                     break;
                 }
                 nfa[copy] = nfa[s_base];
@@ -553,7 +564,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                 }
                 l_out = copy;
             }
-            if (nfa_failed) {
+            if (fail_reasons != 0) {
                 break;
             }
             if (items[i].max == -1) {
@@ -562,7 +573,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                 int32 copy = nfa_count;
                 nfa_count += 1;
                 if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                    nfa_failed = true;
+                    fail_reasons |= PREPROC_FAIL_STATES_EXCEEDED;
                     break;
                 }
                 nfa[copy] = nfa[s_base];
@@ -592,7 +603,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                     int32 s_merge = nfa_count;
                     nfa_count += 1;
                     if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                        nfa_failed = true;
+                        fail_reasons |= PREPROC_FAIL_STATES_EXCEEDED;
                         break;
                     }
                     nfa[copy] = nfa[s_base];
@@ -617,7 +628,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                     }
                     l_out = s_merge;
                 }
-                if (nfa_failed) {
+                if (fail_reasons != 0) {
                     break;
                 }
             }
@@ -625,7 +636,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                 f_start = nfa_count;
                 nfa_count += 1;
                 if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                    nfa_failed = true;
+                    fail_reasons |= PREPROC_FAIL_STATES_EXCEEDED;
                     break;
                 }
                 nfa[f_start].type = NFA_STATE_EMPTY;
@@ -650,13 +661,13 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
         prev_dangling = i_out;
     }
 
-    if (!nfa_failed && branch_count > 0) {
+    if (fail_reasons == 0 && branch_count > 0) {
         nfa_start_state = branch_starts[0];
         for (int32 i = 1; i < branch_count; i += 1) {
             int32 s = nfa_count;
             nfa_count += 1;
             if (nfa_count > PREPROC_MAX_NFA_STATES) {
-                nfa_failed = true;
+                fail_reasons |= PREPROC_FAIL_STATES_EXCEEDED;
                 break;
             }
             nfa[s].type = NFA_STATE_SPLIT;
@@ -665,10 +676,12 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
             nfa_start_state = s;
         }
     } else {
-        nfa_failed = true;
+        if (branch_count == 0) {
+            fail_reasons |= PREPROC_FAIL_NO_BRANCHES;
+        }
     }
 
-    if (!nfa_failed) {
+    if (fail_reasons == 0) {
         dfa_accept[0] = 0;
         for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
             dfa_transitions[0][c] = 0;
@@ -735,12 +748,12 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
             start_dfa = dfa_count;
             dfa_count += 1;
         } else {
-            nfa_failed = true;
+            fail_reasons |= PREPROC_FAIL_DFA_STATES_EXCEEDED;
         }
 
-        if (!nfa_failed) {
+        if (fail_reasons == 0) {
             for (int32 d = 1; d < dfa_count; d += 1) {
-                if (nfa_failed) {
+                if (fail_reasons != 0) {
                     break;
                 }
                 for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
@@ -830,7 +843,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
                             dfa_transitions[d][c] = dfa_count;
                             dfa_count += 1;
                         } else {
-                            nfa_failed = true;
+                            fail_reasons |= PREPROC_FAIL_DFA_STATES_EXCEEDED;
                         }
                     }
                 }
@@ -838,11 +851,11 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
         }
     }
 
-    if (nfa_failed) {
+    if (fail_reasons) {
         fprintf(stderr,
-                "Warning: DFA conversion failed for %.*s, "
-                "static dfa will not be available at runtime.\n",
-                original_string_length, quote_start);
+                "Warning: DFA conversion failed for %.*s because of %s.\n",
+                original_string_length, quote_start, PREPROC_FAIL_str(fail_reasons));
+        fprintf(stderr, "static dfa will not be available at runtime.\n");
         printf(", .static_dfa = NULL } }");
     } else {
         printf(", .static_dfa = &(StaticDfa){ .num_states = %d, "
