@@ -48,7 +48,7 @@ typedef struct DfaState {
 typedef struct StaticDfa {
     int32 num_states;
     int32 start_state;
-    DfaState states[META_MAX_DFA_STATES];
+    DfaState *states;
 } StaticDfa;
 
 typedef struct NfaStateSet {

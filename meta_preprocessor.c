@@ -826,7 +826,7 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
         printf(", .static_dfa = NULL } }");
     } else {
         printf(", .static_dfa = &(StaticDfa){ .num_states = %d, "
-               ".start_state = %d, .states = {\n",
+               ".start_state = %d, .states = (DfaState[]){ \n",
                dfa_count, start_dfa);
         for (int32 i = 0; i < dfa_count; i += 1) {
             bool has_transitions = false;
