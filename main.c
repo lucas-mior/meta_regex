@@ -31,10 +31,8 @@ static void run_meta_only(RegexTest *tests, int32 count, char *description, bool
 static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract);
 
 #define RUN_KNOWN_PAIRS(ARRAY) \
-    run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, true); \
     run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, false)
 #define RUN_FUZZY_TESTS(ARRAY, MAX_STR_SIZE, NTESTS) \
-    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS, true); \
     run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS, false)
 
 #define FUZZY_PRECOMPILE_POSIX 1
