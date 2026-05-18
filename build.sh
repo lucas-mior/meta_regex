@@ -9,7 +9,7 @@ cbase="cbase"
 
 mkdir -p bin
 
-target="${1:-build}"
+target="${1:-build_everything_and_run}"
 
 CFLAGS="$CFLAGS -std=c11"
 CFLAGS="$CFLAGS -Wextra -Wall"
@@ -42,7 +42,7 @@ debug)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=1 $GNUSOURCE"
     CFLAGS="$CFLAGS -g3"
     ;;
-build)
+build_preprocessor|build_preprocessor_and_main|build_everything_and_run)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
     CFLAGS="$CFLAGS -g -O2 -flto"
     ;;
@@ -86,6 +86,10 @@ trace_on
 $CC $CPPFLAGS -O2 -flto $CFLAGS meta_preprocessor.c -o bin/meta_preproc $LDFLAGS
 trace_off
 
+if [ "$target" = "build_preprocessor" ]; then
+    exit 0
+fi
+
 printf "\nPreprocessing main.c...\n"
 trace_on
 ./bin/meta_preproc main_tests_array.h > gen/main_tests_array2.h
@@ -96,8 +100,12 @@ trace_on
 $CC $CPPFLAGS $CFLAGS main.c -o bin/regex_test $LDFLAGS
 trace_off
 
+if [ "$target" = "build_preprocessor_and_main" ]; then
+    exit 0
+fi
+
 case "$target" in
-build)
+build_everything_and_run)
     ./bin/regex_test
     ;;
 debug)
