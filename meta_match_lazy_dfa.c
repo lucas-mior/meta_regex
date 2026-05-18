@@ -41,7 +41,7 @@ static void compute_core_transitions(MetaOp *ops,
 
 static int32
 match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len,
-               int32 offset, int64 nmatch, regmatch_t *pmatch) {
+               int32 offset, int64 pmatch_len, regmatch_t *pmatch) {
     LazyDfa *ldfa = regex->lazy_dfa;
     int32 current_state_id;
     int32 last_accept = -1;
@@ -208,7 +208,7 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len,
 
     if (last_accept >= 0) {
         if (!regex->has_end_anchor || input[last_accept] == '\0') {
-            if (pmatch != NULL && nmatch > 0) {
+            if (pmatch != NULL && pmatch_len > 0) {
                 pmatch[0].rm_so = offset;
                 pmatch[0].rm_eo = last_accept;
             }
