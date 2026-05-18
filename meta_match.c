@@ -22,6 +22,14 @@
 
 #define USE_DFA_THRESHOLD 128
 
+struct Matcher {
+    enum MetaOpType supports;
+} matchers[] = {
+    [MATCH_ALGO_BTNFA] = { match_btnfa_supports },
+    [MATCH_ALGO_LAZY_DFA] = { match_lazy_dfa_supports },
+    [MATCH_ALGO_STATIC_DFA] = { match_static_dfa_supports }
+};
+
 static int32
 meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
                  regmatch_t *pmatch, int32 pmatch_len, enum MatchAlgorithm enabled) {
@@ -39,26 +47,17 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
         }
     }
 
-    if (!(regex->used_ops & META_OP_BACKREF) && input_len >= USE_DFA_THRESHOLD
-        && !(regex->re_nsub > 0 && pmatch_len > 1)) {
+    if (input_len >= USE_DFA_THRESHOLD && !(regex->re_nsub > 0 && pmatch_len > 1)) {
         if ((enabled & MATCH_ALGO_STATIC_DFA) && regex->static_dfa) {
-            int32 has_unsupported = 0;
-            for (int32 i = 0; regex->ops[i].type != META_OP_END; i += 1) {
-                if (regex->ops[i].type == META_OP_WORD_BOUNDARY
-                    || regex->ops[i].type == META_OP_WORD_START
-                    || regex->ops[i].type == META_OP_WORD_END
-                    || regex->ops[i].type == META_OP_NON_WORD_BOUNDARY) {
-                    has_unsupported = 1;
-                    break;
-                }
-            }
-            if (!has_unsupported) {
+            if ((regex->used_ops & ~matchers[MATCH_ALGO_STATIC_DFA].supports) == 0) {
                 algorithm = MATCH_ALGO_STATIC_DFA;
             }
         }
 
         if (algorithm == MATCH_ALGO_BTNFA && (enabled & MATCH_ALGO_LAZY_DFA)) {
-            algorithm = MATCH_ALGO_LAZY_DFA;
+            if ((regex->used_ops & ~matchers[MATCH_ALGO_LAZY_DFA].supports) == 0) {
+                algorithm = MATCH_ALGO_LAZY_DFA;
+            }
         }
     }
 
