@@ -60,6 +60,7 @@ typedef struct NfaStateSet {
 } NfaStateSet;
 
 typedef struct LazyDfa LazyDfa;
+typedef struct LazyTdfa LazyTdfa;
 
 typedef struct MetaRegex {
     char *string;
@@ -72,6 +73,7 @@ typedef struct MetaRegex {
     uint8 fastmap[META_FASTMAP_SIZE];
     StaticDfa *static_dfa;
     LazyDfa *lazy_dfa;
+    LazyTdfa *lazy_tdfa;
 } MetaRegex;
 
 typedef struct MatcherFeatures {
