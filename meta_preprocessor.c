@@ -821,11 +821,11 @@ generate_dfa_or_fallback(ParsedOp *temp_ops, int32 temp_ops_count,
     if (nfa_failed) {
         fprintf(stderr,
                 "Warning: DFA conversion failed for %.*s, "
-                "static nfa will not be available at runtime.\n",
+                "static dfa will not be available at runtime.\n",
                 original_string_length, quote_start);
-        printf(", .dfa = NULL } }");
+        printf(", .static_dfa = NULL } }");
     } else {
-        printf(", .dfa = &(Dfa){ .num_states = %d, "
+        printf(", .static_dfa = &(StaticDfa){ .num_states = %d, "
                ".start_state = %d, .states = {\n",
                dfa_count, start_dfa);
         for (int32 i = 0; i < dfa_count; i += 1) {
@@ -1667,9 +1667,9 @@ main(int32 argc, char **argv) {
         if (unsupported) {
             fprintf(stderr,
                     "Warning: Unsupported regex feature in %.*s, "
-                    "static nfa will not be available at runtime.\n",
+                    "static dfa will not be available at runtime.\n",
                     original_string_length, quote_start);
-            printf(", .dfa = NULL }");
+            printf(", .static_dfa = NULL }");
         } else {
             generate_dfa_or_fallback(temp_ops, temp_ops_count,
                                      original_string_length, quote_start);

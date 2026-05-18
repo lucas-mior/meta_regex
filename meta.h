@@ -45,11 +45,11 @@ typedef struct DfaState {
     int32 next[META_ALPHABET_SIZE];
 } DfaState;
 
-typedef struct Dfa {
+typedef struct StaticDfa {
     int32 num_states;
     int32 start_state;
     DfaState states[META_MAX_DFA_STATES];
-} Dfa;
+} StaticDfa;
 
 typedef struct NfaStateSet {
     uint32 bits[META_PC_WORDS];
@@ -67,7 +67,7 @@ typedef struct MetaRegex {
     int32 has_backref;
     int32 can_be_null;
     uint8 fastmap[META_FASTMAP_SIZE];
-    Dfa *dfa;
+    StaticDfa *static_dfa;
     LazyDfa *lazy_dfa;
 } MetaRegex;
 

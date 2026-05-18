@@ -56,7 +56,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len, int64 nmatch,
 
     if (!regex->has_backref && input_len >= USE_DFA_THRESHOLD
         && !(regex->re_nsub > 0 && nmatch > 1)) {
-        if ((enabled & MATCH_ALGO_STATIC_DFA) && regex->dfa != NULL) {
+        if ((enabled & MATCH_ALGO_STATIC_DFA) && regex->static_dfa) {
             int32 has_unsupported = 0;
             for (int32 i = 0; regex->ops[i].type != META_OP_END; i += 1) {
                 if (regex->ops[i].type == META_OP_WORD_BOUNDARY
