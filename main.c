@@ -55,16 +55,9 @@ main(void) {
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
 
     /* printf("\n----- Starting Fuzzy Testing (ASCII input) -----\n"); */
-    RUN_FUZZY_TESTS(fuzzy_patterns, 8, 200);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 32, 200);
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 64, 200); */
-    RUN_FUZZY_TESTS(fuzzy_patterns, 128, 200);
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 256, 200); */
-    RUN_FUZZY_TESTS(fuzzy_patterns, 512, 200);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 1024, 200);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 2048, 200);
-    RUN_FUZZY_TESTS(fuzzy_patterns, 4096, 200);
-    /* RUN_FUZZY_TESTS(fuzzy_patterns, 8192, 100); */
+    for (int32 i = 1; i <= 4096; i *= 2) {
+        RUN_FUZZY_TESTS(fuzzy_patterns, i, 200);
+    }
 
     /* printf("\n----- Starting Fuzzy Testing (File input) -----\n"); */
     /* run_file_fuzzy_tests(fuzzy_patterns, LENGTH(fuzzy_patterns)); */
