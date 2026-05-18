@@ -59,7 +59,9 @@ is_word_char_tdfa(int32 c) {
 
 static void tdfa_add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                                      int32 *is_accepting, int32 prev_is_word,
-                                     int32 curr_is_word, uint32 *pc_masks);
+                                     int32 curr_is_word, int32 src_tags[META_MAX_TAGS],
+                                     int32 closed_tags[META_MAX_OPS][META_MAX_TAGS],
+                                     int32 current_string_idx);
 static void tdfa_compute_core_transitions(MetaOp *ops,
                                           NfaStateSet *current_closed_set,
                                           int32 c, NfaStateSet *next_core_set);
@@ -73,6 +75,8 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
     int32 prev_is_word;
     int32 tags[META_MAX_TAGS];
     int32 best_tags[META_MAX_TAGS];
+    int32 current_core_tags[META_MAX_OPS][META_MAX_TAGS];
+    int32 next_core_tags[META_MAX_OPS][META_MAX_TAGS];
     (void)input_len;
 
     ldfa = (LazyTdfa *)regex->lazy_dfa;
@@ -92,6 +96,12 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
     for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
         tags[t] = -1;
         best_tags[t] = -1;
+    }
+
+    for (int32 k = 0; k < META_MAX_OPS; k += 1) {
+        for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+            current_core_tags[k][t] = -1;
+        }
     }
 
     {
@@ -123,17 +133,8 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                 ldfa->num_states += 1;
                 ldfa->states[current_state_id].key = start_key;
                 ldfa->states[current_state_id].accepts_on_eof = -1;
-                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                    ldfa->states[current_state_id].eof_cmd.set_tag[t] = 0;
-                }
                 for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                     ldfa->states[current_state_id].next[c] = 0;
-                    ldfa->states[current_state_id].accepts_before[c] = 0;
-                    for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                        ldfa->states[current_state_id].accepts_before_cmds[c].set_tag[t] = 0;
-                        ldfa->states[current_state_id].commands[c].set_tag[t]
-                            = 0;
-                    }
                 }
                 ASSERT(hash_insert_tmap(ldfa->state_tmap, &start_key,
                                         SIZEOF(start_key), current_state_id));
@@ -153,58 +154,34 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
             if (current_state_id > 0
                 && current_state_id < META_MAX_LAZY_DFA_STATES) {
                 LazyTdfaState *state;
+                NfaStateSet closed_set;
+                int32 closed_tags[META_MAX_OPS][META_MAX_TAGS];
+                int32 is_acc;
+
                 state = &ldfa->states[current_state_id];
+                for (int32 k = 0; k < META_PC_WORDS; k += 1) {
+                    closed_set.bits[k] = 0;
+                }
+                is_acc = 0;
 
-                if (state->accepts_on_eof == -1) {
-                    NfaStateSet closed_set;
-                    int32 is_acc;
-                    uint32 pc_masks[META_MAX_OPS];
-
-                    for (int32 k = 0; k < META_PC_WORDS; k += 1) {
-                        closed_set.bits[k] = 0;
-                    }
-                    for (int32 k = 0; k < META_MAX_OPS; k += 1) {
-                        pc_masks[k] = 0;
-                    }
-                    is_acc = 0;
-
-                    for (int32 k = 0; k < META_MAX_OPS; k += 1) {
-                        if ((state->key.bits[k / 32] & (1u << (k % 32))) != 0) {
-                            tdfa_add_epsilon_closure(
-                                regex->ops, k, &closed_set, &is_acc,
-                                state->key.prev_is_word, 0, pc_masks);
-                        }
-                    }
-                    state->accepts_on_eof = is_acc;
-                    
-                    for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                        state->eof_cmd.set_tag[t] = 0;
-                    }
-                    if (is_acc) {
-                        for (int32 k = 0; k < META_MAX_OPS; k += 1) {
-                            if ((closed_set.bits[k / 32] & (1u << (k % 32))) != 0) {
-                                if (regex->ops[k].type == META_OP_END) {
-                                    uint32 final_mask;
-                                    final_mask = pc_masks[k];
-                                    for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                                        if ((final_mask & (1u << t)) != 0) {
-                                            state->eof_cmd.set_tag[t] = 1;
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                for (int32 k = 0; k < META_MAX_OPS; k += 1) {
+                    if ((state->key.bits[k / 32] & (1u << (k % 32))) != 0) {
+                        tdfa_add_epsilon_closure(
+                            regex->ops, k, &closed_set, &is_acc,
+                            state->key.prev_is_word, 0, current_core_tags[k], closed_tags, i);
                     }
                 }
-                if (state->accepts_on_eof) {
+                if (is_acc) {
                     last_accept = i;
-                    for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                        if (state->eof_cmd.set_tag[t]) {
-                            tags[t] = i;
+                    for (int32 k = 0; k < META_MAX_OPS; k += 1) {
+                        if ((closed_set.bits[k / 32] & (1u << (k % 32))) != 0) {
+                            if (regex->ops[k].type == META_OP_END) {
+                                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                                    best_tags[t] = closed_tags[k][t];
+                                }
+                                break;
+                            }
                         }
-                    }
-                    for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                        best_tags[t] = tags[t];
                     }
                 }
             }
@@ -214,160 +191,169 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
         if (current_state_id > 0
             && current_state_id < META_MAX_LAZY_DFA_STATES) {
             LazyTdfaState *state;
+            int32 curr_is_word;
+            NfaStateSet closed_set;
+            int32 closed_tags[META_MAX_OPS][META_MAX_TAGS];
+            int32 is_acc;
+            NfaStateSet next_core;
+            int32 set_is_empty;
+            int32 next_id;
+
             state = &ldfa->states[current_state_id];
+            if (state->next[b] == -1) {
+                break;
+            }
 
-            if (state->next[b] == 0) {
-                int32 curr_is_word;
-                NfaStateSet closed_set;
-                int32 is_acc;
-                NfaStateSet next_core;
-                int32 set_is_empty;
-                uint32 pc_masks[META_MAX_OPS];
+            curr_is_word = is_word_char_tdfa(b);
+            for (int32 k = 0; k < META_PC_WORDS; k += 1) {
+                closed_set.bits[k] = 0;
+            }
+            is_acc = 0;
 
-                curr_is_word = is_word_char_tdfa(b);
-                for (int32 k = 0; k < META_PC_WORDS; k += 1) {
-                    closed_set.bits[k] = 0;
+            for (int32 k = 0; k < META_MAX_OPS; k += 1) {
+                if ((state->key.bits[k / 32] & (1u << (k % 32))) != 0) {
+                    tdfa_add_epsilon_closure(
+                        regex->ops, k, &closed_set, &is_acc,
+                        state->key.prev_is_word, curr_is_word, current_core_tags[k], closed_tags, i);
                 }
-                for (int32 k = 0; k < META_MAX_OPS; k += 1) {
-                    pc_masks[k] = 0;
-                }
-                is_acc = 0;
+            }
 
-                for (int32 k = 0; k < META_MAX_OPS; k += 1) {
-                    if ((state->key.bits[k / 32] & (1u << (k % 32))) != 0) {
-                        tdfa_add_epsilon_closure(
-                            regex->ops, k, &closed_set, &is_acc,
-                            state->key.prev_is_word, curr_is_word, pc_masks);
-                    }
-                }
-                state->accepts_before[b] = is_acc;
-
-                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                    state->accepts_before_cmds[b].set_tag[t] = 0;
-                }
-                if (is_acc) {
-                    for (int32 k = 0; k < META_MAX_OPS; k += 1) {
-                        if ((closed_set.bits[k / 32] & (1u << (k % 32))) != 0) {
-                            if (regex->ops[k].type == META_OP_END) {
-                                uint32 final_mask;
-                                final_mask = pc_masks[k];
-                                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                                    if ((final_mask & (1u << t)) != 0) {
-                                        state->accepts_before_cmds[b].set_tag[t] = 1;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                tdfa_compute_core_transitions(regex->ops, &closed_set, b,
-                                              &next_core);
-
-                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                    state->commands[b].set_tag[t] = 0;
-                }
-                
+            if (is_acc) {
+                last_accept = i;
                 for (int32 k = 0; k < META_MAX_OPS; k += 1) {
                     if ((closed_set.bits[k / 32] & (1u << (k % 32))) != 0) {
-                        MetaOp *op;
-                        int32 match;
-                        op = &regex->ops[k];
-                        match = 0;
-
-                        if (op->type == META_OP_LITERAL) {
-                            if (b == op->value) {
-                                match = 1;
-                            }
-                        } else if (op->type == META_OP_CLASS) {
-                            if (b >= 0 && b < META_ALPHABET_SIZE) {
-                                if ((op->mask[b / 32] & (1u << (b % 32))) != 0) {
-                                    match = 1;
-                                }
-                            }
-                        } else if (op->type == META_OP_ANY) {
-                            if (b != '\0') {
-                                match = 1;
-                            }
-                        }
-
-                        if (match) {
-                            uint32 trans_mask;
-                            trans_mask = pc_masks[k];
+                        if (regex->ops[k].type == META_OP_END) {
                             for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                                if ((trans_mask & (1u << t)) != 0) {
-                                    state->commands[b].set_tag[t] = 1;
-                                }
+                                best_tags[t] = closed_tags[k][t];
                             }
+                            break;
                         }
                     }
-                }
-
-                set_is_empty = 1;
-                for (int32 k = 0; k < META_PC_WORDS; k += 1) {
-                    if (next_core.bits[k] != 0) {
-                        set_is_empty = 0;
-                        break;
-                    }
-                }
-
-                if (set_is_empty) {
-                    state->next[b] = -1;
-                } else {
-                    LazyTdfaKey next_key;
-                    int32 next_id;
-
-                    for (int32 k = 0; k < META_PC_WORDS; k += 1) {
-                        next_key.bits[k] = next_core.bits[k];
-                    }
-                    next_key.prev_is_word = curr_is_word;
-
-                    if (!hash_lookup_tmap(ldfa->state_tmap, &next_key,
-                                          SIZEOF(next_key), &next_id)) {
-                        next_id = ldfa->num_states;
-                        if (next_id < META_MAX_LAZY_DFA_STATES) {
-                            ldfa->num_states += 1;
-                            ldfa->states[next_id].key = next_key;
-                            ldfa->states[next_id].accepts_on_eof = -1;
-                            for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                                ldfa->states[next_id].eof_cmd.set_tag[t] = 0;
-                            }
-                            for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
-                                ldfa->states[next_id].next[c] = 0;
-                                ldfa->states[next_id].accepts_before[c] = 0;
-                                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                                    ldfa->states[next_id].accepts_before_cmds[c].set_tag[t] = 0;
-                                }
-                            }
-                            ASSERT(hash_insert_tmap(ldfa->state_tmap, &next_key,
-                                                    SIZEOF(next_key), next_id));
-                        } else {
-                            next_id = -1;
-                        }
-                    }
-                    state->next[b] = next_id;
                 }
             }
 
-            for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                if (state->commands[b].set_tag[t]) {
-                    tags[t] = i;
-                }
+            for (int32 k = 0; k < META_PC_WORDS; k += 1) {
+                next_core.bits[k] = 0;
             }
-
-            if (state->accepts_before[b]) {
-                last_accept = i;
+            for (int32 k = 0; k < META_MAX_OPS; k += 1) {
                 for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                    best_tags[t] = tags[t];
-                    if (state->accepts_before_cmds[b].set_tag[t]) {
-                        best_tags[t] = i;
+                    next_core_tags[k][t] = -1;
+                }
+            }
+
+            for (int32 k = 0; k < META_MAX_OPS; k += 1) {
+                if ((closed_set.bits[k / 32] & (1u << (k % 32))) != 0) {
+                    MetaOp *op;
+                    int32 match;
+
+                    op = &regex->ops[k];
+                    match = 0;
+
+                    if (op->type == META_OP_LITERAL) {
+                        if (b == op->value) {
+                            match = 1;
+                        }
+                    } else if (op->type == META_OP_CLASS) {
+                        if (b >= 0 && b < META_ALPHABET_SIZE) {
+                            if ((op->mask[b / 32] & (1u << (b % 32))) != 0) {
+                                match = 1;
+                            }
+                        }
+                    } else if (op->type == META_OP_ANY) {
+                        if (b != '\0') {
+                            match = 1;
+                        }
+                    }
+
+                    if (match) {
+                        MetaOp *next_op;
+                        int32 dest_pc1;
+                        int32 dest_pc2;
+
+                        next_op = &regex->ops[k + 1];
+                        dest_pc1 = -1;
+                        dest_pc2 = -1;
+
+                        if (next_op->type == META_OP_STAR
+                            || next_op->type == META_OP_PLUS) {
+                            dest_pc1 = k;
+                            dest_pc2 = k + 2;
+                        } else if (next_op->type == META_OP_OPTIONAL) {
+                            dest_pc1 = k + 2;
+                        } else {
+                            dest_pc1 = k + 1;
+                        }
+
+                        if (dest_pc1 != -1) {
+                            if ((next_core.bits[dest_pc1 / 32] & (1u << (dest_pc1 % 32))) == 0) {
+                                next_core.bits[dest_pc1 / 32] |= (1u << (dest_pc1 % 32));
+                                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                                    next_core_tags[dest_pc1][t] = closed_tags[k][t];
+                                }
+                            }
+                        }
+                        if (dest_pc2 != -1) {
+                            if ((next_core.bits[dest_pc2 / 32] & (1u << (dest_pc2 % 32))) == 0) {
+                                next_core.bits[dest_pc2 / 32] |= (1u << (dest_pc2 % 32));
+                                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                                    next_core_tags[dest_pc2][t] = closed_tags[k][t];
+                                }
+                            }
+                        }
                     }
                 }
             }
-            current_state_id = state->next[b];
 
+            set_is_empty = 1;
+            for (int32 k = 0; k < META_PC_WORDS; k += 1) {
+                if (next_core.bits[k] != 0) {
+                    set_is_empty = 0;
+                    break;
+                }
+            }
+
+            if (set_is_empty) {
+                state->next[b] = -1;
+                break;
+            }
+
+            next_id = state->next[b];
+            if (next_id == 0) {
+                LazyTdfaKey next_key;
+
+                for (int32 k = 0; k < META_PC_WORDS; k += 1) {
+                    next_key.bits[k] = next_core.bits[k];
+                }
+                next_key.prev_is_word = curr_is_word;
+
+                if (!hash_lookup_tmap(ldfa->state_tmap, &next_key,
+                                      SIZEOF(next_key), &next_id)) {
+                    next_id = ldfa->num_states;
+                    if (next_id < META_MAX_LAZY_DFA_STATES) {
+                        ldfa->num_states += 1;
+                        ldfa->states[next_id].key = next_key;
+                        ldfa->states[next_id].accepts_on_eof = -1;
+                        for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
+                            ldfa->states[next_id].next[c] = 0;
+                        }
+                        ASSERT(hash_insert_tmap(ldfa->state_tmap, &next_key,
+                                                SIZEOF(next_key), next_id));
+                    } else {
+                        next_id = -1;
+                    }
+                }
+                state->next[b] = next_id;
+            }
+
+            current_state_id = next_id;
             if (current_state_id == -1) {
                 break;
+            }
+
+            for (int32 k = 0; k < META_MAX_OPS; k += 1) {
+                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                    current_core_tags[k][t] = next_core_tags[k][t];
+                }
             }
         } else {
             break;
@@ -413,83 +399,105 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
 static void
 tdfa_add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                          int32 *is_accepting, int32 prev_is_word,
-                         int32 curr_is_word, uint32 *pc_masks) {
+                         int32 curr_is_word, int32 src_tags[META_MAX_TAGS],
+                         int32 closed_tags[META_MAX_OPS][META_MAX_TAGS],
+                         int32 current_string_idx) {
     int32 stack[META_MAX_OPS];
-    uint32 mask_stack[META_MAX_OPS];
+    int32 tag_stack[META_MAX_OPS][META_MAX_TAGS];
     int32 stack_ptr;
 
     stack_ptr = 0;
     stack[stack_ptr] = pc;
-    mask_stack[stack_ptr] = 0;
+    for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+        tag_stack[stack_ptr][t] = src_tags[t];
+    }
     stack_ptr += 1;
 
     while (stack_ptr > 0) {
         int32 current_pc;
-        uint32 current_mask;
+        int32 current_tags[META_MAX_TAGS];
         MetaOp *op;
 
         stack_ptr -= 1;
         current_pc = stack[stack_ptr];
-        current_mask = mask_stack[stack_ptr];
+        for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+            current_tags[t] = tag_stack[stack_ptr][t];
+        }
 
         if ((set->bits[current_pc / 32] & (1u << (current_pc % 32))) != 0) {
             continue;
         }
 
         set->bits[current_pc / 32] |= (1u << (current_pc % 32));
-        pc_masks[current_pc] = current_mask;
+        for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+            closed_tags[current_pc][t] = current_tags[t];
+        }
         op = &ops[current_pc];
 
         if (op->type == META_OP_END) {
             *is_accepting = 1;
         } else if (op->type == META_OP_SPLIT) {
             stack[stack_ptr] = current_pc + op->value;
-            mask_stack[stack_ptr] = current_mask;
+            for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                tag_stack[stack_ptr][t] = current_tags[t];
+            }
             stack_ptr += 1;
             stack[stack_ptr] = current_pc + op->min;
-            mask_stack[stack_ptr] = current_mask;
+            for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                tag_stack[stack_ptr][t] = current_tags[t];
+            }
             stack_ptr += 1;
         } else if (op->type == META_OP_JUMP) {
             stack[stack_ptr] = current_pc + op->value;
-            mask_stack[stack_ptr] = current_mask;
+            for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                tag_stack[stack_ptr][t] = current_tags[t];
+            }
             stack_ptr += 1;
         } else if (op->type == META_OP_WORD_BOUNDARY) {
             if (prev_is_word != curr_is_word) {
                 stack[stack_ptr] = current_pc + 1;
-                mask_stack[stack_ptr] = current_mask;
+                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                    tag_stack[stack_ptr][t] = current_tags[t];
+                }
                 stack_ptr += 1;
             }
         } else if (op->type == META_OP_NON_WORD_BOUNDARY) {
             if (prev_is_word == curr_is_word) {
                 stack[stack_ptr] = current_pc + 1;
-                mask_stack[stack_ptr] = current_mask;
+                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                    tag_stack[stack_ptr][t] = current_tags[t];
+                }
                 stack_ptr += 1;
             }
         } else if (op->type == META_OP_WORD_START) {
             if (!prev_is_word && curr_is_word) {
                 stack[stack_ptr] = current_pc + 1;
-                mask_stack[stack_ptr] = current_mask;
+                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                    tag_stack[stack_ptr][t] = current_tags[t];
+                }
                 stack_ptr += 1;
             }
         } else if (op->type == META_OP_WORD_END) {
             if (prev_is_word && !curr_is_word) {
                 stack[stack_ptr] = current_pc + 1;
-                mask_stack[stack_ptr] = current_mask;
+                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                    tag_stack[stack_ptr][t] = current_tags[t];
+                }
                 stack_ptr += 1;
             }
         } else if (op->type == META_OP_GROUP_START) {
             int32 tag_idx;
             int32 depth;
-            uint32 next_mask;
 
-            next_mask = current_mask;
             tag_idx = (op->value*2) - 2;
             if (tag_idx >= 0 && tag_idx < META_MAX_TAGS) {
-                next_mask |= (1u << tag_idx);
+                current_tags[tag_idx] = current_string_idx;
             }
 
             stack[stack_ptr] = current_pc + 1;
-            mask_stack[stack_ptr] = next_mask;
+            for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                tag_stack[stack_ptr][t] = current_tags[t];
+            }
             stack_ptr += 1;
             depth = 0;
             for (int32 i = current_pc + 1; ops[i].type != META_OP_END; i += 1) {
@@ -502,22 +510,24 @@ tdfa_add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                     depth -= 1;
                 } else if (ops[i].type == META_OP_ALTERNATION && depth == 0) {
                     stack[stack_ptr] = i + 1;
-                    mask_stack[stack_ptr] = next_mask;
+                    for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                        tag_stack[stack_ptr][t] = current_tags[t];
+                    }
                     stack_ptr += 1;
                 }
             }
         } else if (op->type == META_OP_GROUP_END) {
             int32 tag_idx;
-            uint32 next_mask;
 
-            next_mask = current_mask;
             tag_idx = (op->value*2) - 1;
             if (tag_idx >= 0 && tag_idx < META_MAX_TAGS) {
-                next_mask |= (1u << tag_idx);
+                current_tags[tag_idx] = current_string_idx;
             }
 
             stack[stack_ptr] = current_pc + 1;
-            mask_stack[stack_ptr] = next_mask;
+            for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                tag_stack[stack_ptr][t] = current_tags[t];
+            }
             stack_ptr += 1;
         } else if (op->type == META_OP_ALTERNATION) {
             int32 depth;
@@ -537,7 +547,9 @@ tdfa_add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                 i += 1;
             }
             stack[stack_ptr] = i;
-            mask_stack[stack_ptr] = current_mask;
+            for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                tag_stack[stack_ptr][t] = current_tags[t];
+            }
             stack_ptr += 1;
         }
 
@@ -549,7 +561,9 @@ tdfa_add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
             if (next_op->type == META_OP_STAR
                 || next_op->type == META_OP_OPTIONAL) {
                 stack[stack_ptr] = current_pc + 2;
-                mask_stack[stack_ptr] = current_mask;
+                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                    tag_stack[stack_ptr][t] = current_tags[t];
+                }
                 stack_ptr += 1;
             }
         }
