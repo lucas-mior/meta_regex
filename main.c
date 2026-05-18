@@ -450,9 +450,9 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
 
         input = malloc2(file_size + 1);
         if (fread64(input, 1, file_size, file) != file_size) {
-            free2(input, file_size + 1);
-            fclose(file);
-            continue;
+            error("Error reading %lld bytes from file %s: %s.\n",
+                  (llong)file_size, path, strerror(errno));
+            fatal(EXIT_FAILURE);
         }
         input[file_size] = '\0';
         fclose(file);
