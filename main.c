@@ -311,11 +311,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 
             if (fuzzy[i].result_posix == 0 && fuzzy[i].result_meta == 0) {
                 for (int32 m = 0; m < MAX_MATCHES; m += 1) {
-                    regmatch_t p_m;
-                    regmatch_t m_m;
-
-                    p_m = fuzzy[i].pmatch_posix[m];
-                    m_m = fuzzy[i].pmatch_meta[m];
+                    regmatch_t p_m = fuzzy[i].pmatch_posix[m];
+                    regmatch_t m_m = fuzzy[i].pmatch_meta[m];
 
                     if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
                         error2("   Group %d: posix[%d, %d], "
