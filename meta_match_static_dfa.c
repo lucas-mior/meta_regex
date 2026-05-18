@@ -2,8 +2,8 @@
 #define META_MATCH_STATIC_DFA
 
 static int32
-match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len,
-                 int32 offset, int64 nmatch, regmatch_t pmatch[]) {
+match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
+                 int64 nmatch, regmatch_t pmatch[]) {
     StaticDfaState *states = regex->static_dfa->states;
     StaticDfaState *current_state_ptr = &states[regex->static_dfa->start_state];
     int32 last_accept = -1;
