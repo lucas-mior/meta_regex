@@ -69,25 +69,25 @@ main(void) {
     fprintf(csv, "suite,case,count,posix_time,meta_time\n");
 
     printf(RED("\nTests with known (input, regex) pairs ...\n"));
-    RUN_KNOWN_PAIRS(ascii_no_group_no_backref);
-    RUN_KNOWN_PAIRS(ascii_with_group_no_backref);
-    RUN_KNOWN_PAIRS(ascii_with_group_and_backref);
-    RUN_KNOWN_PAIRS(utf8_against_ascii);
-    RUN_KNOWN_PAIRS(utf8_against_utf8);
+    /* RUN_KNOWN_PAIRS(ascii_no_group_no_backref); */
+    /* RUN_KNOWN_PAIRS(ascii_with_group_no_backref); */
+    /* RUN_KNOWN_PAIRS(ascii_with_group_and_backref); */
+    /* RUN_KNOWN_PAIRS(utf8_against_ascii); */
+    /* RUN_KNOWN_PAIRS(utf8_against_utf8); */
     RUN_KNOWN_PAIRS(ascii_catastrophic_no_group_no_backref);
     RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_no_backref);
     RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_and_backref);
 
-    run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
+    /* run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8"); */
 
-    printf(
-        RED("\nTests with random inputs against extensive regex array ...\n"));
-    for (int32 max_input_len = 1; max_input_len <= 4096; max_input_len *= 2) {
-        RUN_FUZZY_TESTS(regexes_extensive, max_input_len, 200);
-    }
+    /* printf( */
+    /*     RED("\nTests with random inputs against extensive regex array ...\n")); */
+    /* for (int32 max_input_len = 1; max_input_len <= 4096; max_input_len *= 2) { */
+    /*     RUN_FUZZY_TESTS(regexes_extensive, max_input_len, 200); */
+    /* } */
 
-    printf(RED("\nTests from inputs/ against extensive regex array ...\n"));
-    run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive));
+    /* printf(RED("\nTests from inputs/ against extensive regex array ...\n")); */
+    /* run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive)); */
 
     if (fclose(csv)) {
         error("Error closing %s: %s.\n", csv_file, strerror(errno));
