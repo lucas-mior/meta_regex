@@ -29,6 +29,7 @@ typedef struct LazyTdfaState {
     TdfaCommand commands[META_ALPHABET_SIZE];
     int32 accepts_before[META_ALPHABET_SIZE];
     int32 accepts_on_eof;
+    TdfaCommand eof_cmd;
     LazyTdfaKey key;
 } LazyTdfaState;
 
@@ -121,6 +122,9 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                 ldfa->num_states += 1;
                 ldfa->states[current_state_id].key = start_key;
                 ldfa->states[current_state_id].accepts_on_eof = -1;
+                for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                    ldfa->states[current_state_id].eof_cmd.set_tag[t] = 0;
+                }
                 for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                     ldfa->states[current_state_id].next[c] = 0;
                     ldfa->states[current_state_id].accepts_before[c] = 0;
@@ -152,13 +156,13 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                 if (state->accepts_on_eof == -1) {
                     NfaStateSet closed_set;
                     int32 is_acc;
-                    TdfaCommand dummy_cmd;
+                    TdfaCommand eof_cmd;
 
                     for (int32 k = 0; k < META_PC_WORDS; k += 1) {
                         closed_set.bits[k] = 0;
                     }
                     for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
-                        dummy_cmd.set_tag[t] = 0;
+                        eof_cmd.set_tag[t] = 0;
                     }
                     is_acc = 0;
 
@@ -166,13 +170,19 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                         if ((state->key.bits[k / 32] & (1u << (k % 32))) != 0) {
                             tdfa_add_epsilon_closure(
                                 regex->ops, k, &closed_set, &is_acc,
-                                state->key.prev_is_word, 0, &dummy_cmd);
+                                state->key.prev_is_word, 0, &eof_cmd);
                         }
                     }
                     state->accepts_on_eof = is_acc;
+                    state->eof_cmd = eof_cmd;
                 }
                 if (state->accepts_on_eof) {
                     last_accept = i;
+                    for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                        if (state->eof_cmd.set_tag[t]) {
+                            tags[t] = i;
+                        }
+                    }
                     for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
                         best_tags[t] = tags[t];
                     }
@@ -242,6 +252,9 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                             ldfa->num_states += 1;
                             ldfa->states[next_id].key = next_key;
                             ldfa->states[next_id].accepts_on_eof = -1;
+                            for (int32 t = 0; t < META_MAX_TAGS; t += 1) {
+                                ldfa->states[next_id].eof_cmd.set_tag[t] = 0;
+                            }
                             for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                                 ldfa->states[next_id].next[c] = 0;
                                 ldfa->states[next_id].accepts_before[c] = 0;
@@ -297,11 +310,7 @@ try_match_lazy_tdfa(MetaRegex *regex, uchar *input, int32 input_len,
                         && end_tag_idx < META_MAX_TAGS) {
                         so = best_tags[start_tag_idx];
                         eo = best_tags[end_tag_idx];
-                        /*
-                         * Sanitize: if only one endpoint was recorded the
-                         * group was never fully matched (e.g. skipped via ?).
-                         * Report both as -1 to match POSIX semantics.
-                         */
+
                         if (so == -1 || eo == -1) {
                             so = -1;
                             eo = -1;
