@@ -1,6 +1,10 @@
 #if !defined(META_MATCH_STATIC_DFA)
 #define META_MATCH_STATIC_DFA
 
+#include <regex.h>
+#include "primitives.h"
+#include "meta.h"
+
 static const enum MetaOpType match_static_dfa_supports =
 (enum MetaOpType) (
     META_OP_END | META_OP_LITERAL | META_OP_ANY | META_OP_CLASS |
