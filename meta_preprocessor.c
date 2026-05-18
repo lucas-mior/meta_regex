@@ -254,10 +254,10 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uchar *fastmap,
         }
         return 0;
     } else if (type == META_OP_SPLIT) {
-        int32 p1 = compute_first_set(ops, pc + ops[pc].value, temp_ops_count, fastmap,
-                               visited);
-        int32 p2 = compute_first_set(ops, pc + ops[pc].min, temp_ops_count, fastmap,
-                               visited);
+        int32 p1 = compute_first_set(ops, pc + ops[pc].value, temp_ops_count,
+                                     fastmap, visited);
+        int32 p2 = compute_first_set(ops, pc + ops[pc].min, temp_ops_count,
+                                     fastmap, visited);
         return (p1 || p2);
     } else if (type == META_OP_JUMP) {
         return compute_first_set(ops, pc + ops[pc].value, temp_ops_count,
@@ -1502,7 +1502,7 @@ main(int32 argc, char **argv) {
                                     || nfa[i].type == NFA_STATE_EMPTY) {
                                     if (nfa[i].next1 != -1
                                         && !(start_set.bits[nfa[i].next1
-                                                             / BITS_PER_UINT32]
+                                                            / BITS_PER_UINT32]
                                              & (1u << (nfa[i].next1
                                                        % BITS_PER_UINT32)))) {
                                         start_set.bits[nfa[i].next1
@@ -1514,7 +1514,7 @@ main(int32 argc, char **argv) {
                                     if (nfa[i].type == NFA_STATE_SPLIT
                                         && nfa[i].next2 != -1
                                         && !(start_set.bits[nfa[i].next2
-                                                             / BITS_PER_UINT32]
+                                                            / BITS_PER_UINT32]
                                              & (1u << (nfa[i].next2
                                                        % BITS_PER_UINT32)))) {
                                         start_set.bits[nfa[i].next2
