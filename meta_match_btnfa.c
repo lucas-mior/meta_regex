@@ -1,6 +1,11 @@
 #if !defined(META_MATCH_BTNFA)
 #define META_MATCH_BTNFA
 
+#include <regex.h>
+#include "primitives.h"
+#include "meta.h"
+#include "meta_util.c"
+
 static const MatcherFeatures match_features_btnfa = {
     .supports = (enum MetaOpType)(
         META_OP_END | META_OP_LITERAL | META_OP_ANY | META_OP_CLASS
