@@ -31,7 +31,7 @@ static MatcherFeatures matchers[] = {
 static int32
 meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
                  regmatch_t *pmatch, int32 pmatch_len,
-                 enum Matcher enabled) {
+                 enum Matcher matchers_enabled) {
     enum Matcher algorithm = MATCHER_BTNFA;
     int32 result;
     int32 needs_extraction;
@@ -50,7 +50,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
     needs_extraction = (regex->re_nsub > 0 && pmatch_len > 1);
 
     if (input_len >= USE_DFA_THRESHOLD) {
-        if ((enabled & MATCHER_STATIC_DFA) && regex->static_dfa) {
+        if ((matchers_enabled & MATCHER_STATIC_DFA) && regex->static_dfa) {
             if (!needs_extraction || matchers[MATCHER_STATIC_DFA].extracts) {
                 if ((regex->used_ops
                      & ~matchers[MATCHER_STATIC_DFA].supports)
@@ -60,7 +60,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
             }
         }
 
-        if (algorithm == MATCHER_BTNFA && (enabled & MATCHER_LAZY_DFA)) {
+        if (algorithm == MATCHER_BTNFA && (matchers_enabled & MATCHER_LAZY_DFA)) {
             if (!needs_extraction || matchers[MATCHER_LAZY_DFA].extracts) {
                 if ((regex->used_ops & ~matchers[MATCHER_LAZY_DFA].supports)
                     == 0) {
