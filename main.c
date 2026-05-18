@@ -50,17 +50,17 @@ int32
 main(void) {
     setlocale(LC_ALL, "C");
     srand((uint32)42);
-    enum Match enabled = MATCH_BTNFA;
+    enum Matcher enabled = MATCHER_BTNFA;
     char csv_file[1024];
 
     if (ENABLE_LAZY_DFA) {
-        enabled |= MATCH_LAZY_DFA;
+        enabled |= MATCHER_LAZY_DFA;
     }
     if (ENABLE_STATIC_DFA) {
-        enabled |= MATCH_STATIC_DFA;
+        enabled |= MATCHER_STATIC_DFA;
     }
     SNPRINTF(csv_file, "benchmarks/timings-%lld-%s.csv", (llong)time(NULL),
-             MATCH_str(enabled));
+             MATCHER_str(enabled));
 
     if ((csv = fopen(csv_file, "w")) == NULL) {
         error("Error opening %s for writing: %s.\n", csv_file, strerror(errno));
@@ -137,13 +137,13 @@ run_known_pairs(RegexTest *tests, int32 count, char *description) {
     RegexTest *tests_posix = xmemdup(tests, count*SIZEOF(*tests_posix));
     RegexTest *tests_meta = xmemdup(tests, count*SIZEOF(*tests_meta));
     bool failed = false;
-    enum Match enabled = MATCH_BTNFA;
+    enum Matcher enabled = MATCHER_BTNFA;
 
     if (ENABLE_LAZY_DFA) {
-        enabled |= MATCH_LAZY_DFA;
+        enabled |= MATCHER_LAZY_DFA;
     }
     if (ENABLE_STATIC_DFA) {
-        enabled |= MATCH_STATIC_DFA;
+        enabled |= MATCHER_STATIC_DFA;
     }
 
     printf("\n----- Running %s (POSIX vs Meta) -----\n", description);
@@ -235,13 +235,13 @@ run_meta_only(RegexTest *tests, int32 count, char *description) {
     struct timespec t1;
     printf("\n----- Running %s (Meta Only) -----\n", description);
     bool failed = false;
-    enum Match enabled = MATCH_BTNFA;
+    enum Matcher enabled = MATCHER_BTNFA;
 
     if (ENABLE_LAZY_DFA) {
-        enabled |= MATCH_LAZY_DFA;
+        enabled |= MATCHER_LAZY_DFA;
     }
     if (ENABLE_STATIC_DFA) {
-        enabled |= MATCH_STATIC_DFA;
+        enabled |= MATCHER_STATIC_DFA;
     }
 
     for (int32 i = 0; i < count; i += 1) {
@@ -293,16 +293,16 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     struct timespec t0_meta;
     struct timespec t1_meta;
     bool failed = false;
-    enum Match enabled = MATCH_BTNFA;
+    enum Matcher enabled = MATCHER_BTNFA;
 #if FUZZY_PRECOMPILE_POSIX
     regex_t *posix_regexes = malloc2(tests_len*SIZEOF(*posix_regexes));
 #endif
 
     if (ENABLE_LAZY_DFA) {
-        enabled |= MATCH_LAZY_DFA;
+        enabled |= MATCHER_LAZY_DFA;
     }
     if (ENABLE_STATIC_DFA) {
-        enabled |= MATCH_STATIC_DFA;
+        enabled |= MATCHER_STATIC_DFA;
     }
 
     for (int32 i = 0; i < ntests; i += 1) {
@@ -447,7 +447,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
     struct dirent *entry = NULL;
     bool failed = false;
     RegexTest dummy_test;
-    enum Match enabled = MATCH_BTNFA;
+    enum Matcher enabled = MATCHER_BTNFA;
 
     if (dir == NULL) {
         error("Error opening inputs directory: %s\n", strerror(errno));
@@ -455,10 +455,10 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len) {
     }
 
     if (ENABLE_LAZY_DFA) {
-        enabled |= MATCH_LAZY_DFA;
+        enabled |= MATCHER_LAZY_DFA;
     }
     if (ENABLE_STATIC_DFA) {
-        enabled |= MATCH_STATIC_DFA;
+        enabled |= MATCHER_STATIC_DFA;
     }
 
 #if FUZZY_PRECOMPILE_POSIX

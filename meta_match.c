@@ -11,8 +11,8 @@
 #include "meta_match_btnfa.c"
 #include "meta_match_static_dfa.c"
 
-#define ENUM_PREFIX_ MATCH_
-#define ENUM_NAME Match
+#define ENUM_PREFIX_ MATCHER_
+#define ENUM_NAME Matcher
 #define ENUM_BITFLAGS 1
 #define ENUM_FIELDS \
     X(BTNFA) \
@@ -23,16 +23,16 @@
 #define USE_DFA_THRESHOLD 128
 
 static MatcherFeatures matchers[] = {
-    [MATCH_BTNFA] = match_btnfa_features,
-    [MATCH_LAZY_DFA] = match_lazy_dfa_features,
-    [MATCH_STATIC_DFA] = match_static_dfa_features,
+    [MATCHER_BTNFA] = match_btnfa_features,
+    [MATCHER_LAZY_DFA] = match_lazy_dfa_features,
+    [MATCHER_STATIC_DFA] = match_static_dfa_features,
 };
 
 static int32
 meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
                  regmatch_t *pmatch, int32 pmatch_len,
-                 enum Match enabled) {
-    enum Match algorithm = MATCH_BTNFA;
+                 enum Matcher enabled) {
+    enum Matcher algorithm = MATCHER_BTNFA;
     int32 result;
     int32 needs_extraction;
 
@@ -50,28 +50,28 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
     needs_extraction = (regex->re_nsub > 0 && pmatch_len > 1);
 
     if (input_len >= USE_DFA_THRESHOLD) {
-        if ((enabled & MATCH_STATIC_DFA) && regex->static_dfa) {
-            if (!needs_extraction || matchers[MATCH_STATIC_DFA].extracts) {
+        if ((enabled & MATCHER_STATIC_DFA) && regex->static_dfa) {
+            if (!needs_extraction || matchers[MATCHER_STATIC_DFA].extracts) {
                 if ((regex->used_ops
-                     & ~matchers[MATCH_STATIC_DFA].supports)
+                     & ~matchers[MATCHER_STATIC_DFA].supports)
                     == 0) {
-                    algorithm = MATCH_STATIC_DFA;
+                    algorithm = MATCHER_STATIC_DFA;
                 }
             }
         }
 
-        if (algorithm == MATCH_BTNFA && (enabled & MATCH_LAZY_DFA)) {
-            if (!needs_extraction || matchers[MATCH_LAZY_DFA].extracts) {
-                if ((regex->used_ops & ~matchers[MATCH_LAZY_DFA].supports)
+        if (algorithm == MATCHER_BTNFA && (enabled & MATCHER_LAZY_DFA)) {
+            if (!needs_extraction || matchers[MATCHER_LAZY_DFA].extracts) {
+                if ((regex->used_ops & ~matchers[MATCHER_LAZY_DFA].supports)
                     == 0) {
-                    algorithm = MATCH_LAZY_DFA;
+                    algorithm = MATCHER_LAZY_DFA;
                 }
             }
         }
     }
 
     switch (algorithm) {
-    case MATCH_BTNFA: {
+    case MATCHER_BTNFA: {
         if (regex->has_start_anchor) {
             result
                 = match_btnfa(regex, input, input_len, 0, pmatch, pmatch_len);
@@ -99,7 +99,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
         }
         break;
     }
-    case MATCH_LAZY_DFA: {
+    case MATCHER_LAZY_DFA: {
         if (regex->has_start_anchor) {
             result = match_lazy_dfa(regex, input, input_len, 0, pmatch,
                                     pmatch_len);
@@ -127,7 +127,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
         }
         break;
     }
-    case MATCH_STATIC_DFA: {
+    case MATCHER_STATIC_DFA: {
         if (regex->has_start_anchor) {
             result = match_static_dfa(regex, input, input_len, 0, pmatch,
                                       pmatch_len);
@@ -155,8 +155,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
         }
         break;
     }
-    case MATCH_LAST:
-    case MATCH_NONE:
+    case MATCHER_LAST:
+    case MATCHER_NONE:
     default: {
         error("Undefined matching algorithm.\n");
         exit(EXIT_FAILURE);
