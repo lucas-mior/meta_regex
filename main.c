@@ -91,7 +91,7 @@ run_known_pairs(RegexTest *tests, int32 count, char *description) {
             char error_message[256];
             regerror(compiled, &compiled_regex, error_message,
                      SIZEOF(error_message));
-            error("Regex compilation failed for" RED("\"%s\"") ": %s\n", regex,
+            error("Regex compilation failed for" BLUE("\"%s\"") ": %s\n", regex,
                   error_message);
             exit(EXIT_FAILURE);
         }
