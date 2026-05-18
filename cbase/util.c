@@ -1574,7 +1574,7 @@ static double
 timediff(struct timespec t0, struct timespec t1) {
     llong sec = t1.tv_sec - t0.tv_sec;
     llong nsec = t1.tv_nsec - t0.tv_nsec;
-    double diff = sec + nsec*1e-9;
+    double diff = (double)sec + (double)nsec*1e-9;
     return diff;
 }
 
