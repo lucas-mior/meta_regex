@@ -24,14 +24,14 @@
 #define BENCHMARK 0
 #endif
 
-static void run_posix_vs_meta(RegexTest *tests, int32 count, char *description);
+static void run_known_pairs(RegexTest *tests, int32 count, char *description);
 static void run_fuzzy_tests(MetaRegex **patterns, int32 tests_len,
                             int32 max_str_size, int32 ntests);
 static void run_meta_only(RegexTest *tests, int32 count, char *description);
 static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len);
 
-#define RUN_POSIX_VS_META(ARRAY) \
-    run_posix_vs_meta(ARRAY, LENGTH(ARRAY), #ARRAY)
+#define RUN_KNOWN_PAIRS(ARRAY) \
+    run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY)
 #define RUN_FUZZY_TESTS(ARRAY, MAX_STR_SIZE, NTESTS) \
     run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS)
 
@@ -43,14 +43,14 @@ main(void) {
     srand((uint32)42);
 
     printf(RED("\nTests with known (input, regex) pairs ...\n"));
-    RUN_POSIX_VS_META(ascii_no_group_no_backref);
-    RUN_POSIX_VS_META(ascii_with_group_no_backref);
-    RUN_POSIX_VS_META(ascii_with_group_and_backref);
-    RUN_POSIX_VS_META(utf8_against_ascii);
-    RUN_POSIX_VS_META(utf8_against_utf8);
-    RUN_POSIX_VS_META(ascii_catastrophic_no_group_no_backref);
-    RUN_POSIX_VS_META(ascii_catastrophic_with_group_no_backref);
-    RUN_POSIX_VS_META(ascii_catastrophic_with_group_and_backref);
+    RUN_KNOWN_PAIRS(ascii_no_group_no_backref);
+    RUN_KNOWN_PAIRS(ascii_with_group_no_backref);
+    RUN_KNOWN_PAIRS(ascii_with_group_and_backref);
+    RUN_KNOWN_PAIRS(utf8_against_ascii);
+    RUN_KNOWN_PAIRS(utf8_against_utf8);
+    RUN_KNOWN_PAIRS(ascii_catastrophic_no_group_no_backref);
+    RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_no_backref);
+    RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_and_backref);
 
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8");
 
@@ -66,10 +66,10 @@ main(void) {
 }
 
 #undef RUN_FUZZY_TESTS
-#undef RUN_POSIX_VS_META
+#undef RUN_KNOWN_PAIRS
 
 static void
-run_posix_vs_meta(RegexTest *tests, int32 count, char *description) {
+run_known_pairs(RegexTest *tests, int32 count, char *description) {
     struct timespec t0_posix;
     struct timespec t1_posix;
     struct timespec t0_meta;
