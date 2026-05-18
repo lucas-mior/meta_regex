@@ -54,13 +54,8 @@ static FILE *csv;
 #define ENABLE_STATIC_DFA 0
 #endif
 
-int32
-main(void) {
-    setlocale(LC_ALL, "C");
-    srand((uint32)42);
-    enum Matcher enabled = MATCHER_BTNFA;
-    char csv_file[1024];
-
+static enum Matcher
+matcher_enabled(enum Matcher enabled) {
     if (ENABLE_LAZY_DFA) {
         enabled |= MATCHER_LAZY_DFA;
     }
@@ -70,6 +65,17 @@ main(void) {
     if (ENABLE_STATIC_DFA) {
         enabled |= MATCHER_STATIC_DFA;
     }
+    return enabled;
+}
+
+int32
+main(void) {
+    setlocale(LC_ALL, "C");
+    srand((uint32)42);
+    enum Matcher enabled = MATCHER_BTNFA;
+    char csv_file[1024];
+
+    enabled = matcher_enabled(enabled);
     SNPRINTF(csv_file, "benchmarks/timings-%lld-%s.csv", (llong)time(NULL),
              MATCHER_str(enabled));
 
@@ -153,15 +159,7 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
     bool failed = false;
     enum Matcher enabled = MATCHER_BTNFA;
 
-    if (ENABLE_LAZY_DFA) {
-        enabled |= MATCHER_LAZY_DFA;
-    }
-    if (ENABLE_LAZY_TDFA) {
-        enabled |= MATCHER_LAZY_TDFA;
-    }
-    if (ENABLE_STATIC_DFA) {
-        enabled |= MATCHER_STATIC_DFA;
-    }
+    enabled = matcher_enabled(enabled);
 
     printf("\n----- Running %s (%s) (POSIX vs Meta) -----\n", description,
            extract ? "extracting" : "non-extracting");
@@ -260,15 +258,7 @@ run_meta_only(RegexTest *tests, int32 count, char *description, bool extract) {
     bool failed = false;
     enum Matcher enabled = MATCHER_BTNFA;
 
-    if (ENABLE_LAZY_DFA) {
-        enabled |= MATCHER_LAZY_DFA;
-    }
-    if (ENABLE_LAZY_TDFA) {
-        enabled |= MATCHER_LAZY_TDFA;
-    }
-    if (ENABLE_STATIC_DFA) {
-        enabled |= MATCHER_STATIC_DFA;
-    }
+    enabled = matcher_enabled(enabled);
 
     for (int32 i = 0; i < count; i += 1) {
         tests[i].input_len = strlen32((char *)tests[i].input);
@@ -328,15 +318,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     regex_t *posix_regexes = malloc2(tests_len*SIZEOF(*posix_regexes));
 #endif
 
-    if (ENABLE_LAZY_DFA) {
-        enabled |= MATCHER_LAZY_DFA;
-    }
-    if (ENABLE_LAZY_TDFA) {
-        enabled |= MATCHER_LAZY_TDFA;
-    }
-    if (ENABLE_STATIC_DFA) {
-        enabled |= MATCHER_STATIC_DFA;
-    }
+    enabled = matcher_enabled(enabled);
 
     for (int32 i = 0; i < ntests; i += 1) {
         int32 input_len = 1 + (rand() % max_str_size);
@@ -492,15 +474,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         exit(EXIT_FAILURE);
     }
 
-    if (ENABLE_LAZY_DFA) {
-        enabled |= MATCHER_LAZY_DFA;
-    }
-    if (ENABLE_LAZY_TDFA) {
-        enabled |= MATCHER_LAZY_TDFA;
-    }
-    if (ENABLE_STATIC_DFA) {
-        enabled |= MATCHER_STATIC_DFA;
-    }
+    enabled = matcher_enabled(enabled);
 
 #if FUZZY_PRECOMPILE_POSIX
     regex_t *posix_regexes = malloc2(tests_len*SIZEOF(*posix_regexes));
