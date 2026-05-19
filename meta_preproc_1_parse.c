@@ -417,12 +417,8 @@ parse_source_code(char *buffer, int64 source_len) {
 
         quote_start = strchr(found_macro, '"');
         if (quote_start == NULL) {
-            regex->is_invalid_macro = true;
-            regex->source_end_offset
-                = (found_macro + strlen32(macro_start)) - buffer;
-            cursor = found_macro + strlen32(macro_start);
-            list.count++;
-            continue;
+            error("Error parsing regex: Quotes not found.\n");
+            exit(EXIT_FAILURE);
         }
 
         quote_end = quote_start + 1;
