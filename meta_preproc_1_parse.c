@@ -327,7 +327,7 @@ tnfa_add_transition(ParsedTnfa *tnfa, enum MetaTnfaTransitionKind kind,
     tr->value = value;
     tr->priority = priority;
     tr->tag = tag;
-    if (mask != NULL) {
+    if (mask) {
         memcpy64(tr->mask, mask, SIZEOF(tr->mask));
     }
 
@@ -1603,7 +1603,7 @@ parse_source_code(char *buffer, int64 source_len) {
         regex->temp_ops_count = temp_ops_count;
         strncpy32(regex->op_buffer, op_buffer, PREPROC_OP_BUFFER_SIZE);
 
-        if (paren_end != NULL) {
+        if (paren_end) {
             regex->source_end_offset = (paren_end + 1) - buffer;
             cursor = paren_end + 1;
         } else {
