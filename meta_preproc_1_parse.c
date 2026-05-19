@@ -471,6 +471,43 @@ tnfa_collect_tags_except_branch(ParsedOp *ops, int32 *branch_starts,
 }
 
 static bool
+tnfa_tag_occurs_in_range(ParsedOp *ops, int32 start, int32 end, int32 tag) {
+    if (start < 0) {
+        start = 0;
+    }
+    if (end < start) {
+        end = start;
+    }
+
+    for (int32 i = start; i < end; i += 1) {
+        if (ops[i].type == META_OP_GROUP_START
+            && tnfa_group_start_tag(ops[i].value) == tag) {
+            return true;
+        }
+        if (ops[i].type == META_OP_GROUP_END
+            && tnfa_group_end_tag(ops[i].value) == tag) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static int32
+tnfa_filter_tags_without_prior_occurrence(ParsedOp *ops, int32 prior_start,
+                                         int32 prior_end, int32 *tags,
+                                         int32 tag_count) {
+    int32 write = 0;
+
+    for (int32 i = 0; i < tag_count; i += 1) {
+        if (!tnfa_tag_occurs_in_range(ops, prior_start, prior_end, tags[i])) {
+            tags[write] = tags[i];
+            write += 1;
+        }
+    }
+    return write;
+}
+
+static bool
 tnfa_add_negative_tag_chain(ParsedTnfa *tnfa, int32 from, int32 to,
                             int32 priority, int32 *tags, int32 tag_count) {
     int32 current = from;
@@ -714,6 +751,21 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
                 if (negative_count < 0) {
                     return false;
                 }
+
+                /*
+                    If the skipped range contains tags that already occurred
+                    earlier in the op stream, this SPLIT is an optional copy of
+                    a repeated capturing subexpression, produced by bounded
+                    repetition unrolling. Skipping an extra repetition must not
+                    erase the capture from the last successful repetition.
+
+                    Tags with no prior occurrence still need negative tags: this
+                    preserves ordinary optional/alternative semantics for
+                    captures that have never participated on the current path.
+                */
+                negative_count = tnfa_filter_tags_without_prior_occurrence(
+                    ops, 0, pc, negative_tags, negative_count);
+
                 if (!tnfa_add_negative_tag_chain(tnfa, pc, t2, 2,
                                                  negative_tags,
                                                  negative_count)) {
@@ -728,7 +780,38 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
             if (t1 < 0 || t1 > ops_count) {
                 return false;
             }
-            if (!tnfa_add_epsilon(tnfa, pc, t1, 1, META_TNFA_TAG_NONE)) {
+
+            if (t1 < pc && t1 < ops_count && ops[t1].type == META_OP_SPLIT) {
+                int32 body = t1 + ops[t1].value;
+                int32 exit = t1 + ops[t1].min;
+                int32 loop_entry = tnfa_new_state(tnfa);
+
+                if (body < 0 || body > ops_count || exit < 0
+                    || exit > ops_count || loop_entry < 0) {
+                    return false;
+                }
+
+                /*
+                    Backward jumps target the SPLIT inserted for a repeated
+                    group. The original SPLIT's skip branch represents zero
+                    repetitions and may need negative tags. Re-entering after
+                    one successful repetition must use a separate state whose
+                    exit branch does not clear the repeated group's tags.
+                */
+                if (!tnfa_add_epsilon(tnfa, pc, loop_entry, 1,
+                                      META_TNFA_TAG_NONE)) {
+                    return false;
+                }
+                if (!tnfa_add_epsilon(tnfa, loop_entry, body, 1,
+                                      META_TNFA_TAG_NONE)) {
+                    return false;
+                }
+                if (!tnfa_add_epsilon(tnfa, loop_entry, exit, 2,
+                                      META_TNFA_TAG_NONE)) {
+                    return false;
+                }
+            } else if (!tnfa_add_epsilon(tnfa, pc, t1, 1,
+                                         META_TNFA_TAG_NONE)) {
                 return false;
             }
         } else if (op->type == META_OP_ALTERNATION) {

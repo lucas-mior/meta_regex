@@ -18,8 +18,8 @@ typedef struct FuzzyTest {
     char *input;
     int32 input_len;
     int32 regex_idx;
-    int32 result_posix;
-    regmatch_t pmatch_posix[MAX_MATCHES];
+    int32 result_libc;
+    regmatch_t pmatch_libc[MAX_MATCHES];
     int32 result_meta;
     regmatch_t pmatch_meta[MAX_MATCHES];
 } FuzzyTest;

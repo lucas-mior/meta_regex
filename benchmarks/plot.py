@@ -10,7 +10,7 @@ def parse_csv(filename):
         reader = csv.DictReader(f)
         for row in reader:
             row['count'] = int(row['count'])
-            row['posix_time'] = float(row['posix_time'])
+            row['libc_time'] = float(row['libc_time'])
             row['meta_time'] = float(row['meta_time'])
             data.append(row)
     return data
@@ -23,8 +23,8 @@ def generate_plots(csv_filename):
         return
 
     # Color configurations
-    c_posix_ex = '#E69F00'  # Orange
-    c_posix_nx = '#F5C767'  # Light Orange
+    c_libc_ex = '#E69F00'  # Orange
+    c_libc_nx = '#F5C767'  # Light Orange
     c_meta_ex  = '#009E73'  # Green
     c_meta_nx  = '#85D3B1'  # Light Green
 
@@ -37,15 +37,15 @@ def generate_plots(csv_filename):
         plt.figure(figsize=(10, 6))
 
         if f_ex:
-            p_ex_t = [f_ex[s]['posix_time'] for s in fuzzy_cases if s in f_ex]
+            p_ex_t = [f_ex[s]['libc_time'] for s in fuzzy_cases if s in f_ex]
             m_ex_t = [f_ex[s]['meta_time'] for s in fuzzy_cases if s in f_ex]
-            plt.plot(fuzzy_cases, p_ex_t, marker='o', color=c_posix_ex, linewidth=2, label='POSIX (Extracting)')
+            plt.plot(fuzzy_cases, p_ex_t, marker='o', color=c_libc_ex, linewidth=2, label='libc (Extracting)')
             plt.plot(fuzzy_cases, m_ex_t, marker='s', color=c_meta_ex, linewidth=2, label='Meta (Extracting)')
             
         if f_nx:
-            p_nx_t = [f_nx[s]['posix_time'] for s in fuzzy_cases if s in f_nx]
+            p_nx_t = [f_nx[s]['libc_time'] for s in fuzzy_cases if s in f_nx]
             m_nx_t = [f_nx[s]['meta_time'] for s in fuzzy_cases if s in f_nx]
-            plt.plot(fuzzy_cases, p_nx_t, marker='o', linestyle='--', color=c_posix_nx, linewidth=2, label='POSIX (Non-Extracting)')
+            plt.plot(fuzzy_cases, p_nx_t, marker='o', linestyle='--', color=c_libc_nx, linewidth=2, label='libc (Non-Extracting)')
             plt.plot(fuzzy_cases, m_nx_t, marker='s', linestyle='--', color=c_meta_nx, linewidth=2, label='Meta (Non-Extracting)')
 
         plt.xscale('log', base=2)
@@ -68,18 +68,18 @@ def generate_plots(csv_filename):
         kp_ex = {r['case']: r for r in data if r['suite'] == 'known_pairs_extract'}
         kp_nx = {r['case']: r for r in data if r['suite'] == 'known_pairs_no_extract'}
 
-        posix_ex = [kp_ex[c]['posix_time'] if c in kp_ex else 0.0 for c in known_cases]
+        libc_ex = [kp_ex[c]['libc_time'] if c in kp_ex else 0.0 for c in known_cases]
         meta_ex  = [kp_ex[c]['meta_time'] if c in kp_ex else 0.0 for c in known_cases]
-        posix_nx = [kp_nx[c]['posix_time'] if c in kp_nx else 0.0 for c in known_cases]
+        libc_nx = [kp_nx[c]['libc_time'] if c in kp_nx else 0.0 for c in known_cases]
         meta_nx  = [kp_nx[c]['meta_time'] if c in kp_nx else 0.0 for c in known_cases]
 
         x = range(len(known_cases))
         width = 0.20
 
         plt.figure(figsize=(12, 6))
-        plt.bar([i - 1.5*width for i in x], posix_ex, width, label='POSIX (Extracting)', color=c_posix_ex)
+        plt.bar([i - 1.5*width for i in x], libc_ex, width, label='libc (Extracting)', color=c_libc_ex)
         plt.bar([i - 0.5*width for i in x], meta_ex,  width, label='Meta (Extracting)', color=c_meta_ex)
-        plt.bar([i + 0.5*width for i in x], posix_nx, width, label='POSIX (Non-Extracting)', color=c_posix_nx)
+        plt.bar([i + 0.5*width for i in x], libc_nx, width, label='libc (Non-Extracting)', color=c_libc_nx)
         plt.bar([i + 1.5*width for i in x], meta_nx,  width, label='Meta (Non-Extracting)', color=c_meta_nx)
         
         plt.xticks(x, known_cases, rotation=30, ha='right')
@@ -101,18 +101,18 @@ def generate_plots(csv_filename):
         ff_ex = {r['case']: r for r in data if r['suite'] == 'file_fuzzy_extract'}
         ff_nx = {r['case']: r for r in data if r['suite'] == 'file_fuzzy_no_extract'}
 
-        posix_ex = [ff_ex[c]['posix_time'] if c in ff_ex else 0.0 for c in file_cases]
+        libc_ex = [ff_ex[c]['libc_time'] if c in ff_ex else 0.0 for c in file_cases]
         meta_ex  = [ff_ex[c]['meta_time'] if c in ff_ex else 0.0 for c in file_cases]
-        posix_nx = [ff_nx[c]['posix_time'] if c in ff_nx else 0.0 for c in file_cases]
+        libc_nx = [ff_nx[c]['libc_time'] if c in ff_nx else 0.0 for c in file_cases]
         meta_nx  = [ff_nx[c]['meta_time'] if c in ff_nx else 0.0 for c in file_cases]
 
         x = range(len(file_cases))
         width = 0.20
 
         plt.figure(figsize=(12, 6))
-        plt.bar([i - 1.5*width for i in x], posix_ex, width, label='POSIX (Extracting)', color=c_posix_ex)
+        plt.bar([i - 1.5*width for i in x], libc_ex, width, label='libc (Extracting)', color=c_libc_ex)
         plt.bar([i - 0.5*width for i in x], meta_ex,  width, label='Meta (Extracting)', color=c_meta_ex)
-        plt.bar([i + 0.5*width for i in x], posix_nx, width, label='POSIX (Non-Extracting)', color=c_posix_nx)
+        plt.bar([i + 0.5*width for i in x], libc_nx, width, label='libc (Non-Extracting)', color=c_libc_nx)
         plt.bar([i + 1.5*width for i in x], meta_nx,  width, label='Meta (Non-Extracting)', color=c_meta_nx)
         
         plt.xticks(x, file_cases, rotation=30, ha='right')
