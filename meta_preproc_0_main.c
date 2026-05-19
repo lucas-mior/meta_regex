@@ -36,14 +36,12 @@ main(int32 argc, char **argv) {
     buffer[file_size] = '\0';
     fclose(input_file);
 
-    // Phase 1: Scan and Parse
-    RegexList parsed_list = parse_source_code(buffer, file_size);
+    {
+        RegexList parsed_list = parse_source_code(buffer, file_size);
+        generate_source_code(buffer, file_size, &parsed_list, stdout);
+        free(parsed_list.items);
+    }
 
-    // Phase 2: Compute DFAs and Generate Final Source
-    // (Using stdout seamlessly replaces the original inline printf calls)
-    generate_source_code(buffer, file_size, &parsed_list, stdout);
-
-    free(parsed_list.items);
     free2(buffer, file_size + 1);
 
     exit(EXIT_SUCCESS);
