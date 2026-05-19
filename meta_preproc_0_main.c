@@ -1,6 +1,6 @@
 #include "meta_preproc.h"
-#include "meta_preproc_parse.c"
-#include "meta_preproc_gen.c"
+#include "meta_preproc_1_parse.c"
+#include "meta_preproc_2_gen.c"
 
 int32
 main(int32 argc, char **argv) {

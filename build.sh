@@ -85,7 +85,7 @@ trace_off
 
 printf "\nBuilding preprocessor...\n"
 trace_on
-$CC $CPPFLAGS -O2 -flto $CFLAGS meta_preproc_main.c -o bin/meta_preproc $LDFLAGS
+$CC $CPPFLAGS -O2 -flto $CFLAGS meta_preproc_0_main.c -o bin/meta_preproc $LDFLAGS
 trace_off
 
 if [ "$target" = "preprocessor" ]; then
