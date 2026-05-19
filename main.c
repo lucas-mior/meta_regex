@@ -51,7 +51,7 @@ static FILE *csv;
 #define ENABLE_STATIC_DFA 1
 #endif
 #if !defined(ENABLE_TNFA)
-#define ENABLE_TNFA 1
+#define ENABLE_TNFA 0
 #endif
 
 static enum Matcher
