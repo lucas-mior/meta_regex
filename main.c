@@ -263,8 +263,12 @@ run_meta_only(RegexTest *tests, int32 count, char *description, bool extract) {
         char *input = tests[i].input;
         int32 input_len = tests[i].input_len;
         MetaRegex *meta_regex = tests[i].meta_regex;
-        int32 pmatch_len = extract ? LENGTH(tests[i].pmatch) : 0;
-        regmatch_t *pmatch_ptr = extract ? tests[i].pmatch : NULL;
+        int32 pmatch_len = 0;
+        regmatch_t *pmatch_ptr = NULL;
+        if (extract) {
+            pmatch_len = LENGTH(tests[i].pmatch);
+            pmatch_ptr = tests[i].pmatch;
+        }
 
         int32 result = meta_regex_match(meta_regex, (uint8 *)input, input_len,
                                         pmatch_ptr, pmatch_len, enabled);
