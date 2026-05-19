@@ -243,11 +243,11 @@ get_branch_weight(ParsedOp *ops, int32 count) {
 }
 
 static void
-generate_dfa_or_fallback(ExtractedRegex *regex, const char *source, FILE *out) {
+generate_dfa_or_fallback(ExtractedRegex *regex, char *source, FILE *out) {
     ParsedOp *temp_ops = regex->temp_ops;
     int32 temp_ops_count = regex->temp_ops_count;
     int32 original_string_length = regex->original_string_length;
-    const char *quote_start = source + regex->quote_start_offset;
+    char *quote_start = source + regex->quote_start_offset;
 
     enum PreprocFailReason fail_reasons = 0;
     static int32 dfa_transitions[META_MAX_STATIC_DFA_STATES]
@@ -312,7 +312,7 @@ generate_dfa_or_fallback(ExtractedRegex *regex, const char *source, FILE *out) {
             compute_epsilon_closure(&accept_closure, temp_ops, temp_ops_count,
                                     dfa_sets[d].prev_is_w, curr_is_w, &is_acc);
 
-            dfa_accept[d][c] = is_acc;
+            dfa_accept[d][c] = (uint8)is_acc;
 
             next_kernel.prev_is_w = curr_is_w;
             for (int32 i = 0; i < PREPROC_NFA_BITSET_WORDS; i += 1) {
@@ -414,7 +414,7 @@ generate_dfa_or_fallback(ExtractedRegex *regex, const char *source, FILE *out) {
 }
 
 void
-generate_source_code(const char *source, int64 source_len, RegexList *list,
+generate_source_code(char *source, int64 source_len, RegexList *list,
                      FILE *out) {
     int64 current_offset = 0;
 

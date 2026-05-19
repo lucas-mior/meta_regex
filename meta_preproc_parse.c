@@ -286,16 +286,17 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uint8 *fastmap,
 }
 
 RegexList
-parse_source_code(const char *buffer, int64 source_len) {
+parse_source_code(char *buffer, int64 source_len) {
     RegexList list = {0};
-    const char *cursor = buffer;
-    const char *macro_start = "R(";
+    char *cursor = buffer;
+    char *macro_start = "R(";
+    (void)source_len;
 
     while (true) {
-        const char *found_macro = NULL;
-        const char *quote_start = NULL;
-        const char *quote_end = NULL;
-        const char *paren_end = NULL;
+        char *found_macro = NULL;
+        char *quote_start = NULL;
+        char *quote_end = NULL;
+        char *paren_end = NULL;
         char raw_string[PREPROC_MAX_STRING_LEN] = {0};
         char regex_string[PREPROC_MAX_STRING_LEN] = {0};
         char op_buffer[PREPROC_OP_BUFFER_SIZE] = {0};
@@ -317,7 +318,7 @@ parse_source_code(const char *buffer, int64 source_len) {
         enum MetaOpType used_ops = 0;
 
         {
-            const char *scan = cursor;
+            char *scan = cursor;
             bool in_line_comment = false;
             bool in_block_comment = false;
             bool in_string = false;
@@ -391,14 +392,16 @@ parse_source_code(const char *buffer, int64 source_len) {
         // Push new representation struct into list
         if (list.capacity == 0) {
             list.capacity = 16;
-            list.items = malloc(list.capacity*sizeof(ExtractedRegex));
+            list.items = malloc2(list.capacity*SIZEOF(ExtractedRegex));
         } else if (list.count >= list.capacity) {
+            int64 old_capacity;
+            old_capacity = list.capacity;
             list.capacity *= 2;
             list.items
-                = realloc(list.items, list.capacity*sizeof(ExtractedRegex));
+                = realloc2(list.items, old_capacity, list.capacity, SIZEOF(ExtractedRegex));
         }
         ExtractedRegex *regex = &list.items[list.count];
-        memset64(regex, 0, sizeof(ExtractedRegex));
+        memset64(regex, 0, SIZEOF(ExtractedRegex));
 
         regex->source_start_offset = found_macro - buffer;
 
@@ -1045,7 +1048,7 @@ parse_source_code(const char *buffer, int64 source_len) {
         regex->used_ops = used_ops;
         memcpy64(regex->fastmap, fastmap, META_FASTMAP_SIZE);
         regex->unsupported = unsupported;
-        memcpy64(regex->temp_ops, temp_ops, temp_ops_count*sizeof(ParsedOp));
+        memcpy64(regex->temp_ops, temp_ops, temp_ops_count*SIZEOF(ParsedOp));
         regex->temp_ops_count = temp_ops_count;
         strncpy(regex->op_buffer, op_buffer, PREPROC_OP_BUFFER_SIZE);
 

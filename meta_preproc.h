@@ -104,7 +104,7 @@ typedef struct RegexList {
 } RegexList;
 
 // Inter-phase APIs
-RegexList parse_source_code(const char *buffer, int64 source_len);
-void generate_source_code(const char *source, int64 source_len, RegexList *list, FILE *out);
+RegexList parse_source_code(char *buffer, int64 source_len);
+void generate_source_code(char *source, int64 source_len, RegexList *list, FILE *out);
 
 #endif /* META_PREPROC_H */
