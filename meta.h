@@ -1,7 +1,5 @@
-
-
-#if !defined(META_REGEX_H)
-#define META_REGEX_H
+#if !defined(META_H)
+#define META_H
 
 #include "cbase/util.c"
 
@@ -273,20 +271,8 @@ typedef struct MetaRegex {
     enum MetaOpType used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
 
-    /*
-        Optional tagged NFA representation.
-
-        NULL means no TNFA was generated/stored for this regex.
-    */
     MetaTnfa *tnfa;
-
-    /*
-        Optional single-pass tagged DFA generated from the TNFA.
-
-        NULL means TDFA determinization failed or was skipped.
-    */
     MetaTdfa *tdfa;
-
     StaticDfa *static_dfa;
     LazyDfa *lazy_dfa;
 } MetaRegex;
@@ -298,4 +284,4 @@ typedef struct MatcherFeatures {
 
 #define R(...) (&(MetaRegex){ .string = __VA_ARGS__ })
 
-#endif /* META_REGEX_H */
+#endif /* META_H */

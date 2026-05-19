@@ -1,5 +1,3 @@
-
-
 #include "meta_preproc.h"
 
 static int32
