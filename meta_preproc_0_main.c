@@ -39,7 +39,7 @@ main(int32 argc, char **argv) {
     {
         RegexList parsed_list = parse_source_code(buffer, file_size);
         generate_source_code(buffer, file_size, &parsed_list, stdout);
-        free(parsed_list.items);
+        free2(parsed_list.items, parsed_list.count*SIZEOF(*parsed_list.items));
     }
 
     free2(buffer, file_size + 1);
