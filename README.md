@@ -95,7 +95,8 @@ cc gen/your_code_baked.c -o your_program
 - BTNFA
 - Static DFA
 - Lazy DFA
-- TODO: Tagged DFA
+- Tagged DFA
+- Tagged NFA
 
 ## TODO
 - Implement tagged dfa (so that we don't have to use the back tracking nfa for
