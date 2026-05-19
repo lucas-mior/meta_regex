@@ -408,10 +408,10 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         return REG_NOMATCH;
     }
 
-    configs_a = malloc(sizeof(*configs_a)*META_TNFA_MAX_ACTIVE_CONFIGS);
-    configs_b = malloc(sizeof(*configs_b)*META_TNFA_MAX_ACTIVE_CONFIGS);
-    stack = malloc(sizeof(*stack)*META_TNFA_MAX_ACTIVE_CONFIGS);
-    edge_indices = malloc(sizeof(*edge_indices)
+    configs_a = malloc(SIZEOF(*configs_a)*META_TNFA_MAX_ACTIVE_CONFIGS);
+    configs_b = malloc(SIZEOF(*configs_b)*META_TNFA_MAX_ACTIVE_CONFIGS);
+    stack = malloc(SIZEOF(*stack)*META_TNFA_MAX_ACTIVE_CONFIGS);
+    edge_indices = malloc(SIZEOF(*edge_indices)
                           *(tnfa->num_transitions > 0
                                 ? tnfa->num_transitions
                                 : 1));
