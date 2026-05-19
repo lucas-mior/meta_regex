@@ -208,8 +208,13 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
         uint8 *input = (uint8 *)tests_meta[i].input;
         int32 input_len = tests_meta[i].input_len;
         MetaRegex *meta_regex = tests_meta[i].meta_regex;
-        int32 m_pmatch_len = extract ? LENGTH(tests_meta[i].pmatch) : 0;
-        regmatch_t *m_pmatch_ptr = extract ? tests_meta[i].pmatch : NULL;
+        int32 m_pmatch_len = 0;
+        regmatch_t *m_pmatch_ptr = NULL;
+
+        if (extract) {
+            m_pmatch_len = LENGTH(tests_meta[i].pmatch);
+            m_pmatch_ptr = tests_meta[i].pmatch;
+        }
 
         tests_meta[i].result = meta_regex_match(
             meta_regex, input, input_len, m_pmatch_ptr, m_pmatch_len, enabled);
