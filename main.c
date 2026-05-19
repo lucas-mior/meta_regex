@@ -45,10 +45,10 @@ static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len,
 static FILE *csv;
 
 #if !defined(ENABLE_LAZY_DFA)
-#define ENABLE_LAZY_DFA 0
+#define ENABLE_LAZY_DFA 1
 #endif
 #if !defined(ENABLE_STATIC_DFA)
-#define ENABLE_STATIC_DFA 0
+#define ENABLE_STATIC_DFA 1
 #endif
 #if !defined(ENABLE_TNFA)
 #define ENABLE_TNFA 1
