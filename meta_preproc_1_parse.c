@@ -392,16 +392,16 @@ parse_source_code(char *buffer, int64 source_len) {
         // Push new representation struct into list
         if (list.capacity == 0) {
             list.capacity = 16;
-            list.items = malloc2(list.capacity*SIZEOF(ExtractedRegex));
+            list.items = malloc2(list.capacity*SIZEOF(*list.items));
         } else if (list.count >= list.capacity) {
             int64 old_capacity;
             old_capacity = list.capacity;
             list.capacity *= 2;
             list.items = realloc2(list.items, old_capacity, list.capacity,
-                                  SIZEOF(ExtractedRegex));
+                                  SIZEOF(*list.items));
         }
         ExtractedRegex *regex = &list.items[list.count];
-        memset64(regex, 0, SIZEOF(ExtractedRegex));
+        memset64(regex, 0, SIZEOF(*regex));
 
         regex->source_start_offset = found_macro - buffer;
 
@@ -1044,7 +1044,8 @@ parse_source_code(char *buffer, int64 source_len) {
         regex->used_ops = used_ops;
         memcpy64(regex->fastmap, fastmap, META_FASTMAP_SIZE);
         regex->unsupported = unsupported;
-        memcpy64(regex->temp_ops, temp_ops, temp_ops_count*SIZEOF(ParsedOp));
+        memcpy64(regex->temp_ops, temp_ops,
+                 temp_ops_count*SIZEOF(*regex->temp_ops));
         regex->temp_ops_count = temp_ops_count;
         strncpy(regex->op_buffer, op_buffer, PREPROC_OP_BUFFER_SIZE);
 
