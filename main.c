@@ -249,11 +249,13 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
         exit(EXIT_FAILURE);
     }
 
-    double t_libc = timediff(t0_libc, t1_libc);
-    double t_meta = timediff(t0_meta, t1_meta);
-    fprintf(csv, "%s,%s,%d,%f,%f\n",
-            extract ? "known_pairs_extract" : "known_pairs_no_extract",
-            description, count, t_libc, t_meta);
+    {
+        double t_libc = timediff(t0_libc, t1_libc);
+        double t_meta = timediff(t0_meta, t1_meta);
+        fprintf(csv, "%s,%s,%d,%f,%f\n",
+                extract ? "known_pairs_extract" : "known_pairs_no_extract",
+                description, count, t_libc, t_meta);
+    }
 
     free2(tests_libc, count*SIZEOF(*tests_libc));
     free2(tests_meta, count*SIZEOF(*tests_meta));
