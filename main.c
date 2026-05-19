@@ -566,10 +566,13 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
 
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_libc);
         for (int32 j = 0; j < tests_len; j += 1) {
-            int32 pmatch_len = extract ? LENGTH(dummy_test.pmatch) : 0;
-            regmatch_t *curr_pm
-                = extract ? &pm_libc[j*LENGTH(dummy_test.pmatch)] : NULL;
+            int32 pmatch_len = 0;
+            regmatch_t *curr_pm = NULL;
+
             if (extract) {
+                pmatch_len = LENGTH(dummy_test.pmatch);
+                curr_pm = &pm_libc[j*LENGTH(dummy_test.pmatch)];
+
                 for (int32 m = 0; m < LENGTH(dummy_test.pmatch); m += 1) {
                     curr_pm[m].rm_so = -1;
                     curr_pm[m].rm_eo = -1;
