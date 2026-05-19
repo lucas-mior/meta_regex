@@ -181,7 +181,7 @@ run_libc_one(regex_t *compiled, char *input, regmatch_t *pmatch,
         nmatch = pmatch_len;
         clear_pmatch(pmatch, pmatch_len);
     }
-    return regexec(compiled, input, nmatch, pmatch_ptr, 0);
+    return regexec(compiled, input, (size_t)nmatch, pmatch_ptr, 0);
 }
 
 static int32
