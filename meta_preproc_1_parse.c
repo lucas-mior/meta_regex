@@ -844,7 +844,6 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
     return true;
 }
 
-
 typedef struct TdfaBuildConfig {
     int32 tnfa_state;
     int32 look[PREPROC_MAX_TNFA_TAGS + 1];
@@ -955,7 +954,8 @@ tdfa_collect_epsilon_edges(ParsedTnfa *tnfa, int32 state, int32 *edge_indices) {
         int32 priority = tnfa->transitions[edge].priority;
         int32 j = i - 1;
 
-        while (j >= 0 && tnfa->transitions[edge_indices[j]].priority > priority) {
+        while (j >= 0
+               && tnfa->transitions[edge_indices[j]].priority > priority) {
             edge_indices[j + 1] = edge_indices[j];
             j -= 1;
         }
@@ -1025,8 +1025,8 @@ tdfa_epsilon_closure(ParsedTnfa *tnfa, int32 tag_count,
         output_configs[output_count] = cfg;
         output_count += 1;
 
-        edge_count = tdfa_collect_epsilon_edges(tnfa, cfg.tnfa_state,
-                                                edge_indices);
+        edge_count
+            = tdfa_collect_epsilon_edges(tnfa, cfg.tnfa_state, edge_indices);
 
         for (int32 i = 0; i < edge_count; i += 1) {
             MetaTnfaTransition *tr = &tnfa->transitions[edge_indices[i]];
@@ -1196,7 +1196,7 @@ tdfa_add_state(TdfaBuildState *states, ParsedTdfa *tdfa, ParsedTnfa *tnfa,
         build_state->configs
             = malloc2(SIZEOF(*build_state->configs)*config_count);
         build_state->regs
-            = malloc2(SIZEOF(*build_state->regs)*config_count*tag_count);
+            = malloc2(SIZEOF(*build_state->regs)*config_count * tag_count);
         if (build_state->configs == NULL || build_state->regs == NULL) {
             return -1;
         }
@@ -1328,10 +1328,9 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
     work = malloc2(SIZEOF(*work)*work_capacity);
     closed = malloc2(SIZEOF(*closed)*work_capacity);
     stack = malloc2(SIZEOF(*stack)*work_capacity);
-    edge_indices = malloc2(SIZEOF(*edge_indices)
-                           * (tnfa->num_transitions > 0
-                                  ? tnfa->num_transitions
-                                  : 1));
+    edge_indices
+        = malloc2(SIZEOF(*edge_indices)
+                  * (tnfa->num_transitions > 0 ? tnfa->num_transitions : 1));
     if (build_states == NULL || work == NULL || closed == NULL || stack == NULL
         || edge_indices == NULL) {
         return false;
@@ -1387,9 +1386,9 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
             target_id = tdfa_find_state(build_states, tdfa, closed,
                                         closed_count, tag_count);
             if (target_id < 0) {
-                target_id = tdfa_add_state(build_states, tdfa, tnfa, closed,
-                                           closed_count, tag_count,
-                                           &next_register);
+                target_id
+                    = tdfa_add_state(build_states, tdfa, tnfa, closed,
+                                     closed_count, tag_count, &next_register);
                 if (target_id < 0) {
                     return false;
                 }
@@ -1409,7 +1408,8 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
             }
         }
 
-        state->transition_count = tdfa->num_transitions - state->first_transition;
+        state->transition_count
+            = tdfa->num_transitions - state->first_transition;
         if (state->transition_count == 0) {
             state->first_transition = -1;
         }
@@ -2166,7 +2166,8 @@ parse_source_code(char *buffer, int64 source_len) {
             if (regex->tnfa != NULL) {
                 regex->tdfa = malloc2(SIZEOF(*regex->tdfa));
                 if (!build_tdfa_from_tnfa(regex->tdfa, regex->tnfa)) {
-                    fprintf(stderr, "Warning: TDFA construction failed for %.*s.\n",
+                    fprintf(stderr,
+                            "Warning: TDFA construction failed for %.*s.\n",
                             original_string_length, quote_start);
                     regex->tdfa = NULL;
                 }

@@ -330,7 +330,6 @@ emit_tnfa(ExtractedRegex *regex, FILE *out) {
     return;
 }
 
-
 static void
 emit_tdfa(ExtractedRegex *regex, FILE *out) {
     ParsedTdfa *tdfa = regex->tdfa;

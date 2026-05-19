@@ -51,8 +51,8 @@ match_tdfa_valid_reg(MetaTdfa *tdfa, int32 reg) {
 }
 
 static int32
-match_tdfa_exec_ops(MetaTdfa *tdfa, int32 *regs, int32 first_op,
-                    int32 op_count, int32 pos) {
+match_tdfa_exec_ops(MetaTdfa *tdfa, int32 *regs, int32 first_op, int32 op_count,
+                    int32 pos) {
     if (op_count < 0) {
         return 0;
     }
@@ -199,8 +199,7 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         || tdfa->start_state >= tdfa->num_states || tdfa->num_tags < 0
         || tdfa->num_registers < tdfa->num_tags
         || tdfa->final_register_base <= 0
-        || tdfa->final_register_base + tdfa->num_tags - 1
-               > tdfa->num_registers
+        || tdfa->final_register_base + tdfa->num_tags - 1 > tdfa->num_registers
         || tdfa->num_transitions < 0 || tdfa->num_ops < 0
         || (tdfa->num_tags > 0 && tdfa->tags == NULL)
         || (tdfa->num_states > 0 && tdfa->states == NULL)

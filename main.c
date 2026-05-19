@@ -605,7 +605,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             MetaRegex *meta_pattern = tests[j];
             int32 m_pmatch_len = 0;
             regmatch_t *curr_m_pm = NULL;
-            
+
             if (extract) {
                 m_pmatch_len = LENGTH(dummy_test.pmatch);
                 curr_m_pm = &pm_meta[j*LENGTH(dummy_test.pmatch)];
@@ -616,8 +616,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             }
 
             results_meta[j]
-                = meta_regex_match(meta_pattern, input, input_len,
-                                   curr_m_pm, m_pmatch_len, enabled);
+                = meta_regex_match(meta_pattern, input, input_len, curr_m_pm,
+                                   m_pmatch_len, enabled);
         }
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
 

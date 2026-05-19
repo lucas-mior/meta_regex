@@ -191,8 +191,8 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
 }
 
 static enum Matcher
-meta_choose_matcher(MetaRegex *regex, int32 input_len,
-                    bool needs_extraction, enum Matcher matchers_enabled) {
+meta_choose_matcher(MetaRegex *regex, int32 input_len, bool needs_extraction,
+                    enum Matcher matchers_enabled) {
     enum Matcher matcher = MATCHER_BTNFA;
 
     if ((matchers_enabled & MATCHER_TDFA) && regex->tdfa) {
@@ -216,8 +216,7 @@ meta_choose_matcher(MetaRegex *regex, int32 input_len,
             }
         }
 
-        if (matcher == MATCHER_BTNFA
-            && (matchers_enabled & MATCHER_LAZY_DFA)) {
+        if (matcher == MATCHER_BTNFA && (matchers_enabled & MATCHER_LAZY_DFA)) {
             if ((regex->used_ops & ~matchers[MATCHER_LAZY_DFA].supports) == 0) {
                 matcher = MATCHER_LAZY_DFA;
             }
@@ -246,7 +245,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
     }
 
     needs_extraction = (regex->re_nsub > 0 && pmatch_len > 1);
-    matcher = meta_choose_matcher(regex, input_len, needs_extraction, matchers_enabled);
+    matcher = meta_choose_matcher(regex, input_len, needs_extraction,
+                                  matchers_enabled);
 
     return meta_regex_match_with_algorithm(regex, input, input_len, pmatch,
                                            pmatch_len, matcher);
