@@ -239,7 +239,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
         return REG_NOMATCH;
     }
 
-    if (pmatch != NULL) {
+    if (pmatch) {
         for (int32 k = 0; k < pmatch_len; k += 1) {
             pmatch[k].rm_so = -1;
             pmatch[k].rm_eo = -1;
