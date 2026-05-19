@@ -34,7 +34,11 @@ static int32
 match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
                  regmatch_t *pmatch, int32 pmatch_len) {
     StaticDfaState *states = regex->static_dfa->states;
+    StaticDfaState *current_state_ptr;
     int32 start_idx = regex->static_dfa->start_state_nw;
+    int32 last_accept;
+
+    (void)input_len;
 
     if (offset > 0) {
         uint8 prev_b = input[offset - 1];
@@ -44,10 +48,8 @@ match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
         }
     }
 
-    StaticDfaState *current_state_ptr = &states[start_idx];
-    int32 last_accept = -1;
-
-    (void)input_len;
+    current_state_ptr = &states[start_idx];
+    last_accept = -1;
 
     for (int32 i = offset;; i += 1) {
         uint8 b = input[i];
