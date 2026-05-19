@@ -40,7 +40,7 @@ static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len,
     run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS, true); \
     run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS, false)
 
-#define FUZZY_PRECOMPILE_POSIX 1
+#define FUZZY_PRECOMPILE_LIBC 1
 
 static FILE *csv;
 
@@ -161,7 +161,7 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
 
     enabled = matcher_enabled(enabled);
 
-    printf("\n----- Running %s (%s) (POSIX vs Meta) -----\n", description,
+    printf("\n----- Running %s (%s) (LIBC vs Meta) -----\n", description,
            extract ? "extracting" : "non-extracting");
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_libc);
@@ -318,7 +318,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     struct timespec t1_meta;
     bool failed = false;
     enum Matcher enabled = MATCHER_BTNFA;
-#if FUZZY_PRECOMPILE_POSIX
+#if FUZZY_PRECOMPILE_LIBC
     regex_t *libc_regexes = malloc2(tests_len*SIZEOF(*libc_regexes));
 #endif
 
@@ -339,7 +339,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
         }
     }
 
-#if FUZZY_PRECOMPILE_POSIX
+#if FUZZY_PRECOMPILE_LIBC
     for (int32 i = 0; i < tests_len; i += 1) {
         char *pattern_str = tests[i]->string;
 
@@ -359,7 +359,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
             pmatch_ptr = fuzzy[i].pmatch_libc;
             pmatch_len = LENGTH(fuzzy[i].pmatch_libc);
         }
-#if FUZZY_PRECOMPILE_POSIX
+#if FUZZY_PRECOMPILE_LIBC
         int32 idx = fuzzy[i].regex_idx;
         fuzzy[i].result_libc = regexec(&libc_regexes[idx], fuzzy[i].input,
                                         (size_t)pmatch_len, pmatch_ptr, 0);
@@ -455,7 +455,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
             extract ? "fuzzy_extract" : "fuzzy_no_extract", max_str_size,
             fuzzy_len, t_libc, t_meta);
 
-#if FUZZY_PRECOMPILE_POSIX
+#if FUZZY_PRECOMPILE_LIBC
     for (int32 i = 0; i < tests_len; i += 1) {
         regfree(&libc_regexes[i]);
     }
@@ -489,7 +489,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
 
     enabled = matcher_enabled(enabled);
 
-#if FUZZY_PRECOMPILE_POSIX
+#if FUZZY_PRECOMPILE_LIBC
     regex_t *libc_regexes = malloc2(tests_len*SIZEOF(*libc_regexes));
     for (int32 i = 0; i < tests_len; i += 1) {
         char *pattern_str = tests[i]->string;
@@ -562,7 +562,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
                     curr_pm[m].rm_eo = -1;
                 }
             }
-#if FUZZY_PRECOMPILE_POSIX
+#if FUZZY_PRECOMPILE_LIBC
             results_libc[j] = regexec(&libc_regexes[j], (char *)input,
                                        (size_t)pmatch_len, curr_pm, 0);
 #else
@@ -655,7 +655,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         free2(input, file_size + 1);
     }
 
-#if FUZZY_PRECOMPILE_POSIX
+#if FUZZY_PRECOMPILE_LIBC
     for (int32 i = 0; i < tests_len; i += 1) {
         regfree(&libc_regexes[i]);
     }
