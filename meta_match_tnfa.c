@@ -170,7 +170,7 @@ match_tnfa_epsilon_closure(MetaTnfa *tnfa, uint8 *input, int32 input_len,
                            int32 pos, MetaTnfaConfig *input_configs,
                            int32 input_count, MetaTnfaConfig *output_configs,
                            MetaTnfaConfig *stack, int32 *edge_indices) {
-    uint8 seen[META_TNFA_MAX_ACTIVE_CONFIGS];
+    uint8 closed_seen[META_TNFA_MAX_ACTIVE_CONFIGS];
     int32 stack_count = 0;
     int32 output_count = 0;
 
@@ -179,17 +179,30 @@ match_tnfa_epsilon_closure(MetaTnfa *tnfa, uint8 *input, int32 input_len,
     }
 
     for (int32 i = 0; i < META_TNFA_MAX_ACTIVE_CONFIGS; i += 1) {
-        seen[i] = 0;
+        closed_seen[i] = 0;
     }
 
+    /*
+        Follow the TNFA simulation ordering from the paper: push the input
+        configurations in reverse order, but mark a state as closed only when
+        the configuration is popped and appended to the closure.
+
+        Marking a state as seen when it is merely pushed is too early. In a
+        pattern such as ((a|aa)*) on input "aa", a lower-priority pending
+        configuration for the end of the inner group can otherwise block the
+        higher-priority path that reaches the same state after the second
+        repetition. That loses the final capture of group 2.
+    */
     for (int32 i = input_count - 1; i >= 0; i -= 1) {
         int32 state = input_configs[i].state;
-        if (state < 0 || state >= tnfa->num_states || seen[state]) {
+        if (state < 0 || state >= tnfa->num_states) {
             continue;
+        }
+        if (stack_count >= META_TNFA_MAX_ACTIVE_CONFIGS) {
+            return -1;
         }
         stack[stack_count] = input_configs[i];
         stack_count += 1;
-        seen[state] = 1;
     }
 
     while (stack_count > 0) {
@@ -199,6 +212,14 @@ match_tnfa_epsilon_closure(MetaTnfa *tnfa, uint8 *input, int32 input_len,
 
         stack_count -= 1;
         cfg = stack[stack_count];
+
+        if (cfg.state < 0 || cfg.state >= tnfa->num_states) {
+            continue;
+        }
+        if (closed_seen[cfg.state]) {
+            continue;
+        }
+        closed_seen[cfg.state] = 1;
 
         if (output_count >= META_TNFA_MAX_ACTIVE_CONFIGS) {
             return -1;
@@ -210,17 +231,12 @@ match_tnfa_epsilon_closure(MetaTnfa *tnfa, uint8 *input, int32 input_len,
                                                          input, input_len,
                                                          pos, edge_indices);
 
-        /*
-            Select destinations in ascending priority/original order, but push
-            them in reverse so the stack still performs left-to-right DFS.
-        */
         for (int32 i = 0; i < edge_count; i += 1) {
             MetaTnfaTransition *tr = &tnfa->transitions[edge_indices[i]];
-            if (tr->to < 0 || tr->to >= tnfa->num_states || seen[tr->to]) {
-                edge_indices[i] = -1;
+            if (tr->to < 0 || tr->to >= tnfa->num_states
+                || closed_seen[tr->to]) {
                 continue;
             }
-            seen[tr->to] = 1;
             edge_indices[selected_count] = edge_indices[i];
             selected_count += 1;
         }
