@@ -144,7 +144,7 @@ static RegexTest ascii_with_group_no_backref[] = {
     {"456 bar",  R("([0-9]+) (foo|bar)")},
     {"789 baz",  R("([0-9]+) (foo|bar)")},
     {"apple",    R("(apple|orange|banana)")},
-    /* {"banana",   R("(apple|orange|banana)*")}, */
+    {"banana",   R("(apple|orange|banana)*")},
     {"cherry",   R("(apple|orange|banana)+")},
     {"ab",       R("(a|ab)b")},
     {"abb",      R("(a|ab)b$")},
