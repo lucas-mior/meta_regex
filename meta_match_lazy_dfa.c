@@ -6,15 +6,30 @@
 #include "meta_util.c"
 #include <regex.h>
 
+// clang-format off
 static const MatcherFeatures match_features_lazy_dfa = {
     .supports = (enum MetaOpType)(
-        META_OP_END | META_OP_LITERAL | META_OP_ANY | META_OP_CLASS
-        | META_OP_GROUP_START | META_OP_GROUP_END | META_OP_STAR | META_OP_PLUS
-        | META_OP_OPTIONAL | META_OP_ALTERNATION | META_OP_BOUNDED
-        | META_OP_SPLIT | META_OP_JUMP | META_OP_WORD_START | META_OP_WORD_END
-        | META_OP_WORD_BOUNDARY | META_OP_NON_WORD_BOUNDARY),
+        META_OP_END
+        | META_OP_LITERAL
+        | META_OP_ANY
+        | META_OP_CLASS
+        | META_OP_GROUP_START
+        | META_OP_GROUP_END
+        | META_OP_STAR
+        | META_OP_PLUS
+        | META_OP_OPTIONAL
+        | META_OP_ALTERNATION
+        | META_OP_BOUNDED
+        | META_OP_SPLIT
+        | META_OP_JUMP
+        | META_OP_WORD_START
+        | META_OP_WORD_END
+        | META_OP_WORD_BOUNDARY
+        | META_OP_NON_WORD_BOUNDARY
+    ),
     .extracts = false,
 };
+// clang-format on
 
 typedef struct LazyDfaKey {
     uint32 bits[META_PC_WORDS];
