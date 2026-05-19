@@ -24,6 +24,14 @@
 #define PREPROC_MAX_TNFA_STATES META_MAX_TNFA_STATES
 #define PREPROC_MAX_TNFA_TRANSITIONS META_MAX_TNFA_TRANSITIONS
 
+/* TDFA build-time limits */
+#define PREPROC_MAX_TDFA_STATES META_MAX_TDFA_STATES
+#define PREPROC_MAX_TDFA_TRANSITIONS META_MAX_TDFA_TRANSITIONS
+#define PREPROC_MAX_TDFA_REGOPS META_MAX_TDFA_REGOPS
+#define PREPROC_MAX_TDFA_REGISTERS META_MAX_TDFA_REGISTERS
+#define PREPROC_MAX_TDFA_WORK_CONFIGS \
+    (PREPROC_MAX_TNFA_STATES + PREPROC_MAX_TNFA_TRANSITIONS + 1)
+
 #define ENUM_PREFIX_ PREPROC_FAIL_
 #define ENUM_NAME PreprocFailReason
 #define ENUM_BITFLAGS 1
@@ -34,6 +42,11 @@
     X(DFA_STATES_EXCEEDED) \
     X(TNFA_TAGS_EXCEEDED) \
     X(TNFA_TRANSITIONS_EXCEEDED) \
+    X(TDFA_STATES_EXCEEDED) \
+    X(TDFA_TRANSITIONS_EXCEEDED) \
+    X(TDFA_REGISTERS_EXCEEDED) \
+    X(TDFA_REGOPS_EXCEEDED) \
+    X(TDFA_UNSUPPORTED_ASSERTION) \
     X(NO_BRANCHES)
 #include "xenums.c"
 
@@ -98,6 +111,25 @@ typedef struct ParsedTnfa {
     int32 final_state;
 } ParsedTnfa;
 
+/*
+    Build-time single-pass TDFA storage.
+*/
+typedef struct ParsedTdfa {
+    MetaTnfaTag tags[PREPROC_MAX_TNFA_TAGS];
+    MetaTdfaState states[PREPROC_MAX_TDFA_STATES];
+    MetaTdfaTransition transitions[PREPROC_MAX_TDFA_TRANSITIONS];
+    MetaTdfaRegOp ops[PREPROC_MAX_TDFA_REGOPS];
+
+    int32 num_tags;
+    int32 num_states;
+    int32 num_transitions;
+    int32 num_registers;
+    int32 num_ops;
+
+    int32 start_state;
+    int32 final_register_base;
+} ParsedTdfa;
+
 // Intermediate Representation for the extracted regex
 typedef struct ExtractedRegex {
     int64 source_start_offset;
@@ -118,6 +150,13 @@ typedef struct ExtractedRegex {
         generation failed/was skipped.
     */
     ParsedTnfa *tnfa;
+
+    /*
+        Optional single-pass TDFA generated from the parsed TNFA.
+
+        NULL means TDFA determinization failed or was skipped.
+    */
+    ParsedTdfa *tdfa;
     
     bool has_start;
     bool has_end;

@@ -1,3 +1,5 @@
+
+
 #if !defined(META_REGEX_H)
 #define META_REGEX_H
 
@@ -191,6 +193,74 @@ typedef struct MetaTnfa {
     MetaTnfaTransition *transitions;
 } MetaTnfa;
 
+
+/* Single-pass TDFA limits */
+#define META_MAX_TDFA_STATES 1024
+#define META_MAX_TDFA_TRANSITIONS 65536
+#define META_MAX_TDFA_REGOPS 65536
+#define META_MAX_TDFA_REGISTERS 65536
+
+/*
+    Single-pass TDFA register operation.
+
+    Registers are 1-based. Register 0 means "no register".
+
+    SET_NIL writes -1.
+    SET_POS writes the current input offset.
+    COPY copies another register.
+*/
+enum MetaTdfaRegOpKind {
+    META_TDFA_REGOP_SET_NIL,
+    META_TDFA_REGOP_SET_POS,
+    META_TDFA_REGOP_COPY,
+};
+
+typedef struct MetaTdfaRegOp {
+    enum MetaTdfaRegOpKind kind;
+    int32 dst;
+    int32 src;
+} MetaTdfaRegOp;
+
+typedef struct MetaTdfaTransition {
+    int32 from;
+    int32 to;
+
+    /* Input byte consumed by this transition. */
+    int32 symbol;
+
+    int32 first_op;
+    int32 op_count;
+} MetaTdfaTransition;
+
+typedef struct MetaTdfaState {
+    int32 is_accepting;
+
+    int32 first_transition;
+    int32 transition_count;
+
+    /* Final quasi-transition operations, executed at end of match. */
+    int32 first_final_op;
+    int32 final_op_count;
+} MetaTdfaState;
+
+typedef struct MetaTdfa {
+    int32 num_tags;
+    int32 num_states;
+    int32 num_transitions;
+    int32 num_registers;
+    int32 num_ops;
+
+    int32 start_state;
+
+    /* Final registers are final_register_base + tag_id - 1. */
+    int32 final_register_base;
+
+    MetaTnfaTag *tags;
+    MetaTdfaState *states;
+    MetaTdfaTransition *transitions;
+    MetaTdfaRegOp *ops;
+} MetaTdfa;
+
 typedef struct LazyDfa LazyDfa;
 
 typedef struct MetaRegex {
@@ -209,6 +279,13 @@ typedef struct MetaRegex {
         NULL means no TNFA was generated/stored for this regex.
     */
     MetaTnfa *tnfa;
+
+    /*
+        Optional single-pass tagged DFA generated from the TNFA.
+
+        NULL means TDFA determinization failed or was skipped.
+    */
+    MetaTdfa *tdfa;
 
     StaticDfa *static_dfa;
     LazyDfa *lazy_dfa;

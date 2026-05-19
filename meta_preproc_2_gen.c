@@ -1,3 +1,5 @@
+
+
 #include "meta_preproc.h"
 
 static int32
@@ -330,6 +332,99 @@ emit_tnfa(ExtractedRegex *regex, FILE *out) {
     return;
 }
 
+
+static void
+emit_tdfa(ExtractedRegex *regex, FILE *out) {
+    ParsedTdfa *tdfa = regex->tdfa;
+
+    if (tdfa == NULL) {
+        fprintf(out, ", .tdfa = NULL");
+        return;
+    }
+
+    fprintf(out,
+            ", .tdfa = &(MetaTdfa){ .num_tags = %d, .num_states = %d, "
+            ".num_transitions = %d, .num_registers = %d, .num_ops = %d, "
+            ".start_state = %d, .final_register_base = %d",
+            tdfa->num_tags, tdfa->num_states, tdfa->num_transitions,
+            tdfa->num_registers, tdfa->num_ops, tdfa->start_state,
+            tdfa->final_register_base);
+
+    if (tdfa->num_tags > 0) {
+        fprintf(out, ", .tags = (MetaTnfaTag[]){\n");
+        for (int32 i = 0; i < tdfa->num_tags; i += 1) {
+            MetaTnfaTag *tag = &tdfa->tags[i];
+            char *role = "META_TNFA_TAG_GENERIC";
+            if (tag->role == META_TNFA_TAG_GROUP_START) {
+                role = "META_TNFA_TAG_GROUP_START";
+            } else if (tag->role == META_TNFA_TAG_GROUP_END) {
+                role = "META_TNFA_TAG_GROUP_END";
+            } else if (tag->role == META_TNFA_TAG_POSIX_AUX) {
+                role = "META_TNFA_TAG_POSIX_AUX";
+            }
+            fprintf(out,
+                    "{ .id = %d, .group = %d, .role = %s, "
+                    ".is_multivalued = %d },\n",
+                    tag->id, tag->group, role, tag->is_multivalued);
+        }
+        fprintf(out, "}");
+    } else {
+        fprintf(out, ", .tags = NULL");
+    }
+
+    if (tdfa->num_states > 0) {
+        fprintf(out, ", .states = (MetaTdfaState[]){\n");
+        for (int32 i = 0; i < tdfa->num_states; i += 1) {
+            MetaTdfaState *state = &tdfa->states[i];
+            fprintf(out,
+                    "{ .is_accepting = %d, .first_transition = %d, "
+                    ".transition_count = %d, .first_final_op = %d, "
+                    ".final_op_count = %d },\n",
+                    state->is_accepting, state->first_transition,
+                    state->transition_count, state->first_final_op,
+                    state->final_op_count);
+        }
+        fprintf(out, "}");
+    } else {
+        fprintf(out, ", .states = NULL");
+    }
+
+    if (tdfa->num_transitions > 0) {
+        fprintf(out, ", .transitions = (MetaTdfaTransition[]){\n");
+        for (int32 i = 0; i < tdfa->num_transitions; i += 1) {
+            MetaTdfaTransition *tr = &tdfa->transitions[i];
+            fprintf(out,
+                    "{ .from = %d, .to = %d, .symbol = %d, "
+                    ".first_op = %d, .op_count = %d },\n",
+                    tr->from, tr->to, tr->symbol, tr->first_op, tr->op_count);
+        }
+        fprintf(out, "}");
+    } else {
+        fprintf(out, ", .transitions = NULL");
+    }
+
+    if (tdfa->num_ops > 0) {
+        fprintf(out, ", .ops = (MetaTdfaRegOp[]){\n");
+        for (int32 i = 0; i < tdfa->num_ops; i += 1) {
+            MetaTdfaRegOp *op = &tdfa->ops[i];
+            char *kind = "META_TDFA_REGOP_COPY";
+            if (op->kind == META_TDFA_REGOP_SET_NIL) {
+                kind = "META_TDFA_REGOP_SET_NIL";
+            } else if (op->kind == META_TDFA_REGOP_SET_POS) {
+                kind = "META_TDFA_REGOP_SET_POS";
+            }
+            fprintf(out, "{ .kind = %s, .dst = %d, .src = %d },\n", kind,
+                    op->dst, op->src);
+        }
+        fprintf(out, "}");
+    } else {
+        fprintf(out, ", .ops = NULL");
+    }
+
+    fprintf(out, " }");
+    return;
+}
+
 static void
 static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
     ParsedOp *temp_ops = regex->temp_ops;
@@ -537,6 +632,7 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
         }
         fprintf(out, "}");
         emit_tnfa(regex, out);
+        emit_tdfa(regex, out);
 
         if (regex->used_ops & META_OP_BACKREF) {
             fprintf(
