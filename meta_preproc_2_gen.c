@@ -463,7 +463,7 @@ generate_dfa_or_fallback(ExtractedRegex *regex, char *source, FILE *out) {
                 original_string_length, quote_start,
                 PREPROC_FAIL_str(fail_reasons));
         fprintf(stderr, "static dfa will not be available at runtime.\n");
-        fprintf(out, ", .static_dfa = NULL }");
+        fprintf(out, ", .static_dfa = NULL");
     } else {
         fprintf(out,
                 ", .static_dfa = &(StaticDfa){ .num_states = %d, "
@@ -496,7 +496,7 @@ generate_dfa_or_fallback(ExtractedRegex *regex, char *source, FILE *out) {
             }
             fprintf(out, "} },\n");
         }
-        fprintf(out, "} } }");
+        fprintf(out, "} }");
     }
     return;
 }
@@ -551,10 +551,11 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
                             "static dfa will not be available at runtime.\n",
                 regex->original_string_length,
                 source + regex->quote_start_offset);
-            fprintf(out, ", .static_dfa = NULL }");
+            fprintf(out, ", .static_dfa = NULL");
         } else {
             generate_dfa_or_fallback(regex, source, out);
         }
+        fprintf(out, "}");
 
         // Move trailing cursor
         current_offset = regex->source_end_offset;
