@@ -93,7 +93,8 @@ main(void) {
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8", false);
 
     printf(
-        RED("\nTests with random inputs against extensive regex array ...\n"));
+        RED("\nTests with random inputs against extensive regex array ...\n")
+        "\n");
     for (int32 max_input_len = 1; max_input_len <= 4096; max_input_len *= 2) {
         RUN_FUZZY_TESTS(regexes_extensive, max_input_len, 200);
     }
