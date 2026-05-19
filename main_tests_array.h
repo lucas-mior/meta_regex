@@ -368,7 +368,7 @@ static MetaRegex *regexes_extensive[] = {
     R("a?b?c?d?e?f?g?h?i?j?k?l?m?n?o?p?q?r?s?t?u?v?w?"),
     R("(abc|def){0,3}"),
     R("a\\\\b.*?c\\\\d"),
-    /* R("(|a|b|)[a-z]+"), */
+    R("(|a|b|)[a-z]+"),
 };
 
 #endif /* META_TESTS_ARRAY_H */
