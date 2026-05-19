@@ -178,7 +178,7 @@ run_libc_one(regex_t *compiled, char *input, regmatch_t *pmatch,
 
     if (extract) {
         pmatch_ptr = pmatch;
-        nmatch = (size_t)pmatch_len;
+        nmatch = pmatch_len;
         clear_pmatch(pmatch, pmatch_len);
     }
     return regexec(compiled, input, nmatch, pmatch_ptr, 0);
