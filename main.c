@@ -606,10 +606,13 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
 
         for (int32 j = 0; j < tests_len; j += 1) {
             int32 mismatch = 0;
-            regmatch_t *curr_libc
-                = extract ? &pm_libc[j*LENGTH(dummy_test.pmatch)] : NULL;
-            regmatch_t *curr_meta
-                = extract ? &pm_meta[j*LENGTH(dummy_test.pmatch)] : NULL;
+            regmatch_t *curr_libc = NULL;
+            regmatch_t *curr_meta = NULL;
+
+            if (extract) {
+                curr_libc = &pm_libc[j*LENGTH(dummy_test.pmatch)];
+                curr_meta = &pm_meta[j*LENGTH(dummy_test.pmatch)];
+            }
 
             if (results_libc[j] != results_meta[j]) {
                 mismatch = 1;
