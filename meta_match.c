@@ -25,7 +25,7 @@
     X(TDFA)
 #include "xenums.c"
 
-#define USE_DFA_THRESHOLD 1
+#define HEURISTIC_DFA_MIN_INPUT_LEN 1
 
 static MatcherFeatures matchers[] = {
     [MATCHER_BTNFA] = match_features_btnfa,
@@ -209,7 +209,7 @@ meta_choose_matcher(MetaRegex *regex, int32 input_len,
         }
     }
 
-    if (!needs_extraction && input_len >= USE_DFA_THRESHOLD) {
+    if (!needs_extraction && input_len >= HEURISTIC_DFA_MIN_INPUT_LEN) {
         if ((matchers_enabled & MATCHER_STATIC_DFA) && regex->static_dfa) {
             if ((regex->used_ops & ~matchers[MATCHER_STATIC_DFA].supports)
                 == 0) {
