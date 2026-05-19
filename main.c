@@ -587,19 +587,21 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
 
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
         for (int32 j = 0; j < tests_len; j += 1) {
-            int32 m_pmatch_len = extract ? LENGTH(dummy_test.pmatch) : 0;
-            regmatch_t *curr_m_pm
-                = extract ? &pm_meta[j*LENGTH(dummy_test.pmatch)] : NULL;
+            MetaRegex *meta_pattern = tests[j];
+            int32 m_pmatch_len = 0;
+            regmatch_t *curr_m_pm = NULL;
+            
             if (extract) {
+                m_pmatch_len = LENGTH(dummy_test.pmatch);
+                curr_m_pm = &pm_meta[j*LENGTH(dummy_test.pmatch)];
                 for (int32 m = 0; m < LENGTH(dummy_test.pmatch); m += 1) {
                     curr_m_pm[m].rm_so = -1;
                     curr_m_pm[m].rm_eo = -1;
                 }
             }
-            uint8 *meta_input = input;
-            MetaRegex *meta_pattern = tests[j];
+
             results_meta[j]
-                = meta_regex_match(meta_pattern, meta_input, input_len,
+                = meta_regex_match(meta_pattern, input, input_len,
                                    curr_m_pm, m_pmatch_len, enabled);
         }
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
