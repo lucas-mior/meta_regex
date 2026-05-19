@@ -25,7 +25,7 @@ for f in *.c *.h; do
     s/\<ulong\>/uint64/g;
     s/\<long\>/int64/g;
 
-    s/\<size_t\>/int64/g;
+    s/([^(])\<size_t\>([^)])/\1int64\2/g;
     s/\<ssize_t\>/int64/g;
     s/\<ptrdiff_t\>/int64/g;
 

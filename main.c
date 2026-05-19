@@ -92,14 +92,13 @@ main(void) {
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8", true);
     run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8", false);
 
-    printf(
-        RED("\nTests with random inputs against extensive regex array ...\n")
-        "\n");
+    printf(RED(
+        "\nTests with random inputs against extensive regex array ...\n") "\n");
     for (int32 max_input_len = 1; max_input_len <= 4096; max_input_len *= 2) {
         RUN_FUZZY_TESTS(regexes_extensive, max_input_len, 200);
     }
 
-    printf(RED("\nTests from inputs/ against extensive regex array ...")"\n");
+    printf(RED("\nTests from inputs/ against extensive regex array ...") "\n");
     run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive), true);
     run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive), false);
 
@@ -177,8 +176,8 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
         int32 pmatch_len = extract ? LENGTH(tests_posix[i].pmatch) : 0;
         regmatch_t *pmatch_ptr = extract ? tests_posix[i].pmatch : NULL;
 
-        tests_posix[i].result
-            = regexec(&compiled_regex, input, (size_t)pmatch_len, pmatch_ptr, 0);
+        tests_posix[i].result = regexec(&compiled_regex, input,
+                                        (int64)pmatch_len, pmatch_ptr, 0);
         regfree(&compiled_regex);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_posix);
@@ -353,7 +352,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 #if FUZZY_PRECOMPILE_POSIX
         int32 idx = fuzzy[i].regex_idx;
         fuzzy[i].result_posix = regexec(&posix_regexes[idx], fuzzy[i].input,
-                                        (size_t)pmatch_len, pmatch_ptr, 0);
+                                        (int64)pmatch_len, pmatch_ptr, 0);
 #else
         regex_t compiled;
         char *pattern_str = tests[fuzzy[i].regex_idx]->string;
@@ -550,7 +549,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             }
 #if FUZZY_PRECOMPILE_POSIX
             results_posix[j] = regexec(&posix_regexes[j], (char *)input,
-                                       (size_t)pmatch_len, curr_pm, 0);
+                                       (int64)pmatch_len, curr_pm, 0);
 #else
             regex_t compiled;
             char *pattern_str = tests[j]->string;
