@@ -19,6 +19,11 @@
 #define PREPROC_NFA_BITSET_WORDS 64
 #define PREPROC_MAX_NFA_STATES (PREPROC_NFA_BITSET_WORDS*32)
 
+/* TNFA build-time limits */
+#define PREPROC_MAX_TNFA_TAGS META_MAX_TNFA_TAGS
+#define PREPROC_MAX_TNFA_STATES META_MAX_TNFA_STATES
+#define PREPROC_MAX_TNFA_TRANSITIONS META_MAX_TNFA_TRANSITIONS
+
 #define ENUM_PREFIX_ PREPROC_FAIL_
 #define ENUM_NAME PreprocFailReason
 #define ENUM_BITFLAGS 1
@@ -27,6 +32,8 @@
     X(STATES_EXCEEDED) \
     X(BRANCHES_EXCEEDED) \
     X(DFA_STATES_EXCEEDED) \
+    X(TNFA_TAGS_EXCEEDED) \
+    X(TNFA_TRANSITIONS_EXCEEDED) \
     X(NO_BRANCHES)
 #include "xenums.c"
 
@@ -71,6 +78,26 @@ typedef struct DfaSet {
     int32 prev_is_w;
 } DfaSet;
 
+/*
+    Build-time TNFA storage.
+
+    This owns fixed-size backing arrays. A generated/runtime MetaTnfa can
+    point to these arrays, or the source generator can emit equivalent static
+    arrays and a MetaTnfa wrapper.
+*/
+typedef struct ParsedTnfa {
+    MetaTnfaTag tags[PREPROC_MAX_TNFA_TAGS];
+    MetaTnfaState states[PREPROC_MAX_TNFA_STATES];
+    MetaTnfaTransition transitions[PREPROC_MAX_TNFA_TRANSITIONS];
+
+    int32 num_tags;
+    int32 num_states;
+    int32 num_transitions;
+
+    int32 start_state;
+    int32 final_state;
+} ParsedTnfa;
+
 // Intermediate Representation for the extracted regex
 typedef struct ExtractedRegex {
     int64 source_start_offset;
@@ -84,6 +111,14 @@ typedef struct ExtractedRegex {
     
     ParsedOp temp_ops[PREPROC_MAX_TEMP_OPS];
     int32 temp_ops_count;
+
+    /*
+        Optional parsed TNFA.
+
+        NULL means this regex has not been lowered to a TNFA yet, or TNFA
+        generation failed/was skipped.
+    */
+    ParsedTnfa *tnfa;
     
     bool has_start;
     bool has_end;

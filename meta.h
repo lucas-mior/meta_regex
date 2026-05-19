@@ -11,6 +11,28 @@
 #define META_MAX_LAZY_DFA_STATES 2048
 #define META_PC_WORDS (META_MAX_OPS / 32)
 
+/* TNFA limits */
+#define META_MAX_TNFA_TAGS 256
+#define META_MAX_TNFA_STATES 1024
+#define META_MAX_TNFA_TRANSITIONS 4096
+#define META_TNFA_STATE_WORDS ((META_MAX_TNFA_STATES + 31) / 32)
+
+/*
+    TNFA tag encoding.
+
+    0   => no tag / plain epsilon
+    > 0 => positive tag t
+    < 0 => negative tag -t
+
+    Tag ids are 1-based so that 0 can be reserved for "no tag".
+*/
+#define META_TNFA_TAG_NONE 0
+#define META_TNFA_POS_TAG(t) ((int32)(t))
+#define META_TNFA_NEG_TAG(t) (-(int32)(t))
+#define META_TNFA_TAG_ID(t) ((t) < 0 ? -(t) : (t))
+#define META_TNFA_TAG_IS_NEGATIVE(t) ((t) < 0)
+#define META_TNFA_TAG_IS_POSITIVE(t) ((t) > 0)
+
 #define ENUM_PREFIX_ META_OP_
 #define ENUM_NAME MetaOpType
 #define ENUM_BITFLAGS 1
@@ -59,6 +81,116 @@ typedef struct NfaStateSet {
     uint32 bits[META_PC_WORDS];
 } NfaStateSet;
 
+typedef struct MetaTnfaStateSet {
+    uint32 bits[META_TNFA_STATE_WORDS];
+} MetaTnfaStateSet;
+
+enum MetaTnfaTransitionKind {
+    META_TNFA_TRANS_EPSILON,
+    META_TNFA_TRANS_LITERAL,
+    META_TNFA_TRANS_CLASS,
+    META_TNFA_TRANS_ANY,
+    META_TNFA_TRANS_WORD_START,
+    META_TNFA_TRANS_WORD_END,
+    META_TNFA_TRANS_WORD_BOUNDARY,
+    META_TNFA_TRANS_NON_WORD_BOUNDARY,
+};
+
+enum MetaTnfaTagRole {
+    META_TNFA_TAG_GENERIC,
+    META_TNFA_TAG_GROUP_START,
+    META_TNFA_TAG_GROUP_END,
+    META_TNFA_TAG_POSIX_AUX,
+};
+
+typedef struct MetaTnfaTag {
+    /*
+        1-based positive tag id.
+
+        Negative tags are not stored as separate tags. They are represented
+        on transitions by using -id.
+    */
+    int32 id;
+
+    /*
+        Capture group associated with this tag.
+
+        group == -1 means the tag is internal / not directly tied to a
+        public capture group.
+    */
+    int32 group;
+
+    enum MetaTnfaTagRole role;
+
+    /*
+        Nonzero when this tag may have multiple values, for example under
+        repetition. TDFA construction can use this to decide whether a tag
+        needs history/list storage instead of a single offset.
+    */
+    int32 is_multivalued;
+} MetaTnfaTag;
+
+typedef struct MetaTnfaState {
+    /*
+        Optional adjacency index.
+
+        If transitions are kept grouped by source state, first_transition and
+        transition_count give a compact outgoing-transition slice.
+
+        If the builder does not group transitions, set first_transition = -1
+        and scan MetaTnfa.transitions by .from.
+    */
+    int32 first_transition;
+    int32 transition_count;
+} MetaTnfaState;
+
+typedef struct MetaTnfaTransition {
+    enum MetaTnfaTransitionKind kind;
+
+    int32 from;
+    int32 to;
+
+    /*
+        Used by META_TNFA_TRANS_LITERAL.
+    */
+    int32 value;
+
+    /*
+        Used by META_TNFA_TRANS_CLASS.
+    */
+    uint32 mask[META_CHAR_BITMASK_WORDS];
+
+    /*
+        Used by META_TNFA_TRANS_EPSILON.
+
+        Lower values should be visited first during epsilon-closure
+        construction.
+    */
+    int32 priority;
+
+    /*
+        Used by META_TNFA_TRANS_EPSILON.
+
+        0   => untagged epsilon
+        > 0 => positive tag
+        < 0 => negative tag
+    */
+    int32 tag;
+} MetaTnfaTransition;
+
+typedef struct MetaTnfa {
+    int32 num_tags;
+    int32 num_states;
+    int32 num_transitions;
+
+    int32 start_state;
+    int32 final_state;
+
+    MetaTnfaTag *tags;
+    MetaTnfaState *states;
+    MetaTnfaTransition *transitions;
+} MetaTnfa;
+
 typedef struct LazyDfa LazyDfa;
 
 typedef struct MetaRegex {
@@ -70,6 +202,14 @@ typedef struct MetaRegex {
     int32 can_be_null;
     enum MetaOpType used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
+
+    /*
+        Optional tagged NFA representation.
+
+        NULL means no TNFA was generated/stored for this regex.
+    */
+    MetaTnfa *tnfa;
+
     StaticDfa *static_dfa;
     LazyDfa *lazy_dfa;
 } MetaRegex;
