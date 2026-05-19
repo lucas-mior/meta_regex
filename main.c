@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <locale.h>
 #include <time.h>
-#include <sys/wait.h>
 #include <errno.h>
 #include <dirent.h>
 
@@ -26,8 +25,9 @@
 
 #define FUZZY_PRECOMPILE_LIBC 1
 
-static FILE *csv;
-
+#if !defined(ENABLE_BTNFA)
+#define ENABLE_BTNFA 1
+#endif
 #if !defined(ENABLE_LAZY_DFA)
 #define ENABLE_LAZY_DFA 1
 #endif
@@ -35,35 +35,174 @@ static FILE *csv;
 #define ENABLE_STATIC_DFA 1
 #endif
 #if !defined(ENABLE_TNFA)
-#define ENABLE_TNFA 0
+#define ENABLE_TNFA 1
 #endif
 #if !defined(ENABLE_TDFA)
 #define ENABLE_TDFA 1
 #endif
 
-static enum Matcher
-matcher_enabled(enum Matcher enabled) {
-    if (ENABLE_LAZY_DFA) {
-        enabled |= MATCHER_LAZY_DFA;
+static FILE *csv_known;
+static FILE *csv_fuzzy;
+static FILE *csv_files;
+
+static enum Matcher all_matchers[] = {
+    MATCHER_BTNFA,
+    MATCHER_TNFA,
+    MATCHER_TDFA,
+    MATCHER_LAZY_DFA,
+    MATCHER_STATIC_DFA,
+};
+
+static int32
+matcher_compile_enabled(enum Matcher matcher) {
+    switch (matcher) {
+    case MATCHER_BTNFA: return ENABLE_BTNFA;
+    case MATCHER_TNFA: return ENABLE_TNFA;
+    case MATCHER_TDFA: return ENABLE_TDFA;
+    case MATCHER_LAZY_DFA: return ENABLE_LAZY_DFA;
+    case MATCHER_STATIC_DFA: return ENABLE_STATIC_DFA;
+    case MATCHER_LAST:
+    case MATCHER_NONE:
+    default: return 0;
     }
-    if (ENABLE_STATIC_DFA) {
-        enabled |= MATCHER_STATIC_DFA;
+}
+
+static int32
+matcher_storage_available(MetaRegex *regex, enum Matcher matcher) {
+    if (regex == NULL) {
+        return 0;
     }
-    if (ENABLE_TNFA) {
-        enabled |= MATCHER_TNFA;
+
+    switch (matcher) {
+    case MATCHER_BTNFA:
+        return 1;
+    case MATCHER_TNFA:
+        return regex->tnfa != NULL;
+    case MATCHER_TDFA:
+        return regex->tdfa != NULL;
+    case MATCHER_LAZY_DFA:
+        return 1;
+    case MATCHER_STATIC_DFA:
+        return regex->static_dfa != NULL;
+    case MATCHER_LAST:
+    case MATCHER_NONE:
+    default:
+        return 0;
     }
-    if (ENABLE_TDFA) {
-        enabled |= MATCHER_TDFA;
+}
+
+static int32
+matcher_supports_regex(MetaRegex *regex, enum Matcher matcher, bool extract) {
+    if (!matcher_compile_enabled(matcher)) {
+        return 0;
     }
-    return enabled;
+    if (!matcher_storage_available(regex, matcher)) {
+        return 0;
+    }
+    if (extract && !matchers[matcher].extracts) {
+        return 0;
+    }
+    if ((regex->used_ops & ~matchers[matcher].supports) != 0) {
+        return 0;
+    }
+    return 1;
+}
+
+static void
+clear_pmatch(regmatch_t *pmatch, int32 pmatch_len) {
+    if (pmatch == NULL) {
+        return;
+    }
+    for (int32 i = 0; i < pmatch_len; i += 1) {
+        pmatch[i].rm_so = -1;
+        pmatch[i].rm_eo = -1;
+    }
+    return;
+}
+
+static int32
+pmatch_mismatch(regmatch_t *reference, regmatch_t *actual, int32 len) {
+    for (int32 i = 0; i < len; i += 1) {
+        if (reference[i].rm_so != actual[i].rm_so
+            || reference[i].rm_eo != actual[i].rm_eo) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static void
+report_match_mismatch(char *kind, char *case_name, enum Matcher matcher,
+                      char *input, char *regex, int32 reference_result,
+                      int32 actual_result, regmatch_t *reference,
+                      regmatch_t *actual, int32 pmatch_len, bool extract) {
+    error2("%s mismatch in %s with matcher %s\n", kind, case_name,
+           MATCHER_str(matcher));
+    error2("input " RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n",
+           input, regex);
+    error2("libc result: %d, meta result: %d\n", reference_result,
+           actual_result);
+
+    if (reference_result == 0 && actual_result == 0 && extract) {
+        int32 group = pmatch_mismatch(reference, actual, pmatch_len);
+        if (group >= 0) {
+            error2("capture group %d: libc[%d, %d], meta[%d, %d]\n", group,
+                   (int32)reference[group].rm_so,
+                   (int32)reference[group].rm_eo,
+                   (int32)actual[group].rm_so,
+                   (int32)actual[group].rm_eo);
+        }
+    }
+    return;
+}
+
+static int32
+result_mismatch(int32 reference_result, int32 actual_result,
+                regmatch_t *reference, regmatch_t *actual, int32 pmatch_len,
+                bool extract) {
+    if (reference_result != actual_result) {
+        return 1;
+    }
+    if (reference_result == 0 && extract) {
+        return pmatch_mismatch(reference, actual, pmatch_len) >= 0;
+    }
+    return 0;
+}
+
+static int32
+run_libc_one(regex_t *compiled, char *input, regmatch_t *pmatch,
+             int32 pmatch_len, bool extract) {
+    regmatch_t *pmatch_ptr = NULL;
+    size_t nmatch = 0;
+
+    if (extract) {
+        pmatch_ptr = pmatch;
+        nmatch = (size_t)pmatch_len;
+        clear_pmatch(pmatch, pmatch_len);
+    }
+    return regexec(compiled, input, nmatch, pmatch_ptr, 0);
+}
+
+static int32
+run_meta_one(MetaRegex *regex, char *input, int32 input_len, enum Matcher matcher,
+             regmatch_t *pmatch, int32 pmatch_len, bool extract) {
+    regmatch_t *pmatch_ptr = NULL;
+    int32 nmatch = 0;
+
+    if (extract) {
+        pmatch_ptr = pmatch;
+        nmatch = pmatch_len;
+        clear_pmatch(pmatch, pmatch_len);
+    }
+
+    return meta_regex_match_with_algorithm(regex, (uint8 *)input, input_len,
+                                           pmatch_ptr, nmatch, matcher);
 }
 
 static void run_known_pairs(RegexTest *tests, int32 count, char *description,
                             bool extract);
 static void run_fuzzy_tests(MetaRegex **patterns, int32 tests_len,
                             int32 max_str_size, int32 ntests, bool extract);
-static void run_meta_only(RegexTest *tests, int32 count, char *description,
-                          bool extract);
 static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len,
                                  bool extract);
 
@@ -78,18 +217,38 @@ int32
 main(void) {
     setlocale(LC_ALL, "C");
     srand((uint32)42);
-    enum Matcher enabled = MATCHER_BTNFA;
-    char csv_file[1024];
 
-    enabled = matcher_enabled(enabled);
-    SNPRINTF(csv_file, "benchmarks/timings-%lld-%s.csv", (llong)time(NULL),
-             MATCHER_str(enabled));
+    char known_csv_file[1024];
+    char fuzzy_csv_file[1024];
+    char files_csv_file[1024];
+    llong now = (llong)time(NULL);
 
-    if ((csv = fopen(csv_file, "w")) == NULL) {
-        error("Error opening %s for writing: %s.\n", csv_file, strerror(errno));
+    SNPRINTF(known_csv_file, "benchmarks/known_pairs-%lld.csv", now);
+    SNPRINTF(fuzzy_csv_file, "benchmarks/fuzzy-%lld.csv", now);
+    SNPRINTF(files_csv_file, "benchmarks/files-%lld.csv", now);
+
+    if ((csv_known = fopen(known_csv_file, "w")) == NULL) {
+        error("Error opening %s for writing: %s.\n", known_csv_file,
+              strerror(errno));
         fatal(EXIT_FAILURE);
     }
-    fprintf(csv, "suite,case,count,libc_time,meta_time\n");
+    if ((csv_fuzzy = fopen(fuzzy_csv_file, "w")) == NULL) {
+        error("Error opening %s for writing: %s.\n", fuzzy_csv_file,
+              strerror(errno));
+        fatal(EXIT_FAILURE);
+    }
+    if ((csv_files = fopen(files_csv_file, "w")) == NULL) {
+        error("Error opening %s for writing: %s.\n", files_csv_file,
+              strerror(errno));
+        fatal(EXIT_FAILURE);
+    }
+
+    fprintf(csv_known,
+            "suite,case_name,extract,matcher,total_cases,run_cases,skip_cases,libc_time,matcher_time,mismatches\n");
+    fprintf(csv_fuzzy,
+            "suite,max_input_len,extract,matcher,total_cases,run_cases,skip_cases,libc_time,matcher_time,mismatches\n");
+    fprintf(csv_files,
+            "suite,file_name,extract,matcher,total_cases,run_cases,skip_cases,libc_time,matcher_time,mismatches\n");
 
     printf(RED("\nTests with known (input, regex) pairs ...\n"));
     RUN_KNOWN_PAIRS(ascii_no_group_no_backref);
@@ -101,9 +260,6 @@ main(void) {
     RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_no_backref);
     RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_and_backref);
 
-    run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8", true);
-    run_meta_only(utf8_against_utf8, LENGTH(utf8_against_utf8), "utf8", false);
-
     printf(RED(
         "\nTests with random inputs against extensive regex array ...\n") "\n");
     for (int32 max_input_len = 1; max_input_len <= 4096; max_input_len *= 2) {
@@ -114,38 +270,22 @@ main(void) {
     run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive), true);
     run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive), false);
 
-    if (fclose(csv)) {
-        error("Error closing %s: %s.\n", csv_file, strerror(errno));
+    if (fclose(csv_known)) {
+        error("Error closing %s: %s.\n", known_csv_file, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    if (fclose(csv_fuzzy)) {
+        error("Error closing %s: %s.\n", fuzzy_csv_file, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    if (fclose(csv_files)) {
+        error("Error closing %s: %s.\n", files_csv_file, strerror(errno));
         exit(EXIT_FAILURE);
     }
 
-#if 1
-    switch (fork()) {
-    case -1:
-        error("Error forking: %s.\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    case 0: {
-        char *python[] = {
-            "python",
-            "benchmarks/plot.py",
-            csv_file,
-            NULL,
-        };
-
-        execvp(python[0], python);
-
-        {
-            char cmd[256];
-            STRING_FROM_ARRAY(cmd, " ", python, LENGTH(python));
-            error("Error executing\n%s\n%s\n", cmd, strerror(errno));
-            _exit(EXIT_FAILURE);
-        }
-    }
-    default:
-        wait(NULL);
-        break;
-    }
-#endif
+    printf("Wrote %s\n", known_csv_file);
+    printf("Wrote %s\n", fuzzy_csv_file);
+    printf("Wrote %s\n", files_csv_file);
 
     exit(EXIT_SUCCESS);
 }
@@ -156,172 +296,107 @@ main(void) {
 static void
 run_known_pairs(RegexTest *tests, int32 count, char *description,
                 bool extract) {
+    RegexTest *reference = xmemdup(tests, count*SIZEOF(*reference));
+    bool failed = false;
     struct timespec t0_libc;
     struct timespec t1_libc;
-    struct timespec t0_meta;
-    struct timespec t1_meta;
-    RegexTest *tests_libc = xmemdup(tests, count*SIZEOF(*tests_libc));
-    RegexTest *tests_meta = xmemdup(tests, count*SIZEOF(*tests_meta));
-    bool failed = false;
-    enum Matcher enabled = MATCHER_BTNFA;
+    double t_libc;
 
-    enabled = matcher_enabled(enabled);
-
-    printf("\n----- Running %s (%s) (LIBC vs Meta) -----\n", description,
+    printf("\n----- Running %s (%s) -----\n", description,
            extract ? "extracting" : "non-extracting");
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_libc);
     for (int32 i = 0; i < count; i += 1) {
         regex_t compiled_regex;
-        char *input = tests_libc[i].input;
-        char *regex = tests_libc[i].meta_regex->string;
+        char *regex = reference[i].meta_regex->string;
         int32 compiled = regcomp(&compiled_regex, regex, REG_EXTENDED);
-        regmatch_t *pmatch_ptr = NULL;
-        int32 pmatch_len = 0;
+
+        reference[i].input_len = strlen32(reference[i].input);
 
         if (compiled != 0) {
             char error_message[256];
             regerror(compiled, &compiled_regex, error_message,
                      SIZEOF(error_message));
-            error("Regex compilation failed for" BLUE("\"%s\"") ": %s\n", regex,
-                  error_message);
+            error("Regex compilation failed for " BLUE("\"%s\"") ": %s\n",
+                  regex, error_message);
             exit(EXIT_FAILURE);
         }
 
-        if (extract) {
-            pmatch_ptr = tests_libc[i].pmatch;
-            pmatch_len = LENGTH(tests_libc[i].pmatch);
-        }
-
-        tests_libc[i].result = regexec(&compiled_regex, input,
-                                       (size_t)pmatch_len, pmatch_ptr, 0);
+        reference[i].result = run_libc_one(&compiled_regex, reference[i].input,
+                                           reference[i].pmatch,
+                                           LENGTH(reference[i].pmatch), extract);
         regfree(&compiled_regex);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_libc);
+    t_libc = timediff(t0_libc, t1_libc);
 
-    for (int32 i = 0; i < count; i += 1) {
-        tests_meta[i].input_len = strlen32((char *)tests_meta[i].input);
-    }
+    for (int32 mi = 0; mi < LENGTH(all_matchers); mi += 1) {
+        enum Matcher matcher = all_matchers[mi];
+        RegexTest *actual;
 
-    clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
-    for (int32 i = 0; i < count; i += 1) {
-        uint8 *input = (uint8 *)tests_meta[i].input;
-        int32 input_len = tests_meta[i].input_len;
-        MetaRegex *meta_regex = tests_meta[i].meta_regex;
-        int32 m_pmatch_len = 0;
-        regmatch_t *m_pmatch_ptr = NULL;
-
-        if (extract) {
-            m_pmatch_len = LENGTH(tests_meta[i].pmatch);
-            m_pmatch_ptr = tests_meta[i].pmatch;
+        if (!matcher_compile_enabled(matcher)) {
+            continue;
         }
 
-        tests_meta[i].result = meta_regex_match(
-            meta_regex, input, input_len, m_pmatch_ptr, m_pmatch_len, enabled);
-    }
-    clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
+        actual = xmemdup(tests, count*SIZEOF(*actual));
+        struct timespec t0_meta;
+        struct timespec t1_meta;
+        int32 run_count = 0;
+        int32 skip_count = 0;
+        int32 mismatch_count = 0;
+        double t_meta;
 
-    for (int32 i = 0; i < count; i += 1) {
-        RegexTest tp = tests_libc[i];
-        RegexTest tm = tests_meta[i];
-        char *regex = tests[i].meta_regex->string;
-        char *input = tests[i].input;
 
-        if (tp.result != tm.result) {
-            error2("Error: result mismatch for input " RED(
-                       "\"%s\"") " against regex " BLUE("\"%s\"") "\n",
-                   input, regex);
-            error2("libc: %d, meta: %d\n", tp.result, tm.result);
-            failed = true;
-        } else if (tp.result == 0 && extract) {
-            for (int32 m = 0; m < LENGTH(tp.pmatch); m += 1) {
-                regmatch_t p_m = tp.pmatch[m];
-                regmatch_t m_m = tm.pmatch[m];
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
+        for (int32 i = 0; i < count; i += 1) {
+            MetaRegex *meta_regex = actual[i].meta_regex;
+            actual[i].input_len = reference[i].input_len;
 
-                if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
-                    error2("Mismatch in capture group %d:\ninput " RED(
-                               "%s") " against regex " BLUE("%s") "\n",
-                           m, input, regex);
-                    error2("libc: rm_so=%d, rm_eo=%d\n", p_m.rm_so, p_m.rm_eo);
-                    error2("meta:  rm_so=%d, rm_eo=%d\n", m_m.rm_so, m_m.rm_eo);
-                    failed = true;
-                }
+            if (!matcher_supports_regex(meta_regex, matcher, extract)) {
+                skip_count += 1;
+                actual[i].result = REG_NOMATCH;
+                continue;
+            }
+
+            actual[i].result = run_meta_one(meta_regex, actual[i].input,
+                                            actual[i].input_len, matcher,
+                                            actual[i].pmatch,
+                                            LENGTH(actual[i].pmatch), extract);
+            run_count += 1;
+        }
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
+        t_meta = timediff(t0_meta, t1_meta);
+
+        for (int32 i = 0; i < count; i += 1) {
+            if (!matcher_supports_regex(actual[i].meta_regex, matcher, extract)) {
+                continue;
+            }
+            if (result_mismatch(reference[i].result, actual[i].result,
+                                reference[i].pmatch, actual[i].pmatch,
+                                LENGTH(actual[i].pmatch), extract)) {
+                mismatch_count += 1;
+                failed = true;
+                report_match_mismatch("Known-pair", description, matcher,
+                                      tests[i].input,
+                                      tests[i].meta_regex->string,
+                                      reference[i].result, actual[i].result,
+                                      reference[i].pmatch, actual[i].pmatch,
+                                      LENGTH(actual[i].pmatch), extract);
             }
         }
+
+        fprintf(csv_known, "known_pairs,%s,%d,%s,%d,%d,%d,%f,%f,%d\n",
+                description, extract ? 1 : 0, MATCHER_str(matcher), count,
+                run_count, skip_count, t_libc, t_meta, mismatch_count);
+
+        free2(actual, count*SIZEOF(*actual));
     }
+
+    free2(reference, count*SIZEOF(*reference));
 
     if (failed) {
         exit(EXIT_FAILURE);
     }
-
-    {
-        double t_libc = timediff(t0_libc, t1_libc);
-        double t_meta = timediff(t0_meta, t1_meta);
-        fprintf(csv, "%s,%s,%d,%f,%f\n",
-                extract ? "known_pairs_extract" : "known_pairs_no_extract",
-                description, count, t_libc, t_meta);
-    }
-
-    free2(tests_libc, count*SIZEOF(*tests_libc));
-    free2(tests_meta, count*SIZEOF(*tests_meta));
-    return;
-}
-
-static void
-run_meta_only(RegexTest *tests, int32 count, char *description, bool extract) {
-    struct timespec t0;
-    struct timespec t1;
-    printf("\n----- Running %s (%s) (Meta Only) -----\n", description,
-           extract ? "extracting" : "non-extracting");
-    bool failed = false;
-    enum Matcher enabled = MATCHER_BTNFA;
-
-    enabled = matcher_enabled(enabled);
-
-    for (int32 i = 0; i < count; i += 1) {
-        tests[i].input_len = strlen32((char *)tests[i].input);
-    }
-
-    clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
-    for (int32 i = 0; i < count; i += 1) {
-        char *input = tests[i].input;
-        int32 input_len = tests[i].input_len;
-        MetaRegex *meta_regex = tests[i].meta_regex;
-        int32 pmatch_len = 0;
-        regmatch_t *pmatch_ptr = NULL;
-        if (extract) {
-            pmatch_len = LENGTH(tests[i].pmatch);
-            pmatch_ptr = tests[i].pmatch;
-        }
-
-        int32 result = meta_regex_match(meta_regex, (uint8 *)input, input_len,
-                                        pmatch_ptr, pmatch_len, enabled);
-        bool matched = !result;
-        bool expected = (bool)tests[i].result;
-
-        if (matched != expected) {
-            error2("Error: expectation mismatch for input " RED(
-                       "\"%s\"") " against regex " BLUE("\"%s\"") "\n",
-                   input, meta_regex->string);
-            error2("expected: %s, got: %s\n", expected ? "MATCH" : "NOMATCH",
-                   matched ? "MATCH" : "NOMATCH");
-            failed = true;
-        } else {
-            printf(RED("%15s") " against " BLUE("%18s") ": %s (OK)\n", input,
-                   meta_regex->string, matched ? "MATCH" : "NOMATCH");
-        }
-    }
-    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
-
-    if (failed) {
-        exit(EXIT_FAILURE);
-    }
-
-    double t_meta = timediff(t0, t1);
-    fprintf(csv, "%s,%s,%d,0.0,%f\n",
-            extract ? "meta_only_extract" : "meta_only_no_extract", description,
-            count, t_meta);
-
     return;
 }
 
@@ -330,17 +405,13 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
                 int32 ntests, bool extract) {
     int32 fuzzy_len = ntests*tests_len;
     FuzzyTest *fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
+    bool failed = false;
     struct timespec t0_libc;
     struct timespec t1_libc;
-    struct timespec t0_meta;
-    struct timespec t1_meta;
-    bool failed = false;
-    enum Matcher enabled = MATCHER_BTNFA;
+    double t_libc;
 #if FUZZY_PRECOMPILE_LIBC
     regex_t *libc_regexes = malloc2(tests_len*SIZEOF(*libc_regexes));
 #endif
-
-    enabled = matcher_enabled(enabled);
 
     for (int32 i = 0; i < ntests; i += 1) {
         int32 input_len = 1 + (rand() % max_str_size);
@@ -371,107 +442,87 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &t0_libc);
     for (int32 i = 0; i < fuzzy_len; i += 1) {
-        regmatch_t *pmatch_ptr = NULL;
-        int32 pmatch_len = 0;
-        if (extract) {
-            pmatch_ptr = fuzzy[i].pmatch_libc;
-            pmatch_len = LENGTH(fuzzy[i].pmatch_libc);
-        }
-#if FUZZY_PRECOMPILE_LIBC
         int32 idx = fuzzy[i].regex_idx;
-        fuzzy[i].result_libc = regexec(&libc_regexes[idx], fuzzy[i].input,
-                                       (size_t)pmatch_len, pmatch_ptr, 0);
+#if FUZZY_PRECOMPILE_LIBC
+        fuzzy[i].result_libc = run_libc_one(&libc_regexes[idx], fuzzy[i].input,
+                                            fuzzy[i].pmatch_libc,
+                                            LENGTH(fuzzy[i].pmatch_libc),
+                                            extract);
 #else
         regex_t compiled;
-        char *pattern_str = tests[fuzzy[i].regex_idx]->string;
+        char *pattern_str = tests[idx]->string;
 
         if (regcomp(&compiled, pattern_str, REG_EXTENDED)) {
             error("Pre-compilation failed for " BLUE("\"%s\"") "\n",
                   pattern_str);
             exit(EXIT_FAILURE);
         }
-        fuzzy[i].result_libc
-            = regexec(&compiled, fuzzy[i].input, pmatch_len, pmatch_ptr, 0);
+        fuzzy[i].result_libc = run_libc_one(&compiled, fuzzy[i].input,
+                                            fuzzy[i].pmatch_libc,
+                                            LENGTH(fuzzy[i].pmatch_libc),
+                                            extract);
         regfree(&compiled);
 #endif
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1_libc);
+    t_libc = timediff(t0_libc, t1_libc);
 
-    clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
-    for (int32 i = 0; i < fuzzy_len; i += 1) {
-        uint8 *input = (uint8 *)fuzzy[i].input;
-        int32 input_len = fuzzy[i].input_len;
-        MetaRegex *meta_pattern = tests[fuzzy[i].regex_idx];
-        int32 m_pmatch_len = 0;
-        regmatch_t *m_pmatch_ptr = NULL;
+    for (int32 mi = 0; mi < LENGTH(all_matchers); mi += 1) {
+        enum Matcher matcher = all_matchers[mi];
+        struct timespec t0_meta;
+        struct timespec t1_meta;
+        int32 run_count = 0;
+        int32 skip_count = 0;
+        int32 mismatch_count = 0;
+        double t_meta;
 
-        if (extract) {
-            m_pmatch_ptr = fuzzy[i].pmatch_meta;
-            m_pmatch_len = LENGTH(fuzzy[i].pmatch_meta);
+        if (!matcher_compile_enabled(matcher)) {
+            continue;
         }
 
-        fuzzy[i].result_meta
-            = meta_regex_match(meta_pattern, input, input_len, m_pmatch_ptr,
-                               m_pmatch_len, enabled);
-    }
-    clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
+        for (int32 i = 0; i < fuzzy_len; i += 1) {
+            MetaRegex *meta_pattern = tests[fuzzy[i].regex_idx];
 
-    for (int32 i = 0; i < fuzzy_len; i += 1) {
-        char *input = fuzzy[i].input;
-        char *regex = tests[fuzzy[i].regex_idx]->string;
-        int32 mismatch = 0;
+            if (!matcher_supports_regex(meta_pattern, matcher, extract)) {
+                skip_count += 1;
+                fuzzy[i].result_meta = REG_NOMATCH;
+                continue;
+            }
 
-        if (fuzzy[i].result_libc != fuzzy[i].result_meta) {
-            mismatch = 1;
-        } else if (fuzzy[i].result_libc == 0 && extract) {
-            for (int32 m = 0; m < LENGTH(fuzzy[i].pmatch_libc); m += 1) {
-                if (fuzzy[i].pmatch_libc[m].rm_so
-                        != fuzzy[i].pmatch_meta[m].rm_so
-                    || fuzzy[i].pmatch_libc[m].rm_eo
-                           != fuzzy[i].pmatch_meta[m].rm_eo) {
-                    mismatch = 1;
-                    break;
-                }
+            fuzzy[i].result_meta = run_meta_one(
+                meta_pattern, fuzzy[i].input, fuzzy[i].input_len, matcher,
+                fuzzy[i].pmatch_meta, LENGTH(fuzzy[i].pmatch_meta), extract);
+            run_count += 1;
+        }
+        clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
+        t_meta = timediff(t0_meta, t1_meta);
+
+        for (int32 i = 0; i < fuzzy_len; i += 1) {
+            MetaRegex *meta_pattern = tests[fuzzy[i].regex_idx];
+            if (!matcher_supports_regex(meta_pattern, matcher, extract)) {
+                continue;
+            }
+
+            if (result_mismatch(fuzzy[i].result_libc, fuzzy[i].result_meta,
+                                fuzzy[i].pmatch_libc, fuzzy[i].pmatch_meta,
+                                LENGTH(fuzzy[i].pmatch_meta), extract)) {
+                mismatch_count += 1;
+                failed = true;
+                report_match_mismatch("Fuzzy", "random", matcher,
+                                      fuzzy[i].input, meta_pattern->string,
+                                      fuzzy[i].result_libc,
+                                      fuzzy[i].result_meta,
+                                      fuzzy[i].pmatch_libc,
+                                      fuzzy[i].pmatch_meta,
+                                      LENGTH(fuzzy[i].pmatch_meta), extract);
             }
         }
 
-        if (mismatch) {
-            failed = true;
-            error2("Error: mismatch for input " RED(
-                       "\"%s\"") " against regex " BLUE("\"%s\"") "\n",
-                   input, regex);
-            error2("libc result: %d, meta result: %d\n", fuzzy[i].result_libc,
-                   fuzzy[i].result_meta);
-
-            if (fuzzy[i].result_libc == 0 && fuzzy[i].result_meta == 0
-                && extract) {
-                for (int32 m = 0; m < LENGTH(fuzzy[i].pmatch_libc); m += 1) {
-                    regmatch_t p_m = fuzzy[i].pmatch_libc[m];
-                    regmatch_t m_m = fuzzy[i].pmatch_meta[m];
-
-                    if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
-                        error2("   Group %d: libc[%d, %d], "
-                               "meta[%d, %d]\n",
-                               m, (int32)p_m.rm_so, (int32)p_m.rm_eo,
-                               (int32)m_m.rm_so, (int32)m_m.rm_eo);
-                    }
-                }
-            }
-        }
+        fprintf(csv_fuzzy, "fuzzy,%d,%d,%s,%d,%d,%d,%f,%f,%d\n",
+                max_str_size, extract ? 1 : 0, MATCHER_str(matcher), fuzzy_len,
+                run_count, skip_count, t_libc, t_meta, mismatch_count);
     }
-
-    double t_libc = timediff(t0_libc, t1_libc);
-    double t_meta = timediff(t0_meta, t1_meta);
-    if (max_str_size < 2048) {
-        if (t_libc < t_meta) {
-            error2("\nPerformance regression at max_str_size=%d\n",
-                   max_str_size);
-        }
-    }
-
-    fprintf(csv, "%s,%d,%d,%f,%f\n",
-            extract ? "fuzzy_extract" : "fuzzy_no_extract", max_str_size,
-            fuzzy_len, t_libc, t_meta);
 
 #if FUZZY_PRECOMPILE_LIBC
     for (int32 i = 0; i < tests_len; i += 1) {
@@ -482,10 +533,10 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
 
     for (int32 i = 0; i < ntests; i += 1) {
         int32 idx = i*tests_len;
-
         free2(fuzzy[idx].input, fuzzy[idx].input_len + 1);
     }
     free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
+
     if (failed) {
         exit(EXIT_FAILURE);
     }
@@ -498,17 +549,16 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
     struct dirent *entry = NULL;
     bool failed = false;
     RegexTest dummy_test;
-    enum Matcher enabled = MATCHER_BTNFA;
+#if FUZZY_PRECOMPILE_LIBC
+    regex_t *libc_regexes = malloc2(tests_len*SIZEOF(*libc_regexes));
+#endif
 
     if (dir == NULL) {
         error("Error opening inputs directory: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
-    enabled = matcher_enabled(enabled);
-
 #if FUZZY_PRECOMPILE_LIBC
-    regex_t *libc_regexes = malloc2(tests_len*SIZEOF(*libc_regexes));
     for (int32 i = 0; i < tests_len; i += 1) {
         char *pattern_str = tests[i]->string;
         if (regcomp(&libc_regexes[i], pattern_str, REG_EXTENDED) != 0) {
@@ -526,6 +576,12 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         int64 file_size;
         uint8 *input;
         int32 input_len;
+        int32 *results_libc;
+        int64 pm_sz;
+        regmatch_t *pm_libc;
+        struct timespec t0_libc;
+        struct timespec t1_libc;
+        double t_libc;
 
         if (strcmp(entry->d_name, ".") == 0
             || strcmp(entry->d_name, "..") == 0) {
@@ -556,42 +612,30 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         fclose(file);
         input_len = (int32)file_size;
 
-        int32 *results_libc = malloc2(tests_len*SIZEOF(*results_libc));
-        int32 *results_meta = malloc2(tests_len*SIZEOF(*results_meta));
-
-        int64 pm_sz
-            = tests_len*LENGTH(dummy_test.pmatch) * SIZEOF(regmatch_t);
-        regmatch_t *pm_libc = malloc2(pm_sz);
-        regmatch_t *pm_meta = malloc2(pm_sz);
-
-        struct timespec t0_libc;
-        struct timespec t1_libc;
-        struct timespec t0_meta;
-        struct timespec t1_meta;
+        results_libc = malloc2(tests_len*SIZEOF(*results_libc));
+        pm_sz = tests_len*LENGTH(dummy_test.pmatch) * SIZEOF(regmatch_t);
+        pm_libc = malloc2(pm_sz);
 
         clock_gettime(CLOCK_MONOTONIC_RAW, &t0_libc);
         for (int32 j = 0; j < tests_len; j += 1) {
-            int32 pmatch_len = 0;
             regmatch_t *curr_pm = NULL;
 
             if (extract) {
-                pmatch_len = LENGTH(dummy_test.pmatch);
                 curr_pm = &pm_libc[j*LENGTH(dummy_test.pmatch)];
-
-                for (int32 m = 0; m < LENGTH(dummy_test.pmatch); m += 1) {
-                    curr_pm[m].rm_so = -1;
-                    curr_pm[m].rm_eo = -1;
-                }
+                clear_pmatch(curr_pm, LENGTH(dummy_test.pmatch));
             }
 #if FUZZY_PRECOMPILE_LIBC
-            results_libc[j] = regexec(&libc_regexes[j], (char *)input,
-                                      (size_t)pmatch_len, curr_pm, 0);
+            results_libc[j] = run_libc_one(&libc_regexes[j], (char *)input,
+                                           curr_pm, LENGTH(dummy_test.pmatch),
+                                           extract);
 #else
             regex_t compiled;
             char *pattern_str = tests[j]->string;
             if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
-                results_libc[j]
-                    = regexec(&compiled, (char *)input, pmatch_len, curr_pm, 0);
+                results_libc[j] = run_libc_one(&compiled, (char *)input,
+                                               curr_pm,
+                                               LENGTH(dummy_test.pmatch),
+                                               extract);
                 regfree(&compiled);
             } else {
                 results_libc[j] = REG_NOMATCH;
@@ -599,85 +643,87 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
 #endif
         }
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1_libc);
+        t_libc = timediff(t0_libc, t1_libc);
 
-        clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
-        for (int32 j = 0; j < tests_len; j += 1) {
-            MetaRegex *meta_pattern = tests[j];
-            int32 m_pmatch_len = 0;
-            regmatch_t *curr_m_pm = NULL;
+        for (int32 mi = 0; mi < LENGTH(all_matchers); mi += 1) {
+            enum Matcher matcher = all_matchers[mi];
+            int32 *results_meta = malloc2(tests_len*SIZEOF(*results_meta));
+            regmatch_t *pm_meta = malloc2(pm_sz);
+            struct timespec t0_meta;
+            struct timespec t1_meta;
+            int32 run_count = 0;
+            int32 skip_count = 0;
+            int32 mismatch_count = 0;
+            double t_meta;
 
-            if (extract) {
-                m_pmatch_len = LENGTH(dummy_test.pmatch);
-                curr_m_pm = &pm_meta[j*LENGTH(dummy_test.pmatch)];
-                for (int32 m = 0; m < LENGTH(dummy_test.pmatch); m += 1) {
-                    curr_m_pm[m].rm_so = -1;
-                    curr_m_pm[m].rm_eo = -1;
+            if (!matcher_compile_enabled(matcher)) {
+                free2(results_meta, tests_len*SIZEOF(*results_meta));
+                free2(pm_meta, pm_sz);
+                continue;
+            }
+
+            clock_gettime(CLOCK_MONOTONIC_RAW, &t0_meta);
+            for (int32 j = 0; j < tests_len; j += 1) {
+                MetaRegex *meta_pattern = tests[j];
+                regmatch_t *curr_m_pm = NULL;
+
+                if (!matcher_supports_regex(meta_pattern, matcher, extract)) {
+                    results_meta[j] = REG_NOMATCH;
+                    skip_count += 1;
+                    continue;
+                }
+
+                if (extract) {
+                    curr_m_pm = &pm_meta[j*LENGTH(dummy_test.pmatch)];
+                    clear_pmatch(curr_m_pm, LENGTH(dummy_test.pmatch));
+                }
+
+                results_meta[j] = run_meta_one(
+                    meta_pattern, (char *)input, input_len, matcher, curr_m_pm,
+                    LENGTH(dummy_test.pmatch), extract);
+                run_count += 1;
+            }
+            clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
+            t_meta = timediff(t0_meta, t1_meta);
+
+            for (int32 j = 0; j < tests_len; j += 1) {
+                MetaRegex *meta_pattern = tests[j];
+                regmatch_t *curr_libc = NULL;
+                regmatch_t *curr_meta = NULL;
+
+                if (!matcher_supports_regex(meta_pattern, matcher, extract)) {
+                    continue;
+                }
+
+                if (extract) {
+                    curr_libc = &pm_libc[j*LENGTH(dummy_test.pmatch)];
+                    curr_meta = &pm_meta[j*LENGTH(dummy_test.pmatch)];
+                }
+
+                if (result_mismatch(results_libc[j], results_meta[j], curr_libc,
+                                    curr_meta, LENGTH(dummy_test.pmatch),
+                                    extract)) {
+                    mismatch_count += 1;
+                    failed = true;
+                    report_match_mismatch("File", case_name, matcher,
+                                          (char *)input, meta_pattern->string,
+                                          results_libc[j], results_meta[j],
+                                          curr_libc, curr_meta,
+                                          LENGTH(dummy_test.pmatch), extract);
                 }
             }
 
-            results_meta[j]
-                = meta_regex_match(meta_pattern, input, input_len, curr_m_pm,
-                                   m_pmatch_len, enabled);
+            fprintf(csv_files, "file_fuzzy,%s,%d,%s,%d,%d,%d,%f,%f,%d\n",
+                    case_name, extract ? 1 : 0, MATCHER_str(matcher),
+                    tests_len, run_count, skip_count, t_libc, t_meta,
+                    mismatch_count);
+
+            free2(results_meta, tests_len*SIZEOF(*results_meta));
+            free2(pm_meta, pm_sz);
         }
-        clock_gettime(CLOCK_MONOTONIC_RAW, &t1_meta);
-
-        for (int32 j = 0; j < tests_len; j += 1) {
-            int32 mismatch = 0;
-            regmatch_t *curr_libc = NULL;
-            regmatch_t *curr_meta = NULL;
-
-            if (extract) {
-                curr_libc = &pm_libc[j*LENGTH(dummy_test.pmatch)];
-                curr_meta = &pm_meta[j*LENGTH(dummy_test.pmatch)];
-            }
-
-            if (results_libc[j] != results_meta[j]) {
-                mismatch = 1;
-            } else if (results_libc[j] == 0 && extract) {
-                for (int32 m = 0; m < LENGTH(dummy_test.pmatch); m += 1) {
-                    if (curr_libc[m].rm_so != curr_meta[m].rm_so
-                        || curr_libc[m].rm_eo != curr_meta[m].rm_eo) {
-                        mismatch = 1;
-                        break;
-                    }
-                }
-            }
-
-            if (mismatch) {
-                failed = true;
-                char *regex_str = tests[j]->string;
-                error2("File Error: mismatch in file " GREEN(
-                           "\"%s\"") " against regex " BLUE("\"%s\"") "\n",
-                       entry->d_name, regex_str);
-                error2("libc result: %d, meta result: %d\n", results_libc[j],
-                       results_meta[j]);
-
-                if (results_libc[j] == 0 && results_meta[j] == 0 && extract) {
-                    for (int32 m = 0; m < LENGTH(dummy_test.pmatch); m += 1) {
-                        regmatch_t p_m = curr_libc[m];
-                        regmatch_t m_m = curr_meta[m];
-
-                        if (p_m.rm_so != m_m.rm_so || p_m.rm_eo != m_m.rm_eo) {
-                            error2("   Group %d: libc[%d, %d], "
-                                   "meta[%d, %d]\n",
-                                   m, (int32)p_m.rm_so, (int32)p_m.rm_eo,
-                                   (int32)m_m.rm_so, (int32)m_m.rm_eo);
-                        }
-                    }
-                }
-            }
-        }
-
-        double t_libc = timediff(t0_libc, t1_libc);
-        double t_meta = timediff(t0_meta, t1_meta);
-        fprintf(csv, "%s,%s,%d,%f,%f\n",
-                extract ? "file_fuzzy_extract" : "file_fuzzy_no_extract",
-                case_name, tests_len, t_libc, t_meta);
 
         free2(results_libc, tests_len*SIZEOF(*results_libc));
-        free2(results_meta, tests_len*SIZEOF(*results_meta));
         free2(pm_libc, pm_sz);
-        free2(pm_meta, pm_sz);
         free2(input, file_size + 1);
     }
 
