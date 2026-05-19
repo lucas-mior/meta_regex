@@ -53,6 +53,8 @@ match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
 
     for (int32 i = offset;; i += 1) {
         uint8 b = input[i];
+        int32 *next_table;
+        int32 next_state_idx;
 
         if (current_state_ptr->is_accepting[b]) {
             last_accept = i;
@@ -62,10 +64,8 @@ match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
             break;
         }
 
-        int32 *next_table = current_state_ptr->next;
-        int32 next_state_idx = next_table[b];
-
-        if (next_state_idx == 0) {
+        next_table = current_state_ptr->next;
+        if ((next_state_idx = next_table[b]) == 0) {
             break;
         }
 
