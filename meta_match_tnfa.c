@@ -257,7 +257,7 @@ match_tnfa_epsilon_closure(MetaTnfa *tnfa, int32 use_state_slices, uint8 *input,
     int32 stack_count = 0;
     int32 output_count = 0;
 
-    memset64(closed_seen, 0, (size_t)tnfa->num_states);
+    memset64(closed_seen, 0, tnfa->num_states);
 
     /*
         Follow the TNFA simulation ordering from the paper: push the input
@@ -378,7 +378,7 @@ match_tnfa_step(MetaTnfa *tnfa, int32 use_state_slices, uint8 *input,
     int32 c = match_tnfa_char_at(input, input_len, pos);
     int32 next_count = 0;
 
-    memset64(seen, 0, (size_t)tnfa->num_states);
+    memset64(seen, 0, tnfa->num_states);
 
     for (int32 i = 0; i < closed_count; i += 1) {
         MetaTnfaConfig *cfg = &closed_configs[i];
