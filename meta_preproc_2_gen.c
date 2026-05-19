@@ -518,11 +518,6 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
             current_offset = regex->source_end_offset;
             continue;
         }
-        if (regex->is_invalid_macro) {
-            fprintf(out, "R(");
-            current_offset = regex->source_end_offset;
-            continue;
-        }
 
         // Emulate original printing structure
         fprintf(out, "&(MetaRegex){ .string = %.*s, ",

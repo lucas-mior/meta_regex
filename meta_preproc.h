@@ -104,7 +104,6 @@ typedef struct ExtractedRegex {
     int64 source_end_offset;
     
     bool is_null_macro;
-    bool is_invalid_macro;
 
     int64 quote_start_offset;
     int32 original_string_length;
