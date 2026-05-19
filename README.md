@@ -89,7 +89,15 @@ cc gen/your_code_baked.c -o your_program
 - `meta_regex_match.c` runtime regex matcher
 - `main.c` example of usage, with tests against the posix regex lib.
 
+## Matchers
+- BTNFA
+- Static DFA
+- Lazy DFA
+- TODO: Tagged DFA
+
 ## TODO
+- Implement tagged dfa (so that we don't have to use the back tracking nfa for
+  submatch extraction)
 - Improve performance on ASCII input
 - Implement
   [Basic Unicode Support](https://www.unicode.org/reports/tr18/#Basic_Unicode_Support)

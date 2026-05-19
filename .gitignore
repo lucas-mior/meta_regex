@@ -1,5 +1,6 @@
 bin/
 gen/
+papers/
 tags
 .tags.vim
 compile_commands.json
