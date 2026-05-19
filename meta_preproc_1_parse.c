@@ -869,7 +869,6 @@ parse_source_code(char *buffer, int64 source_len) {
         int32 group_stack[PREPROC_MAX_GROUP_STACK] = {0};
         int32 group_stack_ptr = 0;
         bool has_alternation = false;
-        bool has_backref = false;
         ParsedOp temp_ops[PREPROC_MAX_TEMP_OPS] = {0};
         int32 temp_ops_count = 0;
         uint8 fastmap[META_FASTMAP_SIZE] = {0};
@@ -1429,7 +1428,6 @@ parse_source_code(char *buffer, int64 source_len) {
                         }
                         temp_ops_count += 1;
                     } else if (c_cp >= '1' && c_cp <= '9') {
-                        has_backref = true;
                         temp_ops[temp_ops_count].type = META_OP_BACKREF;
                         temp_ops[temp_ops_count].value = c_cp - '0';
                         temp_ops_count += 1;
@@ -1581,19 +1579,7 @@ parse_source_code(char *buffer, int64 source_len) {
         paren_end = strchr(quote_end, ')');
         original_string_length = (int32)(quote_end - quote_start) + 1;
 
-        bool unsupported = false;
-        if (has_backref > 0) {
-            unsupported = true;
-        }
-
-        for (int32 i = 0; i < temp_ops_count; i += 1) {
-            if (temp_ops[i].type == META_OP_BACKREF) {
-                unsupported = true;
-                break;
-            }
-        }
-
-        if (!unsupported) {
+        if (used_ops & META_OP_BACKREF) {
             regex->tnfa = malloc2(SIZEOF(*regex->tnfa));
             if (!build_tnfa_from_ops(regex->tnfa, temp_ops, temp_ops_count,
                                      group_counter)) {
@@ -1612,7 +1598,6 @@ parse_source_code(char *buffer, int64 source_len) {
         regex->can_be_null = can_be_null;
         regex->used_ops = used_ops;
         memcpy64(regex->fastmap, fastmap, META_FASTMAP_SIZE);
-        regex->unsupported = unsupported;
         memcpy64(regex->temp_ops, temp_ops,
                  temp_ops_count*SIZEOF(*regex->temp_ops));
         regex->temp_ops_count = temp_ops_count;

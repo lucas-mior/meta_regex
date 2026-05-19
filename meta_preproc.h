@@ -126,7 +126,6 @@ typedef struct ExtractedRegex {
     bool can_be_null;
     uint32 used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
-    bool unsupported;
     
     // Cached op sequence generated in Phase 1
     char op_buffer[PREPROC_OP_BUFFER_SIZE];

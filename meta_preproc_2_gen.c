@@ -543,11 +543,11 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
         fprintf(out, "}");
         emit_tnfa(regex, out);
 
-        if (regex->unsupported) {
+        if (regex->used_ops & META_OP_BACKREF) {
             fprintf(
                 stderr,
-                "Warning: Unsupported regex feature in regex " BLUE(
-                    "%.*s") ".\n"
+                "Warning: Regex " BLUE(
+                    "%.*s") " has backreferences.\n"
                             "static dfa will not be available at runtime.\n",
                 regex->original_string_length,
                 source + regex->quote_start_offset);
