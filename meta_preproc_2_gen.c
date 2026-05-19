@@ -242,6 +242,96 @@ get_branch_weight(ParsedOp *ops, int32 count) {
     return weight;
 }
 
+
+static void
+emit_tnfa(ExtractedRegex *regex, FILE *out) {
+    ParsedTnfa *tnfa = regex->tnfa;
+
+    if (tnfa == NULL) {
+        fprintf(out, ", .tnfa = NULL");
+        return;
+    }
+
+    fprintf(out,
+            ", .tnfa = &(MetaTnfa){ .num_tags = %d, .num_states = %d, "
+            ".num_transitions = %d, .start_state = %d, .final_state = %d",
+            tnfa->num_tags, tnfa->num_states, tnfa->num_transitions,
+            tnfa->start_state, tnfa->final_state);
+
+    if (tnfa->num_tags > 0) {
+        fprintf(out, ", .tags = (MetaTnfaTag[]){\n");
+        for (int32 i = 0; i < tnfa->num_tags; i += 1) {
+            MetaTnfaTag *tag = &tnfa->tags[i];
+            char *role = "META_TNFA_TAG_GENERIC";
+            if (tag->role == META_TNFA_TAG_GROUP_START) {
+                role = "META_TNFA_TAG_GROUP_START";
+            } else if (tag->role == META_TNFA_TAG_GROUP_END) {
+                role = "META_TNFA_TAG_GROUP_END";
+            } else if (tag->role == META_TNFA_TAG_POSIX_AUX) {
+                role = "META_TNFA_TAG_POSIX_AUX";
+            }
+            fprintf(out,
+                    "{ .id = %d, .group = %d, .role = %s, "
+                    ".is_multivalued = %d },\n",
+                    tag->id, tag->group, role, tag->is_multivalued);
+        }
+        fprintf(out, "}");
+    } else {
+        fprintf(out, ", .tags = NULL");
+    }
+
+    if (tnfa->num_states > 0) {
+        fprintf(out, ", .states = (MetaTnfaState[]){\n");
+        for (int32 i = 0; i < tnfa->num_states; i += 1) {
+            fprintf(out,
+                    "{ .first_transition = %d, .transition_count = %d },\n",
+                    tnfa->states[i].first_transition,
+                    tnfa->states[i].transition_count);
+        }
+        fprintf(out, "}");
+    } else {
+        fprintf(out, ", .states = NULL");
+    }
+
+    if (tnfa->num_transitions > 0) {
+        fprintf(out, ", .transitions = (MetaTnfaTransition[]){\n");
+        for (int32 i = 0; i < tnfa->num_transitions; i += 1) {
+            MetaTnfaTransition *tr = &tnfa->transitions[i];
+            char *kind = "META_TNFA_TRANS_EPSILON";
+            if (tr->kind == META_TNFA_TRANS_LITERAL) {
+                kind = "META_TNFA_TRANS_LITERAL";
+            } else if (tr->kind == META_TNFA_TRANS_CLASS) {
+                kind = "META_TNFA_TRANS_CLASS";
+            } else if (tr->kind == META_TNFA_TRANS_ANY) {
+                kind = "META_TNFA_TRANS_ANY";
+            } else if (tr->kind == META_TNFA_TRANS_WORD_START) {
+                kind = "META_TNFA_TRANS_WORD_START";
+            } else if (tr->kind == META_TNFA_TRANS_WORD_END) {
+                kind = "META_TNFA_TRANS_WORD_END";
+            } else if (tr->kind == META_TNFA_TRANS_WORD_BOUNDARY) {
+                kind = "META_TNFA_TRANS_WORD_BOUNDARY";
+            } else if (tr->kind == META_TNFA_TRANS_NON_WORD_BOUNDARY) {
+                kind = "META_TNFA_TRANS_NON_WORD_BOUNDARY";
+            }
+
+            fprintf(out,
+                    "{ .kind = %s, .from = %d, .to = %d, .value = %d, "
+                    ".mask = {%u, %u, %u, %u, %u, %u, %u, %u}, "
+                    ".priority = %d, .tag = %d },\n",
+                    kind, tr->from, tr->to, tr->value, tr->mask[0],
+                    tr->mask[1], tr->mask[2], tr->mask[3], tr->mask[4],
+                    tr->mask[5], tr->mask[6], tr->mask[7], tr->priority,
+                    tr->tag);
+        }
+        fprintf(out, "}");
+    } else {
+        fprintf(out, ", .transitions = NULL");
+    }
+
+    fprintf(out, " }");
+    return;
+}
+
 static void
 generate_dfa_or_fallback(ExtractedRegex *regex, char *source, FILE *out) {
     ParsedOp *temp_ops = regex->temp_ops;
@@ -375,7 +465,7 @@ generate_dfa_or_fallback(ExtractedRegex *regex, char *source, FILE *out) {
                 original_string_length, quote_start,
                 PREPROC_FAIL_str(fail_reasons));
         fprintf(stderr, "static dfa will not be available at runtime.\n");
-        fprintf(out, ", .static_dfa = NULL } }");
+        fprintf(out, ", .static_dfa = NULL }");
     } else {
         fprintf(out,
                 ", .static_dfa = &(StaticDfa){ .num_states = %d, "
@@ -453,6 +543,7 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
                     (j == META_FASTMAP_SIZE - 1 ? "" : ", "));
         }
         fprintf(out, "}");
+        emit_tnfa(regex, out);
 
         if (regex->unsupported) {
             fprintf(
