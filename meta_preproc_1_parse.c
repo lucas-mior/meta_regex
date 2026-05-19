@@ -285,7 +285,6 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uint8 *fastmap,
     return 0;
 }
 
-
 static int32
 tnfa_group_start_tag(int32 group) {
     return group*2 - 1;
@@ -340,8 +339,8 @@ tnfa_add_transition(ParsedTnfa *tnfa, enum MetaTnfaTransitionKind kind,
 static bool
 tnfa_add_epsilon(ParsedTnfa *tnfa, int32 from, int32 to, int32 priority,
                  int32 tag) {
-    return tnfa_add_transition(tnfa, META_TNFA_TRANS_EPSILON, from, to, 0,
-                               NULL, priority, tag);
+    return tnfa_add_transition(tnfa, META_TNFA_TRANS_EPSILON, from, to, 0, NULL,
+                               priority, tag);
 }
 
 static int32
@@ -421,8 +420,8 @@ tnfa_collect_branches(ParsedOp *ops, int32 start, int32 end,
 }
 
 static int32
-tnfa_collect_tags_in_range(ParsedOp *ops, int32 start, int32 end,
-                           int32 *tags, int32 max_tags) {
+tnfa_collect_tags_in_range(ParsedOp *ops, int32 start, int32 end, int32 *tags,
+                           int32 max_tags) {
     int32 count = 0;
 
     if (start < 0) {
@@ -494,8 +493,8 @@ tnfa_tag_occurs_in_range(ParsedOp *ops, int32 start, int32 end, int32 tag) {
 
 static int32
 tnfa_filter_tags_without_prior_occurrence(ParsedOp *ops, int32 prior_start,
-                                         int32 prior_end, int32 *tags,
-                                         int32 tag_count) {
+                                          int32 prior_end, int32 *tags,
+                                          int32 tag_count) {
     int32 write = 0;
 
     for (int32 i = 0; i < tag_count; i += 1) {
@@ -534,8 +533,8 @@ tnfa_add_negative_tag_chain(ParsedTnfa *tnfa, int32 from, int32 to,
 }
 
 static bool
-tnfa_add_tagged_choice(ParsedTnfa *tnfa, int32 from, int32 to,
-                       int32 priority, int32 tag, int32 *negative_tags,
+tnfa_add_tagged_choice(ParsedTnfa *tnfa, int32 from, int32 to, int32 priority,
+                       int32 tag, int32 *negative_tags,
                        int32 negative_tag_count) {
     if (tag == META_TNFA_TAG_NONE) {
         return tnfa_add_negative_tag_chain(tnfa, from, to, priority,
@@ -558,9 +557,9 @@ tnfa_add_tagged_choice(ParsedTnfa *tnfa, int32 from, int32 to,
 }
 
 static bool
-tnfa_add_choice_branches(ParsedTnfa *tnfa, ParsedOp *ops,
-                         int32 *branch_starts, int32 *branch_ends,
-                         int32 branch_count, int32 from, int32 tag) {
+tnfa_add_choice_branches(ParsedTnfa *tnfa, ParsedOp *ops, int32 *branch_starts,
+                         int32 *branch_ends, int32 branch_count, int32 from,
+                         int32 tag) {
     for (int32 b = 0; b < branch_count; b += 1) {
         int32 negative_tags[PREPROC_MAX_TNFA_TAGS];
         int32 negative_count = tnfa_collect_tags_except_branch(
@@ -598,8 +597,7 @@ tnfa_add_atom_transition(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
         if (!tnfa_add_epsilon(tnfa, next_pc, pc, 1, META_TNFA_TAG_NONE)) {
             return false;
         }
-        return tnfa_add_epsilon(tnfa, next_pc, pc + 2, 2,
-                                META_TNFA_TAG_NONE);
+        return tnfa_add_epsilon(tnfa, next_pc, pc + 2, 2, META_TNFA_TAG_NONE);
     }
 
     if (postfix == META_OP_PLUS) {
@@ -610,8 +608,7 @@ tnfa_add_atom_transition(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
         if (!tnfa_add_epsilon(tnfa, next_pc, pc, 1, META_TNFA_TAG_NONE)) {
             return false;
         }
-        return tnfa_add_epsilon(tnfa, next_pc, pc + 2, 2,
-                                META_TNFA_TAG_NONE);
+        return tnfa_add_epsilon(tnfa, next_pc, pc + 2, 2, META_TNFA_TAG_NONE);
     }
 
     if (postfix == META_OP_OPTIONAL) {
@@ -622,8 +619,7 @@ tnfa_add_atom_transition(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
         if (!tnfa_add_epsilon(tnfa, pc, pc + 2, 2, META_TNFA_TAG_NONE)) {
             return false;
         }
-        return tnfa_add_epsilon(tnfa, next_pc, pc + 2, 1,
-                                META_TNFA_TAG_NONE);
+        return tnfa_add_epsilon(tnfa, next_pc, pc + 2, 1, META_TNFA_TAG_NONE);
     }
 
     return tnfa_add_transition(tnfa, kind, pc, next_pc, ops[pc].value,
@@ -674,8 +670,7 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
     }
 
     top_branch_count = tnfa_collect_branches(ops, 0, ops_count, branch_starts,
-                                             branch_ends,
-                                             PREPROC_MAX_BRANCHES);
+                                             branch_ends, PREPROC_MAX_BRANCHES);
     if (top_branch_count == 0) {
         return false;
     }
@@ -715,9 +710,9 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
             int32 tag = tnfa_group_start_tag(op->value);
             int32 branch_count = 0;
 
-            branch_count = tnfa_collect_branches(ops, pc + 1, group_end,
-                                                 branch_starts, branch_ends,
-                                                 PREPROC_MAX_BRANCHES);
+            branch_count
+                = tnfa_collect_branches(ops, pc + 1, group_end, branch_starts,
+                                        branch_ends, PREPROC_MAX_BRANCHES);
             if (branch_count == 0) {
                 return false;
             }
@@ -766,13 +761,11 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
                 negative_count = tnfa_filter_tags_without_prior_occurrence(
                     ops, 0, pc, negative_tags, negative_count);
 
-                if (!tnfa_add_negative_tag_chain(tnfa, pc, t2, 2,
-                                                 negative_tags,
+                if (!tnfa_add_negative_tag_chain(tnfa, pc, t2, 2, negative_tags,
                                                  negative_count)) {
                     return false;
                 }
-            } else if (!tnfa_add_epsilon(tnfa, pc, t2, 2,
-                                         META_TNFA_TAG_NONE)) {
+            } else if (!tnfa_add_epsilon(tnfa, pc, t2, 2, META_TNFA_TAG_NONE)) {
                 return false;
             }
         } else if (op->type == META_OP_JUMP) {
@@ -786,8 +779,8 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
                 int32 exit = t1 + ops[t1].min;
                 int32 loop_entry = tnfa_new_state(tnfa);
 
-                if (body < 0 || body > ops_count || exit < 0
-                    || exit > ops_count || loop_entry < 0) {
+                if (body < 0 || body > ops_count || exit < 0 || exit > ops_count
+                    || loop_entry < 0) {
                     return false;
                 }
 
@@ -810,8 +803,7 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
                                       META_TNFA_TAG_NONE)) {
                     return false;
                 }
-            } else if (!tnfa_add_epsilon(tnfa, pc, t1, 1,
-                                         META_TNFA_TAG_NONE)) {
+            } else if (!tnfa_add_epsilon(tnfa, pc, t1, 1, META_TNFA_TAG_NONE)) {
                 return false;
             }
         } else if (op->type == META_OP_ALTERNATION) {
@@ -821,20 +813,17 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
             }
         } else if (op->type == META_OP_WORD_START) {
             if (!tnfa_add_transition(tnfa, META_TNFA_TRANS_WORD_START, pc,
-                                     pc + 1, 0, NULL, 0,
-                                     META_TNFA_TAG_NONE)) {
+                                     pc + 1, 0, NULL, 0, META_TNFA_TAG_NONE)) {
                 return false;
             }
         } else if (op->type == META_OP_WORD_END) {
-            if (!tnfa_add_transition(tnfa, META_TNFA_TRANS_WORD_END, pc,
-                                     pc + 1, 0, NULL, 0,
-                                     META_TNFA_TAG_NONE)) {
+            if (!tnfa_add_transition(tnfa, META_TNFA_TRANS_WORD_END, pc, pc + 1,
+                                     0, NULL, 0, META_TNFA_TAG_NONE)) {
                 return false;
             }
         } else if (op->type == META_OP_WORD_BOUNDARY) {
             if (!tnfa_add_transition(tnfa, META_TNFA_TRANS_WORD_BOUNDARY, pc,
-                                     pc + 1, 0, NULL, 0,
-                                     META_TNFA_TAG_NONE)) {
+                                     pc + 1, 0, NULL, 0, META_TNFA_TAG_NONE)) {
                 return false;
             }
         } else if (op->type == META_OP_NON_WORD_BOUNDARY) {
@@ -1608,8 +1597,7 @@ parse_source_code(char *buffer, int64 source_len) {
             regex->tnfa = malloc2(SIZEOF(*regex->tnfa));
             if (!build_tnfa_from_ops(regex->tnfa, temp_ops, temp_ops_count,
                                      group_counter)) {
-                fprintf(stderr,
-                        "Warning: TNFA construction failed for %.*s.\n",
+                fprintf(stderr, "Warning: TNFA construction failed for %.*s.\n",
                         original_string_length, quote_start);
                 regex->tnfa = NULL;
             }

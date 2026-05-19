@@ -242,7 +242,6 @@ get_branch_weight(ParsedOp *ops, int32 count) {
     return weight;
 }
 
-
 static void
 emit_tnfa(ExtractedRegex *regex, FILE *out) {
     ParsedTnfa *tnfa = regex->tnfa;
@@ -318,10 +317,9 @@ emit_tnfa(ExtractedRegex *regex, FILE *out) {
                     "{ .kind = %s, .from = %d, .to = %d, .value = %d, "
                     ".mask = {%u, %u, %u, %u, %u, %u, %u, %u}, "
                     ".priority = %d, .tag = %d },\n",
-                    kind, tr->from, tr->to, tr->value, tr->mask[0],
-                    tr->mask[1], tr->mask[2], tr->mask[3], tr->mask[4],
-                    tr->mask[5], tr->mask[6], tr->mask[7], tr->priority,
-                    tr->tag);
+                    kind, tr->from, tr->to, tr->value, tr->mask[0], tr->mask[1],
+                    tr->mask[2], tr->mask[3], tr->mask[4], tr->mask[5],
+                    tr->mask[6], tr->mask[7], tr->priority, tr->tag);
         }
         fprintf(out, "}");
     } else {

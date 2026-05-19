@@ -32,9 +32,9 @@ static MatcherFeatures matchers[] = {
 };
 
 static int32
-meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input,
-                                int32 input_len, regmatch_t *pmatch,
-                                int32 pmatch_len, enum Matcher algorithm) {
+meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
+                                regmatch_t *pmatch, int32 pmatch_len,
+                                enum Matcher algorithm) {
     int32 result;
 
     switch (algorithm) {
@@ -196,8 +196,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
 
         if (algorithm == MATCHER_BTNFA
             && (matchers_enabled & MATCHER_LAZY_DFA)) {
-            if ((regex->used_ops & ~matchers[MATCHER_LAZY_DFA].supports)
-                == 0) {
+            if ((regex->used_ops & ~matchers[MATCHER_LAZY_DFA].supports) == 0) {
                 algorithm = MATCHER_LAZY_DFA;
             }
         }

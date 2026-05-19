@@ -12,23 +12,12 @@
 #define META_TNFA_MAX_TAG_VALUES (META_MAX_TNFA_TAGS + 1)
 
 static const MatcherFeatures match_features_tnfa = {
-    .supports = (enum MetaOpType)(META_OP_END
-                                  | META_OP_LITERAL
-                                  | META_OP_ANY
-                                  | META_OP_CLASS
-                                  | META_OP_GROUP_START
-                                  | META_OP_GROUP_END
-                                  | META_OP_STAR
-                                  | META_OP_PLUS
-                                  | META_OP_OPTIONAL
-                                  | META_OP_ALTERNATION
-                                  | META_OP_BOUNDED
-                                  | META_OP_SPLIT
-                                  | META_OP_JUMP
-                                  | META_OP_WORD_START
-                                  | META_OP_WORD_END
-                                  | META_OP_WORD_BOUNDARY
-                                  | META_OP_NON_WORD_BOUNDARY),
+    .supports = (enum MetaOpType)(
+        META_OP_END | META_OP_LITERAL | META_OP_ANY | META_OP_CLASS
+        | META_OP_GROUP_START | META_OP_GROUP_END | META_OP_STAR | META_OP_PLUS
+        | META_OP_OPTIONAL | META_OP_ALTERNATION | META_OP_BOUNDED
+        | META_OP_SPLIT | META_OP_JUMP | META_OP_WORD_START | META_OP_WORD_END
+        | META_OP_WORD_BOUNDARY | META_OP_NON_WORD_BOUNDARY),
     .extracts = true,
 };
 
@@ -227,9 +216,8 @@ match_tnfa_epsilon_closure(MetaTnfa *tnfa, uint8 *input, int32 input_len,
         output_configs[output_count] = cfg;
         output_count += 1;
 
-        edge_count = match_tnfa_collect_zero_width_edges(tnfa, cfg.state,
-                                                         input, input_len,
-                                                         pos, edge_indices);
+        edge_count = match_tnfa_collect_zero_width_edges(
+            tnfa, cfg.state, input, input_len, pos, edge_indices);
 
         for (int32 i = 0; i < edge_count; i += 1) {
             MetaTnfaTransition *tr = &tnfa->transitions[edge_indices[i]];
@@ -411,10 +399,9 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     configs_a = malloc(SIZEOF(*configs_a)*META_TNFA_MAX_ACTIVE_CONFIGS);
     configs_b = malloc(SIZEOF(*configs_b)*META_TNFA_MAX_ACTIVE_CONFIGS);
     stack = malloc(SIZEOF(*stack)*META_TNFA_MAX_ACTIVE_CONFIGS);
-    edge_indices = malloc(SIZEOF(*edge_indices)
-                          *(tnfa->num_transitions > 0
-                                ? tnfa->num_transitions
-                                : 1));
+    edge_indices
+        = malloc(SIZEOF(*edge_indices)
+                 * (tnfa->num_transitions > 0 ? tnfa->num_transitions : 1));
 
     if (configs_a == NULL || configs_b == NULL || stack == NULL
         || edge_indices == NULL) {
@@ -440,8 +427,8 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     }
 
     {
-        MetaTnfaConfig *accept = match_tnfa_find_accept(tnfa, closed,
-                                                        closed_count);
+        MetaTnfaConfig *accept
+            = match_tnfa_find_accept(tnfa, closed, closed_count);
         if (accept != NULL
             && (!regex->has_end_anchor
                 || match_tnfa_at_end(input, input_len, pos))) {
