@@ -24,22 +24,6 @@
 #define BENCHMARK 0
 #endif
 
-static void run_known_pairs(RegexTest *tests, int32 count, char *description,
-                            bool extract);
-static void run_fuzzy_tests(MetaRegex **patterns, int32 tests_len,
-                            int32 max_str_size, int32 ntests, bool extract);
-static void run_meta_only(RegexTest *tests, int32 count, char *description,
-                          bool extract);
-static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len,
-                                 bool extract);
-
-#define RUN_KNOWN_PAIRS(ARRAY) \
-    run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, true); \
-    run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, false)
-#define RUN_FUZZY_TESTS(ARRAY, MAX_STR_SIZE, NTESTS) \
-    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS, true); \
-    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS, false)
-
 #define FUZZY_PRECOMPILE_LIBC 1
 
 static FILE *csv;
@@ -73,6 +57,22 @@ matcher_enabled(enum Matcher enabled) {
     }
     return enabled;
 }
+
+static void run_known_pairs(RegexTest *tests, int32 count, char *description,
+                            bool extract);
+static void run_fuzzy_tests(MetaRegex **patterns, int32 tests_len,
+                            int32 max_str_size, int32 ntests, bool extract);
+static void run_meta_only(RegexTest *tests, int32 count, char *description,
+                          bool extract);
+static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len,
+                                 bool extract);
+
+#define RUN_KNOWN_PAIRS(ARRAY) \
+    run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, true); \
+    run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, false)
+#define RUN_FUZZY_TESTS(ARRAY, MAX_STR_SIZE, NTESTS) \
+    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS, true); \
+    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS, false)
 
 int32
 main(void) {
