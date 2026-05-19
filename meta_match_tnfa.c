@@ -396,11 +396,11 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         return REG_NOMATCH;
     }
 
-    configs_a = malloc(SIZEOF(*configs_a)*META_TNFA_MAX_ACTIVE_CONFIGS);
-    configs_b = malloc(SIZEOF(*configs_b)*META_TNFA_MAX_ACTIVE_CONFIGS);
-    stack = malloc(SIZEOF(*stack)*META_TNFA_MAX_ACTIVE_CONFIGS);
+    configs_a = malloc2(SIZEOF(*configs_a)*META_TNFA_MAX_ACTIVE_CONFIGS);
+    configs_b = malloc2(SIZEOF(*configs_b)*META_TNFA_MAX_ACTIVE_CONFIGS);
+    stack = malloc2(SIZEOF(*stack)*META_TNFA_MAX_ACTIVE_CONFIGS);
     edge_indices
-        = malloc(SIZEOF(*edge_indices)
+        = malloc2(SIZEOF(*edge_indices)
                  * (tnfa->num_transitions > 0 ? tnfa->num_transitions : 1));
 
     if (configs_a == NULL || configs_b == NULL || stack == NULL
@@ -487,16 +487,16 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
 
 cleanup:
     if (configs_a != NULL) {
-        free(configs_a);
+        free2(configs_a, 0);
     }
     if (configs_b != NULL) {
-        free(configs_b);
+        free2(configs_b, 0);
     }
     if (stack != NULL) {
-        free(stack);
+        free2(stack, 0);
     }
     if (edge_indices != NULL) {
-        free(edge_indices);
+        free2(edge_indices, 0);
     }
     return result;
 }
