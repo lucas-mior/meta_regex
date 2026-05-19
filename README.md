@@ -1,6 +1,9 @@
 # meta_regex
 Compile time regexes for C.
 
+## Disclaimer
+This is an exploration: don't use it in production.
+
 ## Which regular expressions does it support?
 A subset of posix extended.
 See `meta_tests_array.h` to check which patterns are being tested.
@@ -82,12 +85,11 @@ cc gen/your_code_baked.c -o your_program
 ./your_program
 ```
 
-## Files
-- `meta_preproc.c`: Program that reads your C code and transforms
-   `R("regex[0-9]")` into the equivalent MetaRegex struct.
-- `meta_regex.h` common stuff used at compile time and runtime.
-- `meta_regex_match.c` runtime regex matcher
-- `main.c` example of usage, with tests against the posix regex lib.
+## Project structure
+- `meta.h`: definitions used both at compile time and runtime
+- `meta_preproc*`: pre processor that compiles the regexes
+- `main*`: tests and benchmarks against posix
+
 
 ## Matchers
 - BTNFA
