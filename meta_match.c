@@ -211,7 +211,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
 
     needs_extraction = (regex->re_nsub > 0 && pmatch_len > 1);
 
-    if (needs_extraction && (matchers_enabled & MATCHER_TDFA) && regex->tdfa) {
+    if ((matchers_enabled & MATCHER_TDFA) && regex->tdfa) {
         if ((regex->used_ops & ~matchers[MATCHER_TDFA].supports) == 0) {
             algorithm = MATCHER_TDFA;
         }
