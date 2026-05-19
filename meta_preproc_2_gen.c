@@ -331,7 +331,7 @@ emit_tnfa(ExtractedRegex *regex, FILE *out) {
 }
 
 static void
-generate_dfa_or_fallback(ExtractedRegex *regex, char *source, FILE *out) {
+generate_static_dfa_or_fallback(ExtractedRegex *regex, char *source, FILE *out) {
     ParsedOp *temp_ops = regex->temp_ops;
     int32 temp_ops_count = regex->temp_ops_count;
     int32 original_string_length = regex->original_string_length;
@@ -553,7 +553,7 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
                 source + regex->quote_start_offset);
             fprintf(out, ", .static_dfa = NULL");
         } else {
-            generate_dfa_or_fallback(regex, source, out);
+            generate_static_dfa_or_fallback(regex, source, out);
         }
         fprintf(out, "}");
 
