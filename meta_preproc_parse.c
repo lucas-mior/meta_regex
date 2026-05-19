@@ -285,7 +285,8 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uint8 *fastmap,
     return 0;
 }
 
-RegexList parse_source_code(const char *buffer, size_t source_len) {
+RegexList
+parse_source_code(const char *buffer, int64 source_len) {
     RegexList list = {0};
     const char *cursor = buffer;
     const char *macro_start = "R(";
@@ -390,13 +391,14 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
         // Push new representation struct into list
         if (list.capacity == 0) {
             list.capacity = 16;
-            list.items = malloc(list.capacity * sizeof(ExtractedRegex));
+            list.items = malloc(list.capacity*sizeof(ExtractedRegex));
         } else if (list.count >= list.capacity) {
             list.capacity *= 2;
-            list.items = realloc(list.items, list.capacity * sizeof(ExtractedRegex));
+            list.items
+                = realloc(list.items, list.capacity*sizeof(ExtractedRegex));
         }
         ExtractedRegex *regex = &list.items[list.count];
-        memset(regex, 0, sizeof(ExtractedRegex));
+        memset64(regex, 0, sizeof(ExtractedRegex));
 
         regex->source_start_offset = found_macro - buffer;
 
@@ -413,7 +415,8 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
         quote_start = strchr(found_macro, '"');
         if (quote_start == NULL) {
             regex->is_invalid_macro = true;
-            regex->source_end_offset = (found_macro + strlen32(macro_start)) - buffer;
+            regex->source_end_offset
+                = (found_macro + strlen32(macro_start)) - buffer;
             cursor = found_macro + strlen32(macro_start);
             list.count++;
             continue;
@@ -442,12 +445,24 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                     if (raw_string[i + 1] != '\0') {
                         i += 1;
                         switch (raw_string[i]) {
-                        case 'n': regex_string[u_idx] = '\n'; break;
-                        case 't': regex_string[u_idx] = '\t'; break;
-                        case 'r': regex_string[u_idx] = '\r'; break;
-                        case '\\': regex_string[u_idx] = '\\'; break;
-                        case '"': regex_string[u_idx] = '"'; break;
-                        default: regex_string[u_idx] = raw_string[i]; break;
+                        case 'n':
+                            regex_string[u_idx] = '\n';
+                            break;
+                        case 't':
+                            regex_string[u_idx] = '\t';
+                            break;
+                        case 'r':
+                            regex_string[u_idx] = '\r';
+                            break;
+                        case '\\':
+                            regex_string[u_idx] = '\\';
+                            break;
+                        case '"':
+                            regex_string[u_idx] = '"';
+                            break;
+                        default:
+                            regex_string[u_idx] = raw_string[i];
+                            break;
                         }
                         u_idx += 1;
                     }
@@ -480,7 +495,9 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                 break;
             }
             case '*': {
-                bool is_group = (temp_ops_count > 0 && temp_ops[temp_ops_count - 1].type == META_OP_GROUP_END);
+                bool is_group = (temp_ops_count > 0
+                                 && temp_ops[temp_ops_count - 1].type
+                                        == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -496,7 +513,8 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                         }
                     }
                     int32 group_len = temp_ops_count - target_start;
-                    for (int32 i = temp_ops_count - 1; i >= target_start; i -= 1) {
+                    for (int32 i = temp_ops_count - 1; i >= target_start;
+                         i -= 1) {
                         temp_ops[i + 1] = temp_ops[i];
                     }
                     temp_ops_count += 1;
@@ -517,7 +535,9 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                 break;
             }
             case '+': {
-                bool is_group = (temp_ops_count > 0 && temp_ops[temp_ops_count - 1].type == META_OP_GROUP_END);
+                bool is_group = (temp_ops_count > 0
+                                 && temp_ops[temp_ops_count - 1].type
+                                        == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -546,7 +566,9 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                 break;
             }
             case '?': {
-                bool is_group = (temp_ops_count > 0 && temp_ops[temp_ops_count - 1].type == META_OP_GROUP_END);
+                bool is_group = (temp_ops_count > 0
+                                 && temp_ops[temp_ops_count - 1].type
+                                        == META_OP_GROUP_END);
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
@@ -562,7 +584,8 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                         }
                     }
                     int32 group_len = temp_ops_count - target_start;
-                    for (int32 i = temp_ops_count - 1; i >= target_start; i -= 1) {
+                    for (int32 i = temp_ops_count - 1; i >= target_start;
+                         i -= 1) {
                         temp_ops[i + 1] = temp_ops[i];
                     }
                     temp_ops_count += 1;
@@ -584,16 +607,19 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                 int32 n = -1;
                 bool has_m = false;
                 bool valid = false;
-                while (regex_string[temp_idx] >= '0' && regex_string[temp_idx] <= '9') {
+                while (regex_string[temp_idx] >= '0'
+                       && regex_string[temp_idx] <= '9') {
                     m = m*10 + (regex_string[temp_idx] - '0');
                     has_m = true;
                     temp_idx += 1;
                 }
                 if (regex_string[temp_idx] == ',') {
                     temp_idx += 1;
-                    if (regex_string[temp_idx] >= '0' && regex_string[temp_idx] <= '9') {
+                    if (regex_string[temp_idx] >= '0'
+                        && regex_string[temp_idx] <= '9') {
                         n = 0;
-                        while (regex_string[temp_idx] >= '0' && regex_string[temp_idx] <= '9') {
+                        while (regex_string[temp_idx] >= '0'
+                               && regex_string[temp_idx] <= '9') {
                             n = n*10 + (regex_string[temp_idx] - '0');
                             temp_idx += 1;
                         }
@@ -607,14 +633,16 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                 }
 
                 if (valid && temp_ops_count > 0) {
-                    bool is_group = (temp_ops[temp_ops_count - 1].type == META_OP_GROUP_END);
+                    bool is_group = (temp_ops[temp_ops_count - 1].type
+                                     == META_OP_GROUP_END);
                     if (is_group) {
                         int32 target_start = temp_ops_count - 1;
                         int32 depth = 0;
                         for (int32 i = target_start; i >= 0; i -= 1) {
                             if (temp_ops[i].type == META_OP_GROUP_END) {
                                 depth += 1;
-                            } else if (temp_ops[i].type == META_OP_GROUP_START) {
+                            } else if (temp_ops[i].type
+                                       == META_OP_GROUP_START) {
                                 depth -= 1;
                                 if (depth == 0) {
                                     target_start = i;
@@ -665,8 +693,10 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                         int32 target_start = temp_ops_count - 1;
                         ParsedOp op_to_repeat = temp_ops[target_start];
 
-                        if (temp_ops_count + m + (n == -1 ? 2 : (n - m)*2) >= PREPROC_MAX_TEMP_OPS) {
-                            fprintf(stderr, "Error: Quantifier unrolling exceeds max ops.\n");
+                        if (temp_ops_count + m + (n == -1 ? 2 : (n - m)*2)
+                            >= PREPROC_MAX_TEMP_OPS) {
+                            fprintf(stderr, "Error: Quantifier unrolling "
+                                            "exceeds max ops.\n");
                             exit(EXIT_FAILURE);
                         }
                         temp_ops_count = target_start;
@@ -683,7 +713,8 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                             for (int32 k = m; k < n; k += 1) {
                                 temp_ops[temp_ops_count] = op_to_repeat;
                                 temp_ops_count += 1;
-                                temp_ops[temp_ops_count].type = META_OP_OPTIONAL;
+                                temp_ops[temp_ops_count].type
+                                    = META_OP_OPTIONAL;
                                 temp_ops_count += 1;
                             }
                         }
@@ -742,11 +773,13 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                     if (!first_char && regex_string[regex_index] == ']') {
                         break;
                     }
-                    if (regex_string[regex_index] == '[' && regex_string[regex_index + 1] == ':') {
+                    if (regex_string[regex_index] == '['
+                        && regex_string[regex_index + 1] == ':') {
                         int32 colon_idx = regex_index + 2;
                         bool found_end = false;
                         while (regex_string[colon_idx] != '\0') {
-                            if (regex_string[colon_idx] == ':' && regex_string[colon_idx + 1] == ']') {
+                            if (regex_string[colon_idx] == ':'
+                                && regex_string[colon_idx + 1] == ']') {
                                 found_end = true;
                                 break;
                             }
@@ -756,7 +789,9 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                             char class_name[PREPROC_MAX_CLASS_NAME] = {0};
                             int32 name_len = colon_idx - (regex_index + 2);
                             if (name_len < PREPROC_MAX_CLASS_NAME) {
-                                strncpy32(class_name, &regex_string[regex_index + 2], name_len);
+                                strncpy32(class_name,
+                                          &regex_string[regex_index + 2],
+                                          name_len);
                                 populate_posix_class_mask(class_name, mask);
                             }
                             regex_index = colon_idx + 2;
@@ -766,16 +801,21 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                     }
                     int32 c1 = (uint8)regex_string[regex_index];
                     if (c1 >= 128) {
-                        fprintf(stderr, "Error: Non-ASCII character inside bracket expression is not supported.\n");
+                        fprintf(stderr,
+                                "Error: Non-ASCII character inside bracket "
+                                "expression is not supported.\n");
                         exit(EXIT_FAILURE);
                     }
                     int32 c2 = c1;
                     regex_index += 1;
-                    if (regex_string[regex_index] == '-' && regex_string[regex_index + 1] != ']'
+                    if (regex_string[regex_index] == '-'
+                        && regex_string[regex_index + 1] != ']'
                         && regex_string[regex_index + 1] != '\0') {
                         c2 = (uint8)regex_string[regex_index + 1];
                         if (c2 >= 128) {
-                            fprintf(stderr, "Error: Non-ASCII character inside bracket expression is not supported.\n");
+                            fprintf(stderr,
+                                    "Error: Non-ASCII character inside bracket "
+                                    "expression is not supported.\n");
                             exit(EXIT_FAILURE);
                         }
                         regex_index += 2;
@@ -809,16 +849,24 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                         for (int32 i = 0; i < META_CHAR_BITMASK_WORDS; i += 1) {
                             temp_ops[temp_ops_count].mask[i] = 0;
                         }
-                        temp_ops[temp_ops_count].mask[' ' / 32] |= (1u << (' ' % 32));
-                        temp_ops[temp_ops_count].mask['\t' / 32] |= (1u << ('\t' % 32));
-                        temp_ops[temp_ops_count].mask['\n' / 32] |= (1u << ('\n' % 32));
-                        temp_ops[temp_ops_count].mask['\r' / 32] |= (1u << ('\r' % 32));
-                        temp_ops[temp_ops_count].mask['\f' / 32] |= (1u << ('\f' % 32));
-                        temp_ops[temp_ops_count].mask['\v' / 32] |= (1u << ('\v' % 32));
+                        temp_ops[temp_ops_count].mask[' ' / 32]
+                            |= (1u << (' ' % 32));
+                        temp_ops[temp_ops_count].mask['\t' / 32]
+                            |= (1u << ('\t' % 32));
+                        temp_ops[temp_ops_count].mask['\n' / 32]
+                            |= (1u << ('\n' % 32));
+                        temp_ops[temp_ops_count].mask['\r' / 32]
+                            |= (1u << ('\r' % 32));
+                        temp_ops[temp_ops_count].mask['\f' / 32]
+                            |= (1u << ('\f' % 32));
+                        temp_ops[temp_ops_count].mask['\v' / 32]
+                            |= (1u << ('\v' % 32));
 
                         if (c_cp == 'S') {
-                            for (int32 i = 0; i < META_CHAR_BITMASK_WORDS; i += 1) {
-                                temp_ops[temp_ops_count].mask[i] = ~temp_ops[temp_ops_count].mask[i];
+                            for (int32 i = 0; i < META_CHAR_BITMASK_WORDS;
+                                 i += 1) {
+                                temp_ops[temp_ops_count].mask[i]
+                                    = ~temp_ops[temp_ops_count].mask[i];
                             }
                         }
                         temp_ops_count += 1;
@@ -837,7 +885,8 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                         temp_ops[temp_ops_count].type = META_OP_WORD_BOUNDARY;
                         temp_ops_count += 1;
                     } else if (c_cp == 'B') {
-                        temp_ops[temp_ops_count].type = META_OP_NON_WORD_BOUNDARY;
+                        temp_ops[temp_ops_count].type
+                            = META_OP_NON_WORD_BOUNDARY;
                         temp_ops_count += 1;
                     } else {
                         temp_ops[temp_ops_count].type = META_OP_LITERAL;
@@ -876,7 +925,8 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                 visited[i] = 0;
             }
 
-            can_be_null = compute_first_set(temp_ops, 0, temp_ops_count, fastmap, visited);
+            can_be_null = compute_first_set(temp_ops, 0, temp_ops_count,
+                                            fastmap, visited);
 
             if (has_alternation) {
                 while (scan < temp_ops_count) {
@@ -884,11 +934,14 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
                         depth += 1;
                     } else if (temp_ops[scan].type == META_OP_GROUP_END) {
                         depth -= 1;
-                    } else if (temp_ops[scan].type == META_OP_ALTERNATION && depth == 0) {
+                    } else if (temp_ops[scan].type == META_OP_ALTERNATION
+                               && depth == 0) {
                         for (int32 i = 0; i < PREPROC_MAX_TEMP_OPS; i += 1) {
                             visited[i] = 0;
                         }
-                        if (compute_first_set(temp_ops, scan + 1, temp_ops_count, fastmap, visited)) {
+                        if (compute_first_set(temp_ops, scan + 1,
+                                              temp_ops_count, fastmap,
+                                              visited)) {
                             can_be_null = true;
                         }
                     }
@@ -902,34 +955,52 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
             if (i == temp_ops_count) {
                 w = snprintf2(op_ptr, space, "{META_OP_END, 0, 0, 0, {0}}\n");
             } else if (temp_ops[i].type == META_OP_LITERAL) {
-                w = snprintf2(op_ptr, space, "{META_OP_LITERAL, %d, 0, 0, {0}},\n", temp_ops[i].value);
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_LITERAL, %d, 0, 0, {0}},\n",
+                              temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_CLASS) {
                 w = snprintf2(op_ptr, space,
-                              "{META_OP_CLASS, 0, 0, 0, {%u, %u, %u, %u, %u, %u, %u, %u}},\n",
+                              "{META_OP_CLASS, 0, 0, 0, {%u, %u, %u, %u, %u, "
+                              "%u, %u, %u}},\n",
                               temp_ops[i].mask[0], temp_ops[i].mask[1],
                               temp_ops[i].mask[2], temp_ops[i].mask[3],
                               temp_ops[i].mask[4], temp_ops[i].mask[5],
                               temp_ops[i].mask[6], temp_ops[i].mask[7]);
             } else if (temp_ops[i].type == META_OP_BOUNDED) {
-                w = snprintf2(op_ptr, space, "{META_OP_BOUNDED, 0, %d, %d, {0}},\n", temp_ops[i].min, temp_ops[i].max);
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_BOUNDED, 0, %d, %d, {0}},\n",
+                              temp_ops[i].min, temp_ops[i].max);
             } else if (temp_ops[i].type == META_OP_GROUP_START) {
-                w = snprintf2(op_ptr, space, "{META_OP_GROUP_START, %d, 0, 0, {0}},\n", temp_ops[i].value);
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_GROUP_START, %d, 0, 0, {0}},\n",
+                              temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_GROUP_END) {
-                w = snprintf2(op_ptr, space, "{META_OP_GROUP_END, %d, 0, 0, {0}},\n", temp_ops[i].value);
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_GROUP_END, %d, 0, 0, {0}},\n",
+                              temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_SPLIT) {
-                w = snprintf2(op_ptr, space, "{META_OP_SPLIT, %d, %d, 0, {0}},\n", temp_ops[i].value, temp_ops[i].min);
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_SPLIT, %d, %d, 0, {0}},\n",
+                              temp_ops[i].value, temp_ops[i].min);
             } else if (temp_ops[i].type == META_OP_JUMP) {
-                w = snprintf2(op_ptr, space, "{META_OP_JUMP, %d, 0, 0, {0}},\n", temp_ops[i].value);
+                w = snprintf2(op_ptr, space, "{META_OP_JUMP, %d, 0, 0, {0}},\n",
+                              temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_WORD_START) {
-                w = snprintf2(op_ptr, space, "{META_OP_WORD_START, 0, 0, 0, {0}},\n");
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_WORD_START, 0, 0, 0, {0}},\n");
             } else if (temp_ops[i].type == META_OP_WORD_END) {
-                w = snprintf2(op_ptr, space, "{META_OP_WORD_END, 0, 0, 0, {0}},\n");
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_WORD_END, 0, 0, 0, {0}},\n");
             } else if (temp_ops[i].type == META_OP_WORD_BOUNDARY) {
-                w = snprintf2(op_ptr, space, "{META_OP_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
             } else if (temp_ops[i].type == META_OP_NON_WORD_BOUNDARY) {
-                w = snprintf2(op_ptr, space, "{META_OP_NON_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_NON_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
             } else if (temp_ops[i].type == META_OP_BACKREF) {
-                w = snprintf2(op_ptr, space, "{META_OP_BACKREF, %d, 0, 0, {0}},\n", temp_ops[i].value);
+                w = snprintf2(op_ptr, space,
+                              "{META_OP_BACKREF, %d, 0, 0, {0}},\n",
+                              temp_ops[i].value);
             } else {
                 char *type_str = "META_OP_UNKNOWN";
                 if (temp_ops[i].type == META_OP_STAR) {
@@ -972,9 +1043,9 @@ RegexList parse_source_code(const char *buffer, size_t source_len) {
         regex->group_counter = group_counter;
         regex->can_be_null = can_be_null;
         regex->used_ops = used_ops;
-        memcpy(regex->fastmap, fastmap, META_FASTMAP_SIZE);
+        memcpy64(regex->fastmap, fastmap, META_FASTMAP_SIZE);
         regex->unsupported = unsupported;
-        memcpy(regex->temp_ops, temp_ops, temp_ops_count * sizeof(ParsedOp));
+        memcpy64(regex->temp_ops, temp_ops, temp_ops_count*sizeof(ParsedOp));
         regex->temp_ops_count = temp_ops_count;
         strncpy(regex->op_buffer, op_buffer, PREPROC_OP_BUFFER_SIZE);
 

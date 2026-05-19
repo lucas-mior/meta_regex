@@ -2,7 +2,8 @@
 #include "meta_preproc_parse.c"
 #include "meta_preproc_gen.c"
 
-int32 main(int32 argc, char **argv) {
+int32
+main(int32 argc, char **argv) {
     FILE *input_file = NULL;
     int64 file_size = 0;
     char *buffer = NULL;
@@ -44,6 +45,6 @@ int32 main(int32 argc, char **argv) {
 
     free(parsed_list.items);
     free2(buffer, file_size + 1);
-    
+
     exit(EXIT_SUCCESS);
 }

@@ -36,19 +36,22 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
         if (op->type == META_OP_SPLIT) {
             int32 t1 = pc + op->value;
             int32 t2 = pc + op->min;
-            if (t1 >= 0 && t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+            if (t1 >= 0 && t1 <= ops_count
+                && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                 set->bits[t1 / 32] |= (1u << (t1 % 32));
                 stack[stack_ptr] = t1;
                 stack_ptr += 1;
             }
-            if (t2 >= 0 && t2 <= ops_count && !(set->bits[t2 / 32] & (1u << (t2 % 32)))) {
+            if (t2 >= 0 && t2 <= ops_count
+                && !(set->bits[t2 / 32] & (1u << (t2 % 32)))) {
                 set->bits[t2 / 32] |= (1u << (t2 % 32));
                 stack[stack_ptr] = t2;
                 stack_ptr += 1;
             }
         } else if (op->type == META_OP_JUMP) {
             int32 t1 = pc + op->value;
-            if (t1 >= 0 && t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+            if (t1 >= 0 && t1 <= ops_count
+                && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                 set->bits[t1 / 32] |= (1u << (t1 % 32));
                 stack[stack_ptr] = t1;
                 stack_ptr += 1;
@@ -56,7 +59,8 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
         } else if (op->type == META_OP_WORD_BOUNDARY) {
             if (prev_is_w != curr_is_w) {
                 int32 t1 = pc + 1;
-                if (t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+                if (t1 <= ops_count
+                    && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                     set->bits[t1 / 32] |= (1u << (t1 % 32));
                     stack[stack_ptr] = t1;
                     stack_ptr += 1;
@@ -65,7 +69,8 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
         } else if (op->type == META_OP_NON_WORD_BOUNDARY) {
             if (prev_is_w == curr_is_w) {
                 int32 t1 = pc + 1;
-                if (t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+                if (t1 <= ops_count
+                    && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                     set->bits[t1 / 32] |= (1u << (t1 % 32));
                     stack[stack_ptr] = t1;
                     stack_ptr += 1;
@@ -74,7 +79,8 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
         } else if (op->type == META_OP_WORD_START) {
             if (!prev_is_w && curr_is_w) {
                 int32 t1 = pc + 1;
-                if (t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+                if (t1 <= ops_count
+                    && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                     set->bits[t1 / 32] |= (1u << (t1 % 32));
                     stack[stack_ptr] = t1;
                     stack_ptr += 1;
@@ -83,7 +89,8 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
         } else if (op->type == META_OP_WORD_END) {
             if (prev_is_w && !curr_is_w) {
                 int32 t1 = pc + 1;
-                if (t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+                if (t1 <= ops_count
+                    && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                     set->bits[t1 / 32] |= (1u << (t1 % 32));
                     stack[stack_ptr] = t1;
                     stack_ptr += 1;
@@ -107,7 +114,8 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
                     depth -= 1;
                 } else if (ops[i].type == META_OP_ALTERNATION && depth == 0) {
                     int32 t2 = i + 1;
-                    if (t2 <= ops_count && !(set->bits[t2 / 32] & (1u << (t2 % 32)))) {
+                    if (t2 <= ops_count
+                        && !(set->bits[t2 / 32] & (1u << (t2 % 32)))) {
                         set->bits[t2 / 32] |= (1u << (t2 % 32));
                         stack[stack_ptr] = t2;
                         stack_ptr += 1;
@@ -142,14 +150,17 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
             }
         }
 
-        if (op->type == META_OP_LITERAL || op->type == META_OP_CLASS || op->type == META_OP_ANY) {
+        if (op->type == META_OP_LITERAL || op->type == META_OP_CLASS
+            || op->type == META_OP_ANY) {
             if (pc + 1 < ops_count) {
                 ParsedOp *next_op = &ops[pc + 1];
                 if (next_op->type == META_OP_STAR
                     || next_op->type == META_OP_OPTIONAL
-                    || (next_op->type == META_OP_BOUNDED && next_op->min == 0)) {
+                    || (next_op->type == META_OP_BOUNDED
+                        && next_op->min == 0)) {
                     int32 t1 = pc + 2;
-                    if (t1 <= ops_count && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
+                    if (t1 <= ops_count
+                        && !(set->bits[t1 / 32] & (1u << (t1 % 32)))) {
                         set->bits[t1 / 32] |= (1u << (t1 % 32));
                         stack[stack_ptr] = t1;
                         stack_ptr += 1;
@@ -193,13 +204,15 @@ compute_core_transitions(DfaSet *closed_set, ParsedOp *ops, int32 ops_count,
                 int32 t1 = i + 1;
                 if (t1 < ops_count) {
                     ParsedOp *next_op = &ops[t1];
-                    if (next_op->type == META_OP_STAR || next_op->type == META_OP_PLUS) {
+                    if (next_op->type == META_OP_STAR
+                        || next_op->type == META_OP_PLUS) {
                         next_core->bits[i / 32] |= (1u << (i % 32));
                         int32 t2 = i + 2;
                         if (t2 <= ops_count) {
                             next_core->bits[t2 / 32] |= (1u << (t2 % 32));
                         }
-                    } else if (next_op->type == META_OP_OPTIONAL || next_op->type == META_OP_BOUNDED) {
+                    } else if (next_op->type == META_OP_OPTIONAL
+                               || next_op->type == META_OP_BOUNDED) {
                         int32 t2 = i + 2;
                         if (t2 <= ops_count) {
                             next_core->bits[t2 / 32] |= (1u << (t2 % 32));
@@ -237,10 +250,11 @@ generate_dfa_or_fallback(ExtractedRegex *regex, const char *source, FILE *out) {
     const char *quote_start = source + regex->quote_start_offset;
 
     enum PreprocFailReason fail_reasons = 0;
-    static int32 dfa_transitions[META_MAX_STATIC_DFA_STATES][META_ALPHABET_SIZE];
+    static int32 dfa_transitions[META_MAX_STATIC_DFA_STATES]
+                                [META_ALPHABET_SIZE];
     static uint8 dfa_accept[META_MAX_STATIC_DFA_STATES][META_ALPHABET_SIZE];
     static DfaSet dfa_sets[META_MAX_STATIC_DFA_STATES];
-    
+
     int32 dfa_count = 1;
     int32 start_dfa_w = 0;
     int32 start_dfa_nw = 0;
@@ -363,10 +377,11 @@ generate_dfa_or_fallback(ExtractedRegex *regex, const char *source, FILE *out) {
         fprintf(stderr, "static dfa will not be available at runtime.\n");
         fprintf(out, ", .static_dfa = NULL } }");
     } else {
-        fprintf(out, ", .static_dfa = &(StaticDfa){ .num_states = %d, "
-               ".start_state_w = %d, .start_state_nw = %d, "
-               ".states = (StaticDfaState[]){ \n",
-               dfa_count, start_dfa_w, start_dfa_nw);
+        fprintf(out,
+                ", .static_dfa = &(StaticDfa){ .num_states = %d, "
+                ".start_state_w = %d, .start_state_nw = %d, "
+                ".states = (StaticDfaState[]){ \n",
+                dfa_count, start_dfa_w, start_dfa_nw);
         for (int32 i = 0; i < dfa_count; i += 1) {
             bool has_accepts = false;
             bool has_transitions = false;
@@ -398,16 +413,18 @@ generate_dfa_or_fallback(ExtractedRegex *regex, const char *source, FILE *out) {
     return;
 }
 
-void generate_source_code(const char *source, size_t source_len, RegexList *list, FILE *out) {
-    size_t current_offset = 0;
-    
+void
+generate_source_code(const char *source, int64 source_len, RegexList *list,
+                     FILE *out) {
+    int64 current_offset = 0;
+
     for (int32 i = 0; i < list->count; i += 1) {
         ExtractedRegex *regex = &list->items[i];
-        
+
         // Print everything leading up to this macro natively
-        size_t prefix_len = regex->source_start_offset - current_offset;
-        fprintf(out, "%.*s", (int)prefix_len, source + current_offset);
-        
+        int64 prefix_len = regex->source_start_offset - current_offset;
+        fprintf(out, "%.*s", (int32)prefix_len, source + current_offset);
+
         if (regex->is_null_macro) {
             fprintf(out, "NULL");
             current_offset = regex->source_end_offset;
@@ -418,9 +435,11 @@ void generate_source_code(const char *source, size_t source_len, RegexList *list
             current_offset = regex->source_end_offset;
             continue;
         }
-        
-        // Emulate original printing structure 
-        fprintf(out, "&(MetaRegex){ .string = %.*s, ", regex->original_string_length, source + regex->quote_start_offset);
+
+        // Emulate original printing structure
+        fprintf(out, "&(MetaRegex){ .string = %.*s, ",
+                regex->original_string_length,
+                source + regex->quote_start_offset);
         fprintf(out, ".ops = { %s }, ", regex->op_buffer);
         fprintf(out, ".has_start_anchor = %d, ", regex->has_start);
         fprintf(out, ".has_end_anchor = %d, ", regex->has_end);
@@ -431,26 +450,30 @@ void generate_source_code(const char *source, size_t source_len, RegexList *list
 
         for (int32 j = 0; j < META_FASTMAP_SIZE; j += 1) {
             fprintf(out, "0x%02x%s", regex->fastmap[j],
-                   (j == META_FASTMAP_SIZE - 1 ? "" : ", "));
+                    (j == META_FASTMAP_SIZE - 1 ? "" : ", "));
         }
         fprintf(out, "}");
 
         if (regex->unsupported) {
-            fprintf(stderr,
-                "Warning: Unsupported regex feature in regex " BLUE("%.*s") ".\n"
-                "static dfa will not be available at runtime.\n",
-                regex->original_string_length, source + regex->quote_start_offset);
+            fprintf(
+                stderr,
+                "Warning: Unsupported regex feature in regex " BLUE(
+                    "%.*s") ".\n"
+                            "static dfa will not be available at runtime.\n",
+                regex->original_string_length,
+                source + regex->quote_start_offset);
             fprintf(out, ", .static_dfa = NULL }");
         } else {
             generate_dfa_or_fallback(regex, source, out);
         }
-        
+
         // Move trailing cursor
         current_offset = regex->source_end_offset;
     }
-    
-    // Output any remaining trailing code from the original file 
+
+    // Output any remaining trailing code from the original file
     if (current_offset < source_len) {
-        fprintf(out, "%.*s", (int)(source_len - current_offset), source + current_offset);
+        fprintf(out, "%.*s", (int32)(source_len - current_offset),
+                source + current_offset);
     }
 }

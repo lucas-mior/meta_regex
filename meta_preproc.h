@@ -73,13 +73,13 @@ typedef struct DfaSet {
 
 // Intermediate Representation for the extracted regex
 typedef struct ExtractedRegex {
-    size_t source_start_offset;
-    size_t source_end_offset;
+    int64 source_start_offset;
+    int64 source_end_offset;
     
     bool is_null_macro;
     bool is_invalid_macro;
 
-    size_t quote_start_offset;
+    int64 quote_start_offset;
     int32 original_string_length;
     
     ParsedOp temp_ops[PREPROC_MAX_TEMP_OPS];
@@ -104,7 +104,7 @@ typedef struct RegexList {
 } RegexList;
 
 // Inter-phase APIs
-RegexList parse_source_code(const char *buffer, size_t source_len);
-void generate_source_code(const char *source, size_t source_len, RegexList *list, FILE *out);
+RegexList parse_source_code(const char *buffer, int64 source_len);
+void generate_source_code(const char *source, int64 source_len, RegexList *list, FILE *out);
 
 #endif /* META_PREPROC_H */
