@@ -264,11 +264,11 @@ typedef struct LazyDfa LazyDfa;
 typedef struct MetaRegex {
     char *string;
     MetaOp ops[META_MAX_OPS];
+    enum MetaOpType used_ops;
     int32 has_start_anchor;
     int32 has_end_anchor;
     int32 re_nsub;
     int32 can_be_null;
-    enum MetaOpType used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
 
     MetaTnfa *tnfa;
