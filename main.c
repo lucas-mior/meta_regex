@@ -176,6 +176,8 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
         char *input = tests_libc[i].input;
         char *regex = tests_libc[i].meta_regex->string;
         int32 compiled = regcomp(&compiled_regex, regex, REG_EXTENDED);
+        regmatch_t *pmatch_ptr = NULL;
+        int32 pmatch_len = 0;
 
         if (compiled != 0) {
             char error_message[256];
@@ -185,8 +187,11 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
                   error_message);
             exit(EXIT_FAILURE);
         }
-        int32 pmatch_len = extract ? LENGTH(tests_libc[i].pmatch) : 0;
-        regmatch_t *pmatch_ptr = extract ? tests_libc[i].pmatch : NULL;
+
+        if (extract) {
+            pmatch_ptr = tests_libc[i].pmatch;
+            pmatch_len = LENGTH(tests_libc[i].pmatch);
+        }
 
         tests_libc[i].result = regexec(&compiled_regex, input,
                                        (size_t)pmatch_len, pmatch_ptr, 0);
