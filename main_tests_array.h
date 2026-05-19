@@ -359,11 +359,11 @@ static MetaRegex *regexes_extensive[] = {
     R("\\s+[A-Z][a-z]+[.,! ]\\s*$"),
     R("^[[:alpha:]]{2}[[:digit:]]{4}[[:alnum:]]{2}$"),
     R("^.*a.*b.*c.*$"),
-    R("(|a|b|)[a-z]+(|c|d)"),
     R("\\<[a-zA-Z_][[:alnum:]_]*\\>"),
     R("a?b?c?d?e?f?g?h?i?j?k?l?m?n?o?p?q?r?s?t?u?v?w?"),
     R("(abc|def){0,3}"),
-    R("a\\\\b.*?c\\\\d")
+    R("a\\\\b.*?c\\\\d"),
+    R("(|a|b|)[a-z]+"),
 };
 
 #endif /* META_TESTS_ARRAY_H */
