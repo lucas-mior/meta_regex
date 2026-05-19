@@ -172,7 +172,7 @@ static RegexTest ascii_with_group_no_backref[] = {
     {"ababab",   R("(ab){1,3}")},
     {"abababab", R("(ab){1,3}")},
     {"ab",       R("(a|ab)")},
-    /* {"aa",       R("((a|aa)*)")}, */
+    {"aa",       R("((a|aa)*)")},
     {"a",        R("(|a|b|)[a-z]+")},
     {"b",        R("(|a|b|)[a-z]+")},
     {"ax",       R("(|a|b|)[a-z]+")},
