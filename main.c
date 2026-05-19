@@ -98,7 +98,7 @@ main(void) {
         RUN_FUZZY_TESTS(regexes_extensive, max_input_len, 200);
     }
 
-    printf(RED("\nTests from inputs/ against extensive regex array ...\n"));
+    printf(RED("\nTests from inputs/ against extensive regex array ...")"\n");
     run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive), true);
     run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive), false);
 
