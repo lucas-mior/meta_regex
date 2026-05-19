@@ -1,3 +1,4 @@
+
 #if !defined(META_MATCH_C)
 #define META_MATCH_C
 
@@ -11,6 +12,7 @@
 #include "meta_match_btnfa.c"
 #include "meta_match_static_dfa.c"
 #include "meta_match_tnfa.c"
+#include "meta_match_tdfa.c"
 
 #define ENUM_PREFIX_ MATCHER_
 #define ENUM_NAME Matcher
@@ -19,7 +21,8 @@
     X(BTNFA) \
     X(TNFA) \
     X(LAZY_DFA) \
-    X(STATIC_DFA)
+    X(STATIC_DFA) \
+    X(TDFA)
 #include "xenums.c"
 
 #define USE_DFA_THRESHOLD 1
@@ -27,6 +30,7 @@
 static MatcherFeatures matchers[] = {
     [MATCHER_BTNFA] = match_features_btnfa,
     [MATCHER_TNFA] = match_features_tnfa,
+    [MATCHER_TDFA] = match_features_tdfa,
     [MATCHER_LAZY_DFA] = match_features_lazy_dfa,
     [MATCHER_STATIC_DFA] = match_features_static_dfa,
 };
@@ -55,6 +59,33 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
             if (bit_match || regex->can_be_null) {
                 result = match_btnfa(regex, input, input_len, j, pmatch,
                                      pmatch_len);
+                if (result == 0) {
+                    return 0;
+                }
+            }
+
+            if (b == '\0') {
+                break;
+            }
+        }
+        break;
+    }
+    case MATCHER_TDFA: {
+        if (regex->has_start_anchor) {
+            result = match_tdfa(regex, input, input_len, 0, pmatch, pmatch_len);
+            if (result == 0) {
+                return 0;
+            }
+            return REG_NOMATCH;
+        }
+
+        for (int32 j = 0;; j += 1) {
+            uint8 b = input[j];
+            int32 bit_match = (regex->fastmap[b >> 3] & (1 << (b % 8)));
+
+            if (bit_match || regex->can_be_null) {
+                result = match_tdfa(regex, input, input_len, j, pmatch,
+                                    pmatch_len);
                 if (result == 0) {
                     return 0;
                 }
@@ -180,7 +211,14 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
 
     needs_extraction = (regex->re_nsub > 0 && pmatch_len > 1);
 
-    if (needs_extraction && (matchers_enabled & MATCHER_TNFA) && regex->tnfa) {
+    if (needs_extraction && (matchers_enabled & MATCHER_TDFA) && regex->tdfa) {
+        if ((regex->used_ops & ~matchers[MATCHER_TDFA].supports) == 0) {
+            algorithm = MATCHER_TDFA;
+        }
+    }
+
+    if (algorithm == MATCHER_BTNFA && needs_extraction
+        && (matchers_enabled & MATCHER_TNFA) && regex->tnfa) {
         if ((regex->used_ops & ~matchers[MATCHER_TNFA].supports) == 0) {
             algorithm = MATCHER_TNFA;
         }

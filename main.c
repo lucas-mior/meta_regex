@@ -51,7 +51,10 @@ static FILE *csv;
 #define ENABLE_STATIC_DFA 0
 #endif
 #if !defined(ENABLE_TNFA)
-#define ENABLE_TNFA 1
+#define ENABLE_TNFA 0
+#endif
+#if !defined(ENABLE_TDFA)
+#define ENABLE_TDFA 1
 #endif
 
 static enum Matcher
@@ -64,6 +67,9 @@ matcher_enabled(enum Matcher enabled) {
     }
     if (ENABLE_TNFA) {
         enabled |= MATCHER_TNFA;
+    }
+    if (ENABLE_TDFA) {
+        enabled |= MATCHER_TDFA;
     }
     return enabled;
 }
