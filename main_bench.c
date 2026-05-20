@@ -1285,8 +1285,7 @@ bench_build_pair_input_bucket(BenchRegexBucket *regex_bucket, regex_t *compiled,
         SNPRINTF(bench_pair_input_names[ri], "random_%s_%d",
                  bench_input_length_class_name(input_class), ri);
 
-        for (int32 attempt = 0; attempt < BENCH_RANDOM_INPUT_ATTEMPTS;
-             attempt += 1) {
+        for (int32 k = 0; k < BENCH_RANDOM_INPUT_ATTEMPTS; k += 1) {
             bench_generate_random_input(bench_pair_input_storage[ri],
                                         input_class, seed);
             if (bench_run_libc_one(&compiled[ri], bench_pair_input_storage[ri],
