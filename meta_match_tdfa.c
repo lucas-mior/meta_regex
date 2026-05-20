@@ -63,7 +63,12 @@ match_tdfa_word_at(uint8 *input, int32 input_len, int32 pos) {
 
 static int32
 match_tdfa_valid_reg(MetaTdfa *tdfa, int32 reg) {
-    return (reg > 0 && reg <= tdfa->num_registers);
+    if (reg > 0) {
+        if (reg <= tdfa->num_registers) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 static int32
