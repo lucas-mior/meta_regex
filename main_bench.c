@@ -1211,9 +1211,8 @@ bench_random_next(uint32 *state) {
 
 static char
 bench_random_char(uint32 *state) {
-    static char alphabet[]
-        = "abcdefghijklmnopqrstuvwxyz0123456789 "
-          "_-./:;,@[](){}";
+    static char alphabet[] = "abcdefghijklmnopqrstuvwxyz0123456789 "
+                             "_-./:;,@[](){}";
     uint32 r = bench_random_next(state);
     return alphabet[r % (SIZEOF(alphabet) - 1)];
 }

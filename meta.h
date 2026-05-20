@@ -294,9 +294,9 @@ typedef struct MetaTdfa {
         Optional direct transition lookup table.
 
         If non-NULL, transition_index is indexed by:
-            state * transition_index_stride + byte
+            state*transition_index_stride + byte
         for context-free TDFA, and by:
-            state * transition_index_stride + next_is_word * 256 + byte
+            state*transition_index_stride + next_is_word*256 + byte
         for context-sensitive TDFA. Values are transition indices, or -1.
     */
     int32 transition_index_stride;
