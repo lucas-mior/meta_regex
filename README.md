@@ -122,7 +122,6 @@ cc gen/your_code_baked.c -o your_program
 - Tagged NFA
 
 ## TODO
-- Implement word boundary support for the TDFA
 - Implement heuristics for the high level dispatcher
 - Implement arguments for the pre processor
   * limits
