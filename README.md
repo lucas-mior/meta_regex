@@ -6,7 +6,7 @@ This is an exploration: don't use it in production.
 
 ## In which situations could it be nice to use this "library"?
 - When you don't want to pay the cost of compiling regexes at run time.
-  * If definetely won't pay for parsing it
+  * You definetely won't pay for parsing it
   * If your regex is simple, you also won't pay for generating a DFA at runtime,
     you will get a fast AOT static DFA.
 - When you don't need back references in your regexes
