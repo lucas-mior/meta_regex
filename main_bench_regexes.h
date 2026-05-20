@@ -12,7 +12,6 @@ typedef enum BenchRegexLengthClass {
 } BenchRegexLengthClass;
 
 typedef enum BenchRegexFeatureClass {
-    BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF,
     BENCH_FEATURE_NO_BACKREF,
     BENCH_FEATURE_ALL,
     BENCH_FEATURE_LAST,
@@ -62,8 +61,6 @@ bench_length_class_max(enum BenchRegexLengthClass c) {
 static char *
 bench_feature_class_name(enum BenchRegexFeatureClass c) {
     switch (c) {
-    case BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF:
-        return "all_except_word_boundaries_and_backreferences";
     case BENCH_FEATURE_NO_BACKREF:
         return "all_except_backreferences";
     case BENCH_FEATURE_ALL:
@@ -74,49 +71,25 @@ bench_feature_class_name(enum BenchRegexFeatureClass c) {
     }
 }
 
-static BenchRegexCase bench_regex_1_8_regular_no_word_boundary_no_backref[] = {
-    { "literal_one", R("a"), 1, BENCH_LEN_1_8, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "small_class", R("[a-z]+"), 6, BENCH_LEN_1_8, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "small_alt", R("(ab|c)+"), 7, BENCH_LEN_1_8, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-};
-
-static BenchRegexCase bench_regex_9_16_regular_no_word_boundary_no_backref[] = {
-    { "anchored_digit", R("^a[0-9]+b$"), 11, BENCH_LEN_9_16, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "word_alt", R("(foo|bar)+"), 10, BENCH_LEN_9_16, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "capital_word", R("[A-Z][a-z]*"), 11, BENCH_LEN_9_16, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-};
-
-static BenchRegexCase bench_regex_17_32_regular_no_word_boundary_no_backref[] = {
-    { "anchored_alt", R("^([a-z]+|[0-9]+)$"), 19, BENCH_LEN_17_32, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "capital_words", R("([A-Z][a-z]*){1,3}"), 20, BENCH_LEN_17_32, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "dot_alt_digit", R("a.*(foo|bar)[0-9]"), 18, BENCH_LEN_17_32, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-};
-
-static BenchRegexCase bench_regex_33_64_regular_no_word_boundary_no_backref[] = {
-    { "name_or_number_dash", R("^([A-Z][a-z]+|[0-9]{2,4})(-[a-z]{1,3})?$"), 50, BENCH_LEN_33_64, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "csv_words_numbers", R("([a-z]+\\.[a-z]+|[0-9]+)(,([a-z]+|[0-9]+))*"), 53, BENCH_LEN_33_64, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "space_number_suffix", R("^(foo|bar|baz)[[:space:]]+[0-9]{2,4}[A-Z]?$"), 50, BENCH_LEN_33_64, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-};
-
-static BenchRegexCase bench_regex_1_8_regular_with_word_boundary_no_backref[] = {
+static BenchRegexCase bench_regex_1_8_regular_no_backref[] = {
     { "word_start_a", R("\\<a"), 3, BENCH_LEN_1_8, BENCH_FEATURE_NO_BACKREF },
     { "word_end_a", R("a\\>"), 3, BENCH_LEN_1_8, BENCH_FEATURE_NO_BACKREF },
     { "non_word_aa", R("\\Baa"), 4, BENCH_LEN_1_8, BENCH_FEATURE_NO_BACKREF },
 };
 
-static BenchRegexCase bench_regex_9_16_regular_with_word_boundary_no_backref[] = {
+static BenchRegexCase bench_regex_9_16_regular_no_backref[] = {
     { "whole_word_a_digit", R("\\<a+[0-9]\\>"), 12, BENCH_LEN_9_16, BENCH_FEATURE_NO_BACKREF },
     { "word_boundary_foo", R("\\bfoo\\b"), 7, BENCH_LEN_9_16, BENCH_FEATURE_NO_BACKREF },
     { "inner_non_boundary", R("\\Baa+[0-9]"), 10, BENCH_LEN_9_16, BENCH_FEATURE_NO_BACKREF },
 };
 
-static BenchRegexCase bench_regex_17_32_regular_with_word_boundary_no_backref[] = {
+static BenchRegexCase bench_regex_17_32_regular_no_backref[] = {
     { "word_repeated_pair", R("\\<([a-z][0-9])+\\>"), 17, BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF },
     { "word_animal_alt", R("\\b(foo|bar|baz)\\b"), 17, BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF },
     { "inner_non_boundary", R("\\B[a-z]{2,4}[0-9]?\\B"), 22, BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF },
 };
 
-static BenchRegexCase bench_regex_33_64_regular_with_word_boundary_no_backref[] = {
+static BenchRegexCase bench_regex_33_64_regular_no_backref[] = {
     { "word_hyphen_optional", R("\\<([a-z]+|[0-9]{2,4})(-[a-z]+)?\\>"), 40, BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF },
     { "boundary_space_number", R("\\b(foo|bar|baz)[[:space:]]+[0-9]+\\b"), 38, BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF },
     { "non_boundary_alt_end", R("\\B([abc]{1,3}|[0-9]{1,2})+(end)?\\B"), 41, BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF },
@@ -157,26 +130,13 @@ static BenchRegexCase bench_regex_33_64_all_features[] = {
     }
 
 static BenchRegexBucket bench_regex_buckets[] = {
-    BENCH_REGEX_BUCKET(bench_regex_1_8_regular_no_word_boundary_no_backref,
-                       BENCH_LEN_1_8,
-                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF, 8),
-    BENCH_REGEX_BUCKET(bench_regex_9_16_regular_no_word_boundary_no_backref,
-                       BENCH_LEN_9_16,
-                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF, 16),
-    BENCH_REGEX_BUCKET(bench_regex_17_32_regular_no_word_boundary_no_backref,
-                       BENCH_LEN_17_32,
-                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF, 32),
-    BENCH_REGEX_BUCKET(bench_regex_33_64_regular_no_word_boundary_no_backref,
-                       BENCH_LEN_33_64,
-                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF, 64),
-
-    BENCH_REGEX_BUCKET(bench_regex_1_8_regular_with_word_boundary_no_backref,
+    BENCH_REGEX_BUCKET(bench_regex_1_8_regular_no_backref,
                        BENCH_LEN_1_8, BENCH_FEATURE_NO_BACKREF, 8),
-    BENCH_REGEX_BUCKET(bench_regex_9_16_regular_with_word_boundary_no_backref,
+    BENCH_REGEX_BUCKET(bench_regex_9_16_regular_no_backref,
                        BENCH_LEN_9_16, BENCH_FEATURE_NO_BACKREF, 16),
-    BENCH_REGEX_BUCKET(bench_regex_17_32_regular_with_word_boundary_no_backref,
+    BENCH_REGEX_BUCKET(bench_regex_17_32_regular_no_backref,
                        BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF, 32),
-    BENCH_REGEX_BUCKET(bench_regex_33_64_regular_with_word_boundary_no_backref,
+    BENCH_REGEX_BUCKET(bench_regex_33_64_regular_no_backref,
                        BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF, 64),
 
     BENCH_REGEX_BUCKET(bench_regex_1_8_all_features, BENCH_LEN_1_8,
