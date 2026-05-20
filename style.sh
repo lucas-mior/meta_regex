@@ -15,6 +15,8 @@ for f in *.c *.h; do
     s/\<strlen\>/strlen32/g;
     s/\<strncmp\>/strncmp32/g;
     s/\<strncpy\>/strncpy32/g;
+    s/\<fread\>/fread64/g;
+    s/\<fwrite\>/fwrite64/g;
 
     s/\<unsigned ([a-z]+)/u\1/g;
 

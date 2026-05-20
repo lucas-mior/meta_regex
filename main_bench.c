@@ -763,7 +763,7 @@ bench_load_generated_inputs(char *array_name, char *path,
     }
 
     storage = malloc2(file_size + 1);
-    read_size = fread(storage, 1, file_size, file);
+    read_size = fread64(storage, 1, file_size, file);
     if (read_size != file_size) {
         bench_fail_input_file(path, strerror(errno));
     }
