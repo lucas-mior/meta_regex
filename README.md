@@ -4,6 +4,20 @@ Compile time regexes for C.
 ## Disclaimer
 This is an exploration: don't use it in production.
 
+## When could it be nice to use this "library"?
+- When you don't need back references in your regexes
+  * The backtracking NFA works, but it is slow
+- When you know that input is not very long
+  * The performance is not competitive when input is long
+- If you like to pass the length of your input instead of only relying on the
+  nul termination
+- If you don't care about binary size
+  * The ahead of time static DFA needs to store lots of metadata
+- If you can make assumptions about your input data and your regexes
+- If you want absolute control over the regex matcher
+  * You can enable/disable which matchers you want
+  * You can tweak the heuristic parameters used to select the matcher
+
 ## Which regular expressions does it support?
 A subset of posix extended.
 See `meta_tests_array.h` to check which patterns are being tested.
