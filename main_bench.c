@@ -121,7 +121,7 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
 #endif
 
 #if !defined(META_BENCH_ITERATIONS)
-#define META_BENCH_ITERATIONS 100
+#define META_BENCH_ITERATIONS 10
 #endif
 
 #if !defined(META_BENCH_WARMUP_ITERATIONS)
@@ -1277,6 +1277,7 @@ bench_build_pair_input_bucket(BenchRegexBucket *regex_bucket, regex_t *compiled,
                               uint32 *seed, BenchInputBucket *input_bucket) {
     int32 max_len = bench_input_length_class_max(input_class);
     int32 not_matched = 0;
+    int32 yes_matched = 0;
 
     for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
         int32 matched = 0;
@@ -1298,6 +1299,8 @@ bench_build_pair_input_bucket(BenchRegexBucket *regex_bucket, regex_t *compiled,
 
         if (!matched) {
             not_matched += 1;
+        } else {
+            yes_matched += 1;
         }
 
         if (!matched && bench_pair_input_storage[ri][0] == '\0'
@@ -1312,6 +1315,7 @@ bench_build_pair_input_bucket(BenchRegexBucket *regex_bucket, regex_t *compiled,
     }
 
     PRINTLN(not_matched);
+    PRINTLN(yes_matched);
 
     input_bucket->name = bench_input_length_class_name(input_class);
     input_bucket->length_class = input_class;
