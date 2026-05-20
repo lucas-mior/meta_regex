@@ -133,7 +133,7 @@ match_tdfa_find_transition(MetaTdfa *tdfa, int32 state_id, int32 c,
         return NULL;
     }
 
-    if (tdfa->transition_index != NULL && tdfa->transition_index_stride > 0) {
+    if (tdfa->transition_index && (tdfa->transition_index_stride > 0)) {
         int32 context_offset = 0;
         int32 index;
         int32 transition_id;
@@ -320,7 +320,7 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         return REG_NOMATCH;
     }
 
-    extract = (pmatch != NULL && pmatch_len > 1 && tdfa->num_tags > 0);
+    extract = (pmatch && (pmatch_len > 1) && tdfa->num_tags > 0);
     if (extract) {
         if ((regs == NULL) || nregs < (tdfa->num_registers + 1)) {
             int32 new_regs = (tdfa->num_registers+1)*2;
@@ -431,7 +431,7 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         if (extract) {
             match_tdfa_fill_pmatch(regex, start_pos, accepted_end, saved_tags,
                                    pmatch, pmatch_len);
-        } else if (pmatch != NULL && pmatch_len > 0) {
+        } else if (pmatch && (pmatch_len > 0)) {
             pmatch[0].rm_so = start_pos;
             pmatch[0].rm_eo = accepted_end;
         }
