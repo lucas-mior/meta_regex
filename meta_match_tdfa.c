@@ -132,15 +132,6 @@ match_tdfa_find_transition(MetaTdfa *tdfa, int32 state_id, int32 c,
         }
     }
 
-    /* Defensive fallback for malformed or old emitted tables. */
-    for (int32 i = 0; i < tdfa->num_transitions; i += 1) {
-        MetaTdfaTransition *tr = &tdfa->transitions[i];
-        if (tr->from == state_id && tr->symbol == c
-            && (tr->next_is_word < 0 || tr->next_is_word == next_is_word)) {
-            return tr;
-        }
-    }
-
     return NULL;
 }
 
