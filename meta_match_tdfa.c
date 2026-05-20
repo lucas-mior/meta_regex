@@ -193,8 +193,10 @@ static int32
 match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
            regmatch_t *pmatch, int32 pmatch_len) {
     MetaTdfa *tdfa;
-    int32 *regs = NULL;
-    int32 *saved_tags = NULL;
+    static int32 *regs = NULL;
+    static int32 *saved_tags = NULL;
+    static int32 nregs = 0;
+    static int32 nsaved_tags = 0;
     int32 state_id;
     int32 pos = start_pos;
     int32 accepted = 0;
@@ -227,10 +229,17 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         return REG_NOMATCH;
     }
 
-    regs = malloc2(SIZEOF(*regs)*(tdfa->num_registers + 1));
-    saved_tags = malloc2(SIZEOF(*saved_tags)*(tdfa->num_tags + 1));
-    if (regs == NULL || saved_tags == NULL) {
-        goto cleanup;
+    if ((regs == NULL) || nregs < (tdfa->num_registers + 1)) {
+        regs = realloc2(regs,
+                        nregs, tdfa->num_registers + 1,
+                        SIZEOF(*regs));
+        nregs = tdfa->num_registers + 1;
+    }
+    if ((saved_tags == NULL) || nsaved_tags < (tdfa->num_tags + 1)) {
+        saved_tags = realloc2(saved_tags,
+                              nsaved_tags, tdfa->num_tags + 1,
+                              SIZEOF(*saved_tags));
+        nsaved_tags = tdfa->num_tags + 1;
     }
 
     for (int32 i = 0; i <= tdfa->num_registers; i += 1) {
@@ -305,8 +314,6 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     }
 
 cleanup:
-    free2(regs, SIZEOF(*regs)*(tdfa->num_registers + 1));
-    free2(saved_tags, SIZEOF(*saved_tags)*(tdfa->num_tags + 1));
     return result;
 }
 
