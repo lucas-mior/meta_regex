@@ -133,7 +133,7 @@ test)
 bench)
     trace_on
     $CC $CPPFLAGS $CFLAGS main_bench.c -o bin/meta_bench $LDFLAGS
-    bin/meta_bench
+    bin/meta_bench --max-input-len 1024
     trace_off
     ;;
 debug)

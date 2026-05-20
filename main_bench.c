@@ -19,6 +19,11 @@ typedef enum BenchInputLengthClass {
     BENCH_INPUT_LEN_17_32,
     BENCH_INPUT_LEN_33_64,
     BENCH_INPUT_LEN_65_128,
+    BENCH_INPUT_LEN_129_256,
+    BENCH_INPUT_LEN_257_512,
+    BENCH_INPUT_LEN_513_1024,
+    BENCH_INPUT_LEN_1025_2048,
+    BENCH_INPUT_LEN_2049_4096,
     BENCH_INPUT_LEN_LAST,
 } BenchInputLengthClass;
 
@@ -47,6 +52,16 @@ bench_input_length_class_name(enum BenchInputLengthClass c) {
         return "33_64";
     case BENCH_INPUT_LEN_65_128:
         return "65_128";
+    case BENCH_INPUT_LEN_129_256:
+        return "129_256";
+    case BENCH_INPUT_LEN_257_512:
+        return "257_512";
+    case BENCH_INPUT_LEN_513_1024:
+        return "513_1024";
+    case BENCH_INPUT_LEN_1025_2048:
+        return "1025_2048";
+    case BENCH_INPUT_LEN_2049_4096:
+        return "2049_4096";
     case BENCH_INPUT_LEN_LAST:
     default:
         return "unknown_input_length";
@@ -57,13 +72,23 @@ static int32
 bench_input_length_class_min(enum BenchInputLengthClass c) {
     switch (c) {
     case BENCH_INPUT_LEN_0_16:
-        return 9;
+        return 0;
     case BENCH_INPUT_LEN_17_32:
         return 17;
     case BENCH_INPUT_LEN_33_64:
         return 33;
     case BENCH_INPUT_LEN_65_128:
         return 65;
+    case BENCH_INPUT_LEN_129_256:
+        return 129;
+    case BENCH_INPUT_LEN_257_512:
+        return 257;
+    case BENCH_INPUT_LEN_513_1024:
+        return 513;
+    case BENCH_INPUT_LEN_1025_2048:
+        return 1025;
+    case BENCH_INPUT_LEN_2049_4096:
+        return 2049;
     case BENCH_INPUT_LEN_LAST:
     default:
         return 0;
@@ -81,6 +106,16 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
         return 64;
     case BENCH_INPUT_LEN_65_128:
         return 128;
+    case BENCH_INPUT_LEN_129_256:
+        return 256;
+    case BENCH_INPUT_LEN_257_512:
+        return 512;
+    case BENCH_INPUT_LEN_513_1024:
+        return 1024;
+    case BENCH_INPUT_LEN_1025_2048:
+        return 2048;
+    case BENCH_INPUT_LEN_2049_4096:
+        return 4096;
     case BENCH_INPUT_LEN_LAST:
     default:
         return 0;
@@ -105,16 +140,16 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
 #define ENABLE_BTNFA 1
 #endif
 #if !defined(ENABLE_TNFA)
-#define ENABLE_TNFA 0
+#define ENABLE_TNFA 1
 #endif
 #if !defined(ENABLE_TDFA)
-#define ENABLE_TDFA 0
+#define ENABLE_TDFA 1
 #endif
 #if !defined(ENABLE_LAZY_DFA)
 #define ENABLE_LAZY_DFA 1
 #endif
 #if !defined(ENABLE_STATIC_DFA)
-#define ENABLE_STATIC_DFA 0
+#define ENABLE_STATIC_DFA 1
 #endif
 
 static enum Matcher bench_matchers[] = {
@@ -1078,7 +1113,13 @@ bench_meta_matchers_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
 
 #define BENCH_MAIN_REGEX_BUCKET_MAX (BENCH_FEATURE_LAST*BENCH_LEN_LAST)
 #define BENCH_RANDOM_INPUT_ATTEMPTS 500
-#define BENCH_RANDOM_INPUT_MAX_LEN 128
+#define BENCH_RANDOM_INPUT_MAX_LEN 4096
+
+#if !defined(META_BENCH_MAX_INPUT_LEN)
+#define META_BENCH_MAX_INPUT_LEN 128
+#endif
+
+static int32 bench_max_input_len = META_BENCH_MAX_INPUT_LEN;
 
 static BenchRegexCase bench_runtime_regex_cases[BENCH_FEATURE_LAST]
                                                [BENCH_LEN_LAST]
@@ -1294,6 +1335,74 @@ bench_build_pair_input_bucket(BenchRegexBucket *regex_bucket, regex_t *compiled,
     return;
 }
 
+static int32
+bench_parse_input_len_cap(char *s, int32 *out) {
+    char *end = NULL;
+    long value;
+
+    if (s == NULL || *s == '\0') {
+        return 0;
+    }
+
+    errno = 0;
+    value = strtol(s, &end, 10);
+    if (errno != 0 || end == s || *end != '\0') {
+        return 0;
+    }
+    if (value < 16 || value > BENCH_RANDOM_INPUT_MAX_LEN) {
+        return 0;
+    }
+
+    *out = (int32)value;
+    return 1;
+}
+
+static void __attribute((noreturn))
+bench_usage(char *argv0) {
+    fprintf(stderr,
+            "Usage: %s [--max-input-len N]\n"
+            "       %s [N]\n"
+            "\n"
+            "N must be between 16 and %d. The benchmark runs only random "
+            "input buckets whose max length is <= N.\n",
+            argv0, argv0, BENCH_RANDOM_INPUT_MAX_LEN);
+    exit(EXIT_FAILURE);
+}
+
+static void
+bench_parse_args(int32 argc, char **argv) {
+    for (int32 i = 1; i < argc; i += 1) {
+        char *arg = argv[i];
+        char *value = NULL;
+        int32 parsed = 0;
+
+        if (strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0) {
+            bench_usage(argv[0]);
+        }
+
+        if (strcmp(arg, "--max-input-len") == 0) {
+            i += 1;
+            if (i >= argc) {
+                bench_usage(argv[0]);
+            }
+            value = argv[i];
+        } else if (strncmp(arg, "--max-input-len=", 16) == 0) {
+            value = arg + 16;
+        } else if (arg[0] != '-') {
+            value = arg;
+        } else {
+            bench_usage(argv[0]);
+        }
+
+        if (!bench_parse_input_len_cap(value, &parsed)) {
+            bench_usage(argv[0]);
+        }
+        bench_max_input_len = parsed;
+    }
+
+    return;
+}
+
 static void
 bench_run_main_regex_buckets(llong now) {
     uint32 seed = 0xC0FFEEu;
@@ -1325,6 +1434,10 @@ bench_run_main_regex_buckets(llong now) {
 
         for (int32 ii = 0; ii < BENCH_INPUT_LEN_LAST; ii += 1) {
             BenchInputBucket input_bucket;
+
+            if (bench_input_length_class_max(ii) > bench_max_input_len) {
+                continue;
+            }
 
             bench_build_pair_input_bucket(regex_bucket, compiled, ii, &seed,
                                           &input_bucket);
@@ -1557,12 +1670,14 @@ bench_run_generated_pattern_buckets(llong now) {
 }
 
 int32
-main(void) {
+main(int32 argc, char **argv) {
     llong now;
 
+    bench_parse_args(argc, argv);
     setlocale(LC_ALL, "C");
     mkdir("benchmarks", 0777);
 
+    printf("bench_max_input_len=%d\n", bench_max_input_len);
     now = (llong)time(NULL);
 
     bench_run_main_regex_buckets(now);
