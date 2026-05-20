@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
 import argparse
 import csv
+import hashlib
 import json
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-SERIES_COLORS = {
+# Canonical, global colors. These are intentionally not derived from the
+# subset of series present in a particular CSV/plot, so the same engine/matcher
+# keeps the same color everywhere.
+CANONICAL_SERIES_COLORS = {
     "LIBC": "#000000",
-    "META_DISPATCH": "#1f77b4",
-    "BTNFA": "#ff7f0e",
-    "TNFA": "#2ca02c",
-    "TDFA": "#d62728",
-    "LAZY_DFA": "#9467bd",
-    "STATIC_DFA": "#8c564b",
-    "DISPATCH": "#1f77b4",
+    "META_DISPATCH": "#0072B2",  # blue
+    "BTNFA": "#E69F00",          # orange
+    "TNFA": "#009E73",           # green
+    "TDFA": "#D55E00",           # vermillion
+    "LAZY_DFA": "#CC79A7",       # reddish purple
+    "STATIC_DFA": "#56B4E9",     # sky blue
 }
 
-SERIES_ORDER = [
+CANONICAL_SERIES_ORDER = [
     "LIBC",
     "META_DISPATCH",
     "BTNFA",
@@ -27,6 +30,34 @@ SERIES_ORDER = [
     "LAZY_DFA",
     "STATIC_DFA",
 ]
+
+# Fallback palette for future matcher names. The choice is deterministic by
+# series name, not by plotting order.
+FALLBACK_COLORS = [
+    "#332288", "#88CCEE", "#44AA99", "#117733", "#999933",
+    "#DDCC77", "#CC6677", "#882255", "#AA4499", "#DDDDDD",
+]
+
+SERIES_ALIASES = {
+    "LIBC": "LIBC",
+    "REGEX_H": "LIBC",
+    "REGEXEC": "LIBC",
+    "META": "META_DISPATCH",
+    "META_DISPATCH": "META_DISPATCH",
+    "DISPATCH": "META_DISPATCH",
+    "DISPATCHER": "META_DISPATCH",
+    "MIXED": "META_DISPATCH",
+    "BTNFA": "BTNFA",
+    "MATCHER_BTNFA": "BTNFA",
+    "TNFA": "TNFA",
+    "MATCHER_TNFA": "TNFA",
+    "TDFA": "TDFA",
+    "MATCHER_TDFA": "TDFA",
+    "LAZY_DFA": "LAZY_DFA",
+    "MATCHER_LAZY_DFA": "LAZY_DFA",
+    "STATIC_DFA": "STATIC_DFA",
+    "MATCHER_STATIC_DFA": "STATIC_DFA",
+}
 
 
 def parse_args():
@@ -38,6 +69,16 @@ def parse_args():
         choices=["seconds", "ns_per_match"],
         default="seconds",
         help="Y-axis metric",
+    )
+    p.add_argument(
+        "--log-y",
+        action="store_true",
+        help="Use logarithmic y-axis.",
+    )
+    p.add_argument(
+        "--log-x",
+        action="store_true",
+        help="Use logarithmic x-axis. Useful because input buckets double in size.",
     )
     return p.parse_args()
 
@@ -58,11 +99,41 @@ def read_rows(path):
         return list(csv.DictReader(f))
 
 
-def series_name(row):
-    block = row.get("block", "")
+def clean_token(value):
+    return str(value or "").strip().strip('"').strip("'")
+
+
+def canonical_series_name(value):
+    token = clean_token(value).upper().replace("-", "_").replace(" ", "_")
+    return SERIES_ALIASES.get(token, token)
+
+
+def row_series_name(row):
+    block = clean_token(row.get("block"))
+
     if block == "libc_vs_dispatch":
-        return row.get("engine", "")
-    return row.get("matcher", "")
+        raw = row.get("engine") or row.get("matcher") or row.get("selected_matcher")
+    else:
+        raw = row.get("matcher") or row.get("engine") or row.get("selected_matcher")
+
+    return canonical_series_name(raw)
+
+
+def series_sort_key(name):
+    try:
+        return (0, CANONICAL_SERIES_ORDER.index(name))
+    except ValueError:
+        return (1, name)
+
+
+def color_for_series(name):
+    name = canonical_series_name(name)
+    if name in CANONICAL_SERIES_COLORS:
+        return CANONICAL_SERIES_COLORS[name]
+
+    digest = hashlib.sha256(name.encode("utf-8")).digest()
+    idx = int.from_bytes(digest[:4], "little") % len(FALLBACK_COLORS)
+    return FALLBACK_COLORS[idx]
 
 
 def to_float(row, key):
@@ -79,65 +150,92 @@ def to_int(row, key):
         return 0
 
 
-def plot_csv(path, out_dir, metric):
+def csv_name_for_metadata(row):
+    return {
+        "block": clean_token(row.get("block")),
+        "variant": clean_token(row.get("variant")),
+        "feature_class": clean_token(row.get("feature_class")),
+        "regex_length_class": clean_token(row.get("regex_length_class")),
+        "regex_max_len": to_int(row, "regex_max_len"),
+    }
+
+
+def plot_csv(path, out_dir, metric, log_x=False, log_y=False):
     rows = read_rows(path)
     if not rows:
         return []
 
     outputs = []
-    variants = sorted({r.get("variant", "") for r in rows if r.get("variant", "")})
+    variants = sorted({clean_token(r.get("variant")) for r in rows if clean_token(r.get("variant"))})
 
     for variant in variants:
-        selected = [r for r in rows if r.get("variant") == variant]
+        selected = [r for r in rows if clean_token(r.get("variant")) == variant]
         if not selected:
             continue
 
         by_series = defaultdict(list)
         for row in selected:
-            name = series_name(row)
+            name = row_series_name(row)
             if not name:
                 continue
             run_pairs = to_int(row, "run_pair_count")
             if run_pairs <= 0:
                 continue
             x = to_int(row, "input_max_len")
+            if x <= 0:
+                continue
             y = to_float(row, metric)
+            if y < 0:
+                continue
             by_series[name].append((x, y, row))
 
         if not by_series:
             continue
 
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(10.5, 6.2))
         plotted = []
-        for name in SERIES_ORDER + sorted(set(by_series) - set(SERIES_ORDER)):
-            points = by_series.get(name)
-            if not points:
-                continue
+        used_colors = {}
+
+        for name in sorted(by_series.keys(), key=series_sort_key):
+            points = by_series[name]
             points.sort(key=lambda t: t[0])
             xs = [p[0] for p in points]
             ys = [p[1] for p in points]
+            color = color_for_series(name)
+            used_colors[name] = color
+
             ax.plot(
                 xs,
                 ys,
                 marker="o",
-                linewidth=2,
-                color=SERIES_COLORS.get(name),
+                linestyle="-",
+                linewidth=2.0,
+                markersize=4.5,
+                color=color,
                 label=name,
             )
             plotted.append(name)
 
         first = selected[0]
-        feature = first.get("feature_class", "")
-        regex_len = first.get("regex_length_class", "")
-        regex_max = first.get("regex_max_len", "")
-        block = first.get("block", "")
-
+        info = csv_name_for_metadata(first)
         ylabel = "seconds" if metric == "seconds" else "ns / match"
-        ax.set_title(f"{block} | {variant} | {feature} | regex <= {regex_max}")
+
+        ax.set_title(
+            f"{info['block']} | {variant} | {info['feature_class']} | "
+            f"regex <= {info['regex_max_len']}"
+        )
         ax.set_xlabel("max input length")
         ax.set_ylabel(ylabel)
         ax.grid(True, alpha=0.3)
-        ax.legend()
+        ax.set_xticks(sorted({x for points in by_series.values() for x, _, _ in points}))
+
+        if log_x:
+            ax.set_xscale("log", base=2)
+        if log_y:
+            ax.set_yscale("log")
+
+        if plotted:
+            ax.legend()
 
         stem = f"{path.stem}-{variant}-{metric}"
         target_dir = Path(out_dir) if out_dir else path.parent
@@ -152,22 +250,23 @@ def plot_csv(path, out_dir, metric):
         metadata = {
             "source_csv": str(path),
             "plot": str(png),
-            "block": block,
-            "variant": variant,
-            "feature_class": feature,
-            "regex_length_class": regex_len,
-            "regex_max_len": regex_max,
             "metric": metric,
-            "series": plotted,
+            "log_x": bool(log_x),
+            "log_y": bool(log_y),
+            **info,
+            "series": [
+                {"name": name, "color": used_colors[name]}
+                for name in plotted
+            ],
             "rows": [
                 {
-                    "series": series_name(r),
+                    "series": row_series_name(r),
                     "input_max_len": to_int(r, "input_max_len"),
                     metric: to_float(r, metric),
                     "run_pair_count": to_int(r, "run_pair_count"),
                 }
                 for r in selected
-                if series_name(r) in plotted and to_int(r, "run_pair_count") > 0
+                if row_series_name(r) in plotted and to_int(r, "run_pair_count") > 0
             ],
         }
         meta.write_text(json.dumps(metadata, indent=2))
@@ -184,7 +283,7 @@ def main():
 
     made = []
     for path in csvs:
-        made.extend(plot_csv(path, args.out_dir, args.metric))
+        made.extend(plot_csv(path, args.out_dir, args.metric, args.log_x, args.log_y))
 
     for p in made:
         print(p)
