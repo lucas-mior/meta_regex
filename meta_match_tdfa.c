@@ -314,12 +314,8 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     }
 
 cleanup:
-    if (regs != NULL) {
-        free2(regs, SIZEOF(*regs)*(tdfa->num_registers + 1));
-    }
-    if (saved_tags != NULL) {
-        free2(saved_tags, SIZEOF(*saved_tags)*(tdfa->num_tags + 1));
-    }
+    free2(regs, SIZEOF(*regs)*(tdfa->num_registers + 1));
+    free2(saved_tags, SIZEOF(*saved_tags)*(tdfa->num_tags + 1));
     return result;
 }
 
