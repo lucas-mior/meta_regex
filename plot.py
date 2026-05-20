@@ -264,7 +264,9 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False):
         target_dir = Path(out_dir) if out_dir else path.parent
         target_dir.mkdir(parents=True, exist_ok=True)
         png = target_dir / f"{stem}.png"
-        meta = target_dir / f"{stem}.json"
+        json_dir = target_dir / "json"
+        json_dir.mkdir(parents=True, exist_ok=True)
+        meta = json_dir / f"{stem}.json"
 
         fig.tight_layout()
         fig.savefig(png, dpi=160)

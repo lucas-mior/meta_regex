@@ -1589,7 +1589,7 @@ main(void) {
 
     bench_run_main_regex_buckets(now);
 
-    bench_run_generated_pattern_buckets(now);
+    /* bench_run_generated_pattern_buckets(now); */
 
     printf("bench_sink_result=%d bench_sink_offsets=%lld\n", bench_sink_result,
            (llong)bench_sink_offsets);
