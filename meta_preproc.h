@@ -143,19 +143,7 @@ typedef struct ExtractedRegex {
     ParsedOp temp_ops[PREPROC_MAX_TEMP_OPS];
     int32 temp_ops_count;
 
-    /*
-        Optional parsed TNFA.
-
-        NULL means this regex has not been lowered to a TNFA yet, or TNFA
-        generation failed/was skipped.
-    */
     ParsedTnfa *tnfa;
-
-    /*
-        Optional single-pass TDFA generated from the parsed TNFA.
-
-        NULL means TDFA determinization failed or was skipped.
-    */
     ParsedTdfa *tdfa;
     
     bool has_start;
