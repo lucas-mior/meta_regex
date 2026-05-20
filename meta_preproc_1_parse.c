@@ -626,6 +626,138 @@ tnfa_add_atom_transition(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
                                ops[pc].mask, 0, META_TNFA_TAG_NONE);
 }
 
+static int32
+tnfa_tag_is_fixed(ParsedTnfa *tnfa, int32 tag);
+
+static int32
+tnfa_fixed_find_group_end(ParsedOp *ops, int32 ops_count, int32 start) {
+    return tnfa_find_group_end(ops, ops_count, start);
+}
+
+static int32
+tnfa_fixed_length_range(ParsedOp *ops, int32 ops_count, int32 start,
+                        int32 end);
+
+static int32
+tnfa_fixed_length_branch(ParsedOp *ops, int32 ops_count, int32 start,
+                         int32 end) {
+    int32 total = 0;
+
+    for (int32 i = start; i < end;) {
+        enum MetaOpType type = ops[i].type;
+        int32 atom_len = 0;
+        int32 next = i + 1;
+
+        if (type == META_OP_LITERAL || type == META_OP_CLASS
+            || type == META_OP_ANY) {
+            atom_len = 1;
+        } else if (type == META_OP_GROUP_START) {
+            int32 group_end = tnfa_fixed_find_group_end(ops, ops_count, i);
+            if (group_end >= end) {
+                return -1;
+            }
+            atom_len = tnfa_fixed_length_range(ops, ops_count, i + 1, group_end);
+            if (atom_len < 0) {
+                return -1;
+            }
+            next = group_end + 1;
+        } else if (type == META_OP_GROUP_END || type == META_OP_WORD_START
+                   || type == META_OP_WORD_END
+                   || type == META_OP_WORD_BOUNDARY
+                   || type == META_OP_NON_WORD_BOUNDARY) {
+            atom_len = 0;
+        } else if (type == META_OP_ALTERNATION) {
+            return -1;
+        } else {
+            return -1;
+        }
+
+        if (next < end) {
+            enum MetaOpType q = ops[next].type;
+            if (q == META_OP_STAR || q == META_OP_PLUS
+                || q == META_OP_OPTIONAL) {
+                return -1;
+            }
+            if (q == META_OP_BOUNDED) {
+                if (ops[next].min != ops[next].max) {
+                    return -1;
+                }
+                atom_len *= ops[next].min;
+                next += 1;
+            }
+        }
+
+        total += atom_len;
+        i = next;
+    }
+
+    return total;
+}
+
+static int32
+tnfa_fixed_length_range(ParsedOp *ops, int32 ops_count, int32 start,
+                        int32 end) {
+    int32 branch_starts[PREPROC_MAX_BRANCHES];
+    int32 branch_ends[PREPROC_MAX_BRANCHES];
+    int32 branch_count = tnfa_collect_branches(ops, start, end, branch_starts,
+                                               branch_ends, PREPROC_MAX_BRANCHES);
+    int32 fixed_len = -2;
+
+    if (branch_count <= 0) {
+        return -1;
+    }
+
+    for (int32 b = 0; b < branch_count; b += 1) {
+        int32 len = tnfa_fixed_length_branch(ops, ops_count, branch_starts[b],
+                                             branch_ends[b]);
+        if (len < 0) {
+            return -1;
+        }
+        if (fixed_len == -2) {
+            fixed_len = len;
+        } else if (fixed_len != len) {
+            return -1;
+        }
+    }
+
+    return fixed_len >= 0 ? fixed_len : -1;
+}
+
+static void
+tnfa_mark_fixed_tags(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count) {
+    for (int32 i = 0; i < ops_count; i += 1) {
+        if (ops[i].type != META_OP_GROUP_START) {
+            continue;
+        }
+
+        int32 group = ops[i].value;
+        int32 end = tnfa_find_group_end(ops, ops_count, i);
+        int32 len;
+        int32 start_tag;
+        int32 end_tag;
+
+        if (end >= ops_count || group <= 0) {
+            continue;
+        }
+
+        len = tnfa_fixed_length_range(ops, ops_count, i + 1, end);
+        if (len < 0) {
+            continue;
+        }
+
+        start_tag = tnfa_group_start_tag(group);
+        end_tag = tnfa_group_end_tag(group);
+        if (start_tag <= 0 || start_tag > tnfa->num_tags
+            || end_tag <= 0 || end_tag > tnfa->num_tags) {
+            continue;
+        }
+
+        tnfa->tags[start_tag - 1].fixed_base_tag = end_tag;
+        tnfa->tags[start_tag - 1].fixed_offset = -len;
+    }
+    return;
+}
+
 static bool
 build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
                     int32 group_count) {
@@ -667,7 +799,13 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
         end_tag->group = g;
         end_tag->role = META_TNFA_TAG_GROUP_END;
         end_tag->is_multivalued = 0;
+        start_tag->fixed_base_tag = 0;
+        start_tag->fixed_offset = 0;
+        end_tag->fixed_base_tag = 0;
+        end_tag->fixed_offset = 0;
     }
+
+    tnfa_mark_fixed_tags(tnfa, ops, ops_count);
 
     top_branch_count = tnfa_collect_branches(ops, 0, ops_count, branch_starts,
                                              branch_ends, PREPROC_MAX_BRANCHES);
@@ -708,6 +846,9 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
         } else if (op->type == META_OP_GROUP_START) {
             int32 group_end = tnfa_find_group_end(ops, ops_count, pc);
             int32 tag = tnfa_group_start_tag(op->value);
+            if (tnfa_tag_is_fixed(tnfa, tag)) {
+                tag = META_TNFA_TAG_NONE;
+            }
             int32 branch_count = 0;
 
             branch_count
@@ -894,9 +1035,61 @@ tdfa_state_reg(TdfaBuildState *state, int32 config, int32 tag_count,
     return state->regs[config*tag_count + tag];
 }
 
+static int32
+tdfa_tag_is_fixed(ParsedTdfa *tdfa, int32 tag) {
+    return (tag > 0 && tag <= tdfa->num_tags
+            && tdfa->tags[tag - 1].fixed_base_tag > 0);
+}
+
+static int32
+tnfa_tag_is_fixed(ParsedTnfa *tnfa, int32 tag) {
+    return (tag > 0 && tag <= tnfa->num_tags
+            && tnfa->tags[tag - 1].fixed_base_tag > 0);
+}
+
+static void
+tdfa_normalize_ops(ParsedTdfa *tdfa, int32 first_op) {
+    int32 write = first_op;
+
+    if (first_op < 0 || first_op > tdfa->num_ops) {
+        return;
+    }
+
+    for (int32 read = first_op; read < tdfa->num_ops; read += 1) {
+        MetaTdfaRegOp op = tdfa->ops[read];
+        int32 duplicate = 0;
+
+        if (op.kind == META_TDFA_REGOP_COPY && op.dst == op.src) {
+            continue;
+        }
+
+        for (int32 i = first_op; i < write; i += 1) {
+            MetaTdfaRegOp *prev = &tdfa->ops[i];
+            if (prev->kind == op.kind && prev->dst == op.dst
+                && prev->src == op.src) {
+                duplicate = 1;
+                break;
+            }
+        }
+        if (duplicate) {
+            continue;
+        }
+
+        tdfa->ops[write] = op;
+        write += 1;
+    }
+
+    tdfa->num_ops = write;
+    return;
+}
+
 static bool
 tdfa_add_regop(ParsedTdfa *tdfa, enum MetaTdfaRegOpKind kind, int32 dst,
                int32 src) {
+    if (kind == META_TDFA_REGOP_COPY && dst == src) {
+        return true;
+    }
+
     if (tdfa->num_ops >= PREPROC_MAX_TDFA_REGOPS) {
         return false;
     }
@@ -1151,9 +1344,9 @@ tdfa_step_on_symbol(ParsedTnfa *tnfa, TdfaBuildState *source, int32 symbol,
 }
 
 static bool
-tdfa_same_signature(TdfaBuildState *state, TdfaWorkConfig *configs,
-                    int32 config_count, int32 tag_count, int32 prev_is_w,
-                    int32 curr_is_w) {
+tdfa_same_signature(ParsedTdfa *tdfa, TdfaBuildState *state,
+                    TdfaWorkConfig *configs, int32 config_count,
+                    int32 tag_count, int32 prev_is_w, int32 curr_is_w) {
     if (state->prev_is_w != prev_is_w || state->curr_is_w != curr_is_w) {
         return false;
     }
@@ -1166,6 +1359,9 @@ tdfa_same_signature(TdfaBuildState *state, TdfaWorkConfig *configs,
             return false;
         }
         for (int32 t = 1; t < tag_count; t += 1) {
+            if (tdfa_tag_is_fixed(tdfa, t)) {
+                continue;
+            }
             if (state->configs[i].look[t] != configs[i].look[t]) {
                 return false;
             }
@@ -1180,8 +1376,8 @@ tdfa_find_state(TdfaBuildState *states, ParsedTdfa *tdfa,
                 TdfaWorkConfig *configs, int32 config_count, int32 tag_count,
                 int32 prev_is_w, int32 curr_is_w) {
     for (int32 i = 0; i < tdfa->num_states; i += 1) {
-        if (tdfa_same_signature(&states[i], configs, config_count, tag_count,
-                                prev_is_w, curr_is_w)) {
+        if (tdfa_same_signature(tdfa, &states[i], configs, config_count,
+                                tag_count, prev_is_w, curr_is_w)) {
             return i;
         }
     }
@@ -1207,6 +1403,10 @@ tdfa_add_final_ops(ParsedTdfa *tdfa, ParsedTnfa *tnfa,
         for (int32 t = 1; t < tag_count; t += 1) {
             int32 dst = tdfa->final_register_base + t - 1;
 
+            if (tdfa_tag_is_fixed(tdfa, t)) {
+                continue;
+            }
+
             if (cfg->look[t] != -1) {
                 if (!tdfa_add_set_from_tag(tdfa, dst, cfg->look[t])) {
                     return false;
@@ -1219,6 +1419,7 @@ tdfa_add_final_ops(ParsedTdfa *tdfa, ParsedTnfa *tnfa,
             }
         }
 
+        tdfa_normalize_ops(tdfa, state->first_final_op);
         state->final_op_count = tdfa->num_ops - state->first_final_op;
         return true;
     }
@@ -1248,6 +1449,20 @@ tdfa_add_state(TdfaBuildState *states, ParsedTdfa *tdfa, ParsedTnfa *tnfa,
     state->first_final_op = -1;
     state->final_op_count = 0;
 
+    if (tdfa->transition_index_stride > 0) {
+        int32 base = state_id*tdfa->transition_index_stride;
+        int32 end = base + tdfa->transition_index_stride;
+        if (end > PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES) {
+            return -1;
+        }
+        for (int32 i = base; i < end; i += 1) {
+            tdfa->transition_index[i] = -1;
+        }
+        if (tdfa->transition_index_count < end) {
+            tdfa->transition_index_count = end;
+        }
+    }
+
     build_state = &states[state_id];
     build_state->prev_is_w = prev_is_w;
     build_state->curr_is_w = curr_is_w;
@@ -1271,7 +1486,7 @@ tdfa_add_state(TdfaBuildState *states, ParsedTdfa *tdfa, ParsedTnfa *tnfa,
                              tag_count);
 
         for (int32 t = 0; t < tag_count; t += 1) {
-            if (t == 0) {
+            if (t == 0 || tdfa_tag_is_fixed(tdfa, t)) {
                 build_state->regs[i*tag_count + t] = 0;
             } else {
                 if (*next_register > PREPROC_MAX_TDFA_REGISTERS) {
@@ -1302,7 +1517,13 @@ tdfa_emit_transition_ops(ParsedTdfa *tdfa, TdfaBuildState *source,
         }
 
         for (int32 t = 1; t < tag_count; t += 1) {
-            int32 dst = tdfa_state_reg(target, i, tag_count, t);
+            int32 dst;
+
+            if (tdfa_tag_is_fixed(tdfa, t)) {
+                continue;
+            }
+
+            dst = tdfa_state_reg(target, i, tag_count, t);
 
             if (closed[i].h[t] != -1 && closed[i].look[t] == -1) {
                 if (!tdfa_add_set_from_tag(tdfa, dst, closed[i].h[t])) {
@@ -1329,13 +1550,31 @@ tdfa_add_transition(ParsedTdfa *tdfa, int32 from, int32 to, int32 symbol,
         return false;
     }
 
-    MetaTdfaTransition *tr = &tdfa->transitions[tdfa->num_transitions];
+    int32 transition_id = tdfa->num_transitions;
+    MetaTdfaTransition *tr = &tdfa->transitions[transition_id];
     tr->from = from;
     tr->to = to;
     tr->symbol = symbol;
     tr->next_is_word = next_is_word;
     tr->first_op = first_op;
     tr->op_count = op_count;
+
+    if (tdfa->transition_index_stride > 0) {
+        int32 context_offset = 0;
+        int32 index;
+        if (tdfa->uses_context) {
+            if (next_is_word < 0) {
+                return false;
+            }
+            context_offset = next_is_word*META_ALPHABET_SIZE;
+        }
+        index = from*tdfa->transition_index_stride + context_offset + symbol;
+        if (index < 0 || index >= PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES) {
+            return false;
+        }
+        tdfa->transition_index[index] = transition_id;
+    }
+
     tdfa->num_transitions += 1;
     return true;
 }
@@ -1380,6 +1619,9 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
     work_capacity = tnfa->num_states + tnfa->num_transitions + 1;
     uses_context = tdfa_tnfa_has_context_assertions(tnfa);
     tdfa->uses_context = uses_context;
+    tdfa->transition_index_stride = uses_context ? META_ALPHABET_SIZE*2
+                                                 : META_ALPHABET_SIZE;
+    tdfa->transition_index_count = 0;
     if (work_capacity <= 0 || work_capacity > PREPROC_MAX_TDFA_WORK_CONFIGS) {
         return false;
     }
@@ -1516,6 +1758,7 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
                                               closed_count, tag_count)) {
                     return false;
                 }
+                tdfa_normalize_ops(tdfa, first_op);
                 op_count = tdfa->num_ops - first_op;
 
                 if (!tdfa_add_transition(tdfa, state_id, target_id, c,

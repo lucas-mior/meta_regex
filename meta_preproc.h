@@ -31,6 +31,9 @@
 #define PREPROC_MAX_TDFA_REGISTERS META_MAX_TDFA_REGISTERS
 #define PREPROC_MAX_TDFA_WORK_CONFIGS \
     (PREPROC_MAX_TNFA_STATES + PREPROC_MAX_TNFA_TRANSITIONS + 1)
+#define PREPROC_TDFA_TRANS_INDEX_MAX_STRIDE (META_ALPHABET_SIZE*2)
+#define PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES \
+    (PREPROC_MAX_TDFA_STATES*PREPROC_TDFA_TRANS_INDEX_MAX_STRIDE)
 
 #define ENUM_PREFIX_ PREPROC_FAIL_
 #define ENUM_NAME PreprocFailReason
@@ -109,6 +112,7 @@ typedef struct ParsedTdfa {
     MetaTdfaState states[PREPROC_MAX_TDFA_STATES];
     MetaTdfaTransition transitions[PREPROC_MAX_TDFA_TRANSITIONS];
     MetaTdfaRegOp ops[PREPROC_MAX_TDFA_REGOPS];
+    int32 transition_index[PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES];
 
     int32 num_tags;
     int32 num_states;
@@ -123,6 +127,8 @@ typedef struct ParsedTdfa {
     int32 start_state_w_w;
     int32 final_register_base;
     int32 uses_context;
+    int32 transition_index_stride;
+    int32 transition_index_count;
 } ParsedTdfa;
 
 typedef struct ExtractedRegex {

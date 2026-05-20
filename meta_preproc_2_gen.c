@@ -271,8 +271,10 @@ emit_tnfa(ExtractedRegex *regex, FILE *out) {
             }
             fprintf(out,
                     "{ .id = %d, .group = %d, .role = %s, "
-                    ".is_multivalued = %d },\n",
-                    tag->id, tag->group, role, tag->is_multivalued);
+                    ".is_multivalued = %d, .fixed_base_tag = %d, "
+                    ".fixed_offset = %d },\n",
+                    tag->id, tag->group, role, tag->is_multivalued,
+                    tag->fixed_base_tag, tag->fixed_offset);
         }
         fprintf(out, "}");
     } else {
@@ -345,12 +347,13 @@ emit_tdfa(ExtractedRegex *regex, FILE *out) {
             ".start_state = %d, .start_state_nw_nw = %d, "
             ".start_state_nw_w = %d, .start_state_w_nw = %d, "
             ".start_state_w_w = %d, .final_register_base = %d, "
-            ".uses_context = %d",
+            ".uses_context = %d, .transition_index_stride = %d",
             tdfa->num_tags, tdfa->num_states, tdfa->num_transitions,
             tdfa->num_registers, tdfa->num_ops, tdfa->start_state,
             tdfa->start_state_nw_nw, tdfa->start_state_nw_w,
             tdfa->start_state_w_nw, tdfa->start_state_w_w,
-            tdfa->final_register_base, tdfa->uses_context);
+            tdfa->final_register_base, tdfa->uses_context,
+            tdfa->transition_index_stride);
 
     if (tdfa->num_tags > 0) {
         fprintf(out, ", .tags = (MetaTnfaTag[]){\n");
@@ -366,8 +369,10 @@ emit_tdfa(ExtractedRegex *regex, FILE *out) {
             }
             fprintf(out,
                     "{ .id = %d, .group = %d, .role = %s, "
-                    ".is_multivalued = %d },\n",
-                    tag->id, tag->group, role, tag->is_multivalued);
+                    ".is_multivalued = %d, .fixed_base_tag = %d, "
+                    ".fixed_offset = %d },\n",
+                    tag->id, tag->group, role, tag->is_multivalued,
+                    tag->fixed_base_tag, tag->fixed_offset);
         }
         fprintf(out, "}");
     } else {
@@ -405,6 +410,19 @@ emit_tdfa(ExtractedRegex *regex, FILE *out) {
         fprintf(out, "}");
     } else {
         fprintf(out, ", .transitions = NULL");
+    }
+
+    if (tdfa->transition_index_count > 0) {
+        fprintf(out, ", .transition_index = (int32[]){\n");
+        for (int32 i = 0; i < tdfa->transition_index_count; i += 1) {
+            fprintf(out, "%d,", tdfa->transition_index[i]);
+            if ((i + 1) % 16 == 0) {
+                fprintf(out, "\n");
+            }
+        }
+        fprintf(out, "}");
+    } else {
+        fprintf(out, ", .transition_index = NULL");
     }
 
     if (tdfa->num_ops > 0) {

@@ -128,6 +128,17 @@ typedef struct MetaTnfaTag {
         needs history/list storage instead of a single offset.
     */
     int32 is_multivalued;
+
+    /*
+        Nonzero when this tag is not tracked directly by TDFA registers.
+        In that case its value is derived as:
+
+            tag[id] = tag[fixed_base_tag] + fixed_offset
+
+        fixed_base_tag is a 1-based tag id. 0 means "not fixed".
+    */
+    int32 fixed_base_tag;
+    int32 fixed_offset;
 } MetaTnfaTag;
 
 typedef struct MetaTnfaState {
@@ -278,6 +289,18 @@ typedef struct MetaTdfa {
         transition lookup must distinguish the next byte wordness.
     */
     int32 uses_context;
+
+    /*
+        Optional direct transition lookup table.
+
+        If non-NULL, transition_index is indexed by:
+            state * transition_index_stride + byte
+        for context-free TDFA, and by:
+            state * transition_index_stride + next_is_word * 256 + byte
+        for context-sensitive TDFA. Values are transition indices, or -1.
+    */
+    int32 transition_index_stride;
+    int32 *transition_index;
 
     MetaTnfaTag *tags;
     MetaTdfaState *states;

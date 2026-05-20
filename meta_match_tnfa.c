@@ -634,6 +634,41 @@ match_tnfa_save_accept(int32 *accept_tags, int32 *saved_tags, int32 tag_count) {
     return;
 }
 
+static int32
+match_tnfa_saved_tag_value(MetaTnfa *tnfa, int32 *saved_tags, int32 tag_id,
+                           int32 depth) {
+    MetaTnfaTag *tag;
+    int32 base_value;
+
+    if (tag_id <= 0 || tag_id > tnfa->num_tags) {
+        return -1;
+    }
+
+    /*
+        Fixed-tag optimization may remove a tag from TNFA/TDFA tracking and
+        mark it as derived from another tag by a constant offset. Reconstruct
+        such tags when filling POSIX regmatch_t results; otherwise TNFA reports
+        the untracked tag as -1 even though its base tag was captured.
+    */
+    if (depth > tnfa->num_tags) {
+        return -1;
+    }
+
+    tag = &tnfa->tags[tag_id - 1];
+    if (tag->fixed_base_tag <= 0) {
+        return saved_tags[tag_id];
+    }
+
+    base_value
+        = match_tnfa_saved_tag_value(tnfa, saved_tags, tag->fixed_base_tag,
+                                     depth + 1);
+    if (base_value < 0) {
+        return -1;
+    }
+
+    return base_value + tag->fixed_offset;
+}
+
 static void
 match_tnfa_fill_pmatch(MetaRegex *regex, int32 start_pos, int32 end_pos,
                        int32 *saved_tags, regmatch_t *pmatch,
@@ -659,7 +694,7 @@ match_tnfa_fill_pmatch(MetaRegex *regex, int32 start_pos, int32 end_pos,
             continue;
         }
 
-        value = saved_tags[tag->id];
+        value = match_tnfa_saved_tag_value(tnfa, saved_tags, tag->id, 0);
         if (tag->role == META_TNFA_TAG_GROUP_START) {
             pmatch[group].rm_so = value;
         } else if (tag->role == META_TNFA_TAG_GROUP_END) {
