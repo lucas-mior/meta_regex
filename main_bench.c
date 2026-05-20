@@ -1,4 +1,3 @@
-
 #include <errno.h>
 #include <locale.h>
 #include <regex.h>
@@ -304,10 +303,10 @@ bench_report_mismatch(char *block, BenchRegexBucket *regex_bucket,
                       enum Matcher matcher, int32 reference_result,
                       int32 actual_result, regmatch_t *reference,
                       regmatch_t *actual, int32 pmatch_len, bool extract) {
-    error2("%s mismatch in regex bucket %s, input bucket %s, regex case %s, "
-           "input case %s, engine %s",
-           block, regex_bucket->name, input_bucket->name, regex_case->name,
-           input_case->name, engine);
+    error2("%s mismatch in regex bucket %s, input bucket %s, input case %s, "
+           "engine %s",
+           block, regex_bucket->name, input_bucket->name, input_case->name,
+           engine);
     if (matcher != MATCHER_NONE) {
         error2(" (%s)", MATCHER_str(matcher));
     }
@@ -1182,9 +1181,9 @@ bench_build_runtime_regex_buckets(void) {
             = bench_regex_feature_class_from_ops(c.regex);
 
         if (length_class == BENCH_LEN_LAST) {
-            error2("Skipping regex %s with %d ops; no benchmark length bucket "
-                   "exists above 64 ops.\n",
-                   c.name, op_count);
+            error2("Skipping regex at index %d with %d ops; no benchmark "
+                   "length bucket exists above 64 ops: " BLUE("\"%s\"") "\n",
+                   i, op_count, c.regex->string);
             continue;
         }
 

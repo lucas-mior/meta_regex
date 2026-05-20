@@ -79,12 +79,8 @@ with open(out_path, "w", encoding="utf-8") as out:
             length_class = "BENCH_LEN_LAST"
 
         out.write(f"static BenchRegexCase {array_name}[] = {{\n")
-        for i, literal in enumerate(literals):
-            out.write(
-                f"    {{ \"{array_name}_{i}\", R({literal}), "
-                f"{literal_len(literal)}, {length_class}, "
-                "BENCH_FEATURE_NO_BACKREFS },\n"
-            )
+        for literal in literals:
+            out.write(f"    {{ R({literal}) }},\n")
         out.write("};\n\n")
         buckets.append((array_name, length_class, max_len))
 
