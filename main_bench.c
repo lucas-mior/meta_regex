@@ -608,30 +608,42 @@ bench_time_matcher_bucket(BenchRegexBucket *regex_bucket,
 
 static void
 bench_libc_vs_dispatch(FILE *csv, BenchRegexBucket *regex_bucket,
-                       BenchInputBucket *input_bucket, regex_t *compiled,
-                       bool extract) {
+                       BenchInputBucket *input_bucket, regex_t *compiled) {
     enum Matcher enabled = bench_enabled_matcher_mask();
-    char *variant = extract ? "extract" : "no_extract";
     int32 pair_count = regex_bucket->count*input_bucket->count;
     int32 matches = 0;
     double seconds;
 
-    printf("\n== libc vs meta dispatcher: %s / %s (%s) ==\n",
-           regex_bucket->name, input_bucket->name, variant);
+    printf("\n== libc vs meta dispatcher: %s / %s ==\n",
+           regex_bucket->name, input_bucket->name);
 
-    bench_validate_dispatch(regex_bucket, input_bucket, compiled, extract);
+    bench_validate_dispatch(regex_bucket, input_bucket, compiled, false);
+    bench_validate_dispatch(regex_bucket, input_bucket, compiled, true);
 
     seconds = bench_time_libc_bucket(regex_bucket, input_bucket, compiled,
-                                     extract, META_BENCH_ITERATIONS, &matches);
-    bench_write_row(csv, "libc_vs_dispatch", variant, regex_bucket,
+                                     false, META_BENCH_ITERATIONS, &matches);
+    bench_write_row(csv, "libc_vs_dispatch", "no_extract", regex_bucket,
                     input_bucket, "LIBC", "LIBC", "LIBC", regex_bucket->count,
                     input_bucket->count, pair_count, META_BENCH_ITERATIONS,
                     seconds, matches);
 
-    seconds
-        = bench_time_dispatch_bucket(regex_bucket, input_bucket, extract,
-                                     enabled, META_BENCH_ITERATIONS, &matches);
-    bench_write_row(csv, "libc_vs_dispatch", variant, regex_bucket,
+    seconds = bench_time_libc_bucket(regex_bucket, input_bucket, compiled,
+                                     true, META_BENCH_ITERATIONS, &matches);
+    bench_write_row(csv, "libc_vs_dispatch", "extract", regex_bucket,
+                    input_bucket, "LIBC", "LIBC", "LIBC", regex_bucket->count,
+                    input_bucket->count, pair_count, META_BENCH_ITERATIONS,
+                    seconds, matches);
+
+    seconds = bench_time_dispatch_bucket(regex_bucket, input_bucket, false,
+                                         enabled, META_BENCH_ITERATIONS, &matches);
+    bench_write_row(csv, "libc_vs_dispatch", "no_extract", regex_bucket,
+                    input_bucket, "META_DISPATCH", "DISPATCH", "mixed",
+                    regex_bucket->count, input_bucket->count, pair_count,
+                    META_BENCH_ITERATIONS, seconds, matches);
+
+    seconds = bench_time_dispatch_bucket(regex_bucket, input_bucket, true,
+                                         enabled, META_BENCH_ITERATIONS, &matches);
+    bench_write_row(csv, "libc_vs_dispatch", "extract", regex_bucket,
                     input_bucket, "META_DISPATCH", "DISPATCH", "mixed",
                     regex_bucket->count, input_bucket->count, pair_count,
                     META_BENCH_ITERATIONS, seconds, matches);
@@ -707,9 +719,7 @@ main(void) {
             BenchInputBucket *input_bucket = &bench_input_buckets[ii];
 
             bench_libc_vs_dispatch(dispatch_csv, regex_bucket, input_bucket,
-                                   compiled, false);
-            bench_libc_vs_dispatch(dispatch_csv, regex_bucket, input_bucket,
-                                   compiled, true);
+                                   compiled);
             bench_meta_matchers(matchers_csv, regex_bucket, input_bucket,
                                 compiled, false);
             bench_meta_matchers(matchers_csv, regex_bucket, input_bucket,

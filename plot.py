@@ -166,16 +166,25 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False):
         return []
 
     outputs = []
-    variants = sorted({clean_token(r.get("variant")) for r in rows if clean_token(r.get("variant"))})
+    plot_groups = defaultdict(list)
 
-    for variant in variants:
-        selected = [r for r in rows if clean_token(r.get("variant")) == variant]
+    for r in rows:
+        block = clean_token(r.get("block"))
+        variant = clean_token(r.get("variant"))
+        if block == "libc_vs_dispatch":
+            group_key = (block, "combined")
+        else:
+            group_key = (block, variant)
+        plot_groups[group_key].append(r)
+
+    for (block, variant_label), selected in plot_groups.items():
         if not selected:
             continue
-
+            
         by_series = defaultdict(list)
         for row in selected:
             name = row_series_name(row)
+            variant = clean_token(row.get("variant"))
             if not name:
                 continue
             run_pairs = to_int(row, "run_pair_count")
@@ -187,7 +196,7 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False):
             y = to_float(row, metric)
             if y < 0:
                 continue
-            by_series[name].append((x, y, row))
+            by_series[(name, variant)].append((x, y, row))
 
         if not by_series:
             continue
@@ -196,32 +205,36 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False):
         plotted = []
         used_colors = {}
 
-        for name in sorted(by_series.keys(), key=series_sort_key):
-            points = by_series[name]
+        for (name, variant) in sorted(by_series.keys(), key=lambda k: series_sort_key(k[0])):
+            points = by_series[(name, variant)]
             points.sort(key=lambda t: t[0])
             xs = [p[0] for p in points]
             ys = [p[1] for p in points]
             color = color_for_series(name)
             used_colors[name] = color
+            
+            linestyle = "--" if variant == "no_extract" else "-"
+            label = f"{name} ({variant})" if variant_label == "combined" else name
 
             ax.plot(
                 xs,
                 ys,
                 marker="o",
-                linestyle="-",
+                linestyle=linestyle,
                 linewidth=2.0,
                 markersize=4.5,
                 color=color,
-                label=name,
+                label=label,
             )
-            plotted.append(name)
+            plotted.append((name, variant))
 
         first = selected[0]
         info = csv_name_for_metadata(first)
+        info["variant"] = variant_label
         ylabel = "seconds" if metric == "seconds" else "ns / match"
 
         ax.set_title(
-            f"{info['block']} | {variant} | {info['feature_class']} | "
+            f"{info['block']} | {variant_label} | {info['feature_class']} | "
             f"regex <= {info['regex_max_len']}"
         )
         ax.set_xlabel("max input length")
@@ -237,7 +250,7 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False):
         if plotted:
             ax.legend()
 
-        stem = f"{path.stem}-{variant}-{metric}"
+        stem = f"{path.stem}-{variant_label}-{metric}"
         target_dir = Path(out_dir) if out_dir else path.parent
         target_dir.mkdir(parents=True, exist_ok=True)
         png = target_dir / f"{stem}.png"
@@ -255,18 +268,19 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False):
             "log_y": bool(log_y),
             **info,
             "series": [
-                {"name": name, "color": used_colors[name]}
-                for name in plotted
+                {"name": name, "variant": variant, "color": used_colors[name]}
+                for name, variant in plotted
             ],
             "rows": [
                 {
                     "series": row_series_name(r),
+                    "variant": clean_token(r.get("variant")),
                     "input_max_len": to_int(r, "input_max_len"),
                     metric: to_float(r, metric),
                     "run_pair_count": to_int(r, "run_pair_count"),
                 }
                 for r in selected
-                if row_series_name(r) in plotted and to_int(r, "run_pair_count") > 0
+                if (row_series_name(r), clean_token(r.get("variant"))) in plotted and to_int(r, "run_pair_count") > 0
             ],
         }
         meta.write_text(json.dumps(metadata, indent=2))
