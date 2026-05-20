@@ -614,8 +614,8 @@ bench_libc_vs_dispatch(FILE *csv, BenchRegexBucket *regex_bucket,
     int32 matches = 0;
     double seconds;
 
-    printf("\n== libc vs meta dispatcher: %s / %s ==\n",
-           regex_bucket->name, input_bucket->name);
+    printf("\n== libc vs meta dispatcher: %s / %s ==\n", regex_bucket->name,
+           input_bucket->name);
 
     bench_validate_dispatch(regex_bucket, input_bucket, compiled, false);
     bench_validate_dispatch(regex_bucket, input_bucket, compiled, true);
@@ -627,22 +627,24 @@ bench_libc_vs_dispatch(FILE *csv, BenchRegexBucket *regex_bucket,
                     input_bucket->count, pair_count, META_BENCH_ITERATIONS,
                     seconds, matches);
 
-    seconds = bench_time_libc_bucket(regex_bucket, input_bucket, compiled,
-                                     true, META_BENCH_ITERATIONS, &matches);
+    seconds = bench_time_libc_bucket(regex_bucket, input_bucket, compiled, true,
+                                     META_BENCH_ITERATIONS, &matches);
     bench_write_row(csv, "libc_vs_dispatch", "extract", regex_bucket,
                     input_bucket, "LIBC", "LIBC", "LIBC", regex_bucket->count,
                     input_bucket->count, pair_count, META_BENCH_ITERATIONS,
                     seconds, matches);
 
-    seconds = bench_time_dispatch_bucket(regex_bucket, input_bucket, false,
-                                         enabled, META_BENCH_ITERATIONS, &matches);
+    seconds
+        = bench_time_dispatch_bucket(regex_bucket, input_bucket, false, enabled,
+                                     META_BENCH_ITERATIONS, &matches);
     bench_write_row(csv, "libc_vs_dispatch", "no_extract", regex_bucket,
                     input_bucket, "META_DISPATCH", "DISPATCH", "mixed",
                     regex_bucket->count, input_bucket->count, pair_count,
                     META_BENCH_ITERATIONS, seconds, matches);
 
-    seconds = bench_time_dispatch_bucket(regex_bucket, input_bucket, true,
-                                         enabled, META_BENCH_ITERATIONS, &matches);
+    seconds
+        = bench_time_dispatch_bucket(regex_bucket, input_bucket, true, enabled,
+                                     META_BENCH_ITERATIONS, &matches);
     bench_write_row(csv, "libc_vs_dispatch", "extract", regex_bucket,
                     input_bucket, "META_DISPATCH", "DISPATCH", "mixed",
                     regex_bucket->count, input_bucket->count, pair_count,
