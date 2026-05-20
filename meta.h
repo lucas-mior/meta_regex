@@ -1,5 +1,3 @@
-
-
 #if !defined(META_REGEX_H)
 #define META_REGEX_H
 

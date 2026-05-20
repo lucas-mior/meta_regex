@@ -1,4 +1,3 @@
-
 #include <errno.h>
 #include <locale.h>
 #include <regex.h>
@@ -14,7 +13,6 @@
 #include "meta_match.c"
 #include "gen/main_bench_regexes2.h"
 #include "gen/main_bench_patterns2.h"
-
 
 typedef enum BenchInputLengthClass {
     BENCH_INPUT_LEN_0_8,
@@ -43,42 +41,63 @@ typedef struct BenchInputBucket {
 static char *
 bench_input_length_class_name(enum BenchInputLengthClass c) {
     switch (c) {
-    case BENCH_INPUT_LEN_0_8: return "0_8";
-    case BENCH_INPUT_LEN_9_16: return "9_16";
-    case BENCH_INPUT_LEN_17_32: return "17_32";
-    case BENCH_INPUT_LEN_33_64: return "33_64";
-    case BENCH_INPUT_LEN_65_128: return "65_128";
-    case BENCH_INPUT_LEN_129_256: return "129_256";
+    case BENCH_INPUT_LEN_0_8:
+        return "0_8";
+    case BENCH_INPUT_LEN_9_16:
+        return "9_16";
+    case BENCH_INPUT_LEN_17_32:
+        return "17_32";
+    case BENCH_INPUT_LEN_33_64:
+        return "33_64";
+    case BENCH_INPUT_LEN_65_128:
+        return "65_128";
+    case BENCH_INPUT_LEN_129_256:
+        return "129_256";
     case BENCH_INPUT_LEN_LAST:
-    default: return "unknown_input_length";
+    default:
+        return "unknown_input_length";
     }
 }
 
 static int32
 bench_input_length_class_min(enum BenchInputLengthClass c) {
     switch (c) {
-    case BENCH_INPUT_LEN_0_8: return 0;
-    case BENCH_INPUT_LEN_9_16: return 9;
-    case BENCH_INPUT_LEN_17_32: return 17;
-    case BENCH_INPUT_LEN_33_64: return 33;
-    case BENCH_INPUT_LEN_65_128: return 65;
-    case BENCH_INPUT_LEN_129_256: return 129;
+    case BENCH_INPUT_LEN_0_8:
+        return 0;
+    case BENCH_INPUT_LEN_9_16:
+        return 9;
+    case BENCH_INPUT_LEN_17_32:
+        return 17;
+    case BENCH_INPUT_LEN_33_64:
+        return 33;
+    case BENCH_INPUT_LEN_65_128:
+        return 65;
+    case BENCH_INPUT_LEN_129_256:
+        return 129;
     case BENCH_INPUT_LEN_LAST:
-    default: return 0;
+    default:
+        return 0;
     }
 }
 
 static int32
 bench_input_length_class_max(enum BenchInputLengthClass c) {
     switch (c) {
-    case BENCH_INPUT_LEN_0_8: return 8;
-    case BENCH_INPUT_LEN_9_16: return 16;
-    case BENCH_INPUT_LEN_17_32: return 32;
-    case BENCH_INPUT_LEN_33_64: return 64;
-    case BENCH_INPUT_LEN_65_128: return 128;
-    case BENCH_INPUT_LEN_129_256: return 256;
+    case BENCH_INPUT_LEN_0_8:
+        return 8;
+    case BENCH_INPUT_LEN_9_16:
+        return 16;
+    case BENCH_INPUT_LEN_17_32:
+        return 32;
+    case BENCH_INPUT_LEN_33_64:
+        return 64;
+    case BENCH_INPUT_LEN_65_128:
+        return 128;
+    case BENCH_INPUT_LEN_129_256:
+        return 256;
     case BENCH_INPUT_LEN_LAST:
-    default: return 0;
+    default:
+        return 0;
     }
 }
 
@@ -753,20 +772,20 @@ bench_meta_matchers(FILE *csv, BenchRegexBucket *regex_bucket,
     return;
 }
 
-
 #define BENCH_MAIN_REGEX_BUCKET_MAX (BENCH_FEATURE_LAST*BENCH_LEN_LAST)
 #define BENCH_RANDOM_INPUTS_PER_BUCKET 32
 #define BENCH_RANDOM_INPUT_MAX_LEN 256
 
-static BenchRegexCase
-    bench_runtime_regex_cases[BENCH_FEATURE_LAST][BENCH_LEN_LAST]
-                             [BENCH_REGEX_CASE_COUNT];
-static BenchRegexBucket bench_runtime_regex_buckets[BENCH_MAIN_REGEX_BUCKET_MAX];
+static BenchRegexCase bench_runtime_regex_cases[BENCH_FEATURE_LAST]
+                                               [BENCH_LEN_LAST]
+                                               [BENCH_REGEX_CASE_COUNT];
+static BenchRegexBucket
+    bench_runtime_regex_buckets[BENCH_MAIN_REGEX_BUCKET_MAX];
 static char bench_runtime_regex_bucket_names[BENCH_MAIN_REGEX_BUCKET_MAX][128];
 static int32 bench_runtime_regex_bucket_count;
 
-static BenchInputCase
-    bench_random_input_cases[BENCH_INPUT_LEN_LAST][BENCH_RANDOM_INPUTS_PER_BUCKET];
+static BenchInputCase bench_random_input_cases[BENCH_INPUT_LEN_LAST]
+                                              [BENCH_RANDOM_INPUTS_PER_BUCKET];
 static char bench_random_input_names[BENCH_INPUT_LEN_LAST]
                                     [BENCH_RANDOM_INPUTS_PER_BUCKET][64];
 static char bench_random_input_storage[BENCH_INPUT_LEN_LAST]
@@ -821,7 +840,8 @@ bench_build_runtime_regex_buckets(void) {
 
     memset64(counts, 0, SIZEOF(counts));
     memset64(bench_runtime_regex_cases, 0, SIZEOF(bench_runtime_regex_cases));
-    memset64(bench_runtime_regex_buckets, 0, SIZEOF(bench_runtime_regex_buckets));
+    memset64(bench_runtime_regex_buckets, 0,
+             SIZEOF(bench_runtime_regex_buckets));
     memset64(bench_runtime_regex_bucket_names, 0,
              SIZEOF(bench_runtime_regex_bucket_names));
     bench_runtime_regex_bucket_count = 0;
@@ -836,7 +856,8 @@ bench_build_runtime_regex_buckets(void) {
 
         if (length_class == BENCH_LEN_LAST) {
             error2("Skipping regex %s with %d ops; no benchmark length bucket "
-                   "exists above 64 ops.\n", c.name, op_count);
+                   "exists above 64 ops.\n",
+                   c.name, op_count);
             continue;
         }
 
@@ -920,15 +941,15 @@ bench_init_random_input_buckets(void) {
             } else if (i == 1) {
                 len = max_len;
             } else {
-                len = min_len + (int32)(bench_random_next(&seed) % (uint32)span);
+                len = min_len
+                      + (int32)(bench_random_next(&seed) % (uint32)span);
             }
 
-            SNPRINTF(bench_random_input_names[c][i],
-                     "random_%s_%d", bench_input_length_class_name(c), i);
+            SNPRINTF(bench_random_input_names[c][i], "random_%s_%d",
+                     bench_input_length_class_name(c), i);
 
             for (int32 j = 0; j < len; j += 1) {
-                bench_random_input_storage[c][i][j]
-                    = bench_random_char(&seed);
+                bench_random_input_storage[c][i][j] = bench_random_char(&seed);
             }
             bench_random_input_storage[c][i][len] = '\0';
 
@@ -995,7 +1016,6 @@ bench_run_main_regex_buckets(llong now) {
     }
     return;
 }
-
 
 typedef struct BenchLoadedInputBucket {
     BenchInputBucket bucket;
