@@ -2,9 +2,9 @@
 #define META_MATCH_BTNFA
 
 #include <regex.h>
-#include "primitives.h"
 #include "meta.h"
 #include "meta_util.c"
+#include "primitives.h"
 
 // clang-format off
 static const MatcherFeatures match_features_btnfa = {

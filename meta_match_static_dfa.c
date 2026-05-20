@@ -2,8 +2,8 @@
 #define META_MATCH_STATIC_DFA
 
 #include <regex.h>
-#include "primitives.h"
 #include "meta.h"
+#include "primitives.h"
 
 // clang-format off
 static const MatcherFeatures match_features_static_dfa = {

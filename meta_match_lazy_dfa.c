@@ -1,10 +1,10 @@
 #if !defined(META_MATCH_LAZY_DFA_C)
 #define META_MATCH_LAZY_DFA_C
 
-#include "primitives.h"
+#include <regex.h>
 #include "meta.h"
 #include "meta_util.c"
-#include <regex.h>
+#include "primitives.h"
 
 // clang-format off
 static const MatcherFeatures match_features_lazy_dfa = {
