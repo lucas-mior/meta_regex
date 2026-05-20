@@ -74,27 +74,11 @@ static int32
 match_tdfa_exec_ops(MetaTdfa *tdfa, int32 *regs, int32 first_op, int32 op_count,
                     int32 pos) {
     if (op_count <= 0) {
-#if DEBUGGING
-        return op_count == 0;
-#else
         return 1;
-#endif
     }
-
-#if DEBUGGING
-    if (first_op < 0 || first_op + op_count > tdfa->num_ops) {
-        return 0;
-    }
-#endif
 
     for (int32 i = 0; i < op_count; i += 1) {
         MetaTdfaRegOp *op = &tdfa->ops[first_op + i];
-
-#if DEBUGGING
-        if (!match_tdfa_valid_reg(tdfa, op->dst)) {
-            return 0;
-        }
-#endif
 
         switch (op->kind) {
         case META_TDFA_REGOP_SET_NIL:
@@ -104,19 +88,10 @@ match_tdfa_exec_ops(MetaTdfa *tdfa, int32 *regs, int32 first_op, int32 op_count,
             regs[op->dst] = pos;
             break;
         case META_TDFA_REGOP_COPY:
-#if DEBUGGING
-            if (!match_tdfa_valid_reg(tdfa, op->src)) {
-                return 0;
-            }
-#endif
             regs[op->dst] = regs[op->src];
             break;
         default:
-#if DEBUGGING
-            return 0;
-#else
             break;
-#endif
         }
     }
 
@@ -150,14 +125,6 @@ match_tdfa_find_transition(MetaTdfa *tdfa, int32 state_id, int32 c,
         if (transition_id < 0) {
             return NULL;
         }
-#if DEBUGGING
-        if (transition_id >= tdfa->num_transitions) {
-            return NULL;
-        }
-        if (tdfa->transitions[transition_id].from != state_id) {
-            return NULL;
-        }
-#endif
         return &tdfa->transitions[transition_id];
     }
 
@@ -168,19 +135,8 @@ match_tdfa_find_transition(MetaTdfa *tdfa, int32 state_id, int32 c,
         return NULL;
     }
 
-#if DEBUGGING
-    if (first + count > tdfa->num_transitions) {
-        return NULL;
-    }
-#endif
-
     for (int32 i = 0; i < count; i += 1) {
         MetaTdfaTransition *tr = &tdfa->transitions[first + i];
-#if DEBUGGING
-        if (tr->from != state_id) {
-            return NULL;
-        }
-#endif
         if (tr->symbol == c
             && (tr->next_is_word < 0 || tr->next_is_word == next_is_word)) {
             return tr;
@@ -207,11 +163,6 @@ match_tdfa_save_accept(MetaTdfa *tdfa, MetaTdfaState *state, int32 *regs,
         if (tag->fixed_base_tag > 0) {
             continue;
         }
-#if DEBUGGING
-        if (!match_tdfa_valid_reg(tdfa, reg)) {
-            return 0;
-        }
-#endif
         saved_tags[t] = regs[reg];
     }
 
@@ -411,11 +362,6 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         if (tr == NULL) {
             break;
         }
-#if DEBUGGING
-        if (tr->to < 0 || tr->to >= tdfa->num_states) {
-            goto cleanup;
-        }
-#endif
 
         if (extract
             && !match_tdfa_exec_ops(tdfa, regs, tr->first_op, tr->op_count,
