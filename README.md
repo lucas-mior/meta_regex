@@ -125,6 +125,7 @@ cc gen/your_code_baked.c -o your_program
 - Organize testing, benchmarking and plotting
 - Implement heuristics for the high level dispatcher
 - Implement word boundary support for the TDFA
+- Fix BTNFA for backreferences quantified (`R("([a-z])-\1+")`)
 - Implement arguments for the pre processor
   * limits
   * heuristics
