@@ -109,10 +109,15 @@ def canonical_series_name(value):
     return SERIES_ALIASES.get(token, token)
 
 
+def is_libc_comparison_block(block):
+    block = clean_token(block)
+    return block == "libc_vs_dispatch" or block == "libc_vs_dispatch_pairwise"
+
+
 def row_series_name(row):
     block = clean_token(row.get("block"))
 
-    if block == "libc_vs_dispatch":
+    if is_libc_comparison_block(block):
         raw = row.get("engine") or row.get("matcher") or row.get("selected_matcher")
     else:
         raw = row.get("matcher") or row.get("engine") or row.get("selected_matcher")
@@ -172,8 +177,8 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False):
     for r in rows:
         block = clean_token(r.get("block"))
         variant = clean_token(r.get("variant"))
-        if block == "libc_vs_dispatch":
-            group_key = (block, "combined")
+        if is_libc_comparison_block(block):
+            group_key = (block, "extract_vs_no_extract")
         else:
             group_key = (block, variant)
         plot_groups[group_key].append(r)
@@ -206,7 +211,11 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False):
         plotted = []
         used_colors = {}
 
-        for (name, variant) in sorted(by_series.keys(), key=lambda k: series_sort_key(k[0])):
+        variant_order = {"no_extract": 0, "extract": 1}
+        for (name, variant) in sorted(
+            by_series.keys(),
+            key=lambda k: (series_sort_key(k[0]), variant_order.get(k[1], 2), k[1]),
+        ):
             points = by_series[(name, variant)]
             points.sort(key=lambda t: t[0])
             xs = [p[0] for p in points]
@@ -215,7 +224,7 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False):
             used_colors[name] = color
 
             linestyle = "--" if variant == "no_extract" else "-"
-            label = f"{name} ({variant})" if variant_label == "combined" else name
+            label = f"{name} ({variant})" if variant_label == "extract_vs_no_extract" else name
 
             ax.plot(
                 xs,
