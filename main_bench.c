@@ -299,9 +299,9 @@ bench_write_row(FILE *csv, char *block, char *variant,
     fputc(',', csv);
     bench_csv_string(csv, variant);
     fputc(',', csv);
-    bench_csv_string(csv, bucket->length_name);
+    bench_csv_string(csv, bench_length_class_name(bucket->length_class));
     fputc(',', csv);
-    bench_csv_string(csv, bucket->feature_name);
+    bench_csv_string(csv, bench_feature_class_name(bucket->feature_class));
     fputc(',', csv);
     bench_csv_string(csv, bucket->name);
     fputc(',', csv);

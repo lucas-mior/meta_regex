@@ -29,8 +29,6 @@ typedef struct BenchRegexCase {
 
 typedef struct BenchRegexBucket {
     char *name;
-    char *length_name;
-    char *feature_name;
     enum BenchRegexLengthClass length_class;
     enum BenchRegexFeatureClass feature_class;
     BenchRegexCase *cases;
@@ -87,6 +85,7 @@ static BenchRegexCase bench_regex_65_128_regular_no_word_boundary_no_backref[] =
     { "repeated_kv", "abcd12-Testef34", R("^((ab|cd|ef|gh){1,8}([0-9]+|[A-Z][a-z]{2,6})(-[[:alnum:]_]+)?){1,2}$"), 68, BENCH_LEN_65_128, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
 };
 
+
 static BenchRegexCase bench_regex_1_16_regular_with_word_boundary_no_backref[] = {
     { "word_left_right", "a", R("\\<a\\>"), 5, BENCH_LEN_1_16, BENCH_FEATURE_NO_BACKREF },
     { "word_boundary", "a", R("\\ba\\b"), 5, BENCH_LEN_1_16, BENCH_FEATURE_NO_BACKREF },
@@ -110,6 +109,7 @@ static BenchRegexCase bench_regex_65_128_regular_with_word_boundary_no_backref[]
     { "boundary_word_list", "ab cd EF 123", R("\\b([[:alpha:]]{2,8}[[:space:]]+){1,4}([0-9]{1,3}|[A-F]{2,6})([,;][[:space:]]*)?\\b"), 81, BENCH_LEN_65_128, BENCH_FEATURE_NO_BACKREF },
     { "word_kv_repeated", "foo-abcbar:123", R("\\<((foo|bar|baz|qux)[-:]([[:alnum:]_]{1,12}|[0-9]{2,8})([.][a-z]{2,6})?){1,3}\\>"), 79, BENCH_LEN_65_128, BENCH_FEATURE_NO_BACKREF },
 };
+
 
 static BenchRegexCase bench_regex_1_16_all_features[] = {
     { "small_backref", "aa", R("(a)\\1"), 5, BENCH_LEN_1_16, BENCH_FEATURE_ALL },
@@ -135,21 +135,50 @@ static BenchRegexCase bench_regex_65_128_all_features[] = {
     { "boundary_kv_backref", "foo-abc::foo::abc", R("\\b((foo|bar|baz)[-:]([[:alnum:]_]{1,12}|[0-9]{2,8})([.][a-z]{2,6})?)::\\2::\\3\\b"), 78, BENCH_LEN_65_128, BENCH_FEATURE_ALL },
 };
 
+
+#define BENCH_REGEX_BUCKET(ARRAY, LENGTH_CLASS, FEATURE_CLASS) \
+    { \
+        .name = #ARRAY, \
+        .length_class = LENGTH_CLASS, \
+        .feature_class = FEATURE_CLASS, \
+        .cases = ARRAY, \
+        .count = LENGTH(ARRAY), \
+    }
+
 static BenchRegexBucket bench_regex_buckets[] = {
-    { "1_16__all_except_word_boundaries_and_backreferences", "[1,16]", "all_except_word_boundaries_and_backreferences", BENCH_LEN_1_16, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF, bench_regex_1_16_regular_no_word_boundary_no_backref, LENGTH(bench_regex_1_16_regular_no_word_boundary_no_backref) },
-    { "17_32__all_except_word_boundaries_and_backreferences", "[17,32]", "all_except_word_boundaries_and_backreferences", BENCH_LEN_17_32, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF, bench_regex_17_32_regular_no_word_boundary_no_backref, LENGTH(bench_regex_17_32_regular_no_word_boundary_no_backref) },
-    { "33_64__all_except_word_boundaries_and_backreferences", "[33,64]", "all_except_word_boundaries_and_backreferences", BENCH_LEN_33_64, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF, bench_regex_33_64_regular_no_word_boundary_no_backref, LENGTH(bench_regex_33_64_regular_no_word_boundary_no_backref) },
-    { "65_128__all_except_word_boundaries_and_backreferences", "[65,128]", "all_except_word_boundaries_and_backreferences", BENCH_LEN_65_128, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF, bench_regex_65_128_regular_no_word_boundary_no_backref, LENGTH(bench_regex_65_128_regular_no_word_boundary_no_backref) },
-    { "1_16__all_except_backreferences", "[1,16]", "all_except_backreferences", BENCH_LEN_1_16, BENCH_FEATURE_NO_BACKREF, bench_regex_1_16_regular_with_word_boundary_no_backref, LENGTH(bench_regex_1_16_regular_with_word_boundary_no_backref) },
-    { "17_32__all_except_backreferences", "[17,32]", "all_except_backreferences", BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF, bench_regex_17_32_regular_with_word_boundary_no_backref, LENGTH(bench_regex_17_32_regular_with_word_boundary_no_backref) },
-    { "33_64__all_except_backreferences", "[33,64]", "all_except_backreferences", BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF, bench_regex_33_64_regular_with_word_boundary_no_backref, LENGTH(bench_regex_33_64_regular_with_word_boundary_no_backref) },
-    { "65_128__all_except_backreferences", "[65,128]", "all_except_backreferences", BENCH_LEN_65_128, BENCH_FEATURE_NO_BACKREF, bench_regex_65_128_regular_with_word_boundary_no_backref, LENGTH(bench_regex_65_128_regular_with_word_boundary_no_backref) },
-    { "1_16__all_features", "[1,16]", "all_features", BENCH_LEN_1_16, BENCH_FEATURE_ALL, bench_regex_1_16_all_features, LENGTH(bench_regex_1_16_all_features) },
-    { "17_32__all_features", "[17,32]", "all_features", BENCH_LEN_17_32, BENCH_FEATURE_ALL, bench_regex_17_32_all_features, LENGTH(bench_regex_17_32_all_features) },
-    { "33_64__all_features", "[33,64]", "all_features", BENCH_LEN_33_64, BENCH_FEATURE_ALL, bench_regex_33_64_all_features, LENGTH(bench_regex_33_64_all_features) },
-    { "65_128__all_features", "[65,128]", "all_features", BENCH_LEN_65_128, BENCH_FEATURE_ALL, bench_regex_65_128_all_features, LENGTH(bench_regex_65_128_all_features) },
+    BENCH_REGEX_BUCKET(bench_regex_1_16_regular_no_word_boundary_no_backref,
+                       BENCH_LEN_1_16,
+                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF),
+    BENCH_REGEX_BUCKET(bench_regex_17_32_regular_no_word_boundary_no_backref,
+                       BENCH_LEN_17_32,
+                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF),
+    BENCH_REGEX_BUCKET(bench_regex_33_64_regular_no_word_boundary_no_backref,
+                       BENCH_LEN_33_64,
+                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF),
+    BENCH_REGEX_BUCKET(bench_regex_65_128_regular_no_word_boundary_no_backref,
+                       BENCH_LEN_65_128,
+                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF),
+
+    BENCH_REGEX_BUCKET(bench_regex_1_16_regular_with_word_boundary_no_backref,
+                       BENCH_LEN_1_16, BENCH_FEATURE_NO_BACKREF),
+    BENCH_REGEX_BUCKET(bench_regex_17_32_regular_with_word_boundary_no_backref,
+                       BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF),
+    BENCH_REGEX_BUCKET(bench_regex_33_64_regular_with_word_boundary_no_backref,
+                       BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF),
+    BENCH_REGEX_BUCKET(bench_regex_65_128_regular_with_word_boundary_no_backref,
+                       BENCH_LEN_65_128, BENCH_FEATURE_NO_BACKREF),
+
+    BENCH_REGEX_BUCKET(bench_regex_1_16_all_features, BENCH_LEN_1_16,
+                       BENCH_FEATURE_ALL),
+    BENCH_REGEX_BUCKET(bench_regex_17_32_all_features, BENCH_LEN_17_32,
+                       BENCH_FEATURE_ALL),
+    BENCH_REGEX_BUCKET(bench_regex_33_64_all_features, BENCH_LEN_33_64,
+                       BENCH_FEATURE_ALL),
+    BENCH_REGEX_BUCKET(bench_regex_65_128_all_features, BENCH_LEN_65_128,
+                       BENCH_FEATURE_ALL),
 };
 
+#undef BENCH_REGEX_BUCKET
 #define BENCH_REGEX_BUCKET_COUNT LENGTH(bench_regex_buckets)
 
 #endif /* META_BENCH_REGEXES_H */
