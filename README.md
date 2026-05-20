@@ -17,6 +17,11 @@ This is an exploration: don't use it in production.
 - If you want absolute control over the regex matcher
   * You can enable/disable which matchers you want
   * You can tweak the heuristic parameters used to select the matcher
+- If you want to make it easier to not depend on libc
+  * The regex pre processor and runtime matchers use only some simple libc
+    functions from `<string.h>` that you can easily implement yourself (and
+    main, of course). Libc regexes are only needed for testing against
+    `<regex.h>` implementation.
 
 ## Which regular expressions does it support?
 A subset of posix extended.
