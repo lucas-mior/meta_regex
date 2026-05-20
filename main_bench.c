@@ -13,6 +13,7 @@
 #include "meta_match.c"
 #include "gen/main_bench_regexes2.h"
 #include "main_bench_inputs.h"
+#include "gen/main_bench_patterns2.h"
 
 #if !defined(error2)
 #define error2(...) error2(__VA_ARGS__)
@@ -279,7 +280,7 @@ static void
 bench_absorb_result(int32 result, regmatch_t *pmatch, bool extract) {
     bench_sink_result += (result == 0);
     if (extract && pmatch != NULL) {
-        bench_sink_offsets += (int64)pmatch[0].rm_so + (int64)pmatch[0].rm_eo;
+        bench_sink_offsets += pmatch[0].rm_so + (int64)pmatch[0].rm_eo;
     }
     return;
 }
@@ -301,7 +302,7 @@ bench_write_row(FILE *csv, char *block, char *variant,
                 char *engine, char *matcher_name, char *selected_matcher_name,
                 int32 regex_cases, int32 input_cases, int32 run_pair_count,
                 int32 iterations_per_pair, double seconds, int32 matches) {
-    int64 total_iterations = (int64)iterations_per_pair*(int64)run_pair_count;
+    int64 total_iterations = iterations_per_pair*(int64)run_pair_count;
     double ns_per_match = 0.0;
 
     if (total_iterations > 0) {
@@ -685,6 +686,221 @@ bench_meta_matchers(FILE *csv, BenchRegexBucket *regex_bucket,
     return;
 }
 
+typedef struct BenchLoadedInputBucket {
+    BenchInputBucket bucket;
+    BenchInputCase *cases;
+    int32 count;
+} BenchLoadedInputBucket;
+
+static char *
+bench_dup_cstr(char *s) {
+    int32 len = strlen32(s);
+    char *copy = malloc2(len + 1);
+    memcpy(copy, s, len + 1);
+    return copy;
+}
+
+static char *
+bench_make_generated_input_name(char *array_name, int32 index) {
+    char name[512];
+
+    SNPRINTF(name, "%s_input_%d", array_name, index);
+    return bench_dup_cstr(name);
+}
+
+static char *
+bench_dup_slice(char *s, int32 len) {
+    char *copy = malloc2(len + 1);
+
+    if (len > 0) {
+        memcpy(copy, s, len);
+    }
+    copy[len] = '\0';
+    return copy;
+}
+
+static void
+bench_fail_input_file(char *path, char *reason) {
+    error("Error reading generated benchmark input file %s: %s.\n", path,
+          reason);
+    exit(EXIT_FAILURE);
+}
+
+static void
+bench_load_generated_inputs(char *array_name, char *path,
+                            BenchLoadedInputBucket *loaded) {
+    FILE *file;
+    long file_size;
+    int64 read_size;
+    char *storage;
+    int32 input_len;
+    int32 input_count = 0;
+    int32 start = 0;
+    int32 case_index = 0;
+    int32 max_input_len = 0;
+
+    memset(loaded, 0, SIZEOF(*loaded));
+
+    file = fopen(path, "rb");
+    if (file == NULL) {
+        bench_fail_input_file(path, strerror(errno));
+    }
+
+    if (fseek(file, 0, SEEK_END) != 0) {
+        bench_fail_input_file(path, strerror(errno));
+    }
+
+    file_size = ftell(file);
+    if (file_size < 0) {
+        bench_fail_input_file(path, strerror(errno));
+    }
+    if (file_size > 2147483646L) {
+        bench_fail_input_file(path, "file is too large");
+    }
+
+    if (fseek(file, 0, SEEK_SET) != 0) {
+        bench_fail_input_file(path, strerror(errno));
+    }
+
+    storage = malloc2(file_size + 1);
+    read_size = fread(storage, 1, file_size, file);
+    if (read_size != file_size) {
+        bench_fail_input_file(path, strerror(errno));
+    }
+    storage[file_size] = '\0';
+
+    if (fclose(file) != 0) {
+        bench_fail_input_file(path, strerror(errno));
+    }
+
+    input_len = (int32)file_size;
+    if (input_len == 0) {
+        bench_fail_input_file(path, "file contains no inputs");
+    }
+
+    for (int32 i = 0; i < input_len; i += 1) {
+        if (storage[i] == '\n') {
+            input_count += 1;
+        }
+    }
+    if (storage[input_len - 1] != '\n') {
+        input_count += 1;
+    }
+
+    loaded->cases = malloc2(SIZEOF(*loaded->cases)*input_count);
+    loaded->count = input_count;
+
+    for (int32 i = 0; i < input_len; i += 1) {
+        if (storage[i] != '\n') {
+            continue;
+        }
+
+        int32 len = i + 1 - start;
+        loaded->cases[case_index].name
+            = bench_make_generated_input_name(array_name, case_index);
+        loaded->cases[case_index].input = bench_dup_slice(storage + start, len);
+        if (len > max_input_len) {
+            max_input_len = len;
+        }
+        case_index += 1;
+        start = i + 1;
+    }
+
+    if (start < input_len) {
+        int32 len = input_len - start;
+        loaded->cases[case_index].name
+            = bench_make_generated_input_name(array_name, case_index);
+        loaded->cases[case_index].input = bench_dup_slice(storage + start, len);
+        if (len > max_input_len) {
+            max_input_len = len;
+        }
+        case_index += 1;
+    }
+
+    if (case_index != input_count) {
+        bench_fail_input_file(path, "internal input splitting error");
+    }
+
+    loaded->bucket.name = array_name;
+    loaded->bucket.length_class = 0;
+    loaded->bucket.max_input_len = max_input_len;
+    loaded->bucket.cases = loaded->cases;
+    loaded->bucket.count = loaded->count;
+
+    free2(storage, file_size + 1);
+    return;
+}
+
+static void
+bench_free_generated_inputs(BenchLoadedInputBucket *loaded) {
+    if (loaded == NULL || loaded->cases == NULL) {
+        return;
+    }
+
+    for (int32 i = 0; i < loaded->count; i += 1) {
+        if (loaded->cases[i].name != NULL) {
+            free2(loaded->cases[i].name,
+                  strlen32(loaded->cases[i].name) + 1);
+        }
+        if (loaded->cases[i].input != NULL) {
+            free2(loaded->cases[i].input,
+                  strlen32(loaded->cases[i].input) + 1);
+        }
+    }
+
+    free2(loaded->cases, SIZEOF(*loaded->cases)*loaded->count);
+    memset(loaded, 0, SIZEOF(*loaded));
+    return;
+}
+
+static void
+bench_run_generated_pattern_buckets(llong now) {
+    for (int32 bi = 0; bi < GENERATED_BENCH_REGEX_BUCKET_COUNT; bi += 1) {
+        GeneratedBenchRegexBucket *generated
+            = &generated_bench_regex_buckets[bi];
+        BenchRegexBucket *regex_bucket = &generated->regex_bucket;
+        BenchLoadedInputBucket loaded_input;
+        BenchInputBucket *input_bucket;
+        regex_t *compiled = NULL;
+        char dispatch_csv_file[1024];
+        char matchers_csv_file[1024];
+        FILE *dispatch_csv;
+        FILE *matchers_csv;
+
+        if (regex_bucket->count <= 0) {
+            continue;
+        }
+
+        bench_load_generated_inputs(generated->array_name,
+                                    generated->input_path, &loaded_input);
+        input_bucket = &loaded_input.bucket;
+
+        SNPRINTF(dispatch_csv_file,
+                 "benchmarks/generated_%s-libc_vs_meta-%lld.csv",
+                 generated->array_name, now);
+        SNPRINTF(matchers_csv_file,
+                 "benchmarks/generated_%s-meta_matchers-%lld.csv",
+                 generated->array_name, now);
+
+        dispatch_csv = bench_open_csv(dispatch_csv_file);
+        matchers_csv = bench_open_csv(matchers_csv_file);
+        compiled = bench_compile_regex_bucket(regex_bucket);
+
+        bench_libc_vs_dispatch(dispatch_csv, regex_bucket, input_bucket,
+                               compiled);
+        bench_meta_matchers(matchers_csv, regex_bucket, input_bucket, compiled,
+                            false);
+        bench_meta_matchers(matchers_csv, regex_bucket, input_bucket, compiled,
+                            true);
+
+        bench_free_regex_bucket(compiled, regex_bucket);
+        bench_close_csv(dispatch_csv, dispatch_csv_file);
+        bench_close_csv(matchers_csv, matchers_csv_file);
+        bench_free_generated_inputs(&loaded_input);
+    }
+    return;
+}
+
 int32
 main(void) {
     llong now;
@@ -694,44 +910,46 @@ main(void) {
 
     now = (llong)time(NULL);
 
-    for (int32 bi = 0; bi < BENCH_REGEX_BUCKET_COUNT; bi += 1) {
-        BenchRegexBucket *regex_bucket = &bench_regex_buckets[bi];
-        regex_t *compiled = NULL;
-        char dispatch_csv_file[1024];
-        char matchers_csv_file[1024];
-        FILE *dispatch_csv;
-        FILE *matchers_csv;
-        char *feature_name
-            = bench_feature_class_name(regex_bucket->feature_class);
-        char *regex_len_name
-            = bench_length_class_name(regex_bucket->length_class);
+    /* for (int32 bi = 0; bi < BENCH_REGEX_BUCKET_COUNT; bi += 1) { */
+    /*     BenchRegexBucket *regex_bucket = &bench_regex_buckets[bi]; */
+    /*     regex_t *compiled = NULL; */
+    /*     char dispatch_csv_file[1024]; */
+    /*     char matchers_csv_file[1024]; */
+    /*     FILE *dispatch_csv; */
+    /*     FILE *matchers_csv; */
+    /*     char *feature_name */
+    /*         = bench_feature_class_name(regex_bucket->feature_class); */
+    /*     char *regex_len_name */
+    /*         = bench_length_class_name(regex_bucket->length_class); */
 
-        SNPRINTF(dispatch_csv_file,
-                 "benchmarks/%s-regex_%s-libc_vs_meta-%lld.csv", feature_name,
-                 regex_len_name, now);
-        SNPRINTF(matchers_csv_file,
-                 "benchmarks/%s-regex_%s-meta_matchers-%lld.csv", feature_name,
-                 regex_len_name, now);
+    /*     SNPRINTF(dispatch_csv_file, */
+    /*              "benchmarks/%s-regex_%s-libc_vs_meta-%lld.csv", feature_name, */
+    /*              regex_len_name, now); */
+    /*     SNPRINTF(matchers_csv_file, */
+    /*              "benchmarks/%s-regex_%s-meta_matchers-%lld.csv", feature_name, */
+    /*              regex_len_name, now); */
 
-        dispatch_csv = bench_open_csv(dispatch_csv_file);
-        matchers_csv = bench_open_csv(matchers_csv_file);
-        compiled = bench_compile_regex_bucket(regex_bucket);
+    /*     dispatch_csv = bench_open_csv(dispatch_csv_file); */
+    /*     matchers_csv = bench_open_csv(matchers_csv_file); */
+    /*     compiled = bench_compile_regex_bucket(regex_bucket); */
 
-        for (int32 ii = 0; ii < BENCH_INPUT_BUCKET_COUNT; ii += 1) {
-            BenchInputBucket *input_bucket = &bench_input_buckets[ii];
+    /*     for (int32 ii = 0; ii < BENCH_INPUT_BUCKET_COUNT; ii += 1) { */
+    /*         BenchInputBucket *input_bucket = &bench_input_buckets[ii]; */
 
-            bench_libc_vs_dispatch(dispatch_csv, regex_bucket, input_bucket,
-                                   compiled);
-            bench_meta_matchers(matchers_csv, regex_bucket, input_bucket,
-                                compiled, false);
-            bench_meta_matchers(matchers_csv, regex_bucket, input_bucket,
-                                compiled, true);
-        }
+    /*         bench_libc_vs_dispatch(dispatch_csv, regex_bucket, input_bucket, */
+    /*                                compiled); */
+    /*         bench_meta_matchers(matchers_csv, regex_bucket, input_bucket, */
+    /*                             compiled, false); */
+    /*         bench_meta_matchers(matchers_csv, regex_bucket, input_bucket, */
+    /*                             compiled, true); */
+    /*     } */
 
-        bench_free_regex_bucket(compiled, regex_bucket);
-        bench_close_csv(dispatch_csv, dispatch_csv_file);
-        bench_close_csv(matchers_csv, matchers_csv_file);
-    }
+    /*     bench_free_regex_bucket(compiled, regex_bucket); */
+    /*     bench_close_csv(dispatch_csv, dispatch_csv_file); */
+    /*     bench_close_csv(matchers_csv, matchers_csv_file); */
+    /* } */
+
+    bench_run_generated_pattern_buckets(now);
 
     printf("bench_sink_result=%d bench_sink_offsets=%lld\n", bench_sink_result,
            (llong)bench_sink_offsets);
