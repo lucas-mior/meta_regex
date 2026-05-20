@@ -1111,15 +1111,15 @@ bench_meta_matchers_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
 
 static BenchRegexCase bench_runtime_regex_cases[BENCH_FEATURE_LAST]
                                                [BENCH_LEN_LAST]
-                                               [BENCH_REGEX_CASE_COUNT];
+                                               [LENGTH(bench_regex_cases)];
 static BenchRegexBucket
     bench_runtime_regex_buckets[BENCH_MAIN_REGEX_BUCKET_MAX];
 static char bench_runtime_regex_bucket_names[BENCH_MAIN_REGEX_BUCKET_MAX][128];
 static int32 bench_runtime_regex_bucket_count;
 
-static BenchInputCase bench_pair_input_cases[BENCH_REGEX_CASE_COUNT];
-static char bench_pair_input_names[BENCH_REGEX_CASE_COUNT][64];
-static char bench_pair_input_storage[BENCH_REGEX_CASE_COUNT]
+static BenchInputCase bench_pair_input_cases[LENGTH(bench_regex_cases)];
+static char bench_pair_input_names[LENGTH(bench_regex_cases)][64];
+static char bench_pair_input_storage[LENGTH(bench_regex_cases)]
                                     [BENCH_RANDOM_INPUT_MAX_LEN + 1];
 static int32
 bench_regex_op_count(MetaRegex *regex) {
@@ -1173,7 +1173,7 @@ bench_build_runtime_regex_buckets(void) {
              SIZEOF(bench_runtime_regex_bucket_names));
     bench_runtime_regex_bucket_count = 0;
 
-    for (int32 i = 0; i < BENCH_REGEX_CASE_COUNT; i += 1) {
+    for (int32 i = 0; i < LENGTH(bench_regex_cases); i += 1) {
         BenchRegexCase c = bench_regex_cases[i];
         int32 op_count = bench_regex_op_count(c.regex);
         enum BenchRegexLengthClass length_class
