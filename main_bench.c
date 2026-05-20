@@ -1106,7 +1106,7 @@ bench_meta_matchers_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
 }
 
 #define BENCH_MAIN_REGEX_BUCKET_MAX (BENCH_FEATURE_LAST*BENCH_LEN_LAST)
-#define BENCH_RANDOM_INPUT_ATTEMPTS 10
+#define BENCH_RANDOM_INPUT_ATTEMPTS 20
 #define BENCH_RANDOM_INPUT_MAX_LEN 1024
 
 static BenchRegexCase bench_runtime_regex_cases[BENCH_FEATURE_LAST]
