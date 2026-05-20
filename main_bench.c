@@ -15,8 +15,7 @@
 #include "gen/main_bench_patterns2.h"
 
 typedef enum BenchInputLengthClass {
-    BENCH_INPUT_LEN_0_8,
-    BENCH_INPUT_LEN_9_16,
+    BENCH_INPUT_LEN_0_16,
     BENCH_INPUT_LEN_17_32,
     BENCH_INPUT_LEN_33_64,
     BENCH_INPUT_LEN_65_128,
@@ -43,10 +42,8 @@ typedef struct BenchInputBucket {
 static char *
 bench_input_length_class_name(enum BenchInputLengthClass c) {
     switch (c) {
-    case BENCH_INPUT_LEN_0_8:
-        return "0_8";
-    case BENCH_INPUT_LEN_9_16:
-        return "9_16";
+    case BENCH_INPUT_LEN_0_16:
+        return "0_16";
     case BENCH_INPUT_LEN_17_32:
         return "17_32";
     case BENCH_INPUT_LEN_33_64:
@@ -68,9 +65,7 @@ bench_input_length_class_name(enum BenchInputLengthClass c) {
 static int32
 bench_input_length_class_min(enum BenchInputLengthClass c) {
     switch (c) {
-    case BENCH_INPUT_LEN_0_8:
-        return 0;
-    case BENCH_INPUT_LEN_9_16:
+    case BENCH_INPUT_LEN_0_16:
         return 9;
     case BENCH_INPUT_LEN_17_32:
         return 17;
@@ -93,9 +88,7 @@ bench_input_length_class_min(enum BenchInputLengthClass c) {
 static int32
 bench_input_length_class_max(enum BenchInputLengthClass c) {
     switch (c) {
-    case BENCH_INPUT_LEN_0_8:
-        return 8;
-    case BENCH_INPUT_LEN_9_16:
+    case BENCH_INPUT_LEN_0_16:
         return 16;
     case BENCH_INPUT_LEN_17_32:
         return 32;
@@ -1105,7 +1098,7 @@ bench_meta_matchers_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
 }
 
 #define BENCH_MAIN_REGEX_BUCKET_MAX (BENCH_FEATURE_LAST*BENCH_LEN_LAST)
-#define BENCH_RANDOM_INPUT_ATTEMPTS 20
+#define BENCH_RANDOM_INPUT_ATTEMPTS 100
 #define BENCH_RANDOM_INPUT_MAX_LEN 1024
 
 static BenchRegexCase bench_runtime_regex_cases[BENCH_FEATURE_LAST]
