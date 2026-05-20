@@ -412,16 +412,13 @@ bench_time_meta_matcher(BenchRegexCase *c, bool extract, enum Matcher matcher,
 }
 
 static void
-bench_libc_vs_dispatch(FILE *csv, bool extract) {
+bench_libc_vs_dispatch(FILE *csv, BenchRegexBucket *bucket, bool extract) {
     enum Matcher enabled = bench_enabled_matcher_mask();
     char *variant = extract ? "extract" : "no_extract";
 
-    printf("\n== libc vs meta dispatcher (%s) ==\n", variant);
+    printf("\n== libc vs meta dispatcher: %s (%s) ==\n", bucket->name, variant);
 
-    for (int32 bi = 0; bi < BENCH_REGEX_BUCKET_COUNT; bi += 1) {
-        BenchRegexBucket *bucket = &bench_regex_buckets[bi];
-
-        for (int32 ci = 0; ci < bucket->count; ci += 1) {
+    for (int32 ci = 0; ci < bucket->count; ci += 1) {
             BenchRegexCase *c = &bucket->cases[ci];
             regex_t compiled;
             regmatch_t ref_pm[BENCH_MAX_MATCHES];
@@ -480,21 +477,17 @@ bench_libc_vs_dispatch(FILE *csv, bool extract) {
                             seconds, matches);
 
             regfree(&compiled);
-        }
     }
     return;
 }
 
 static void
-bench_meta_matchers(FILE *csv, bool extract) {
+bench_meta_matchers(FILE *csv, BenchRegexBucket *bucket, bool extract) {
     char *variant = extract ? "extract" : "no_extract";
 
-    printf("\n== meta matchers only (%s) ==\n", variant);
+    printf("\n== meta matchers only: %s (%s) ==\n", bucket->name, variant);
 
-    for (int32 bi = 0; bi < BENCH_REGEX_BUCKET_COUNT; bi += 1) {
-        BenchRegexBucket *bucket = &bench_regex_buckets[bi];
-
-        for (int32 ci = 0; ci < bucket->count; ci += 1) {
+    for (int32 ci = 0; ci < bucket->count; ci += 1) {
             BenchRegexCase *c = &bucket->cases[ci];
             regex_t compiled;
             regmatch_t ref_pm[BENCH_MAX_MATCHES];
@@ -552,46 +545,85 @@ bench_meta_matchers(FILE *csv, bool extract) {
             }
 
             regfree(&compiled);
-        }
     }
+    return;
+}
+
+static void
+bench_write_header(FILE *csv) {
+    fprintf(csv,
+            "block,variant,length_class,feature_class,bucket,case_name,regex,"
+            "regex_len,input_len,engine,matcher,selected_matcher,iterations,"
+            "seconds,ns_per_match,matches\n");
+    return;
+}
+
+static FILE *
+bench_open_csv(char *path) {
+    FILE *csv = fopen(path, "w");
+    if (csv == NULL) {
+        error("Error opening %s for writing: %s.\n", path, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    bench_write_header(csv);
+    return csv;
+}
+
+static void
+bench_close_csv(FILE *csv, char *path) {
+    if (fclose(csv)) {
+        error("Error closing %s: %s.\n", path, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    printf("Wrote %s\n", path);
     return;
 }
 
 int32
 main(void) {
-    char csv_file[1024];
-    FILE *csv;
     llong now;
 
     setlocale(LC_ALL, "C");
     mkdir("benchmarks", 0777);
 
     now = (llong)time(NULL);
-    SNPRINTF(csv_file, "benchmarks/meta_bench-%lld.csv", now);
 
-    csv = fopen(csv_file, "w");
-    if (csv == NULL) {
-        error("Error opening %s for writing: %s.\n", csv_file,
-              strerror(errno));
-        exit(EXIT_FAILURE);
+    for (int32 fi = 0; fi < BENCH_FEATURE_LAST; fi += 1) {
+        enum BenchRegexFeatureClass feature_class;
+        char *feature_name;
+        char dispatch_csv_file[1024];
+        char matchers_csv_file[1024];
+        FILE *dispatch_csv;
+        FILE *matchers_csv;
+
+        feature_class = (enum BenchRegexFeatureClass)fi;
+        feature_name = bench_feature_class_name(feature_class);
+
+        SNPRINTF(dispatch_csv_file, "benchmarks/%s-libc_vs_meta-%lld.csv",
+                 feature_name, now);
+        SNPRINTF(matchers_csv_file, "benchmarks/%s-meta_matchers-%lld.csv",
+                 feature_name, now);
+
+        dispatch_csv = bench_open_csv(dispatch_csv_file);
+        matchers_csv = bench_open_csv(matchers_csv_file);
+
+        for (int32 bi = 0; bi < BENCH_REGEX_BUCKET_COUNT; bi += 1) {
+            BenchRegexBucket *bucket = &bench_regex_buckets[bi];
+
+            if (bucket->feature_class != feature_class) {
+                continue;
+            }
+
+            bench_libc_vs_dispatch(dispatch_csv, bucket, false);
+            bench_libc_vs_dispatch(dispatch_csv, bucket, true);
+            bench_meta_matchers(matchers_csv, bucket, false);
+            bench_meta_matchers(matchers_csv, bucket, true);
+        }
+
+        bench_close_csv(dispatch_csv, dispatch_csv_file);
+        bench_close_csv(matchers_csv, matchers_csv_file);
     }
 
-    fprintf(csv,
-            "block,variant,length_class,feature_class,bucket,case_name,regex,"
-            "regex_len,input_len,engine,matcher,selected_matcher,iterations,"
-            "seconds,ns_per_match,matches\n");
-
-    bench_libc_vs_dispatch(csv, false);
-    bench_libc_vs_dispatch(csv, true);
-    bench_meta_matchers(csv, false);
-    bench_meta_matchers(csv, true);
-
-    if (fclose(csv)) {
-        error("Error closing %s: %s.\n", csv_file, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    printf("\nWrote %s\n", csv_file);
     printf("bench_sink_result=%d bench_sink_offsets=%lld\n",
            bench_sink_result, (llong)bench_sink_offsets);
 
