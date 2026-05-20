@@ -242,8 +242,9 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     int32 result = REG_NOMATCH;
     int32 extract;
 
-    if (regex == NULL || regex->tdfa == NULL) {
-        return REG_NOMATCH;
+    if (DEBUGGING) {
+        ASSERT(regex);
+        ASSERT(regex->tdfa);
     }
 
     tdfa = regex->tdfa;
