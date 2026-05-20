@@ -180,7 +180,7 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False):
     for (block, variant_label), selected in plot_groups.items():
         if not selected:
             continue
-            
+
         by_series = defaultdict(list)
         for row in selected:
             name = row_series_name(row)
@@ -212,7 +212,7 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False):
             ys = [p[1] for p in points]
             color = color_for_series(name)
             used_colors[name] = color
-            
+
             linestyle = "--" if variant == "no_extract" else "-"
             label = f"{name} ({variant})" if variant_label == "combined" else name
 
