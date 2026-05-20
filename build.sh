@@ -93,7 +93,8 @@ if [ "$target" = "preprocessor" ]; then
 fi
 
 trace_on
-./bin/meta_preproc main_tests_array.h > gen/main_tests_array2.h
+./bin/meta_preproc main_tests_array.h   > gen/main_tests_array2.h
+./bin/meta_preproc main_bench_regexes.h > gen/main_bench_regexes2.h
 trace_off
 
 case "$target" in
