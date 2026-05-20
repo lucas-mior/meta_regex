@@ -22,6 +22,10 @@ This is an exploration: don't use it in production.
     functions from `<string.h>` that you can easily implement yourself (and
     main, of course). Libc regexes are only needed for testing against
     `<regex.h>` implementation.
+- When you dont want to learn a lexer generator syntax or you need features that
+  it does not support.
+  * re2c is awesome, but it may be simpler to use a `R("regex")` macro and a
+    `meta_match_regex()` function call than to have to learn how to use re2c.
 
 ## Which regular expressions does it support?
 A subset of posix extended.
