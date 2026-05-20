@@ -11,7 +11,7 @@ cbase="cbase"
 
 mkdir -p bin
 
-target="${1:-build_everything_and_run}"
+target="${1:-test}"
 
 CFLAGS="$CFLAGS -std=c11"
 CFLAGS="$CFLAGS -Wextra -Wall"
@@ -44,7 +44,7 @@ debug)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=1 $GNUSOURCE"
     CFLAGS="$CFLAGS -g3"
     ;;
-preprocessor|preprocessor_and_main|build_everything_and_run)
+preprocessor|test|bench|all)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
     CFLAGS="$CFLAGS -g -O2 -flto"
     ;;
@@ -92,30 +92,40 @@ if [ "$target" = "preprocessor" ]; then
     exit 0
 fi
 
-printf "\nPreprocessing main.c...\n"
 trace_on
 ./bin/meta_preproc main_tests_array.h > gen/main_tests_array2.h
 trace_off
 
-printf "\nBuilding target program...\n"
-trace_on
-$CC $CPPFLAGS $CFLAGS main.c -o bin/regex_test $LDFLAGS
-trace_off
-
-if [ "$target" = "preprocessor_and_main" ]; then
-    exit 0
-fi
-
 case "$target" in
-build_everything_and_run)
-    ./bin/regex_test
+all)
+    trace_on
+
+    $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
+    bin/meta_test
+    $CC $CPPFLAGS $CFLAGS main_bench.c -o bin/meta_bench $LDFLAGS
+    bin/meta_bench
+
+    trace_off
+    ;;
+test)
+    trace_on
+    $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
+    bin/meta_test
+    trace_off
+    ;;
+bench)
+    trace_on
+    $CC $CPPFLAGS $CFLAGS main_bench.c -o bin/meta_bench $LDFLAGS
+    bin/meta_bench
+    trace_off
     ;;
 debug)
     gdb ./bin/regex_test -ex 'break exit' -ex 'run'
     ;;
 callgrind)
     trace_on
-    valgrind --tool=callgrind bin/regex_test
+    $CC $CPPFLAGS $CFLAGS main_bench.c -o bin/meta_bench $LDFLAGS
+    valgrind --tool=callgrind bin/meta_bench
     trace_off
     ;;
 esac
