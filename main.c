@@ -211,9 +211,9 @@ static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len,
 #define RUN_KNOWN_PAIRS(ARRAY) \
     run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, true); \
     run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, false)
-#define RUN_FUZZY_TESTS(ARRAY, MAX_STR_SIZE, NTESTS) \
-    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS, true); \
-    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NTESTS, false)
+#define RUN_FUZZY_TESTS(ARRAY, MAX_STR_SIZE, NINPUTS) \
+    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NINPUTS, true); \
+    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), MAX_STR_SIZE, NINPUTS, false)
 
 int32
 main(void) {
@@ -401,8 +401,8 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
 
 static void
 run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
-                int32 ntests, bool extract) {
-    int32 fuzzy_len = ntests*tests_len;
+                int32 ninputs, bool extract) {
+    int32 fuzzy_len = ninputs*tests_len;
     FuzzyTest *fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
     bool failed = false;
     struct timespec t0_libc;
@@ -412,7 +412,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     regex_t *libc_regexes = malloc2(tests_len*SIZEOF(*libc_regexes));
 #endif
 
-    for (int32 i = 0; i < ntests; i += 1) {
+    for (int32 i = 0; i < ninputs; i += 1) {
         int32 input_len = 1 + (rand() % max_str_size);
         char *input = malloc2(input_len + 1);
 
@@ -526,7 +526,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, int32 max_str_size,
     free2(libc_regexes, tests_len*SIZEOF(*libc_regexes));
 #endif
 
-    for (int32 i = 0; i < ntests; i += 1) {
+    for (int32 i = 0; i < ninputs; i += 1) {
         int32 idx = i*tests_len;
         free2(fuzzy[idx].input, fuzzy[idx].input_len + 1);
     }
