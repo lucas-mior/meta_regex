@@ -7,6 +7,10 @@ This is an exploration: don't use it in production.
 ## When could it be nice to use this "library"?
 - When you don't need back references in your regexes
   * The backtracking NFA works, but it is slow
+- When you don't need capturing the groups in your regexes
+  * The TDFA supports capturing groups without exponential cost,
+    but there is an overhead that makes it difficult to perform as well as the
+    non tagged DFA.
 - When you know that input is not very long
   * The performance is not competitive when input is long
 - If you like to pass the length of your input instead of only relying on the
