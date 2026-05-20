@@ -1379,6 +1379,7 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
     next_register = tnfa->num_tags + 1;
     work_capacity = tnfa->num_states + tnfa->num_transitions + 1;
     uses_context = tdfa_tnfa_has_context_assertions(tnfa);
+    tdfa->uses_context = uses_context;
     if (work_capacity <= 0 || work_capacity > PREPROC_MAX_TDFA_WORK_CONFIGS) {
         return false;
     }

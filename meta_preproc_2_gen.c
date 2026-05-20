@@ -344,12 +344,13 @@ emit_tdfa(ExtractedRegex *regex, FILE *out) {
             ".num_transitions = %d, .num_registers = %d, .num_ops = %d, "
             ".start_state = %d, .start_state_nw_nw = %d, "
             ".start_state_nw_w = %d, .start_state_w_nw = %d, "
-            ".start_state_w_w = %d, .final_register_base = %d",
+            ".start_state_w_w = %d, .final_register_base = %d, "
+            ".uses_context = %d",
             tdfa->num_tags, tdfa->num_states, tdfa->num_transitions,
             tdfa->num_registers, tdfa->num_ops, tdfa->start_state,
             tdfa->start_state_nw_nw, tdfa->start_state_nw_w,
             tdfa->start_state_w_nw, tdfa->start_state_w_w,
-            tdfa->final_register_base);
+            tdfa->final_register_base, tdfa->uses_context);
 
     if (tdfa->num_tags > 0) {
         fprintf(out, ", .tags = (MetaTnfaTag[]){\n");

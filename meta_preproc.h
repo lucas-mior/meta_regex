@@ -91,13 +91,6 @@ typedef struct DfaSet {
     int32 prev_is_w;
 } DfaSet;
 
-/*
-    Build-time TNFA storage.
-
-    This owns fixed-size backing arrays. A generated/runtime MetaTnfa can
-    point to these arrays, or the source generator can emit equivalent static
-    arrays and a MetaTnfa wrapper.
-*/
 typedef struct ParsedTnfa {
     MetaTnfaTag tags[PREPROC_MAX_TNFA_TAGS];
     MetaTnfaState states[PREPROC_MAX_TNFA_STATES];
@@ -111,9 +104,6 @@ typedef struct ParsedTnfa {
     int32 final_state;
 } ParsedTnfa;
 
-/*
-    Build-time single-pass TDFA storage.
-*/
 typedef struct ParsedTdfa {
     MetaTnfaTag tags[PREPROC_MAX_TNFA_TAGS];
     MetaTdfaState states[PREPROC_MAX_TDFA_STATES];
@@ -132,9 +122,9 @@ typedef struct ParsedTdfa {
     int32 start_state_w_nw;
     int32 start_state_w_w;
     int32 final_register_base;
+    int32 uses_context;
 } ParsedTdfa;
 
-// Intermediate Representation for the extracted regex
 typedef struct ExtractedRegex {
     int64 source_start_offset;
     int64 source_end_offset;
@@ -147,19 +137,7 @@ typedef struct ExtractedRegex {
     ParsedOp temp_ops[PREPROC_MAX_TEMP_OPS];
     int32 temp_ops_count;
 
-    /*
-        Optional parsed TNFA.
-
-        NULL means this regex has not been lowered to a TNFA yet, or TNFA
-        generation failed/was skipped.
-    */
     ParsedTnfa *tnfa;
-
-    /*
-        Optional single-pass TDFA generated from the parsed TNFA.
-
-        NULL means TDFA determinization failed or was skipped.
-    */
     ParsedTdfa *tdfa;
     
     bool has_start;
@@ -169,7 +147,6 @@ typedef struct ExtractedRegex {
     uint32 used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
     
-    // Cached op sequence generated in Phase 1
     char op_buffer[PREPROC_OP_BUFFER_SIZE];
 } ExtractedRegex;
 
@@ -179,7 +156,6 @@ typedef struct RegexList {
     int32 capacity;
 } RegexList;
 
-// Inter-phase APIs
 RegexList parse_source_code(char *buffer, int64 source_len);
 void generate_source_code(char *source, int64 source_len, RegexList *list, FILE *out);
 

@@ -273,6 +273,12 @@ typedef struct MetaTdfa {
     /* Final registers are final_register_base + tag_id - 1. */
     int32 final_register_base;
 
+    /*
+        Nonzero if this TDFA has word-context assertions and therefore
+        transition lookup must distinguish the next byte wordness.
+    */
+    int32 uses_context;
+
     MetaTnfaTag *tags;
     MetaTdfaState *states;
     MetaTdfaTransition *transitions;

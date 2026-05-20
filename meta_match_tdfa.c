@@ -63,83 +63,103 @@ match_tdfa_word_at(uint8 *input, int32 input_len, int32 pos) {
 
 static int32
 match_tdfa_valid_reg(MetaTdfa *tdfa, int32 reg) {
-    if (reg > 0) {
-        if (reg <= tdfa->num_registers) {
-            return 1;
-        }
-    }
-    return 0;
+    return (reg > 0 && reg <= tdfa->num_registers);
 }
 
 static int32
 match_tdfa_exec_ops(MetaTdfa *tdfa, int32 *regs, int32 first_op, int32 op_count,
                     int32 pos) {
-    if (op_count < 0) {
-        return 0;
-    }
-    if (op_count == 0) {
+    if (op_count <= 0) {
+#if DEBUGGING
+        return op_count == 0;
+#else
         return 1;
+#endif
     }
+
+#if DEBUGGING
     if (first_op < 0 || first_op + op_count > tdfa->num_ops) {
         return 0;
     }
+#endif
 
     for (int32 i = 0; i < op_count; i += 1) {
         MetaTdfaRegOp *op = &tdfa->ops[first_op + i];
 
+#if DEBUGGING
         if (!match_tdfa_valid_reg(tdfa, op->dst)) {
             return 0;
         }
+#endif
 
-        if (op->kind == META_TDFA_REGOP_SET_NIL) {
+        switch (op->kind) {
+        case META_TDFA_REGOP_SET_NIL:
             regs[op->dst] = -1;
-        } else if (op->kind == META_TDFA_REGOP_SET_POS) {
+            break;
+        case META_TDFA_REGOP_SET_POS:
             regs[op->dst] = pos;
-        } else if (op->kind == META_TDFA_REGOP_COPY) {
+            break;
+        case META_TDFA_REGOP_COPY:
+#if DEBUGGING
             if (!match_tdfa_valid_reg(tdfa, op->src)) {
                 return 0;
             }
+#endif
             regs[op->dst] = regs[op->src];
-        } else {
+            break;
+        default:
+#if DEBUGGING
             return 0;
+#else
+            break;
+#endif
         }
     }
 
     return 1;
 }
-
 static MetaTdfaTransition *
 match_tdfa_find_transition(MetaTdfa *tdfa, int32 state_id, int32 c,
                            int32 next_is_word) {
     MetaTdfaState *state;
+    int32 first;
+    int32 count;
 
     if (c < 0 || state_id < 0 || state_id >= tdfa->num_states) {
         return NULL;
     }
 
     state = &tdfa->states[state_id];
-    if (state->first_transition >= 0 && state->transition_count > 0) {
-        int32 first = state->first_transition;
-        int32 count = state->transition_count;
+    first = state->first_transition;
+    count = state->transition_count;
+    if (first < 0 || count <= 0) {
+        return NULL;
+    }
 
-        if (first >= 0 && first + count <= tdfa->num_transitions) {
-            for (int32 i = 0; i < count; i += 1) {
-                MetaTdfaTransition *tr = &tdfa->transitions[first + i];
-                if (tr->symbol == c
-                    && (tr->next_is_word < 0
-                        || tr->next_is_word == next_is_word)) {
-                    return tr;
-                }
-                if (tr->symbol > c) {
-                    break;
-                }
-            }
+#if DEBUGGING
+    if (first + count > tdfa->num_transitions) {
+        return NULL;
+    }
+#endif
+
+    for (int32 i = 0; i < count; i += 1) {
+        MetaTdfaTransition *tr = &tdfa->transitions[first + i];
+#if DEBUGGING
+        if (tr->from != state_id) {
+            return NULL;
+        }
+#endif
+        if (tr->symbol == c
+            && (tr->next_is_word < 0 || tr->next_is_word == next_is_word)) {
+            return tr;
+        }
+        if (tr->symbol > c) {
+            break;
         }
     }
 
     return NULL;
 }
-
 static int32
 match_tdfa_save_accept(MetaTdfa *tdfa, MetaTdfaState *state, int32 *regs,
                        int32 *saved_tags, int32 pos) {
@@ -150,9 +170,11 @@ match_tdfa_save_accept(MetaTdfa *tdfa, MetaTdfaState *state, int32 *regs,
 
     for (int32 t = 1; t <= tdfa->num_tags; t += 1) {
         int32 reg = tdfa->final_register_base + t - 1;
+#if DEBUGGING
         if (!match_tdfa_valid_reg(tdfa, reg)) {
             return 0;
         }
+#endif
         saved_tags[t] = regs[reg];
     }
 
@@ -198,15 +220,18 @@ static int32
 match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
            regmatch_t *pmatch, int32 pmatch_len) {
     MetaTdfa *tdfa;
-    static int32 *regs = NULL;
-    static int32 *saved_tags = NULL;
-    static int32 nregs = 0;
-    static int32 nsaved_tags = 0;
+    int32 *regs = NULL;
+    int32 *saved_tags = NULL;
     int32 state_id;
     int32 pos = start_pos;
     int32 accepted = 0;
     int32 accepted_end = -1;
     int32 result = REG_NOMATCH;
+    int32 extract;
+
+    if (regex == NULL || regex->tdfa == NULL) {
+        return REG_NOMATCH;
+    }
 
     tdfa = regex->tdfa;
     if (tdfa->num_states <= 0 || tdfa->start_state < 0
@@ -230,27 +255,25 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         return REG_NOMATCH;
     }
 
-    if ((regs == NULL) || nregs < (tdfa->num_registers + 1)) {
-        regs = realloc2(regs,
-                        nregs, tdfa->num_registers + 1,
-                        SIZEOF(*regs));
-        nregs = tdfa->num_registers + 1;
-    }
-    if ((saved_tags == NULL) || nsaved_tags < (tdfa->num_tags + 1)) {
-        saved_tags = realloc2(saved_tags,
-                              nsaved_tags, tdfa->num_tags + 1,
-                              SIZEOF(*saved_tags));
-        nsaved_tags = tdfa->num_tags + 1;
+    extract = (pmatch != NULL && pmatch_len > 1 && tdfa->num_tags > 0);
+    if (extract) {
+        regs = malloc2(SIZEOF(*regs)*(tdfa->num_registers + 1));
+        saved_tags = malloc2(SIZEOF(*saved_tags)*(tdfa->num_tags + 1));
+        if (regs == NULL || saved_tags == NULL) {
+            goto cleanup;
+        }
+
+        for (int32 i = 0; i <= tdfa->num_registers; i += 1) {
+            regs[i] = -1;
+        }
+        for (int32 i = 0; i <= tdfa->num_tags; i += 1) {
+            saved_tags[i] = -1;
+        }
     }
 
-    for (int32 i = 0; i <= tdfa->num_registers; i += 1) {
-        regs[i] = -1;
-    }
-    for (int32 i = 0; i <= tdfa->num_tags; i += 1) {
-        saved_tags[i] = -1;
-    }
-
-    {
+    if (!tdfa->uses_context) {
+        state_id = tdfa->start_state;
+    } else {
         int32 prev_is_w = match_tdfa_word_at(input, input_len, start_pos - 1);
         int32 curr_is_w = match_tdfa_word_at(input, input_len, start_pos);
 
@@ -279,7 +302,9 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         if (state->is_accepting
             && (!regex->has_end_anchor
                 || match_tdfa_at_end(input, input_len, pos))) {
-            if (!match_tdfa_save_accept(tdfa, state, regs, saved_tags, pos)) {
+            if (extract
+                && !match_tdfa_save_accept(tdfa, state, regs, saved_tags,
+                                           pos)) {
                 goto cleanup;
             }
             accepted = 1;
@@ -291,16 +316,22 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         }
 
         c = match_tdfa_char_at(input, input_len, pos);
-        next_is_word = match_tdfa_word_at(input, input_len, pos + 1);
+        next_is_word = tdfa->uses_context
+                           ? match_tdfa_word_at(input, input_len, pos + 1)
+                           : -1;
         tr = match_tdfa_find_transition(tdfa, state_id, c, next_is_word);
         if (tr == NULL) {
             break;
         }
+#if DEBUGGING
         if (tr->to < 0 || tr->to >= tdfa->num_states) {
             goto cleanup;
         }
+#endif
 
-        if (!match_tdfa_exec_ops(tdfa, regs, tr->first_op, tr->op_count, pos)) {
+        if (extract
+            && !match_tdfa_exec_ops(tdfa, regs, tr->first_op, tr->op_count,
+                                    pos)) {
             goto cleanup;
         }
 
@@ -309,12 +340,23 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     }
 
     if (accepted) {
-        match_tdfa_fill_pmatch(regex, start_pos, accepted_end, saved_tags,
-                               pmatch, pmatch_len);
+        if (extract) {
+            match_tdfa_fill_pmatch(regex, start_pos, accepted_end, saved_tags,
+                                   pmatch, pmatch_len);
+        } else if (pmatch != NULL && pmatch_len > 0) {
+            pmatch[0].rm_so = start_pos;
+            pmatch[0].rm_eo = accepted_end;
+        }
         result = 0;
     }
 
 cleanup:
+    if (regs != NULL) {
+        free2(regs, SIZEOF(*regs)*(tdfa->num_registers + 1));
+    }
+    if (saved_tags != NULL) {
+        free2(saved_tags, SIZEOF(*saved_tags)*(tdfa->num_tags + 1));
+    }
     return result;
 }
 
