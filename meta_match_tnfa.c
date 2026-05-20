@@ -35,6 +35,208 @@ typedef struct MetaTnfaConfig {
     int32 state;
 } MetaTnfaConfig;
 
+static int32 match_tnfa_can_use_state_slices(MetaTnfa *tnfa);
+static void match_tnfa_init_tags(int32 *tag_values, int32 tag_count);
+static int32 *match_tnfa_tag_row(int32 *tag_storage, int32 tag_count, int32 index);
+static int32 match_tnfa_epsilon_closure(MetaTnfa *tnfa, int32 use_state_slices, uint8 *input,
+                                        int32 input_len, int32 pos,
+                                        MetaTnfaConfig *input_configs, int32 *input_tags,
+                                        int32 input_count, MetaTnfaConfig *output_configs,
+                                        int32 *output_tags, MetaTnfaConfig *stack,
+                                        int32 *stack_tags, int32 stack_cap,
+                                        uint8 *closed_seen, int32 *edge_indices,
+                                        int32 *work_tags, int32 tag_count);
+static int32 match_tnfa_find_accept(MetaTnfa *tnfa,
+                                    MetaTnfaConfig *configs, int32 config_count);
+static int32 match_tnfa_at_end(uint8 *input, int32 input_len, int32 pos);
+static void match_tnfa_save_accept(int32 *accept_tags, int32 *saved_tags, int32 tag_count);
+static int32 match_tnfa_step(MetaTnfa *tnfa, int32 use_state_slices, uint8 *input,
+                             int32 input_len, int32 pos, MetaTnfaConfig *closed_configs,
+                             int32 *closed_tags, int32 closed_count,
+                             MetaTnfaConfig *next_configs, int32 *next_tags, uint8 *seen,
+                             int32 tag_count);
+static void
+match_tnfa_fill_pmatch(MetaRegex *regex, int32 start_pos, int32 end_pos,
+                       int32 *saved_tags, regmatch_t *pmatch,
+                       int32 pmatch_len);
+
+static int32
+match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
+           regmatch_t *pmatch, int32 pmatch_len) {
+    MetaTnfa *tnfa;
+    MetaTnfaConfig *configs_a = NULL;
+    MetaTnfaConfig *configs_b = NULL;
+    MetaTnfaConfig *stack = NULL;
+    int32 *tags_a = NULL;
+    int32 *tags_b = NULL;
+    int32 *stack_tags = NULL;
+    int32 *edge_indices = NULL;
+    int32 *saved_tags = NULL;
+    int32 *work_tags = NULL;
+    uint8 *closed_seen = NULL;
+    uint8 *seen = NULL;
+    MetaTnfaConfig *current = NULL;
+    MetaTnfaConfig *closed = NULL;
+    int32 *current_tags = NULL;
+    int32 *closed_tags = NULL;
+    int32 current_count = 0;
+    int32 closed_count = 0;
+    int32 pos = start_pos;
+    int32 accepted = 0;
+    int32 accepted_end = -1;
+    int32 result = REG_NOMATCH;
+    int32 state_count;
+    int32 tag_count;
+    int32 edge_count;
+    int32 stack_cap;
+    int32 use_state_slices = 0;
+
+    if (regex == NULL || regex->tnfa == NULL) {
+        return REG_NOMATCH;
+    }
+
+    tnfa = regex->tnfa;
+    if (tnfa->num_states <= 0 || tnfa->num_states > META_MAX_TNFA_STATES
+        || tnfa->num_tags < 0 || tnfa->num_tags > META_MAX_TNFA_TAGS
+        || tnfa->num_transitions < 0
+        || (tnfa->num_transitions > 0 && tnfa->transitions == NULL)
+        || tnfa->start_state < 0 || tnfa->start_state >= tnfa->num_states
+        || tnfa->final_state < 0 || tnfa->final_state >= tnfa->num_states) {
+        return REG_NOMATCH;
+    }
+
+    state_count = tnfa->num_states;
+    tag_count = tnfa->num_tags + 1;
+    edge_count = (tnfa->num_transitions > 0 ? tnfa->num_transitions : 1);
+    stack_cap = state_count + edge_count + 1;
+    use_state_slices = match_tnfa_can_use_state_slices(tnfa);
+
+    configs_a = malloc2(SIZEOF(*configs_a)*state_count);
+    configs_b = malloc2(SIZEOF(*configs_b)*state_count);
+    stack = malloc2(SIZEOF(*stack)*stack_cap);
+    tags_a = malloc2(SIZEOF(*tags_a)*state_count * tag_count);
+    tags_b = malloc2(SIZEOF(*tags_b)*state_count * tag_count);
+    stack_tags = malloc2(SIZEOF(*stack_tags)*stack_cap * tag_count);
+    edge_indices = malloc2(SIZEOF(*edge_indices)*edge_count);
+    saved_tags = malloc2(SIZEOF(*saved_tags)*tag_count);
+    work_tags = malloc2(SIZEOF(*work_tags)*tag_count);
+    closed_seen = malloc2(SIZEOF(*closed_seen)*state_count);
+    seen = malloc2(SIZEOF(*seen)*state_count);
+
+    if (configs_a == NULL || configs_b == NULL || stack == NULL
+        || tags_a == NULL || tags_b == NULL || stack_tags == NULL
+        || edge_indices == NULL || saved_tags == NULL || work_tags == NULL
+        || closed_seen == NULL || seen == NULL) {
+        goto cleanup;
+    }
+
+    match_tnfa_init_tags(saved_tags, tag_count);
+
+    configs_a[0].state = tnfa->start_state;
+    match_tnfa_init_tags(match_tnfa_tag_row(tags_a, tag_count, 0), tag_count);
+
+    current = configs_a;
+    current_tags = tags_a;
+    closed = configs_b;
+    closed_tags = tags_b;
+    current_count = 1;
+
+    closed_count = match_tnfa_epsilon_closure(
+        tnfa, use_state_slices, input, input_len, pos, current, current_tags,
+        current_count, closed, closed_tags, stack, stack_tags, stack_cap,
+        closed_seen, edge_indices, work_tags, tag_count);
+    if (closed_count < 0) {
+        goto cleanup;
+    }
+
+    {
+        int32 accept_index = match_tnfa_find_accept(tnfa, closed, closed_count);
+        if (accept_index >= 0
+            && (!regex->has_end_anchor
+                || match_tnfa_at_end(input, input_len, pos))) {
+            accepted = 1;
+            accepted_end = pos;
+            match_tnfa_save_accept(
+                match_tnfa_tag_row(closed_tags, tag_count, accept_index),
+                saved_tags, tag_count);
+        }
+    }
+
+    while (!match_tnfa_at_end(input, input_len, pos)) {
+        int32 next_count;
+        int32 accept_index;
+        MetaTnfaConfig *tmp_configs;
+        int32 *tmp_tags;
+
+        next_count = match_tnfa_step(tnfa, use_state_slices, input, input_len,
+                                     pos, closed, closed_tags, closed_count,
+                                     current, current_tags, seen, tag_count);
+        if (next_count < 0) {
+            goto cleanup;
+        }
+        if (next_count == 0) {
+            break;
+        }
+
+        pos += 1;
+
+        tmp_configs = current;
+        current = closed;
+        closed = tmp_configs;
+
+        tmp_tags = current_tags;
+        current_tags = closed_tags;
+        closed_tags = tmp_tags;
+
+        closed_count = match_tnfa_epsilon_closure(
+            tnfa, use_state_slices, input, input_len, pos, closed, closed_tags,
+            next_count, current, current_tags, stack, stack_tags, stack_cap,
+            closed_seen, edge_indices, work_tags, tag_count);
+        if (closed_count < 0) {
+            goto cleanup;
+        }
+
+        tmp_configs = current;
+        current = closed;
+        closed = tmp_configs;
+
+        tmp_tags = current_tags;
+        current_tags = closed_tags;
+        closed_tags = tmp_tags;
+
+        accept_index = match_tnfa_find_accept(tnfa, closed, closed_count);
+        if (accept_index >= 0
+            && (!regex->has_end_anchor
+                || match_tnfa_at_end(input, input_len, pos))) {
+            accepted = 1;
+            accepted_end = pos;
+            match_tnfa_save_accept(
+                match_tnfa_tag_row(closed_tags, tag_count, accept_index),
+                saved_tags, tag_count);
+        }
+    }
+
+    if (accepted) {
+        match_tnfa_fill_pmatch(regex, start_pos, accepted_end, saved_tags,
+                               pmatch, pmatch_len);
+        result = 0;
+    }
+
+cleanup:
+    free2(configs_a, SIZEOF(*configs_a)*state_count);
+    free2(configs_b, SIZEOF(*configs_b)*state_count);
+    free2(stack, SIZEOF(*stack)*stack_cap);
+    free2(tags_a, SIZEOF(*tags_a)*state_count * tag_count);
+    free2(tags_b, SIZEOF(*tags_b)*state_count * tag_count);
+    free2(stack_tags, SIZEOF(*stack_tags)*stack_cap * tag_count);
+    free2(edge_indices, SIZEOF(*edge_indices)*edge_count);
+    free2(saved_tags, SIZEOF(*saved_tags)*tag_count);
+    free2(work_tags, SIZEOF(*work_tags)*tag_count);
+    free2(closed_seen, SIZEOF(*closed_seen)*state_count);
+    free2(seen, SIZEOF(*seen)*state_count);
+    return result;
+}
+
 static int32
 match_tnfa_is_word_char(int32 c) {
     return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
@@ -465,183 +667,6 @@ match_tnfa_fill_pmatch(MetaRegex *regex, int32 start_pos, int32 end_pos,
         }
     }
     return;
-}
-
-static int32
-match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
-           regmatch_t *pmatch, int32 pmatch_len) {
-    MetaTnfa *tnfa;
-    MetaTnfaConfig *configs_a = NULL;
-    MetaTnfaConfig *configs_b = NULL;
-    MetaTnfaConfig *stack = NULL;
-    int32 *tags_a = NULL;
-    int32 *tags_b = NULL;
-    int32 *stack_tags = NULL;
-    int32 *edge_indices = NULL;
-    int32 *saved_tags = NULL;
-    int32 *work_tags = NULL;
-    uint8 *closed_seen = NULL;
-    uint8 *seen = NULL;
-    MetaTnfaConfig *current = NULL;
-    MetaTnfaConfig *closed = NULL;
-    int32 *current_tags = NULL;
-    int32 *closed_tags = NULL;
-    int32 current_count = 0;
-    int32 closed_count = 0;
-    int32 pos = start_pos;
-    int32 accepted = 0;
-    int32 accepted_end = -1;
-    int32 result = REG_NOMATCH;
-    int32 state_count;
-    int32 tag_count;
-    int32 edge_count;
-    int32 stack_cap;
-    int32 use_state_slices = 0;
-
-    if (regex == NULL || regex->tnfa == NULL) {
-        return REG_NOMATCH;
-    }
-
-    tnfa = regex->tnfa;
-    if (tnfa->num_states <= 0 || tnfa->num_states > META_MAX_TNFA_STATES
-        || tnfa->num_tags < 0 || tnfa->num_tags > META_MAX_TNFA_TAGS
-        || tnfa->num_transitions < 0
-        || (tnfa->num_transitions > 0 && tnfa->transitions == NULL)
-        || tnfa->start_state < 0 || tnfa->start_state >= tnfa->num_states
-        || tnfa->final_state < 0 || tnfa->final_state >= tnfa->num_states) {
-        return REG_NOMATCH;
-    }
-
-    state_count = tnfa->num_states;
-    tag_count = tnfa->num_tags + 1;
-    edge_count = (tnfa->num_transitions > 0 ? tnfa->num_transitions : 1);
-    stack_cap = state_count + edge_count + 1;
-    use_state_slices = match_tnfa_can_use_state_slices(tnfa);
-
-    configs_a = malloc2(SIZEOF(*configs_a)*state_count);
-    configs_b = malloc2(SIZEOF(*configs_b)*state_count);
-    stack = malloc2(SIZEOF(*stack)*stack_cap);
-    tags_a = malloc2(SIZEOF(*tags_a)*state_count * tag_count);
-    tags_b = malloc2(SIZEOF(*tags_b)*state_count * tag_count);
-    stack_tags = malloc2(SIZEOF(*stack_tags)*stack_cap * tag_count);
-    edge_indices = malloc2(SIZEOF(*edge_indices)*edge_count);
-    saved_tags = malloc2(SIZEOF(*saved_tags)*tag_count);
-    work_tags = malloc2(SIZEOF(*work_tags)*tag_count);
-    closed_seen = malloc2(SIZEOF(*closed_seen)*state_count);
-    seen = malloc2(SIZEOF(*seen)*state_count);
-
-    if (configs_a == NULL || configs_b == NULL || stack == NULL
-        || tags_a == NULL || tags_b == NULL || stack_tags == NULL
-        || edge_indices == NULL || saved_tags == NULL || work_tags == NULL
-        || closed_seen == NULL || seen == NULL) {
-        goto cleanup;
-    }
-
-    match_tnfa_init_tags(saved_tags, tag_count);
-
-    configs_a[0].state = tnfa->start_state;
-    match_tnfa_init_tags(match_tnfa_tag_row(tags_a, tag_count, 0), tag_count);
-
-    current = configs_a;
-    current_tags = tags_a;
-    closed = configs_b;
-    closed_tags = tags_b;
-    current_count = 1;
-
-    closed_count = match_tnfa_epsilon_closure(
-        tnfa, use_state_slices, input, input_len, pos, current, current_tags,
-        current_count, closed, closed_tags, stack, stack_tags, stack_cap,
-        closed_seen, edge_indices, work_tags, tag_count);
-    if (closed_count < 0) {
-        goto cleanup;
-    }
-
-    {
-        int32 accept_index = match_tnfa_find_accept(tnfa, closed, closed_count);
-        if (accept_index >= 0
-            && (!regex->has_end_anchor
-                || match_tnfa_at_end(input, input_len, pos))) {
-            accepted = 1;
-            accepted_end = pos;
-            match_tnfa_save_accept(
-                match_tnfa_tag_row(closed_tags, tag_count, accept_index),
-                saved_tags, tag_count);
-        }
-    }
-
-    while (!match_tnfa_at_end(input, input_len, pos)) {
-        int32 next_count;
-        int32 accept_index;
-        MetaTnfaConfig *tmp_configs;
-        int32 *tmp_tags;
-
-        next_count = match_tnfa_step(tnfa, use_state_slices, input, input_len,
-                                     pos, closed, closed_tags, closed_count,
-                                     current, current_tags, seen, tag_count);
-        if (next_count < 0) {
-            goto cleanup;
-        }
-        if (next_count == 0) {
-            break;
-        }
-
-        pos += 1;
-
-        tmp_configs = current;
-        current = closed;
-        closed = tmp_configs;
-
-        tmp_tags = current_tags;
-        current_tags = closed_tags;
-        closed_tags = tmp_tags;
-
-        closed_count = match_tnfa_epsilon_closure(
-            tnfa, use_state_slices, input, input_len, pos, closed, closed_tags,
-            next_count, current, current_tags, stack, stack_tags, stack_cap,
-            closed_seen, edge_indices, work_tags, tag_count);
-        if (closed_count < 0) {
-            goto cleanup;
-        }
-
-        tmp_configs = current;
-        current = closed;
-        closed = tmp_configs;
-
-        tmp_tags = current_tags;
-        current_tags = closed_tags;
-        closed_tags = tmp_tags;
-
-        accept_index = match_tnfa_find_accept(tnfa, closed, closed_count);
-        if (accept_index >= 0
-            && (!regex->has_end_anchor
-                || match_tnfa_at_end(input, input_len, pos))) {
-            accepted = 1;
-            accepted_end = pos;
-            match_tnfa_save_accept(
-                match_tnfa_tag_row(closed_tags, tag_count, accept_index),
-                saved_tags, tag_count);
-        }
-    }
-
-    if (accepted) {
-        match_tnfa_fill_pmatch(regex, start_pos, accepted_end, saved_tags,
-                               pmatch, pmatch_len);
-        result = 0;
-    }
-
-cleanup:
-    free2(configs_a, SIZEOF(*configs_a)*state_count);
-    free2(configs_b, SIZEOF(*configs_b)*state_count);
-    free2(stack, SIZEOF(*stack)*stack_cap);
-    free2(tags_a, SIZEOF(*tags_a)*state_count * tag_count);
-    free2(tags_b, SIZEOF(*tags_b)*state_count * tag_count);
-    free2(stack_tags, SIZEOF(*stack_tags)*stack_cap * tag_count);
-    free2(edge_indices, SIZEOF(*edge_indices)*edge_count);
-    free2(saved_tags, SIZEOF(*saved_tags)*tag_count);
-    free2(work_tags, SIZEOF(*work_tags)*tag_count);
-    free2(closed_seen, SIZEOF(*closed_seen)*state_count);
-    free2(seen, SIZEOF(*seen)*state_count);
-    return result;
 }
 
 #endif /* META_MATCH_TNFA_C */
