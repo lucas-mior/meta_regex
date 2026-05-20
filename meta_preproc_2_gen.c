@@ -1,3 +1,5 @@
+
+
 #include "meta_preproc.h"
 
 static int32
@@ -342,9 +344,13 @@ emit_tdfa(ExtractedRegex *regex, FILE *out) {
     fprintf(out,
             ", .tdfa = &(MetaTdfa){ .num_tags = %d, .num_states = %d, "
             ".num_transitions = %d, .num_registers = %d, .num_ops = %d, "
-            ".start_state = %d, .final_register_base = %d",
+            ".start_state = %d, .start_state_nw_nw = %d, "
+            ".start_state_nw_w = %d, .start_state_w_nw = %d, "
+            ".start_state_w_w = %d, .final_register_base = %d",
             tdfa->num_tags, tdfa->num_states, tdfa->num_transitions,
             tdfa->num_registers, tdfa->num_ops, tdfa->start_state,
+            tdfa->start_state_nw_nw, tdfa->start_state_nw_w,
+            tdfa->start_state_w_nw, tdfa->start_state_w_w,
             tdfa->final_register_base);
 
     if (tdfa->num_tags > 0) {
@@ -392,8 +398,10 @@ emit_tdfa(ExtractedRegex *regex, FILE *out) {
             MetaTdfaTransition *tr = &tdfa->transitions[i];
             fprintf(out,
                     "{ .from = %d, .to = %d, .symbol = %d, "
-                    ".first_op = %d, .op_count = %d },\n",
-                    tr->from, tr->to, tr->symbol, tr->first_op, tr->op_count);
+                    ".next_is_word = %d, .first_op = %d, "
+                    ".op_count = %d },\n",
+                    tr->from, tr->to, tr->symbol, tr->next_is_word,
+                    tr->first_op, tr->op_count);
         }
         fprintf(out, "}");
     } else {

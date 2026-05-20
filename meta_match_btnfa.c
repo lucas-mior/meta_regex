@@ -597,10 +597,10 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
 
                         for (uint8 *p = min_s; p <= max_s_ptr; p += 1) {
                             if (!btnfa_quick_lookahead_fails(next_ops, p)) {
-                                btnfa_stack_push(&stack, &stack_cap,
-                                                 &stack_ptr, next_ops, p,
-                                                 current_pmatch, visited_empty,
-                                                 is_catastrophic, p > input);
+                                btnfa_stack_push(&stack, &stack_cap, &stack_ptr,
+                                                 next_ops, p, current_pmatch,
+                                                 visited_empty, is_catastrophic,
+                                                 p > input);
                             }
                         }
                     }

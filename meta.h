@@ -1,5 +1,7 @@
-#if !defined(META_H)
-#define META_H
+
+
+#if !defined(META_REGEX_H)
+#define META_REGEX_H
 
 #include "cbase/util.c"
 
@@ -226,6 +228,16 @@ typedef struct MetaTdfaTransition {
     /* Input byte consumed by this transition. */
     int32 symbol;
 
+    /*
+        Word-context selector for the target state.
+
+        -1 => transition does not care about the next byte word class.
+         0 => transition is valid when the next byte is not a word char,
+              including end of input.
+         1 => transition is valid when the next byte is a word char.
+    */
+    int32 next_is_word;
+
     int32 first_op;
     int32 op_count;
 } MetaTdfaTransition;
@@ -250,6 +262,16 @@ typedef struct MetaTdfa {
 
     int32 start_state;
 
+    /*
+        Context-specialized start states. The first suffix is previous byte
+        wordness, the second suffix is current byte wordness. End-of-input is
+        treated as non-word for current byte wordness.
+    */
+    int32 start_state_nw_nw;
+    int32 start_state_nw_w;
+    int32 start_state_w_nw;
+    int32 start_state_w_w;
+
     /* Final registers are final_register_base + tag_id - 1. */
     int32 final_register_base;
 
@@ -264,15 +286,27 @@ typedef struct LazyDfa LazyDfa;
 typedef struct MetaRegex {
     char *string;
     MetaOp ops[META_MAX_OPS];
-    enum MetaOpType used_ops;
     int32 has_start_anchor;
     int32 has_end_anchor;
     int32 re_nsub;
     int32 can_be_null;
+    enum MetaOpType used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
 
+    /*
+        Optional tagged NFA representation.
+
+        NULL means no TNFA was generated/stored for this regex.
+    */
     MetaTnfa *tnfa;
+
+    /*
+        Optional single-pass tagged DFA generated from the TNFA.
+
+        NULL means TDFA determinization failed or was skipped.
+    */
     MetaTdfa *tdfa;
+
     StaticDfa *static_dfa;
     LazyDfa *lazy_dfa;
 } MetaRegex;
@@ -284,4 +318,4 @@ typedef struct MatcherFeatures {
 
 #define R(...) (&(MetaRegex){ .string = __VA_ARGS__ })
 
-#endif /* META_H */
+#endif /* META_REGEX_H */

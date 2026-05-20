@@ -2,9 +2,11 @@
 #define META_MATCH_TDFA_C
 
 #include <regex.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "meta.h"
-#include "primitives.h"
 
 // clang-format off
 static const MatcherFeatures match_features_tdfa = {
@@ -22,6 +24,10 @@ static const MatcherFeatures match_features_tdfa = {
         | META_OP_BOUNDED
         | META_OP_SPLIT
         | META_OP_JUMP
+        | META_OP_WORD_START
+        | META_OP_WORD_END
+        | META_OP_WORD_BOUNDARY
+        | META_OP_NON_WORD_BOUNDARY
     ),
     .extracts = true,
 };
@@ -41,6 +47,18 @@ match_tdfa_char_at(uint8 *input, int32 input_len, int32 pos) {
 static int32
 match_tdfa_at_end(uint8 *input, int32 input_len, int32 pos) {
     return (pos >= input_len || input[pos] == '\0');
+}
+
+static int32
+match_tdfa_is_word_char(int32 c) {
+    return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+            || (c >= '0' && c <= '9') || c == '_');
+}
+
+static int32
+match_tdfa_word_at(uint8 *input, int32 input_len, int32 pos) {
+    int32 c = match_tdfa_char_at(input, input_len, pos);
+    return (c >= 0 && match_tdfa_is_word_char(c));
 }
 
 static int32
@@ -86,7 +104,8 @@ match_tdfa_exec_ops(MetaTdfa *tdfa, int32 *regs, int32 first_op, int32 op_count,
 }
 
 static MetaTdfaTransition *
-match_tdfa_find_transition(MetaTdfa *tdfa, int32 state_id, int32 c) {
+match_tdfa_find_transition(MetaTdfa *tdfa, int32 state_id, int32 c,
+                           int32 next_is_word) {
     MetaTdfaState *state;
 
     if (c < 0 || state_id < 0 || state_id >= tdfa->num_states) {
@@ -101,7 +120,9 @@ match_tdfa_find_transition(MetaTdfa *tdfa, int32 state_id, int32 c) {
         if (first >= 0 && first + count <= tdfa->num_transitions) {
             for (int32 i = 0; i < count; i += 1) {
                 MetaTdfaTransition *tr = &tdfa->transitions[first + i];
-                if (tr->symbol == c) {
+                if (tr->symbol == c
+                    && (tr->next_is_word < 0
+                        || tr->next_is_word == next_is_word)) {
                     return tr;
                 }
                 if (tr->symbol > c) {
@@ -114,7 +135,8 @@ match_tdfa_find_transition(MetaTdfa *tdfa, int32 state_id, int32 c) {
     /* Defensive fallback for malformed or old emitted tables. */
     for (int32 i = 0; i < tdfa->num_transitions; i += 1) {
         MetaTdfaTransition *tr = &tdfa->transitions[i];
-        if (tr->from == state_id && tr->symbol == c) {
+        if (tr->from == state_id && tr->symbol == c
+            && (tr->next_is_word < 0 || tr->next_is_word == next_is_word)) {
             return tr;
         }
     }
@@ -195,6 +217,14 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     tdfa = regex->tdfa;
     if (tdfa->num_states <= 0 || tdfa->start_state < 0
         || tdfa->start_state >= tdfa->num_states || tdfa->num_tags < 0
+        || tdfa->start_state_nw_nw < 0
+        || tdfa->start_state_nw_nw >= tdfa->num_states
+        || tdfa->start_state_nw_w < 0
+        || tdfa->start_state_nw_w >= tdfa->num_states
+        || tdfa->start_state_w_nw < 0
+        || tdfa->start_state_w_nw >= tdfa->num_states
+        || tdfa->start_state_w_w < 0
+        || tdfa->start_state_w_w >= tdfa->num_states
         || tdfa->num_registers < tdfa->num_tags
         || tdfa->final_register_base <= 0
         || tdfa->final_register_base + tdfa->num_tags - 1 > tdfa->num_registers
@@ -219,12 +249,26 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         saved_tags[i] = -1;
     }
 
-    state_id = tdfa->start_state;
+    {
+        int32 prev_is_w = match_tdfa_word_at(input, input_len, start_pos - 1);
+        int32 curr_is_w = match_tdfa_word_at(input, input_len, start_pos);
+
+        if (!prev_is_w && !curr_is_w) {
+            state_id = tdfa->start_state_nw_nw;
+        } else if (!prev_is_w && curr_is_w) {
+            state_id = tdfa->start_state_nw_w;
+        } else if (prev_is_w && !curr_is_w) {
+            state_id = tdfa->start_state_w_nw;
+        } else {
+            state_id = tdfa->start_state_w_w;
+        }
+    }
 
     while (true) {
         MetaTdfaState *state;
         MetaTdfaTransition *tr;
         int32 c;
+        int32 next_is_word;
 
         if (state_id < 0 || state_id >= tdfa->num_states) {
             goto cleanup;
@@ -246,7 +290,8 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         }
 
         c = match_tdfa_char_at(input, input_len, pos);
-        tr = match_tdfa_find_transition(tdfa, state_id, c);
+        next_is_word = match_tdfa_word_at(input, input_len, pos + 1);
+        tr = match_tdfa_find_transition(tdfa, state_id, c, next_is_word);
         if (tr == NULL) {
             break;
         }

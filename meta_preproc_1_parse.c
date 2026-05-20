@@ -1,3 +1,5 @@
+
+
 #include "meta_preproc.h"
 
 static void
@@ -857,12 +859,20 @@ typedef struct TdfaWorkConfig {
 } TdfaWorkConfig;
 
 typedef struct TdfaBuildState {
+    int32 prev_is_w;
+    int32 curr_is_w;
     int32 config_count;
     TdfaBuildConfig *configs;
 
     /* Flattened [config][tag] register table. */
     int32 *regs;
 } TdfaBuildState;
+
+static int32
+tdfa_is_word_char(int32 c) {
+    return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+            || (c >= '0' && c <= '9') || c == '_');
+}
 
 static void
 tdfa_init_tag_vector(int32 *v, int32 tag_count) {
@@ -923,6 +933,42 @@ tdfa_tnfa_has_context_assertions(ParsedTnfa *tnfa) {
     return false;
 }
 
+static int32
+tdfa_assertion_matches(enum MetaTnfaTransitionKind kind, int32 prev_is_w,
+                       int32 curr_is_w) {
+    if (kind == META_TNFA_TRANS_WORD_START) {
+        return (!prev_is_w && curr_is_w);
+    }
+    if (kind == META_TNFA_TRANS_WORD_END) {
+        return (prev_is_w && !curr_is_w);
+    }
+    if (kind == META_TNFA_TRANS_WORD_BOUNDARY) {
+        return (prev_is_w != curr_is_w);
+    }
+    if (kind == META_TNFA_TRANS_NON_WORD_BOUNDARY) {
+        return (prev_is_w == curr_is_w);
+    }
+    return 0;
+}
+
+static int32
+tdfa_zero_width_transition_enabled(MetaTnfaTransition *tr, int32 prev_is_w,
+                                   int32 curr_is_w) {
+    if (tr->kind == META_TNFA_TRANS_EPSILON) {
+        return 1;
+    }
+    return tdfa_assertion_matches(tr->kind, prev_is_w, curr_is_w);
+}
+
+static int32
+tdfa_transition_is_zero_width(MetaTnfaTransition *tr) {
+    return (tr->kind == META_TNFA_TRANS_EPSILON
+            || tr->kind == META_TNFA_TRANS_WORD_START
+            || tr->kind == META_TNFA_TRANS_WORD_END
+            || tr->kind == META_TNFA_TRANS_WORD_BOUNDARY
+            || tr->kind == META_TNFA_TRANS_NON_WORD_BOUNDARY);
+}
+
 static bool
 tdfa_symbol_transition_matches(MetaTnfaTransition *tr, int32 c) {
     if (tr->kind == META_TNFA_TRANS_LITERAL) {
@@ -938,15 +984,23 @@ tdfa_symbol_transition_matches(MetaTnfaTransition *tr, int32 c) {
 }
 
 static int32
-tdfa_collect_epsilon_edges(ParsedTnfa *tnfa, int32 state, int32 *edge_indices) {
+tdfa_collect_zero_width_edges(ParsedTnfa *tnfa, int32 state, int32 prev_is_w,
+                              int32 curr_is_w, int32 *edge_indices) {
     int32 edge_count = 0;
 
     for (int32 i = 0; i < tnfa->num_transitions; i += 1) {
         MetaTnfaTransition *tr = &tnfa->transitions[i];
-        if (tr->from == state && tr->kind == META_TNFA_TRANS_EPSILON) {
-            edge_indices[edge_count] = i;
-            edge_count += 1;
+        if (tr->from != state) {
+            continue;
         }
+        if (!tdfa_transition_is_zero_width(tr)) {
+            continue;
+        }
+        if (!tdfa_zero_width_transition_enabled(tr, prev_is_w, curr_is_w)) {
+            continue;
+        }
+        edge_indices[edge_count] = i;
+        edge_count += 1;
     }
 
     for (int32 i = 1; i < edge_count; i += 1) {
@@ -986,7 +1040,8 @@ static int32
 tdfa_epsilon_closure(ParsedTnfa *tnfa, int32 tag_count,
                      TdfaWorkConfig *input_configs, int32 input_count,
                      TdfaWorkConfig *output_configs, TdfaWorkConfig *stack,
-                     int32 *edge_indices, int32 work_capacity) {
+                     int32 *edge_indices, int32 work_capacity, int32 prev_is_w,
+                     int32 curr_is_w) {
     uint8 closed_seen[PREPROC_MAX_TNFA_STATES];
     int32 stack_count = 0;
     int32 output_count = 0;
@@ -1025,8 +1080,8 @@ tdfa_epsilon_closure(ParsedTnfa *tnfa, int32 tag_count,
         output_configs[output_count] = cfg;
         output_count += 1;
 
-        edge_count
-            = tdfa_collect_epsilon_edges(tnfa, cfg.tnfa_state, edge_indices);
+        edge_count = tdfa_collect_zero_width_edges(
+            tnfa, cfg.tnfa_state, prev_is_w, curr_is_w, edge_indices);
 
         for (int32 i = 0; i < edge_count; i += 1) {
             MetaTnfaTransition *tr = &tnfa->transitions[edge_indices[i]];
@@ -1043,7 +1098,9 @@ tdfa_epsilon_closure(ParsedTnfa *tnfa, int32 tag_count,
             TdfaWorkConfig next = cfg;
 
             next.tnfa_state = tr->to;
-            tdfa_apply_lookahead_tag(&next, tr->tag);
+            if (tr->kind == META_TNFA_TRANS_EPSILON) {
+                tdfa_apply_lookahead_tag(&next, tr->tag);
+            }
 
             if (stack_count >= work_capacity) {
                 return -1;
@@ -1097,7 +1154,11 @@ tdfa_step_on_symbol(ParsedTnfa *tnfa, TdfaBuildState *source, int32 symbol,
 
 static bool
 tdfa_same_signature(TdfaBuildState *state, TdfaWorkConfig *configs,
-                    int32 config_count, int32 tag_count) {
+                    int32 config_count, int32 tag_count, int32 prev_is_w,
+                    int32 curr_is_w) {
+    if (state->prev_is_w != prev_is_w || state->curr_is_w != curr_is_w) {
+        return false;
+    }
     if (state->config_count != config_count) {
         return false;
     }
@@ -1118,9 +1179,11 @@ tdfa_same_signature(TdfaBuildState *state, TdfaWorkConfig *configs,
 
 static int32
 tdfa_find_state(TdfaBuildState *states, ParsedTdfa *tdfa,
-                TdfaWorkConfig *configs, int32 config_count, int32 tag_count) {
+                TdfaWorkConfig *configs, int32 config_count, int32 tag_count,
+                int32 prev_is_w, int32 curr_is_w) {
     for (int32 i = 0; i < tdfa->num_states; i += 1) {
-        if (tdfa_same_signature(&states[i], configs, config_count, tag_count)) {
+        if (tdfa_same_signature(&states[i], configs, config_count, tag_count,
+                                prev_is_w, curr_is_w)) {
             return i;
         }
     }
@@ -1168,7 +1231,7 @@ tdfa_add_final_ops(ParsedTdfa *tdfa, ParsedTnfa *tnfa,
 static int32
 tdfa_add_state(TdfaBuildState *states, ParsedTdfa *tdfa, ParsedTnfa *tnfa,
                TdfaWorkConfig *configs, int32 config_count, int32 tag_count,
-               int32 *next_register) {
+               int32 *next_register, int32 prev_is_w, int32 curr_is_w) {
     int32 state_id;
     TdfaBuildState *build_state;
     MetaTdfaState *state;
@@ -1188,6 +1251,8 @@ tdfa_add_state(TdfaBuildState *states, ParsedTdfa *tdfa, ParsedTnfa *tnfa,
     state->final_op_count = 0;
 
     build_state = &states[state_id];
+    build_state->prev_is_w = prev_is_w;
+    build_state->curr_is_w = curr_is_w;
     build_state->config_count = config_count;
     build_state->configs = NULL;
     build_state->regs = NULL;
@@ -1261,7 +1326,7 @@ tdfa_emit_transition_ops(ParsedTdfa *tdfa, TdfaBuildState *source,
 
 static bool
 tdfa_add_transition(ParsedTdfa *tdfa, int32 from, int32 to, int32 symbol,
-                    int32 first_op, int32 op_count) {
+                    int32 next_is_word, int32 first_op, int32 op_count) {
     if (tdfa->num_transitions >= PREPROC_MAX_TDFA_TRANSITIONS) {
         return false;
     }
@@ -1270,6 +1335,7 @@ tdfa_add_transition(ParsedTdfa *tdfa, int32 from, int32 to, int32 symbol,
     tr->from = from;
     tr->to = to;
     tr->symbol = symbol;
+    tr->next_is_word = next_is_word;
     tr->first_op = first_op;
     tr->op_count = op_count;
     tdfa->num_transitions += 1;
@@ -1281,13 +1347,13 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
     int32 tag_count;
     int32 next_register;
     int32 work_capacity;
+    int32 uses_context;
     TdfaBuildState *build_states = NULL;
     TdfaWorkConfig *work = NULL;
     TdfaWorkConfig *closed = NULL;
     TdfaWorkConfig *stack = NULL;
     int32 *edge_indices = NULL;
     TdfaWorkConfig initial;
-    int32 initial_count;
 
     if (tdfa == NULL || tnfa == NULL) {
         return false;
@@ -1298,20 +1364,14 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
         return false;
     }
 
-    /*
-        This is the single-pass TDFA(1)-style conversion for ordinary symbol
-        transitions and epsilon tags. Word-boundary assertions are context
-        predicates over previous/current characters; keep them on the TNFA path
-        until the TDFA runtime grows explicit context-state support.
-    */
-    if (tdfa_tnfa_has_context_assertions(tnfa)) {
-        return false;
-    }
-
     memset64(tdfa, 0, SIZEOF(*tdfa));
 
     tdfa->num_tags = tnfa->num_tags;
     tdfa->start_state = 0;
+    tdfa->start_state_nw_nw = -1;
+    tdfa->start_state_nw_w = -1;
+    tdfa->start_state_w_nw = -1;
+    tdfa->start_state_w_w = -1;
     tdfa->final_register_base = 1;
     for (int32 i = 0; i < tnfa->num_tags; i += 1) {
         tdfa->tags[i] = tnfa->tags[i];
@@ -1320,6 +1380,7 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
     tag_count = tnfa->num_tags + 1;
     next_register = tnfa->num_tags + 1;
     work_capacity = tnfa->num_states + tnfa->num_transitions + 1;
+    uses_context = tdfa_tnfa_has_context_assertions(tnfa);
     if (work_capacity <= 0 || work_capacity > PREPROC_MAX_TDFA_WORK_CONFIGS) {
         return false;
     }
@@ -1342,16 +1403,59 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
     tdfa_init_tag_vector(initial.h, tag_count);
     tdfa_init_tag_vector(initial.look, tag_count);
 
-    initial_count = tdfa_epsilon_closure(tnfa, tag_count, &initial, 1, closed,
-                                         stack, edge_indices, work_capacity);
-    if (initial_count < 0) {
-        return false;
-    }
+    if (uses_context) {
+        for (int32 prev = 0; prev <= 1; prev += 1) {
+            for (int32 curr = 0; curr <= 1; curr += 1) {
+                int32 initial_count = tdfa_epsilon_closure(
+                    tnfa, tag_count, &initial, 1, closed, stack, edge_indices,
+                    work_capacity, prev, curr);
+                int32 state_id;
 
-    if (tdfa_add_state(build_states, tdfa, tnfa, closed, initial_count,
-                       tag_count, &next_register)
-        != 0) {
-        return false;
+                if (initial_count < 0) {
+                    return false;
+                }
+
+                state_id
+                    = tdfa_find_state(build_states, tdfa, closed, initial_count,
+                                      tag_count, prev, curr);
+                if (state_id < 0) {
+                    state_id = tdfa_add_state(build_states, tdfa, tnfa, closed,
+                                              initial_count, tag_count,
+                                              &next_register, prev, curr);
+                    if (state_id < 0) {
+                        return false;
+                    }
+                }
+
+                if (!prev && !curr) {
+                    tdfa->start_state_nw_nw = state_id;
+                } else if (!prev && curr) {
+                    tdfa->start_state_nw_w = state_id;
+                } else if (prev && !curr) {
+                    tdfa->start_state_w_nw = state_id;
+                } else {
+                    tdfa->start_state_w_w = state_id;
+                }
+            }
+        }
+        tdfa->start_state = tdfa->start_state_nw_nw;
+    } else {
+        int32 initial_count
+            = tdfa_epsilon_closure(tnfa, tag_count, &initial, 1, closed, stack,
+                                   edge_indices, work_capacity, 0, 0);
+        if (initial_count < 0) {
+            return false;
+        }
+        if (tdfa_add_state(build_states, tdfa, tnfa, closed, initial_count,
+                           tag_count, &next_register, 0, 0)
+            != 0) {
+            return false;
+        }
+        tdfa->start_state = 0;
+        tdfa->start_state_nw_nw = 0;
+        tdfa->start_state_nw_w = 0;
+        tdfa->start_state_w_nw = 0;
+        tdfa->start_state_w_w = 0;
     }
 
     for (int32 state_id = 0; state_id < tdfa->num_states; state_id += 1) {
@@ -1362,10 +1466,12 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
 
         for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
             int32 work_count;
-            int32 closed_count;
-            int32 target_id;
-            int32 first_op;
-            int32 op_count;
+            int32 next_min = 0;
+            int32 next_max = uses_context ? 1 : 0;
+
+            if (uses_context && tdfa_is_word_char(c) != source->curr_is_w) {
+                continue;
+            }
 
             work_count = tdfa_step_on_symbol(tnfa, source, c, tag_count, work,
                                              work_capacity);
@@ -1376,35 +1482,47 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
                 continue;
             }
 
-            closed_count = tdfa_epsilon_closure(tnfa, tag_count, work,
-                                                work_count, closed, stack,
-                                                edge_indices, work_capacity);
-            if (closed_count < 0) {
-                return false;
-            }
+            for (int32 next_curr = next_min; next_curr <= next_max;
+                 next_curr += 1) {
+                int32 prev = uses_context ? tdfa_is_word_char(c) : 0;
+                int32 curr = uses_context ? next_curr : 0;
+                int32 next_is_word = uses_context ? next_curr : -1;
+                int32 closed_count;
+                int32 target_id;
+                int32 first_op;
+                int32 op_count;
 
-            target_id = tdfa_find_state(build_states, tdfa, closed,
-                                        closed_count, tag_count);
-            if (target_id < 0) {
-                target_id
-                    = tdfa_add_state(build_states, tdfa, tnfa, closed,
-                                     closed_count, tag_count, &next_register);
-                if (target_id < 0) {
+                closed_count = tdfa_epsilon_closure(
+                    tnfa, tag_count, work, work_count, closed, stack,
+                    edge_indices, work_capacity, prev, curr);
+                if (closed_count < 0) {
                     return false;
                 }
-            }
 
-            first_op = tdfa->num_ops;
-            if (!tdfa_emit_transition_ops(tdfa, source,
-                                          &build_states[target_id], closed,
-                                          closed_count, tag_count)) {
-                return false;
-            }
-            op_count = tdfa->num_ops - first_op;
+                target_id
+                    = tdfa_find_state(build_states, tdfa, closed, closed_count,
+                                      tag_count, prev, curr);
+                if (target_id < 0) {
+                    target_id = tdfa_add_state(build_states, tdfa, tnfa, closed,
+                                               closed_count, tag_count,
+                                               &next_register, prev, curr);
+                    if (target_id < 0) {
+                        return false;
+                    }
+                }
 
-            if (!tdfa_add_transition(tdfa, state_id, target_id, c, first_op,
-                                     op_count)) {
-                return false;
+                first_op = tdfa->num_ops;
+                if (!tdfa_emit_transition_ops(tdfa, source,
+                                              &build_states[target_id], closed,
+                                              closed_count, tag_count)) {
+                    return false;
+                }
+                op_count = tdfa->num_ops - first_op;
+
+                if (!tdfa_add_transition(tdfa, state_id, target_id, c,
+                                         next_is_word, first_op, op_count)) {
+                    return false;
+                }
             }
         }
 

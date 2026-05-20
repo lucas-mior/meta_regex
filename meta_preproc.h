@@ -19,17 +19,6 @@
 #define PREPROC_NFA_BITSET_WORDS 64
 #define PREPROC_MAX_NFA_STATES (PREPROC_NFA_BITSET_WORDS*32)
 
-typedef struct MetaPreProcLimits {
-    int32 op_buffer_size;
-    int32 max_string_len;
-    int32 max_group_stack;
-    int32 max_temp_ops;
-    int32 max_class_name;
-    int32 max_nfa_items;
-    int32 max_branches;
-    int32 nfa_bitset_words;
-} MetaPreProcLimits;
-
 /* TNFA build-time limits */
 #define PREPROC_MAX_TNFA_TAGS META_MAX_TNFA_TAGS
 #define PREPROC_MAX_TNFA_STATES META_MAX_TNFA_STATES
@@ -138,6 +127,10 @@ typedef struct ParsedTdfa {
     int32 num_ops;
 
     int32 start_state;
+    int32 start_state_nw_nw;
+    int32 start_state_nw_w;
+    int32 start_state_w_nw;
+    int32 start_state_w_w;
     int32 final_register_base;
 } ParsedTdfa;
 
@@ -154,7 +147,19 @@ typedef struct ExtractedRegex {
     ParsedOp temp_ops[PREPROC_MAX_TEMP_OPS];
     int32 temp_ops_count;
 
+    /*
+        Optional parsed TNFA.
+
+        NULL means this regex has not been lowered to a TNFA yet, or TNFA
+        generation failed/was skipped.
+    */
     ParsedTnfa *tnfa;
+
+    /*
+        Optional single-pass TDFA generated from the parsed TNFA.
+
+        NULL means TDFA determinization failed or was skipped.
+    */
     ParsedTdfa *tdfa;
     
     bool has_start;
