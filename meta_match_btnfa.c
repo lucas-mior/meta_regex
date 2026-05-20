@@ -70,6 +70,76 @@ btnfa_quick_lookahead_fails(MetaOp *next_op, uint8 *curr_str) {
 }
 
 static int32
+btnfa_stack_push(BtnfaState **stack_ptr_ref, int32 *stack_cap_ref,
+                 int32 *stack_ptr_count, MetaOp *pc, uint8 *input,
+                 regmatch_t *pmatch, uint32 *visited_empty,
+                 int32 is_catastrophic, int32 clear_empty_visited) {
+    BtnfaState *stack = *stack_ptr_ref;
+    int32 stack_cap = *stack_cap_ref;
+    int32 stack_ptr = *stack_ptr_count;
+
+    if (stack_ptr >= stack_cap) {
+        int32 new_cap = stack_cap*2;
+        stack = realloc2(stack, stack_cap, new_cap, SIZEOF(*stack));
+        stack_cap = new_cap;
+    }
+
+    stack[stack_ptr].pc = pc;
+    stack[stack_ptr].input = input;
+
+    if (is_catastrophic) {
+        if (clear_empty_visited) {
+            for (int32 w = 0; w < META_PC_WORDS; w += 1) {
+                stack[stack_ptr].visited_empty[w] = 0;
+            }
+        } else {
+            for (int32 w = 0; w < META_PC_WORDS; w += 1) {
+                stack[stack_ptr].visited_empty[w] = visited_empty[w];
+            }
+        }
+    }
+
+    for (int32 k = 0; k < 32; k += 1) {
+        stack[stack_ptr].pmatch[k] = pmatch[k];
+    }
+
+    stack_ptr += 1;
+    *stack_ptr_ref = stack;
+    *stack_cap_ref = stack_cap;
+    *stack_ptr_count = stack_ptr;
+    return 1;
+}
+
+static int32
+btnfa_get_backref(regmatch_t *pmatch, int32 group_id, uint8 *string,
+                  uint8 **backref_ptr, int32 *backref_len) {
+    if (group_id < 0 || group_id >= 32) {
+        return 0;
+    }
+    if (pmatch[group_id].rm_so == -1 || pmatch[group_id].rm_eo == -1) {
+        return 0;
+    }
+    if (pmatch[group_id].rm_eo < pmatch[group_id].rm_so) {
+        return 0;
+    }
+
+    *backref_len = pmatch[group_id].rm_eo - pmatch[group_id].rm_so;
+    *backref_ptr = string + pmatch[group_id].rm_so;
+    return 1;
+}
+
+static int32
+btnfa_backref_matches_at(uint8 *input, uint8 *backref_ptr, int32 backref_len) {
+    if (backref_len < 0) {
+        return 0;
+    }
+    if (backref_len == 0) {
+        return 1;
+    }
+    return strncmp32((char *)input, (char *)backref_ptr, backref_len) == 0;
+}
+
+static int32
 match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
             regmatch_t *pmatch, int64 pmatch_len) {
     uint8 *search_ptr = &string[offset];
@@ -87,6 +157,8 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
     for (int32 k = 0; k < 32; k += 1) {
         init_pmatch[k].rm_so = -1;
         init_pmatch[k].rm_eo = -1;
+        best_pmatch[k].rm_so = -1;
+        best_pmatch[k].rm_eo = -1;
     }
 
     if (pmatch != NULL) {
@@ -125,22 +197,14 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
 
         for (int32 i = num_alts - 1; i >= 0; i -= 1) {
             if (!btnfa_quick_lookahead_fails(alts[i], search_ptr)) {
-                stack[stack_ptr].pc = alts[i];
-                stack[stack_ptr].input = search_ptr;
-                for (int32 k = 0; k < 32; k += 1) {
-                    stack[stack_ptr].pmatch[k] = init_pmatch[k];
-                }
-                stack_ptr += 1;
+                btnfa_stack_push(&stack, &stack_cap, &stack_ptr, alts[i],
+                                 search_ptr, init_pmatch, NULL, 0, 0);
             }
         }
     } else {
         if (!btnfa_quick_lookahead_fails(regex->ops, search_ptr)) {
-            stack[stack_ptr].pc = regex->ops;
-            stack[stack_ptr].input = search_ptr;
-            for (int32 k = 0; k < 32; k += 1) {
-                stack[stack_ptr].pmatch[k] = init_pmatch[k];
-            }
-            stack_ptr += 1;
+            btnfa_stack_push(&stack, &stack_cap, &stack_ptr, regex->ops,
+                             search_ptr, init_pmatch, NULL, 0, 0);
         }
     }
 
@@ -266,21 +330,80 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                 break;
             }
 
+            if (pc->type == META_OP_BACKREF
+                && (pc[1].type == META_OP_STAR || pc[1].type == META_OP_PLUS
+                    || pc[1].type == META_OP_OPTIONAL
+                    || pc[1].type == META_OP_BOUNDED)) {
+                uint8 *backref_ptr = NULL;
+                int32 group_id = pc->value;
+                int32 backref_len = 0;
+                int32 min_req = 0;
+                int32 max_req = -1;
+                int32 count = 0;
+                MetaOp *next_ops = pc + 2;
+
+                if (!btnfa_get_backref(current_pmatch, group_id, string,
+                                       &backref_ptr, &backref_len)) {
+                    break;
+                }
+
+                if (pc[1].type == META_OP_STAR) {
+                    min_req = 0;
+                    max_req = -1;
+                } else if (pc[1].type == META_OP_PLUS) {
+                    min_req = 1;
+                    max_req = -1;
+                } else if (pc[1].type == META_OP_OPTIONAL) {
+                    min_req = 0;
+                    max_req = 1;
+                } else if (pc[1].type == META_OP_BOUNDED) {
+                    min_req = pc[1].min;
+                    max_req = pc[1].max;
+                }
+
+                if (backref_len == 0) {
+                    if (min_req >= 0) {
+                        if (!btnfa_quick_lookahead_fails(next_ops, input)) {
+                            btnfa_stack_push(&stack, &stack_cap, &stack_ptr,
+                                             next_ops, input, current_pmatch,
+                                             visited_empty, is_catastrophic, 0);
+                        }
+                    }
+                    break;
+                }
+
+                while (max_req == -1 || count < max_req) {
+                    uint8 *candidate = input + count*backref_len;
+                    if (!btnfa_backref_matches_at(candidate, backref_ptr,
+                                                  backref_len)) {
+                        break;
+                    }
+                    count += 1;
+                }
+
+                if (count >= min_req) {
+                    for (int32 n = min_req; n <= count; n += 1) {
+                        uint8 *p = input + n*backref_len;
+                        if (!btnfa_quick_lookahead_fails(next_ops, p)) {
+                            btnfa_stack_push(&stack, &stack_cap, &stack_ptr,
+                                             next_ops, p, current_pmatch,
+                                             visited_empty, is_catastrophic,
+                                             p > input);
+                        }
+                    }
+                }
+                break;
+            }
+
             if (pc->type == META_OP_BACKREF) {
                 int32 group_id = pc->value;
                 int32 backref_len;
                 uint8 *backref_ptr;
 
-                if (group_id >= 0 && group_id < 32
-                    && current_pmatch[group_id].rm_so != -1
-                    && current_pmatch[group_id].rm_eo != -1) {
-                    backref_len = current_pmatch[group_id].rm_eo
-                                  - current_pmatch[group_id].rm_so;
-                    backref_ptr = string + current_pmatch[group_id].rm_so;
-
-                    if (strncmp32((char *)input, (char *)backref_ptr,
-                                  backref_len)
-                        == 0) {
+                if (btnfa_get_backref(current_pmatch, group_id, string,
+                                      &backref_ptr, &backref_len)) {
+                    if (btnfa_backref_matches_at(input, backref_ptr,
+                                                 backref_len)) {
                         input += backref_len;
                         pc += 1;
                         if (is_catastrophic && backref_len > 0) {
@@ -318,45 +441,15 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                 int32 skip_2 = btnfa_quick_lookahead_fails(pc + pc->min, input);
 
                 if (!skip_2) {
-                    if (stack_ptr >= stack_cap) {
-                        int32 new_cap = stack_cap*2;
-                        stack = realloc2(stack, stack_cap, new_cap,
-                                         SIZEOF(*stack));
-                        stack_cap = new_cap;
-                    }
-                    stack[stack_ptr].pc = pc + pc->min;
-                    stack[stack_ptr].input = input;
-                    if (is_catastrophic) {
-                        for (int32 w = 0; w < META_PC_WORDS; w += 1) {
-                            stack[stack_ptr].visited_empty[w]
-                                = visited_empty[w];
-                        }
-                    }
-                    for (int32 k = 0; k < 32; k += 1) {
-                        stack[stack_ptr].pmatch[k] = current_pmatch[k];
-                    }
-                    stack_ptr += 1;
+                    btnfa_stack_push(&stack, &stack_cap, &stack_ptr,
+                                     pc + pc->min, input, current_pmatch,
+                                     visited_empty, is_catastrophic, 0);
                 }
 
                 if (!skip_1) {
-                    if (stack_ptr >= stack_cap) {
-                        int32 new_cap = stack_cap*2;
-                        stack = realloc2(stack, stack_cap, new_cap,
-                                         SIZEOF(*stack));
-                        stack_cap = new_cap;
-                    }
-                    stack[stack_ptr].pc = pc + pc->value;
-                    stack[stack_ptr].input = input;
-                    if (is_catastrophic) {
-                        for (int32 w = 0; w < META_PC_WORDS; w += 1) {
-                            stack[stack_ptr].visited_empty[w]
-                                = visited_empty[w];
-                        }
-                    }
-                    for (int32 k = 0; k < 32; k += 1) {
-                        stack[stack_ptr].pmatch[k] = current_pmatch[k];
-                    }
-                    stack_ptr += 1;
+                    btnfa_stack_push(&stack, &stack_cap, &stack_ptr,
+                                     pc + pc->value, input, current_pmatch,
+                                     visited_empty, is_catastrophic, 0);
                 }
                 break;
             }
@@ -417,24 +510,9 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
 
                     for (int32 i = num_alts - 1; i >= 0; i -= 1) {
                         if (!btnfa_quick_lookahead_fails(alts[i], input)) {
-                            if (stack_ptr >= stack_cap) {
-                                int32 new_cap = stack_cap*2;
-                                stack = realloc2(stack, stack_cap, new_cap,
-                                                 SIZEOF(*stack));
-                                stack_cap = new_cap;
-                            }
-                            stack[stack_ptr].pc = alts[i];
-                            stack[stack_ptr].input = input;
-                            if (is_catastrophic) {
-                                for (int32 w = 0; w < META_PC_WORDS; w += 1) {
-                                    stack[stack_ptr].visited_empty[w]
-                                        = visited_empty[w];
-                                }
-                            }
-                            for (int32 k = 0; k < 32; k += 1) {
-                                stack[stack_ptr].pmatch[k] = current_pmatch[k];
-                            }
-                            stack_ptr += 1;
+                            btnfa_stack_push(&stack, &stack_cap, &stack_ptr,
+                                             alts[i], input, current_pmatch,
+                                             visited_empty, is_catastrophic, 0);
                         }
                     }
                     break;
@@ -519,34 +597,10 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
 
                         for (uint8 *p = min_s; p <= max_s_ptr; p += 1) {
                             if (!btnfa_quick_lookahead_fails(next_ops, p)) {
-                                if (stack_ptr >= stack_cap) {
-                                    int32 new_cap = stack_cap*2;
-                                    stack = realloc2(stack, stack_cap, new_cap,
-                                                     SIZEOF(*stack));
-                                    stack_cap = new_cap;
-                                }
-                                stack[stack_ptr].pc = next_ops;
-                                stack[stack_ptr].input = p;
-                                if (is_catastrophic) {
-                                    if (p > input) {
-                                        for (int32 w = 0; w < META_PC_WORDS;
-                                             w += 1) {
-                                            stack[stack_ptr].visited_empty[w]
-                                                = 0;
-                                        }
-                                    } else {
-                                        for (int32 w = 0; w < META_PC_WORDS;
-                                             w += 1) {
-                                            stack[stack_ptr].visited_empty[w]
-                                                = visited_empty[w];
-                                        }
-                                    }
-                                }
-                                for (int32 k = 0; k < 32; k += 1) {
-                                    stack[stack_ptr].pmatch[k]
-                                        = current_pmatch[k];
-                                }
-                                stack_ptr += 1;
+                                btnfa_stack_push(&stack, &stack_cap,
+                                                 &stack_ptr, next_ops, p,
+                                                 current_pmatch, visited_empty,
+                                                 is_catastrophic, p > input);
                             }
                         }
                     }
