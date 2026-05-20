@@ -16,7 +16,7 @@ This is an exploration: don't use it in production.
 - If you can make assumptions about your input data and your regexes
 - If you want absolute control over the regex matcher
   * You can enable/disable which matchers you want
-  * You can tweak the heuristic parameters used to select the matcher
+  * TODO: You can tweak the heuristic parameters used to select the matcher
 - If you want to make it easier to not depend on libc
   * The regex pre processor and runtime matchers use only some simple libc
     functions from `<string.h>` that you can easily implement yourself (and
@@ -124,5 +124,6 @@ cc gen/your_code_baked.c -o your_program
 ## TODO
 - Organize testing, benchmarking and plotting
 - Implement heuristics for the high level dispatcher
+- Implement word boundary support for the TDFA
 - Implement
   [Basic Unicode Support](https://www.unicode.org/reports/tr18/#Basic_Unicode_Support)
