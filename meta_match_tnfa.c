@@ -2,11 +2,9 @@
 #define META_MATCH_TNFA_C
 
 #include <regex.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "meta.h"
+#include "primitives.h"
 
 // clang-format off
 static const MatcherFeatures match_features_tnfa = {
