@@ -62,9 +62,9 @@ static char *
 bench_feature_class_name(enum BenchRegexFeatureClass c) {
     switch (c) {
     case BENCH_FEATURE_NO_BACKREFS:
-        return "all_except_backreferences";
+        return "no_backreferences";
     case BENCH_FEATURE_ALL:
-        return "all_features";
+        return "with_backreferences";
     case BENCH_FEATURE_LAST:
     default:
         return "unknown_features";
