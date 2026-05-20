@@ -130,7 +130,7 @@ static BenchRegexCase bench_regex_1_8_all_features[] = {
 
 static BenchRegexCase bench_regex_9_16_all_features[] = {
     { "word_backref", R("\\<(a)\\1\\>"), 9, BENCH_LEN_9_16, BENCH_FEATURE_ALL },
-    /* { "class_backref_plus", R("([ab])\\1+"), 9, BENCH_LEN_9_16, BENCH_FEATURE_ALL }, */
+    { "class_backref_plus", R("([ab])\\1+"), 9, BENCH_LEN_9_16, BENCH_FEATURE_ALL },
     { "digit_backref", R("^([0-9])\\1$"), 11, BENCH_LEN_9_16, BENCH_FEATURE_ALL },
 };
 
