@@ -19,9 +19,6 @@ typedef enum BenchInputLengthClass {
     BENCH_INPUT_LEN_17_32,
     BENCH_INPUT_LEN_33_64,
     BENCH_INPUT_LEN_65_128,
-    BENCH_INPUT_LEN_129_256,
-    BENCH_INPUT_LEN_257_512,
-    BENCH_INPUT_LEN_513_1024,
     BENCH_INPUT_LEN_LAST,
 } BenchInputLengthClass;
 
@@ -50,12 +47,6 @@ bench_input_length_class_name(enum BenchInputLengthClass c) {
         return "33_64";
     case BENCH_INPUT_LEN_65_128:
         return "65_128";
-    case BENCH_INPUT_LEN_129_256:
-        return "129_256";
-    case BENCH_INPUT_LEN_257_512:
-        return "257_512";
-    case BENCH_INPUT_LEN_513_1024:
-        return "513_1024";
     case BENCH_INPUT_LEN_LAST:
     default:
         return "unknown_input_length";
@@ -73,12 +64,6 @@ bench_input_length_class_min(enum BenchInputLengthClass c) {
         return 33;
     case BENCH_INPUT_LEN_65_128:
         return 65;
-    case BENCH_INPUT_LEN_129_256:
-        return 129;
-    case BENCH_INPUT_LEN_257_512:
-        return 257;
-    case BENCH_INPUT_LEN_513_1024:
-        return 513;
     case BENCH_INPUT_LEN_LAST:
     default:
         return 0;
@@ -96,12 +81,6 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
         return 64;
     case BENCH_INPUT_LEN_65_128:
         return 128;
-    case BENCH_INPUT_LEN_129_256:
-        return 256;
-    case BENCH_INPUT_LEN_257_512:
-        return 512;
-    case BENCH_INPUT_LEN_513_1024:
-        return 1024;
     case BENCH_INPUT_LEN_LAST:
     default:
         return 0;
@@ -113,11 +92,11 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
 #endif
 
 #if !defined(META_BENCH_ITERATIONS)
-#define META_BENCH_ITERATIONS 10
+#define META_BENCH_ITERATIONS 2
 #endif
 
 #if !defined(META_BENCH_WARMUP_ITERATIONS)
-#define META_BENCH_WARMUP_ITERATIONS 64
+#define META_BENCH_WARMUP_ITERATIONS 16
 #endif
 
 #define BENCH_MAX_MATCHES 16
@@ -126,16 +105,16 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
 #define ENABLE_BTNFA 1
 #endif
 #if !defined(ENABLE_TNFA)
-#define ENABLE_TNFA 1
+#define ENABLE_TNFA 0
 #endif
 #if !defined(ENABLE_TDFA)
 #define ENABLE_TDFA 1
 #endif
 #if !defined(ENABLE_LAZY_DFA)
-#define ENABLE_LAZY_DFA 1
+#define ENABLE_LAZY_DFA 0
 #endif
 #if !defined(ENABLE_STATIC_DFA)
-#define ENABLE_STATIC_DFA 1
+#define ENABLE_STATIC_DFA 0
 #endif
 
 static enum Matcher bench_matchers[] = {
@@ -1099,7 +1078,7 @@ bench_meta_matchers_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
 
 #define BENCH_MAIN_REGEX_BUCKET_MAX (BENCH_FEATURE_LAST*BENCH_LEN_LAST)
 #define BENCH_RANDOM_INPUT_ATTEMPTS 500
-#define BENCH_RANDOM_INPUT_MAX_LEN 1024
+#define BENCH_RANDOM_INPUT_MAX_LEN 128
 
 static BenchRegexCase bench_runtime_regex_cases[BENCH_FEATURE_LAST]
                                                [BENCH_LEN_LAST]
