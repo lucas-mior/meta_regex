@@ -19,6 +19,17 @@
 #define PREPROC_NFA_BITSET_WORDS 64
 #define PREPROC_MAX_NFA_STATES (PREPROC_NFA_BITSET_WORDS*32)
 
+typedef struct MetaPreProcLimits {
+    int32 op_buffer_size;
+    int32 max_string_len;
+    int32 max_group_stack;
+    int32 max_temp_ops;
+    int32 max_class_name;
+    int32 max_nfa_items;
+    int32 max_branches;
+    int32 nfa_bitset_words;
+} MetaPreProcLimits;
+
 /* TNFA build-time limits */
 #define PREPROC_MAX_TNFA_TAGS META_MAX_TNFA_TAGS
 #define PREPROC_MAX_TNFA_STATES META_MAX_TNFA_STATES
