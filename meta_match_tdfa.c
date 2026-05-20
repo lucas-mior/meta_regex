@@ -208,10 +208,6 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     int32 accepted_end = -1;
     int32 result = REG_NOMATCH;
 
-    if (regex == NULL || regex->tdfa == NULL) {
-        return REG_NOMATCH;
-    }
-
     tdfa = regex->tdfa;
     if (tdfa->num_states <= 0 || tdfa->start_state < 0
         || tdfa->start_state >= tdfa->num_states || tdfa->num_tags < 0
