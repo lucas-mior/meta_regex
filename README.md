@@ -99,13 +99,7 @@ cc gen/your_code_baked.c -o your_program
 - Tagged NFA
 
 ## TODO
-- Implement tagged dfa (so that we don't have to use the back tracking nfa for
-  submatch extraction)
-- Improve performance on ASCII input
+- Organize testing, benchmarking and plotting
+- Implement heuristics for the high level dispatcher
 - Implement
   [Basic Unicode Support](https://www.unicode.org/reports/tr18/#Basic_Unicode_Support)
-- Organize tests:
-  - ASCII input with group capturing against LC_ALL=C posix (reference test array)
-  - ASCII input with group capturing against LC_ALL=C posix (fuzzy)
-  - UTF-8 against reference true table
-  - UTF-8 against some UTS 18 level 1 implementation
