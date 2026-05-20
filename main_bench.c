@@ -910,44 +910,46 @@ main(void) {
 
     now = (llong)time(NULL);
 
-    /* for (int32 bi = 0; bi < BENCH_REGEX_BUCKET_COUNT; bi += 1) { */
-    /*     BenchRegexBucket *regex_bucket = &bench_regex_buckets[bi]; */
-    /*     regex_t *compiled = NULL; */
-    /*     char dispatch_csv_file[1024]; */
-    /*     char matchers_csv_file[1024]; */
-    /*     FILE *dispatch_csv; */
-    /*     FILE *matchers_csv; */
-    /*     char *feature_name */
-    /*         = bench_feature_class_name(regex_bucket->feature_class); */
-    /*     char *regex_len_name */
-    /*         = bench_length_class_name(regex_bucket->length_class); */
+#if 0
+    for (int32 bi = 0; bi < BENCH_REGEX_BUCKET_COUNT; bi += 1) {
+        BenchRegexBucket *regex_bucket = &bench_regex_buckets[bi];
+        regex_t *compiled = NULL;
+        char dispatch_csv_file[1024];
+        char matchers_csv_file[1024];
+        FILE *dispatch_csv;
+        FILE *matchers_csv;
+        char *feature_name
+            = bench_feature_class_name(regex_bucket->feature_class);
+        char *regex_len_name
+            = bench_length_class_name(regex_bucket->length_class);
 
-    /*     SNPRINTF(dispatch_csv_file, */
-    /*              "benchmarks/%s-regex_%s-libc_vs_meta-%lld.csv", feature_name, */
-    /*              regex_len_name, now); */
-    /*     SNPRINTF(matchers_csv_file, */
-    /*              "benchmarks/%s-regex_%s-meta_matchers-%lld.csv", feature_name, */
-    /*              regex_len_name, now); */
+        SNPRINTF(dispatch_csv_file,
+                 "benchmarks/%s-regex_%s-libc_vs_meta-%lld.csv", feature_name,
+                 regex_len_name, now);
+        SNPRINTF(matchers_csv_file,
+                 "benchmarks/%s-regex_%s-meta_matchers-%lld.csv", feature_name,
+                 regex_len_name, now);
 
-    /*     dispatch_csv = bench_open_csv(dispatch_csv_file); */
-    /*     matchers_csv = bench_open_csv(matchers_csv_file); */
-    /*     compiled = bench_compile_regex_bucket(regex_bucket); */
+        dispatch_csv = bench_open_csv(dispatch_csv_file);
+        matchers_csv = bench_open_csv(matchers_csv_file);
+        compiled = bench_compile_regex_bucket(regex_bucket);
 
-    /*     for (int32 ii = 0; ii < BENCH_INPUT_BUCKET_COUNT; ii += 1) { */
-    /*         BenchInputBucket *input_bucket = &bench_input_buckets[ii]; */
+        for (int32 ii = 0; ii < BENCH_INPUT_BUCKET_COUNT; ii += 1) {
+            BenchInputBucket *input_bucket = &bench_input_buckets[ii];
 
-    /*         bench_libc_vs_dispatch(dispatch_csv, regex_bucket, input_bucket, */
-    /*                                compiled); */
-    /*         bench_meta_matchers(matchers_csv, regex_bucket, input_bucket, */
-    /*                             compiled, false); */
-    /*         bench_meta_matchers(matchers_csv, regex_bucket, input_bucket, */
-    /*                             compiled, true); */
-    /*     } */
+            bench_libc_vs_dispatch(dispatch_csv, regex_bucket, input_bucket,
+                                   compiled);
+            bench_meta_matchers(matchers_csv, regex_bucket, input_bucket,
+                                compiled, false);
+            bench_meta_matchers(matchers_csv, regex_bucket, input_bucket,
+                                compiled, true);
+        }
 
-    /*     bench_free_regex_bucket(compiled, regex_bucket); */
-    /*     bench_close_csv(dispatch_csv, dispatch_csv_file); */
-    /*     bench_close_csv(matchers_csv, matchers_csv_file); */
-    /* } */
+        bench_free_regex_bucket(compiled, regex_bucket);
+        bench_close_csv(dispatch_csv, dispatch_csv_file);
+        bench_close_csv(matchers_csv, matchers_csv_file);
+    }
+#endif
 
     bench_run_generated_pattern_buckets(now);
 
