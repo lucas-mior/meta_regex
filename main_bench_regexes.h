@@ -4,7 +4,8 @@
 #include "meta.h"
 
 typedef enum BenchRegexLengthClass {
-    BENCH_LEN_1_16,
+    BENCH_LEN_1_8,
+    BENCH_LEN_9_16,
     BENCH_LEN_17_32,
     BENCH_LEN_33_64,
     BENCH_LEN_LAST,
@@ -19,7 +20,6 @@ typedef enum BenchRegexFeatureClass {
 
 typedef struct BenchRegexCase {
     char *name;
-    char *input;
     MetaRegex *regex;
     int32 regex_len;
     enum BenchRegexLengthClass length_class;
@@ -30,13 +30,16 @@ typedef struct BenchRegexBucket {
     char *name;
     enum BenchRegexLengthClass length_class;
     enum BenchRegexFeatureClass feature_class;
+    int32 max_regex_len;
     BenchRegexCase *cases;
     int32 count;
 } BenchRegexBucket;
 
-static char *bench_length_class_name(enum BenchRegexLengthClass c) {
+static char *
+bench_length_class_name(enum BenchRegexLengthClass c) {
     switch (c) {
-    case BENCH_LEN_1_16: return "1_16";
+    case BENCH_LEN_1_8: return "1_8";
+    case BENCH_LEN_9_16: return "9_16";
     case BENCH_LEN_17_32: return "17_32";
     case BENCH_LEN_33_64: return "33_64";
     case BENCH_LEN_LAST:
@@ -44,7 +47,20 @@ static char *bench_length_class_name(enum BenchRegexLengthClass c) {
     }
 }
 
-static char *bench_feature_class_name(enum BenchRegexFeatureClass c) {
+static int32
+bench_length_class_max(enum BenchRegexLengthClass c) {
+    switch (c) {
+    case BENCH_LEN_1_8: return 8;
+    case BENCH_LEN_9_16: return 16;
+    case BENCH_LEN_17_32: return 32;
+    case BENCH_LEN_33_64: return 64;
+    case BENCH_LEN_LAST:
+    default: return 0;
+    }
+}
+
+static char *
+bench_feature_class_name(enum BenchRegexFeatureClass c) {
     switch (c) {
     case BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF:
         return "all_except_word_boundaries_and_backreferences";
@@ -58,94 +74,119 @@ static char *bench_feature_class_name(enum BenchRegexFeatureClass c) {
     }
 }
 
+static BenchRegexCase bench_regex_1_8_regular_no_word_boundary_no_backref[] = {
+    { "literal_one", R("a"), 1, BENCH_LEN_1_8, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
+    { "small_class", R("[a-z]+"), 6, BENCH_LEN_1_8, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
+    { "small_alt", R("(ab|c)+"), 7, BENCH_LEN_1_8, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
+};
 
-static BenchRegexCase bench_regex_1_16_regular_no_word_boundary_no_backref[] = {
-    { "literal_one", "a", R("a"), 1, BENCH_LEN_1_16, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "small_class", "abcxyz", R("[a-z]+"), 6, BENCH_LEN_1_16, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "small_alt", "abcdab", R("(ab|cd)+"), 8, BENCH_LEN_1_16, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
+static BenchRegexCase bench_regex_9_16_regular_no_word_boundary_no_backref[] = {
+    { "anchored_digit", R("^a[0-9]+b$"), 11, BENCH_LEN_9_16, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
+    { "word_alt", R("(foo|bar)+"), 10, BENCH_LEN_9_16, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
+    { "capital_word", R("[A-Z][a-z]*"), 11, BENCH_LEN_9_16, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
 };
 
 static BenchRegexCase bench_regex_17_32_regular_no_word_boundary_no_backref[] = {
-    { "anchored_alt", "abcxyz", R("^([a-z]+|[0-9]+)$"), 17, BENCH_LEN_17_32, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "capital_words", "HelloWorld", R("([A-Z][a-z]*){1,3}"), 18, BENCH_LEN_17_32, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "dot_alt_digit", "axxfoo7", R("a.*(foo|bar)[0-9]"), 17, BENCH_LEN_17_32, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
+    { "anchored_alt", R("^([a-z]+|[0-9]+)$"), 19, BENCH_LEN_17_32, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
+    { "capital_words", R("([A-Z][a-z]*){1,3}"), 20, BENCH_LEN_17_32, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
+    { "dot_alt_digit", R("a.*(foo|bar)[0-9]"), 18, BENCH_LEN_17_32, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
 };
 
 static BenchRegexCase bench_regex_33_64_regular_no_word_boundary_no_backref[] = {
-    { "name_or_number_dash", "Smith-ab", R("^([A-Z][a-z]+|[0-9]{2,4})(-[a-z]{1,3})?$"), 40, BENCH_LEN_33_64, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "csv_words_numbers", "ab.cd,123,xy", R("([a-z]+\\.[a-z]+|[0-9]+)(,([a-z]+|[0-9]+))*"), 42, BENCH_LEN_33_64, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
-    { "space_number_suffix", "foo 123A", R("^(foo|bar|baz)[[:space:]]+[0-9]{2,4}[A-Z]?$"), 43, BENCH_LEN_33_64, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
+    { "name_or_number_dash", R("^([A-Z][a-z]+|[0-9]{2,4})(-[a-z]{1,3})?$"), 50, BENCH_LEN_33_64, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
+    { "csv_words_numbers", R("([a-z]+\\.[a-z]+|[0-9]+)(,([a-z]+|[0-9]+))*"), 53, BENCH_LEN_33_64, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
+    { "space_number_suffix", R("^(foo|bar|baz)[[:space:]]+[0-9]{2,4}[A-Z]?$"), 50, BENCH_LEN_33_64, BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF },
 };
 
-static BenchRegexCase bench_regex_1_16_regular_with_word_boundary_no_backref[] = {
-    { "word_left_right", "a", R("\\<a\\>"), 5, BENCH_LEN_1_16, BENCH_FEATURE_NO_BACKREF },
-    { "word_boundary", "a", R("\\ba\\b"), 5, BENCH_LEN_1_16, BENCH_FEATURE_NO_BACKREF },
-    { "non_word_boundary", "baaa", R("\\Baa"), 4, BENCH_LEN_1_16, BENCH_FEATURE_NO_BACKREF },
+static BenchRegexCase bench_regex_1_8_regular_with_word_boundary_no_backref[] = {
+    { "word_start_a", R("\\<a"), 3, BENCH_LEN_1_8, BENCH_FEATURE_NO_BACKREF },
+    { "word_end_a", R("a\\>"), 3, BENCH_LEN_1_8, BENCH_FEATURE_NO_BACKREF },
+    { "non_word_aa", R("\\Baa"), 4, BENCH_LEN_1_8, BENCH_FEATURE_NO_BACKREF },
+};
+
+static BenchRegexCase bench_regex_9_16_regular_with_word_boundary_no_backref[] = {
+    { "whole_word_a_digit", R("\\<a+[0-9]\\>"), 12, BENCH_LEN_9_16, BENCH_FEATURE_NO_BACKREF },
+    { "word_boundary_foo", R("\\bfoo\\b"), 7, BENCH_LEN_9_16, BENCH_FEATURE_NO_BACKREF },
+    { "inner_non_boundary", R("\\Baa+[0-9]"), 10, BENCH_LEN_9_16, BENCH_FEATURE_NO_BACKREF },
 };
 
 static BenchRegexCase bench_regex_17_32_regular_with_word_boundary_no_backref[] = {
-    { "word_repeated_pair", "a1b2", R("\\<([a-z][0-9])+\\>"), 17, BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF },
-    { "word_animal_alt", "bar", R("\\b(foo|bar|baz)\\b"), 17, BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF },
-    { "inner_non_boundary", "xaa7z", R("\\B[a-z]{2,4}[0-9]?\\B"), 20, BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF },
+    { "word_repeated_pair", R("\\<([a-z][0-9])+\\>"), 17, BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF },
+    { "word_animal_alt", R("\\b(foo|bar|baz)\\b"), 17, BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF },
+    { "inner_non_boundary", R("\\B[a-z]{2,4}[0-9]?\\B"), 22, BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF },
 };
 
 static BenchRegexCase bench_regex_33_64_regular_with_word_boundary_no_backref[] = {
-    { "word_hyphen_optional", "abc-def", R("\\<([a-z]+|[0-9]{2,4})(-[a-z]+)?\\>"), 33, BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF },
-    { "boundary_space_number", "foo 123", R("\\b(foo|bar|baz)[[:space:]]+[0-9]+\\b"), 35, BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF },
-    { "non_boundary_alt_end", "xaaendz", R("\\B([abc]{1,3}|[0-9]{1,2})+(end)?\\B"), 34, BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF },
+    { "word_hyphen_optional", R("\\<([a-z]+|[0-9]{2,4})(-[a-z]+)?\\>"), 40, BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF },
+    { "boundary_space_number", R("\\b(foo|bar|baz)[[:space:]]+[0-9]+\\b"), 38, BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF },
+    { "non_boundary_alt_end", R("\\B([abc]{1,3}|[0-9]{1,2})+(end)?\\B"), 41, BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF },
 };
 
-static BenchRegexCase bench_regex_1_16_all_features[] = {
-    { "small_backref", "aa", R("(a)\\1"), 5, BENCH_LEN_1_16, BENCH_FEATURE_ALL },
-    { "word_backref", "aa", R("\\<(a)\\1\\>"), 9, BENCH_LEN_1_16, BENCH_FEATURE_ALL },
-    { "alt_backref", "bb", R("(a|b)\\1"), 7, BENCH_LEN_1_16, BENCH_FEATURE_ALL },
+static BenchRegexCase bench_regex_1_8_all_features[] = {
+    { "small_backref", R("(a)\\1"), 5, BENCH_LEN_1_8, BENCH_FEATURE_ALL },
+    { "word_backref_start", R("\\<(a)\\1"), 7, BENCH_LEN_1_8, BENCH_FEATURE_ALL },
+    { "alt_backref", R("(a|b)\\1"), 7, BENCH_LEN_1_8, BENCH_FEATURE_ALL },
+};
+
+static BenchRegexCase bench_regex_9_16_all_features[] = {
+    { "word_backref", R("\\<(a)\\1\\>"), 9, BENCH_LEN_9_16, BENCH_FEATURE_ALL },
+    /* { "class_backref_plus", R("([ab])\\1+"), 9, BENCH_LEN_9_16, BENCH_FEATURE_ALL }, */
+    { "digit_backref", R("^([0-9])\\1$"), 11, BENCH_LEN_9_16, BENCH_FEATURE_ALL },
 };
 
 static BenchRegexCase bench_regex_17_32_all_features[] = {
-    { "word_cap_backref", "AbAb", R("\\<([A-Z][a-z])\\1\\>"), 18, BENCH_LEN_17_32, BENCH_FEATURE_ALL },
-    { "digits_backref_suffix", "12-12a", R("^([0-9]{2})-\\1([a-z]?)$"), 23, BENCH_LEN_17_32, BENCH_FEATURE_ALL },
-    { "boundary_alt_backref", "foo foox", R("\\b(foo|bar) \\1(x?)\\b"), 20, BENCH_LEN_17_32, BENCH_FEATURE_ALL },
+    { "word_cap_backref", R("\\<([A-Z][a-z])\\1\\>"), 18, BENCH_LEN_17_32, BENCH_FEATURE_ALL },
+    { "digits_backref_suffix", R("^([0-9]{2})-\\1([a-z]?)$"), 25, BENCH_LEN_17_32, BENCH_FEATURE_ALL },
+    { "boundary_alt_backref", R("\\b(foo|bar) \\1(x?)\\b"), 22, BENCH_LEN_17_32, BENCH_FEATURE_ALL },
 };
 
 static BenchRegexCase bench_regex_33_64_all_features[] = {
-    { "word_alt_backref", "abc-abc", R("\\<([a-z]+|[0-9]{2,4})[- ]\\1([_-][a-z0-9]{0,4})?\\>"), 49, BENCH_LEN_33_64, BENCH_FEATURE_ALL },
-    { "name_space_backref", "Smith Smith.", R("^([A-Z][a-z]+)[[:space:]]+\\1([.]?)$"), 35, BENCH_LEN_33_64, BENCH_FEATURE_ALL },
-    { "boundary_alt_xx_backref", "abcxxabcz", R("\\b([abc]{1,3}|[0-9]{1,2})xx\\1([z]?)\\b"), 37, BENCH_LEN_33_64, BENCH_FEATURE_ALL },
+    { "word_alt_backref", R("\\<([a-z]+|[0-9]{2,4})[- ]\\1([_-][a-z0-9]{0,4})?\\>"), 62, BENCH_LEN_33_64, BENCH_FEATURE_ALL },
+    { "name_space_backref", R("^([A-Z][a-z]+)[[:space:]]+\\1([.]?)$"), 40, BENCH_LEN_33_64, BENCH_FEATURE_ALL },
+    { "boundary_alt_xx_backref", R("\\b([abc]{1,3}|[0-9]{1,2})xx\\1([z]?)\\b"), 45, BENCH_LEN_33_64, BENCH_FEATURE_ALL },
 };
 
-#define BENCH_REGEX_BUCKET(ARRAY, LENGTH_CLASS, FEATURE_CLASS) \
+#define BENCH_REGEX_BUCKET(ARRAY, LENGTH_CLASS, FEATURE_CLASS, MAX_REGEX_LEN) \
     { \
         .name = #ARRAY, \
         .length_class = LENGTH_CLASS, \
         .feature_class = FEATURE_CLASS, \
+        .max_regex_len = MAX_REGEX_LEN, \
         .cases = ARRAY, \
         .count = LENGTH(ARRAY), \
     }
 
 static BenchRegexBucket bench_regex_buckets[] = {
-    BENCH_REGEX_BUCKET(bench_regex_1_16_regular_no_word_boundary_no_backref,
-                       BENCH_LEN_1_16,
-                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF),
+    BENCH_REGEX_BUCKET(bench_regex_1_8_regular_no_word_boundary_no_backref,
+                       BENCH_LEN_1_8,
+                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF, 8),
+    BENCH_REGEX_BUCKET(bench_regex_9_16_regular_no_word_boundary_no_backref,
+                       BENCH_LEN_9_16,
+                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF, 16),
     BENCH_REGEX_BUCKET(bench_regex_17_32_regular_no_word_boundary_no_backref,
                        BENCH_LEN_17_32,
-                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF),
+                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF, 32),
     BENCH_REGEX_BUCKET(bench_regex_33_64_regular_no_word_boundary_no_backref,
                        BENCH_LEN_33_64,
-                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF),
+                       BENCH_FEATURE_NO_WORD_BOUNDARY_NO_BACKREF, 64),
 
-    BENCH_REGEX_BUCKET(bench_regex_1_16_regular_with_word_boundary_no_backref,
-                       BENCH_LEN_1_16, BENCH_FEATURE_NO_BACKREF),
+    BENCH_REGEX_BUCKET(bench_regex_1_8_regular_with_word_boundary_no_backref,
+                       BENCH_LEN_1_8, BENCH_FEATURE_NO_BACKREF, 8),
+    BENCH_REGEX_BUCKET(bench_regex_9_16_regular_with_word_boundary_no_backref,
+                       BENCH_LEN_9_16, BENCH_FEATURE_NO_BACKREF, 16),
     BENCH_REGEX_BUCKET(bench_regex_17_32_regular_with_word_boundary_no_backref,
-                       BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF),
+                       BENCH_LEN_17_32, BENCH_FEATURE_NO_BACKREF, 32),
     BENCH_REGEX_BUCKET(bench_regex_33_64_regular_with_word_boundary_no_backref,
-                       BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF),
+                       BENCH_LEN_33_64, BENCH_FEATURE_NO_BACKREF, 64),
 
-    BENCH_REGEX_BUCKET(bench_regex_1_16_all_features, BENCH_LEN_1_16,
-                       BENCH_FEATURE_ALL),
+    BENCH_REGEX_BUCKET(bench_regex_1_8_all_features, BENCH_LEN_1_8,
+                       BENCH_FEATURE_ALL, 8),
+    BENCH_REGEX_BUCKET(bench_regex_9_16_all_features, BENCH_LEN_9_16,
+                       BENCH_FEATURE_ALL, 16),
     BENCH_REGEX_BUCKET(bench_regex_17_32_all_features, BENCH_LEN_17_32,
-                       BENCH_FEATURE_ALL),
+                       BENCH_FEATURE_ALL, 32),
     BENCH_REGEX_BUCKET(bench_regex_33_64_all_features, BENCH_LEN_33_64,
-                       BENCH_FEATURE_ALL),
+                       BENCH_FEATURE_ALL, 64),
 };
 
 #undef BENCH_REGEX_BUCKET

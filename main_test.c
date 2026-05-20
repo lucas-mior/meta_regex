@@ -18,7 +18,6 @@
 #define error2(...) error2(__VA_ARGS__)
 #endif
 
-
 #define FUZZY_PRECOMPILE_LIBC 1
 
 #if !defined(ENABLE_BTNFA)
@@ -36,7 +35,6 @@
 #if !defined(ENABLE_TDFA)
 #define ENABLE_TDFA 1
 #endif
-
 
 static enum Matcher all_matchers[] = {
     MATCHER_BTNFA,    MATCHER_TNFA,       MATCHER_TDFA,
@@ -505,7 +503,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         pm_sz = tests_len*LENGTH(dummy_test.pmatch) * SIZEOF(regmatch_t);
         pm_libc = malloc2(pm_sz);
 
-            for (int32 j = 0; j < tests_len; j += 1) {
+        for (int32 j = 0; j < tests_len; j += 1) {
             regmatch_t *curr_pm = NULL;
 
             if (extract) {
@@ -533,13 +531,13 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             enum Matcher matcher = all_matchers[mi];
             int32 *results_meta = malloc2(tests_len*SIZEOF(*results_meta));
             regmatch_t *pm_meta = malloc2(pm_sz);
-                if (!matcher_compile_enabled(matcher)) {
+            if (!matcher_compile_enabled(matcher)) {
                 free2(results_meta, tests_len*SIZEOF(*results_meta));
                 free2(pm_meta, pm_sz);
                 continue;
             }
 
-                for (int32 j = 0; j < tests_len; j += 1) {
+            for (int32 j = 0; j < tests_len; j += 1) {
                 MetaRegex *meta_pattern = tests[j];
                 regmatch_t *curr_m_pm = NULL;
 
@@ -556,7 +554,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
                 results_meta[j] = run_meta_one(
                     meta_pattern, (char *)input, input_len, matcher, curr_m_pm,
                     LENGTH(dummy_test.pmatch), extract);
-                }
+            }
             for (int32 j = 0; j < tests_len; j += 1) {
                 MetaRegex *meta_pattern = tests[j];
                 regmatch_t *curr_libc = NULL;
