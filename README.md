@@ -125,5 +125,8 @@ cc gen/your_code_baked.c -o your_program
 - Organize testing, benchmarking and plotting
 - Implement heuristics for the high level dispatcher
 - Implement word boundary support for the TDFA
+- Implement arguments for the pre processor
+  * limits
+  * heuristics
 - Implement
   [Basic Unicode Support](https://www.unicode.org/reports/tr18/#Basic_Unicode_Support)
