@@ -1,3 +1,4 @@
+
 #include <errno.h>
 #include <locale.h>
 #include <regex.h>
@@ -21,6 +22,8 @@ typedef enum BenchInputLengthClass {
     BENCH_INPUT_LEN_33_64,
     BENCH_INPUT_LEN_65_128,
     BENCH_INPUT_LEN_129_256,
+    BENCH_INPUT_LEN_257_512,
+    BENCH_INPUT_LEN_513_1024,
     BENCH_INPUT_LEN_LAST,
 } BenchInputLengthClass;
 
@@ -53,6 +56,10 @@ bench_input_length_class_name(enum BenchInputLengthClass c) {
         return "65_128";
     case BENCH_INPUT_LEN_129_256:
         return "129_256";
+    case BENCH_INPUT_LEN_257_512:
+        return "257_512";
+    case BENCH_INPUT_LEN_513_1024:
+        return "513_1024";
     case BENCH_INPUT_LEN_LAST:
     default:
         return "unknown_input_length";
@@ -74,6 +81,10 @@ bench_input_length_class_min(enum BenchInputLengthClass c) {
         return 65;
     case BENCH_INPUT_LEN_129_256:
         return 129;
+    case BENCH_INPUT_LEN_257_512:
+        return 257;
+    case BENCH_INPUT_LEN_513_1024:
+        return 513;
     case BENCH_INPUT_LEN_LAST:
     default:
         return 0;
@@ -95,6 +106,10 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
         return 128;
     case BENCH_INPUT_LEN_129_256:
         return 256;
+    case BENCH_INPUT_LEN_257_512:
+        return 512;
+    case BENCH_INPUT_LEN_513_1024:
+        return 1024;
     case BENCH_INPUT_LEN_LAST:
     default:
         return 0;
@@ -106,11 +121,11 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
 #endif
 
 #if !defined(META_BENCH_ITERATIONS)
-#define META_BENCH_ITERATIONS 1
+#define META_BENCH_ITERATIONS 100
 #endif
 
 #if !defined(META_BENCH_WARMUP_ITERATIONS)
-#define META_BENCH_WARMUP_ITERATIONS 32
+#define META_BENCH_WARMUP_ITERATIONS 64
 #endif
 
 #define BENCH_MAX_MATCHES 16
@@ -383,11 +398,14 @@ bench_write_header(FILE *csv) {
 }
 
 static void
-bench_write_row(FILE *csv, char *block, char *variant,
-                BenchRegexBucket *regex_bucket, BenchInputBucket *input_bucket,
-                char *engine, char *matcher_name, char *selected_matcher_name,
-                int32 regex_cases, int32 input_cases, int32 run_pair_count,
-                int32 iterations_per_pair, double seconds, int32 matches) {
+bench_write_row_with_pair_count(FILE *csv, char *block, char *variant,
+                                BenchRegexBucket *regex_bucket,
+                                BenchInputBucket *input_bucket, char *engine,
+                                char *matcher_name, char *selected_matcher_name,
+                                int32 regex_cases, int32 input_cases,
+                                int32 pair_count, int32 run_pair_count,
+                                int32 iterations_per_pair, double seconds,
+                                int32 matches) {
     int64 total_iterations = iterations_per_pair*(int64)run_pair_count;
     double ns_per_match = 0.0;
 
@@ -417,8 +435,22 @@ bench_write_row(FILE *csv, char *block, char *variant,
     fputc(',', csv);
     bench_csv_string(csv, selected_matcher_name);
     fprintf(csv, ",%d,%d,%d,%d,%d,%lld,%f,%f,%d\n", regex_cases, input_cases,
-            regex_cases*input_cases, run_pair_count, iterations_per_pair,
+            pair_count, run_pair_count, iterations_per_pair,
             (llong)total_iterations, seconds, ns_per_match, matches);
+    return;
+}
+
+static void
+bench_write_row(FILE *csv, char *block, char *variant,
+                BenchRegexBucket *regex_bucket, BenchInputBucket *input_bucket,
+                char *engine, char *matcher_name, char *selected_matcher_name,
+                int32 regex_cases, int32 input_cases, int32 run_pair_count,
+                int32 iterations_per_pair, double seconds, int32 matches) {
+    bench_write_row_with_pair_count(
+        csv, block, variant, regex_bucket, input_bucket, engine, matcher_name,
+        selected_matcher_name, regex_cases, input_cases,
+        regex_cases*input_cases, run_pair_count, iterations_per_pair, seconds,
+        matches);
     return;
 }
 
@@ -772,9 +804,310 @@ bench_meta_matchers(FILE *csv, BenchRegexBucket *regex_bucket,
     return;
 }
 
+static void
+bench_validate_dispatch_pairwise(BenchRegexBucket *regex_bucket,
+                                 BenchInputBucket *input_bucket,
+                                 regex_t *compiled, bool extract) {
+    enum Matcher enabled = bench_enabled_matcher_mask();
+
+    for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
+        BenchRegexCase *rc = &regex_bucket->cases[ri];
+        BenchInputCase *ic = &input_bucket->cases[ri];
+        regmatch_t ref_pm[BENCH_MAX_MATCHES];
+        regmatch_t actual_pm[BENCH_MAX_MATCHES];
+        int32 ref_result;
+        int32 actual_result;
+        int32 input_len = strlen32(ic->input);
+        bool needs_extraction = (rc->regex->re_nsub > 0 && extract);
+        enum Matcher selected = meta_choose_matcher(rc->regex, input_len,
+                                                    needs_extraction, enabled);
+
+        ref_result = bench_run_libc_one(&compiled[ri], ic->input, ref_pm,
+                                        LENGTH(ref_pm), extract);
+        actual_result = bench_run_meta_dispatch_one(
+            rc->regex, ic->input, input_len, enabled, actual_pm,
+            LENGTH(actual_pm), extract);
+
+        if (bench_result_mismatch(ref_result, actual_result, ref_pm, actual_pm,
+                                  LENGTH(ref_pm), extract)) {
+            bench_report_mismatch("libc_vs_dispatch_pairwise", regex_bucket, rc,
+                                  input_bucket, ic, "META_DISPATCH", selected,
+                                  ref_result, actual_result, ref_pm, actual_pm,
+                                  LENGTH(ref_pm), extract);
+            exit(EXIT_FAILURE);
+        }
+    }
+    return;
+}
+
+static void
+bench_validate_matcher_pairwise(BenchRegexBucket *regex_bucket,
+                                BenchInputBucket *input_bucket,
+                                regex_t *compiled, enum Matcher matcher,
+                                bool extract, int32 *run_pairs) {
+    *run_pairs = 0;
+
+    for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
+        BenchRegexCase *rc = &regex_bucket->cases[ri];
+        BenchInputCase *ic = &input_bucket->cases[ri];
+        regmatch_t ref_pm[BENCH_MAX_MATCHES];
+        regmatch_t actual_pm[BENCH_MAX_MATCHES];
+        int32 ref_result;
+        int32 actual_result;
+        int32 input_len;
+
+        if (!bench_matcher_supports_regex(rc->regex, matcher, extract)) {
+            continue;
+        }
+
+        input_len = strlen32(ic->input);
+        ref_result = bench_run_libc_one(&compiled[ri], ic->input, ref_pm,
+                                        LENGTH(ref_pm), extract);
+        actual_result = bench_run_meta_matcher_one(
+            rc->regex, ic->input, input_len, matcher, actual_pm,
+            LENGTH(actual_pm), extract);
+
+        if (bench_result_mismatch(ref_result, actual_result, ref_pm, actual_pm,
+                                  LENGTH(ref_pm), extract)) {
+            bench_report_mismatch("meta_matchers_pairwise", regex_bucket, rc,
+                                  input_bucket, ic, MATCHER_str(matcher),
+                                  matcher, ref_result, actual_result, ref_pm,
+                                  actual_pm, LENGTH(ref_pm), extract);
+            exit(EXIT_FAILURE);
+        }
+        *run_pairs += 1;
+    }
+    return;
+}
+
+static double
+bench_time_libc_bucket_pairwise(BenchRegexBucket *regex_bucket,
+                                BenchInputBucket *input_bucket,
+                                regex_t *compiled, bool extract,
+                                int32 iterations_per_pair, int32 *matches) {
+    struct timespec t0;
+    struct timespec t1;
+    regmatch_t pmatch[BENCH_MAX_MATCHES];
+    int32 local_matches = 0;
+
+    for (int32 w = 0; w < META_BENCH_WARMUP_ITERATIONS; w += 1) {
+        for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
+            int32 result = bench_run_libc_one(&compiled[ri],
+                                              input_bucket->cases[ri].input,
+                                              pmatch, LENGTH(pmatch), extract);
+            bench_absorb_result(result, pmatch, extract);
+        }
+    }
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
+    for (int32 it = 0; it < iterations_per_pair; it += 1) {
+        for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
+            int32 result = bench_run_libc_one(&compiled[ri],
+                                              input_bucket->cases[ri].input,
+                                              pmatch, LENGTH(pmatch), extract);
+            if (result == 0) {
+                local_matches += 1;
+            }
+            bench_absorb_result(result, pmatch, extract);
+        }
+    }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+
+    *matches = local_matches;
+    return bench_timediff(t0, t1);
+}
+
+static double
+bench_time_dispatch_bucket_pairwise(BenchRegexBucket *regex_bucket,
+                                    BenchInputBucket *input_bucket,
+                                    bool extract, enum Matcher enabled,
+                                    int32 iterations_per_pair, int32 *matches) {
+    struct timespec t0;
+    struct timespec t1;
+    regmatch_t pmatch[BENCH_MAX_MATCHES];
+    int32 local_matches = 0;
+
+    for (int32 w = 0; w < META_BENCH_WARMUP_ITERATIONS; w += 1) {
+        for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
+            BenchRegexCase *rc = &regex_bucket->cases[ri];
+            BenchInputCase *ic = &input_bucket->cases[ri];
+            int32 input_len = strlen32(ic->input);
+            int32 result = bench_run_meta_dispatch_one(
+                rc->regex, ic->input, input_len, enabled, pmatch,
+                LENGTH(pmatch), extract);
+            bench_absorb_result(result, pmatch, extract);
+        }
+    }
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
+    for (int32 it = 0; it < iterations_per_pair; it += 1) {
+        for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
+            BenchRegexCase *rc = &regex_bucket->cases[ri];
+            BenchInputCase *ic = &input_bucket->cases[ri];
+            int32 input_len = strlen32(ic->input);
+            int32 result = bench_run_meta_dispatch_one(
+                rc->regex, ic->input, input_len, enabled, pmatch,
+                LENGTH(pmatch), extract);
+            if (result == 0) {
+                local_matches += 1;
+            }
+            bench_absorb_result(result, pmatch, extract);
+        }
+    }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+
+    *matches = local_matches;
+    return bench_timediff(t0, t1);
+}
+
+static double
+bench_time_matcher_bucket_pairwise(BenchRegexBucket *regex_bucket,
+                                   BenchInputBucket *input_bucket,
+                                   enum Matcher matcher, bool extract,
+                                   int32 iterations_per_pair, int32 *matches) {
+    struct timespec t0;
+    struct timespec t1;
+    regmatch_t pmatch[BENCH_MAX_MATCHES];
+    int32 local_matches = 0;
+
+    for (int32 w = 0; w < META_BENCH_WARMUP_ITERATIONS; w += 1) {
+        for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
+            BenchRegexCase *rc = &regex_bucket->cases[ri];
+            BenchInputCase *ic = &input_bucket->cases[ri];
+            int32 input_len;
+            int32 result;
+
+            if (!bench_matcher_supports_regex(rc->regex, matcher, extract)) {
+                continue;
+            }
+
+            input_len = strlen32(ic->input);
+            result = bench_run_meta_matcher_one(rc->regex, ic->input, input_len,
+                                                matcher, pmatch, LENGTH(pmatch),
+                                                extract);
+            bench_absorb_result(result, pmatch, extract);
+        }
+    }
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
+    for (int32 it = 0; it < iterations_per_pair; it += 1) {
+        for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
+            BenchRegexCase *rc = &regex_bucket->cases[ri];
+            BenchInputCase *ic = &input_bucket->cases[ri];
+            int32 input_len;
+            int32 result;
+
+            if (!bench_matcher_supports_regex(rc->regex, matcher, extract)) {
+                continue;
+            }
+
+            input_len = strlen32(ic->input);
+            result = bench_run_meta_matcher_one(rc->regex, ic->input, input_len,
+                                                matcher, pmatch, LENGTH(pmatch),
+                                                extract);
+            if (result == 0) {
+                local_matches += 1;
+            }
+            bench_absorb_result(result, pmatch, extract);
+        }
+    }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+
+    *matches = local_matches;
+    return bench_timediff(t0, t1);
+}
+
+static void
+bench_libc_vs_dispatch_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
+                                BenchInputBucket *input_bucket,
+                                regex_t *compiled) {
+    enum Matcher enabled = bench_enabled_matcher_mask();
+    int32 pair_count = regex_bucket->count;
+    int32 matches = 0;
+    double seconds;
+
+    printf("\n== libc vs meta dispatcher pairwise: %s / %s ==\n",
+           regex_bucket->name, input_bucket->name);
+
+    bench_validate_dispatch_pairwise(regex_bucket, input_bucket, compiled,
+                                     false);
+    bench_validate_dispatch_pairwise(regex_bucket, input_bucket, compiled,
+                                     true);
+
+    seconds = bench_time_libc_bucket_pairwise(regex_bucket, input_bucket,
+                                              compiled, false,
+                                              META_BENCH_ITERATIONS, &matches);
+    bench_write_row_with_pair_count(csv, "libc_vs_dispatch_pairwise",
+                                    "no_extract", regex_bucket, input_bucket,
+                                    "LIBC", "LIBC", "LIBC", regex_bucket->count,
+                                    input_bucket->count, pair_count, pair_count,
+                                    META_BENCH_ITERATIONS, seconds, matches);
+
+    seconds = bench_time_libc_bucket_pairwise(regex_bucket, input_bucket,
+                                              compiled, true,
+                                              META_BENCH_ITERATIONS, &matches);
+    bench_write_row_with_pair_count(
+        csv, "libc_vs_dispatch_pairwise", "extract", regex_bucket, input_bucket,
+        "LIBC", "LIBC", "LIBC", regex_bucket->count, input_bucket->count,
+        pair_count, pair_count, META_BENCH_ITERATIONS, seconds, matches);
+
+    seconds = bench_time_dispatch_bucket_pairwise(
+        regex_bucket, input_bucket, false, enabled, META_BENCH_ITERATIONS,
+        &matches);
+    bench_write_row_with_pair_count(
+        csv, "libc_vs_dispatch_pairwise", "no_extract", regex_bucket,
+        input_bucket, "META_DISPATCH", "DISPATCH", "mixed", regex_bucket->count,
+        input_bucket->count, pair_count, pair_count, META_BENCH_ITERATIONS,
+        seconds, matches);
+
+    seconds = bench_time_dispatch_bucket_pairwise(
+        regex_bucket, input_bucket, true, enabled, META_BENCH_ITERATIONS,
+        &matches);
+    bench_write_row_with_pair_count(csv, "libc_vs_dispatch_pairwise", "extract",
+                                    regex_bucket, input_bucket, "META_DISPATCH",
+                                    "DISPATCH", "mixed", regex_bucket->count,
+                                    input_bucket->count, pair_count, pair_count,
+                                    META_BENCH_ITERATIONS, seconds, matches);
+    return;
+}
+
+static void
+bench_meta_matchers_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
+                             BenchInputBucket *input_bucket, regex_t *compiled,
+                             bool extract) {
+    char *variant = extract ? "extract" : "no_extract";
+    int32 pair_count = regex_bucket->count;
+
+    printf("\n== meta matchers only pairwise: %s / %s (%s) ==\n",
+           regex_bucket->name, input_bucket->name, variant);
+
+    for (int32 mi = 0; mi < LENGTH(bench_matchers); mi += 1) {
+        enum Matcher matcher = bench_matchers[mi];
+        int32 run_pairs = 0;
+        int32 matches = 0;
+        double seconds;
+
+        bench_validate_matcher_pairwise(regex_bucket, input_bucket, compiled,
+                                        matcher, extract, &run_pairs);
+        if (run_pairs == 0) {
+            continue;
+        }
+
+        seconds = bench_time_matcher_bucket_pairwise(
+            regex_bucket, input_bucket, matcher, extract, META_BENCH_ITERATIONS,
+            &matches);
+        bench_write_row_with_pair_count(
+            csv, "meta_matchers_pairwise", variant, regex_bucket, input_bucket,
+            "META", MATCHER_str(matcher), MATCHER_str(matcher),
+            regex_bucket->count, input_bucket->count, pair_count, run_pairs,
+            META_BENCH_ITERATIONS, seconds, matches);
+    }
+    return;
+}
+
 #define BENCH_MAIN_REGEX_BUCKET_MAX (BENCH_FEATURE_LAST*BENCH_LEN_LAST)
-#define BENCH_RANDOM_INPUTS_PER_BUCKET 32
-#define BENCH_RANDOM_INPUT_MAX_LEN 256
+#define BENCH_RANDOM_INPUT_ATTEMPTS 10
+#define BENCH_RANDOM_INPUT_MAX_LEN 1024
 
 static BenchRegexCase bench_runtime_regex_cases[BENCH_FEATURE_LAST]
                                                [BENCH_LEN_LAST]
@@ -784,16 +1117,10 @@ static BenchRegexBucket
 static char bench_runtime_regex_bucket_names[BENCH_MAIN_REGEX_BUCKET_MAX][128];
 static int32 bench_runtime_regex_bucket_count;
 
-static BenchInputCase bench_random_input_cases[BENCH_INPUT_LEN_LAST]
-                                              [BENCH_RANDOM_INPUTS_PER_BUCKET];
-static char bench_random_input_names[BENCH_INPUT_LEN_LAST]
-                                    [BENCH_RANDOM_INPUTS_PER_BUCKET][64];
-static char bench_random_input_storage[BENCH_INPUT_LEN_LAST]
-                                      [BENCH_RANDOM_INPUTS_PER_BUCKET]
-                                      [BENCH_RANDOM_INPUT_MAX_LEN + 1];
-static BenchInputBucket bench_random_input_buckets[BENCH_INPUT_LEN_LAST];
-static int32 bench_random_inputs_ready;
-
+static BenchInputCase bench_pair_input_cases[BENCH_REGEX_CASE_COUNT];
+static char bench_pair_input_names[BENCH_REGEX_CASE_COUNT][64];
+static char bench_pair_input_storage[BENCH_REGEX_CASE_COUNT]
+                                    [BENCH_RANDOM_INPUT_MAX_LEN + 1];
 static int32
 bench_regex_op_count(MetaRegex *regex) {
     if (regex == NULL) {
@@ -920,61 +1247,85 @@ bench_random_char(uint32 *state) {
     return alphabet[r % (SIZEOF(alphabet) - 1)];
 }
 
-static void
-bench_init_random_input_buckets(void) {
-    uint32 seed = 0xC0FFEEu;
+static int32
+bench_random_input_len_for_class(enum BenchInputLengthClass c, uint32 *seed) {
+    int32 min_len = bench_input_length_class_min(c);
+    int32 max_len = bench_input_length_class_max(c);
+    int32 span = max_len - min_len + 1;
 
-    if (bench_random_inputs_ready) {
-        return;
+    if (span <= 1) {
+        return min_len;
     }
+    return min_len + (int32)(bench_random_next(seed) % (uint32)span);
+}
 
-    for (int32 c = 0; c < BENCH_INPUT_LEN_LAST; c += 1) {
-        int32 min_len = bench_input_length_class_min(c);
-        int32 max_len = bench_input_length_class_max(c);
-        int32 span = max_len - min_len + 1;
+static void
+bench_generate_random_input(char *out, enum BenchInputLengthClass c,
+                            uint32 *seed) {
+    int32 len = bench_random_input_len_for_class(c, seed);
 
-        for (int32 i = 0; i < BENCH_RANDOM_INPUTS_PER_BUCKET; i += 1) {
-            int32 len;
+    for (int32 j = 0; j < len; j += 1) {
+        out[j] = bench_random_char(seed);
+    }
+    out[len] = '\0';
+    return;
+}
 
-            if (i == 0) {
-                len = min_len;
-            } else if (i == 1) {
-                len = max_len;
-            } else {
-                len = min_len
-                      + (int32)(bench_random_next(&seed) % (uint32)span);
+static void
+bench_build_pair_input_bucket(BenchRegexBucket *regex_bucket, regex_t *compiled,
+                              enum BenchInputLengthClass input_class,
+                              uint32 *seed, BenchInputBucket *input_bucket) {
+    int32 max_len = bench_input_length_class_max(input_class);
+    int32 not_matched = 0;
+
+    for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
+        int32 matched = 0;
+
+        SNPRINTF(bench_pair_input_names[ri], "random_%s_%d",
+                 bench_input_length_class_name(input_class), ri);
+
+        for (int32 attempt = 0; attempt < BENCH_RANDOM_INPUT_ATTEMPTS;
+             attempt += 1) {
+            bench_generate_random_input(bench_pair_input_storage[ri],
+                                        input_class, seed);
+            if (bench_run_libc_one(&compiled[ri], bench_pair_input_storage[ri],
+                                   NULL, 0, false)
+                == 0) {
+                matched = 1;
+                break;
             }
-
-            SNPRINTF(bench_random_input_names[c][i], "random_%s_%d",
-                     bench_input_length_class_name(c), i);
-
-            for (int32 j = 0; j < len; j += 1) {
-                bench_random_input_storage[c][i][j] = bench_random_char(&seed);
-            }
-            bench_random_input_storage[c][i][len] = '\0';
-
-            bench_random_input_cases[c][i].name
-                = bench_random_input_names[c][i];
-            bench_random_input_cases[c][i].input
-                = bench_random_input_storage[c][i];
-            bench_random_input_cases[c][i].length_class = c;
         }
 
-        bench_random_input_buckets[c].name = bench_input_length_class_name(c);
-        bench_random_input_buckets[c].length_class = c;
-        bench_random_input_buckets[c].max_input_len = max_len;
-        bench_random_input_buckets[c].cases = bench_random_input_cases[c];
-        bench_random_input_buckets[c].count = BENCH_RANDOM_INPUTS_PER_BUCKET;
+        if (!matched) {
+            not_matched += 1;
+        }
+
+        if (!matched && bench_pair_input_storage[ri][0] == '\0'
+            && bench_input_length_class_min(input_class) > 0) {
+            bench_generate_random_input(bench_pair_input_storage[ri],
+                                        input_class, seed);
+        }
+
+        bench_pair_input_cases[ri].name = bench_pair_input_names[ri];
+        bench_pair_input_cases[ri].input = bench_pair_input_storage[ri];
+        bench_pair_input_cases[ri].length_class = input_class;
     }
 
-    bench_random_inputs_ready = 1;
+    PRINTLN(not_matched);
+
+    input_bucket->name = bench_input_length_class_name(input_class);
+    input_bucket->length_class = input_class;
+    input_bucket->max_input_len = max_len;
+    input_bucket->cases = bench_pair_input_cases;
+    input_bucket->count = regex_bucket->count;
     return;
 }
 
 static void
 bench_run_main_regex_buckets(llong now) {
+    uint32 seed = 0xC0FFEEu;
+
     bench_build_runtime_regex_buckets();
-    bench_init_random_input_buckets();
 
     for (int32 bi = 0; bi < bench_runtime_regex_bucket_count; bi += 1) {
         BenchRegexBucket *regex_bucket = &bench_runtime_regex_buckets[bi];
@@ -1000,14 +1351,16 @@ bench_run_main_regex_buckets(llong now) {
         compiled = bench_compile_regex_bucket(regex_bucket);
 
         for (int32 ii = 0; ii < BENCH_INPUT_LEN_LAST; ii += 1) {
-            BenchInputBucket *input_bucket = &bench_random_input_buckets[ii];
+            BenchInputBucket input_bucket;
 
-            bench_libc_vs_dispatch(dispatch_csv, regex_bucket, input_bucket,
-                                   compiled);
-            bench_meta_matchers(matchers_csv, regex_bucket, input_bucket,
-                                compiled, false);
-            bench_meta_matchers(matchers_csv, regex_bucket, input_bucket,
-                                compiled, true);
+            bench_build_pair_input_bucket(regex_bucket, compiled, ii, &seed,
+                                          &input_bucket);
+            bench_libc_vs_dispatch_pairwise(dispatch_csv, regex_bucket,
+                                            &input_bucket, compiled);
+            bench_meta_matchers_pairwise(matchers_csv, regex_bucket,
+                                         &input_bucket, compiled, false);
+            bench_meta_matchers_pairwise(matchers_csv, regex_bucket,
+                                         &input_bucket, compiled, true);
         }
 
         bench_free_regex_bucket(compiled, regex_bucket);
