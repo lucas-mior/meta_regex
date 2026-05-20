@@ -105,7 +105,7 @@ trace_on
 trace_off
 
 case "$target" in
-bench|all)
+bench|all|callgrind)
     trace_on
     generate_bench_pattern_header gen/main_bench_patterns.h "$dir/0patterns"
     ./bin/meta_preproc gen/main_bench_patterns.h > gen/main_bench_patterns2.h
@@ -141,8 +141,8 @@ debug)
     ;;
 callgrind)
     trace_on
-    $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
-    valgrind --tool=callgrind bin/meta_test
+    $CC $CPPFLAGS $CFLAGS main_bench.c -o bin/meta_bench $LDFLAGS
+    valgrind --tool=callgrind bin/meta_bench
     trace_off
     ;;
 esac
