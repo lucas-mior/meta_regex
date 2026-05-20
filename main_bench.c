@@ -719,7 +719,7 @@ bench_dup_slice(char *s, int32 len) {
     return copy;
 }
 
-static void
+static void __attribute((noreturn))
 bench_fail_input_file(char *path, char *reason) {
     error("Error reading generated benchmark input file %s: %s.\n", path,
           reason);
