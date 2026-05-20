@@ -272,7 +272,7 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         return REG_NOMATCH;
     }
 
-    extract = (pmatch && (pmatch_len > 1) && tdfa->num_tags > 0);
+    extract = pmatch && (pmatch_len > 1) && (tdfa->num_tags > 0);
     if (extract) {
         if ((regs == NULL) || nregs < (tdfa->num_registers + 1)) {
             int32 new_regs = (tdfa->num_registers+1)*2;
