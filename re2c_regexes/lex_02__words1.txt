@@ -1,1 +1,1 @@
-word = "(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\n"
+"(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\n"
