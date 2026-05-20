@@ -91,8 +91,9 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     int32 stack_cap;
     int32 use_state_slices = 0;
 
-    if (regex == NULL || regex->tnfa == NULL) {
-        return REG_NOMATCH;
+    if (DEBUGGING) {
+        ASSERT(regex);
+        ASSERT(regex->tnfa);
     }
 
     tnfa = regex->tnfa;
