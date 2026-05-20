@@ -11,7 +11,6 @@ LENGTH_MAX = {
     "1_16": 16,
     "17_32": 32,
     "33_64": 64,
-    "65_128": 128,
 }
 
 SERIES_COLORS = {
@@ -165,7 +164,7 @@ def plot_one(path, rows, variant, metric, out_dir):
     ax.set_title(title_from_rows(path, rows, variant))
     ax.set_xlabel("Max regex length")
     ax.set_ylabel(ylabel(metric))
-    ax.set_xticks([16, 32, 64, 128])
+    ax.set_xticks([16, 32, 64])
     ax.grid(True, axis="both", alpha=0.3)
     ax.legend()
     fig.tight_layout()
