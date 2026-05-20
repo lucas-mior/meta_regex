@@ -630,39 +630,17 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     }
 
 cleanup:
-    if (configs_a != NULL) {
-        free2(configs_a, SIZEOF(*configs_a)*state_count);
-    }
-    if (configs_b != NULL) {
-        free2(configs_b, SIZEOF(*configs_b)*state_count);
-    }
-    if (stack != NULL) {
-        free2(stack, SIZEOF(*stack)*stack_cap);
-    }
-    if (tags_a != NULL) {
-        free2(tags_a, SIZEOF(*tags_a)*state_count * tag_count);
-    }
-    if (tags_b != NULL) {
-        free2(tags_b, SIZEOF(*tags_b)*state_count * tag_count);
-    }
-    if (stack_tags != NULL) {
-        free2(stack_tags, SIZEOF(*stack_tags)*stack_cap * tag_count);
-    }
-    if (edge_indices != NULL) {
-        free2(edge_indices, SIZEOF(*edge_indices)*edge_count);
-    }
-    if (saved_tags != NULL) {
-        free2(saved_tags, SIZEOF(*saved_tags)*tag_count);
-    }
-    if (work_tags != NULL) {
-        free2(work_tags, SIZEOF(*work_tags)*tag_count);
-    }
-    if (closed_seen != NULL) {
-        free2(closed_seen, SIZEOF(*closed_seen)*state_count);
-    }
-    if (seen != NULL) {
-        free2(seen, SIZEOF(*seen)*state_count);
-    }
+    free2(configs_a, SIZEOF(*configs_a)*state_count);
+    free2(configs_b, SIZEOF(*configs_b)*state_count);
+    free2(stack, SIZEOF(*stack)*stack_cap);
+    free2(tags_a, SIZEOF(*tags_a)*state_count * tag_count);
+    free2(tags_b, SIZEOF(*tags_b)*state_count * tag_count);
+    free2(stack_tags, SIZEOF(*stack_tags)*stack_cap * tag_count);
+    free2(edge_indices, SIZEOF(*edge_indices)*edge_count);
+    free2(saved_tags, SIZEOF(*saved_tags)*tag_count);
+    free2(work_tags, SIZEOF(*work_tags)*tag_count);
+    free2(closed_seen, SIZEOF(*closed_seen)*state_count);
+    free2(seen, SIZEOF(*seen)*state_count);
     return result;
 }
 
