@@ -696,7 +696,7 @@ static char *
 bench_dup_cstr(char *s) {
     int32 len = strlen32(s);
     char *copy = malloc2(len + 1);
-    memcpy(copy, s, len + 1);
+    memcpy64(copy, s, len + 1);
     return copy;
 }
 
@@ -713,7 +713,7 @@ bench_dup_slice(char *s, int32 len) {
     char *copy = malloc2(len + 1);
 
     if (len > 0) {
-        memcpy(copy, s, len);
+        memcpy64(copy, s, len);
     }
     copy[len] = '\0';
     return copy;
@@ -730,7 +730,7 @@ static void
 bench_load_generated_inputs(char *array_name, char *path,
                             BenchLoadedInputBucket *loaded) {
     FILE *file;
-    long file_size;
+    int64 file_size;
     int64 read_size;
     char *storage;
     int32 input_len;
@@ -739,7 +739,7 @@ bench_load_generated_inputs(char *array_name, char *path,
     int32 case_index = 0;
     int32 max_input_len = 0;
 
-    memset(loaded, 0, SIZEOF(*loaded));
+    memset64(loaded, 0, SIZEOF(*loaded));
 
     file = fopen(path, "rb");
     if (file == NULL) {
@@ -839,17 +839,15 @@ bench_free_generated_inputs(BenchLoadedInputBucket *loaded) {
 
     for (int32 i = 0; i < loaded->count; i += 1) {
         if (loaded->cases[i].name != NULL) {
-            free2(loaded->cases[i].name,
-                  strlen32(loaded->cases[i].name) + 1);
+            free2(loaded->cases[i].name, strlen32(loaded->cases[i].name) + 1);
         }
         if (loaded->cases[i].input != NULL) {
-            free2(loaded->cases[i].input,
-                  strlen32(loaded->cases[i].input) + 1);
+            free2(loaded->cases[i].input, strlen32(loaded->cases[i].input) + 1);
         }
     }
 
     free2(loaded->cases, SIZEOF(*loaded->cases)*loaded->count);
-    memset(loaded, 0, SIZEOF(*loaded));
+    memset64(loaded, 0, SIZEOF(*loaded));
     return;
 }
 
