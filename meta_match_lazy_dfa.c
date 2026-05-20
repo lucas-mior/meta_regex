@@ -69,6 +69,11 @@ typedef struct LazyDfa {
     LazyDfaState states[META_MAX_LAZY_DFA_STATES];
 } LazyDfa;
 
+static uint8 lazy_dfa_word_table[META_ALPHABET_SIZE];
+static int32 lazy_dfa_word_table_ready;
+
+static void lazy_dfa_init_word_table(void);
+static int32 lazy_dfa_word(int32 c);
 static void add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                                 int32 *is_accepting, int32 prev_is_word,
                                 int32 curr_is_word);
@@ -83,6 +88,37 @@ static int32 lazy_dfa_op_count(MetaRegex *regex);
 static int32 lazy_dfa_pc_words(int32 op_count);
 static int32 lazy_dfa_ctz32(uint32 word);
 
+
+static void
+lazy_dfa_init_word_table(void) {
+    if (lazy_dfa_word_table_ready) {
+        return;
+    }
+
+    for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
+        lazy_dfa_word_table[c] = 0;
+    }
+    for (int32 c = 'a'; c <= 'z'; c += 1) {
+        lazy_dfa_word_table[c] = 1;
+    }
+    for (int32 c = 'A'; c <= 'Z'; c += 1) {
+        lazy_dfa_word_table[c] = 1;
+    }
+    for (int32 c = '0'; c <= '9'; c += 1) {
+        lazy_dfa_word_table[c] = 1;
+    }
+    lazy_dfa_word_table[(uint8)'_'] = 1;
+    lazy_dfa_word_table_ready = 1;
+    return;
+}
+
+static int32
+lazy_dfa_word(int32 c) {
+    if (c < 0 || c >= META_ALPHABET_SIZE) {
+        return 0;
+    }
+    return lazy_dfa_word_table[c];
+}
 
 static int32
 lazy_dfa_op_count(MetaRegex *regex) {
@@ -186,8 +222,11 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
     LazyDfa *ldfa = regex->lazy_dfa;
     int32 current_state_id;
     int32 last_accept = -1;
-    int32 prev_is_word = (offset > 0) ? is_word_char(input[offset - 1]) : 0;
+    int32 prev_is_word;
     (void)input_len;
+
+    lazy_dfa_init_word_table();
+    prev_is_word = (offset > 0) ? lazy_dfa_word(input[offset - 1]) : 0;
 
     if (ldfa == NULL) {
         ldfa = malloc2(SIZEOF(*ldfa));
@@ -257,7 +296,7 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
             LazyDfaState *state = &ldfa->states[current_state_id];
 
             if (state->next[b] == 0) {
-                int32 curr_is_word = is_word_char(b);
+                int32 curr_is_word = lazy_dfa_word(b);
                 NfaStateSet next_core;
                 int32 set_is_empty = 1;
 
