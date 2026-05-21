@@ -7,6 +7,7 @@ alias trace_on='set -x'
 alias trace_off='{ set +x; } 2>/dev/null'
 
 dir="$(readlink -f "$(dirname "$0")")"
+cd "$dir" || exit
 cbase="cbase"
 
 mkdir -p bin gen
