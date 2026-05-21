@@ -103,7 +103,8 @@ if needs_rebuild "bin/meta_preproc"
     meta.h meta_preproc.h meta_preproc*.c; then
     printf "Building preprocessor...\n"
     trace_on
-    $CC $CPPFLAGS -O2 -flto $CFLAGS meta_preproc_0_main.c -o bin/meta_preproc $LDFLAGS
+    $CC $CPPFLAGS -O2 -flto $CFLAGS \
+        meta_preproc_0_main.c -o bin/meta_preproc $LDFLAGS
     trace_off
 else
     printf "Preprocessor is up to date.\n"
@@ -133,8 +134,10 @@ bench|all|callgrind)
         python3 process_patterns.py gen/main_bench_patterns.h "$dir/0patterns"
     fi
     
-    if needs_rebuild "gen/main_bench_patterns2.h" gen/main_bench_patterns.h bin/meta_preproc; then
-        ./bin/meta_preproc gen/main_bench_patterns.h > gen/main_bench_patterns2.h
+    if needs_rebuild "gen/main_bench_patterns2.h"
+        gen/main_bench_patterns.h bin/meta_preproc; then
+        ./bin/meta_preproc gen/main_bench_patterns.h \
+            > gen/main_bench_patterns2.h
     fi
     ;;
 esac
