@@ -1137,25 +1137,6 @@ bench_meta_matchers_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
 #define BENCH_RANDOM_INPUT_ATTEMPTS 500
 #define BENCH_RANDOM_INPUT_MAX_LEN 4096
 
-#if !defined(META_BENCH_MAX_INPUT_LEN)
-#define META_BENCH_MAX_INPUT_LEN 128
-#endif
-
-static int32 bench_max_input_len = META_BENCH_MAX_INPUT_LEN;
-
-static BenchRegexCase bench_runtime_regex_cases[2]
-                                               [BENCH_LEN_LAST]
-                                               [LENGTH(bench_regex_cases)];
-static BenchRegexBucket
-    bench_runtime_regex_buckets[BENCH_MAIN_REGEX_BUCKET_MAX];
-static char bench_runtime_regex_bucket_names[BENCH_MAIN_REGEX_BUCKET_MAX][128];
-static int32 bench_runtime_regex_bucket_count;
-
-static BenchInputCase bench_pair_input_cases[LENGTH(bench_regex_cases)];
-static char bench_pair_input_names[LENGTH(bench_regex_cases)][64];
-static char bench_pair_input_storage[LENGTH(bench_regex_cases)]
-                                    [BENCH_RANDOM_INPUT_MAX_LEN + 1];
-
 static int32
 bench_regex_op_count(MetaRegex *regex) {
     if (regex == NULL) {
@@ -1190,7 +1171,8 @@ bench_regex_length_class_from_ops(int32 op_count) {
 
 static void
 bench_process_regex_array(BenchRegexCase *array, int32 array_len, char *array_name,
-                          int32 f, int32 *counts) {
+                          int32 f, int32 *counts,
+                          BenchRegexCase (*runtime_regex_cases)[BENCH_LEN_LAST][BENCH_REGEX_CASE_COUNT]) {
     for (int32 i = 0; i < array_len; i += 1) {
         BenchRegexCase c = array[i];
         int32 op_count = bench_regex_op_count(c.regex);
@@ -1206,26 +1188,24 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len, char *array_na
         c.regex_len = op_count;
         c.length_class = length_class;
 
-        bench_runtime_regex_cases[f][length_class][counts[length_class]] = c;
+        runtime_regex_cases[f][length_class][counts[length_class]] = c;
         counts[length_class] += 1;
     }
     return;
 }
 
 #define BENCH_PROCESS_ARRAY(arr, f) \
-    bench_process_regex_array((arr), LENGTH(arr), #arr, (f), counts[f])
+    bench_process_regex_array((arr), LENGTH(arr), #arr, (f), counts[f], runtime_regex_cases)
 
 static void
-bench_build_runtime_regex_buckets(void) {
+bench_build_runtime_regex_buckets(BenchRegexCase (*runtime_regex_cases)[BENCH_LEN_LAST][BENCH_REGEX_CASE_COUNT],
+                                  BenchRegexBucket *runtime_regex_buckets,
+                                  char (*runtime_regex_bucket_names)[128],
+                                  int32 *runtime_regex_bucket_count) {
     int32 counts[2][BENCH_LEN_LAST];
 
     memset64(counts, 0, SIZEOF(counts));
-    memset64(bench_runtime_regex_cases, 0, SIZEOF(bench_runtime_regex_cases));
-    memset64(bench_runtime_regex_buckets, 0,
-             SIZEOF(bench_runtime_regex_buckets));
-    memset64(bench_runtime_regex_bucket_names, 0,
-             SIZEOF(bench_runtime_regex_bucket_names));
-    bench_runtime_regex_bucket_count = 0;
+    *runtime_regex_bucket_count = 0;
 
     BENCH_PROCESS_ARRAY(bench_regex_cases, 0);
     BENCH_PROCESS_ARRAY(bench_regex_backref_cases, 1);
@@ -1246,32 +1226,31 @@ bench_build_runtime_regex_buckets(void) {
                 feature_name = "with_backreferences";
             }
 
-            index = bench_runtime_regex_bucket_count;
-            SNPRINTF(bench_runtime_regex_bucket_names[index],
+            index = *runtime_regex_bucket_count;
+            SNPRINTF(runtime_regex_bucket_names[index],
                      "runtime_%s_ops_%s", feature_name,
                      bench_length_class_name(l));
 
-            bench_runtime_regex_buckets[index].name
-                = bench_runtime_regex_bucket_names[index];
-            bench_runtime_regex_buckets[index].length_class = l;
-            bench_runtime_regex_buckets[index].is_backref = f;
-            bench_runtime_regex_buckets[index].max_regex_len
+            runtime_regex_buckets[index].name
+                = runtime_regex_bucket_names[index];
+            runtime_regex_buckets[index].length_class = l;
+            runtime_regex_buckets[index].is_backref = f;
+            runtime_regex_buckets[index].max_regex_len
                 = bench_length_class_max(l);
-            bench_runtime_regex_buckets[index].cases
-                = bench_runtime_regex_cases[f][l];
-            bench_runtime_regex_buckets[index].count = count;
-            bench_runtime_regex_bucket_count += 1;
+            runtime_regex_buckets[index].cases
+                = runtime_regex_cases[f][l];
+            runtime_regex_buckets[index].count = count;
+            *runtime_regex_bucket_count += 1;
         }
     }
 
-    if (bench_runtime_regex_bucket_count == 0) {
+    if (*runtime_regex_bucket_count == 0) {
         error("No generated main benchmark regexes fit the active length "
               "buckets.\n");
         exit(EXIT_FAILURE);
     }
     return;
 }
-
 #undef BENCH_PROCESS_ARRAY
 
 static uint32
@@ -1315,7 +1294,10 @@ bench_generate_random_input(char *out, enum BenchInputLengthClass c,
 static void
 bench_build_pair_input_bucket(BenchRegexBucket *regex_bucket, regex_t *compiled,
                               enum BenchInputLengthClass input_class,
-                              uint32 *seed, BenchInputBucket *input_bucket) {
+                              uint32 *seed, BenchInputBucket *input_bucket,
+                              BenchInputCase *pair_input_cases,
+                              char (*pair_input_names)[64],
+                              char (*pair_input_storage)[BENCH_RANDOM_INPUT_MAX_LEN + 1]) {
     int32 max_len = bench_input_length_class_max(input_class);
     int32 not_matched = 0;
     int32 yes_matched = 0;
@@ -1323,13 +1305,13 @@ bench_build_pair_input_bucket(BenchRegexBucket *regex_bucket, regex_t *compiled,
     for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
         int32 matched = 0;
 
-        SNPRINTF(bench_pair_input_names[ri], "random_%s_%d",
+        SNPRINTF(pair_input_names[ri], "random_%s_%d",
                  bench_input_length_class_name(input_class), ri);
 
         for (int32 k = 0; k < BENCH_RANDOM_INPUT_ATTEMPTS; k += 1) {
-            bench_generate_random_input(bench_pair_input_storage[ri],
+            bench_generate_random_input(pair_input_storage[ri],
                                         input_class, seed);
-            if (bench_run_libc_one(&compiled[ri], bench_pair_input_storage[ri],
+            if (bench_run_libc_one(&compiled[ri], pair_input_storage[ri],
                                    NULL, 0, false)
                 == 0) {
                 matched = 1;
@@ -1343,15 +1325,15 @@ bench_build_pair_input_bucket(BenchRegexBucket *regex_bucket, regex_t *compiled,
             yes_matched += 1;
         }
 
-        if (!matched && bench_pair_input_storage[ri][0] == '\0'
+        if (!matched && pair_input_storage[ri][0] == '\0'
             && bench_input_length_class_min(input_class) > 0) {
-            bench_generate_random_input(bench_pair_input_storage[ri],
+            bench_generate_random_input(pair_input_storage[ri],
                                         input_class, seed);
         }
 
-        bench_pair_input_cases[ri].name = bench_pair_input_names[ri];
-        bench_pair_input_cases[ri].input = bench_pair_input_storage[ri];
-        bench_pair_input_cases[ri].length_class = input_class;
+        pair_input_cases[ri].name = pair_input_names[ri];
+        pair_input_cases[ri].input = pair_input_storage[ri];
+        pair_input_cases[ri].length_class = input_class;
     }
 
     PRINTLN(not_matched);
@@ -1360,7 +1342,7 @@ bench_build_pair_input_bucket(BenchRegexBucket *regex_bucket, regex_t *compiled,
     input_bucket->name = bench_input_length_class_name(input_class);
     input_bucket->length_class = input_class;
     input_bucket->max_input_len = max_len;
-    input_bucket->cases = bench_pair_input_cases;
+    input_bucket->cases = pair_input_cases;
     input_bucket->count = regex_bucket->count;
     return;
 }
@@ -1400,7 +1382,7 @@ bench_usage(char *argv0) {
 }
 
 static void
-bench_parse_args(int32 argc, char **argv) {
+bench_parse_args(int32 argc, char **argv, int32 *max_input_len) {
     for (int32 i = 1; i < argc; i += 1) {
         char *arg = argv[i];
         char *value = NULL;
@@ -1427,20 +1409,37 @@ bench_parse_args(int32 argc, char **argv) {
         if (!bench_parse_input_len_cap(value, &parsed)) {
             bench_usage(argv[0]);
         }
-        bench_max_input_len = parsed;
+        *max_input_len = parsed;
     }
 
     return;
 }
 
 static void
-bench_run_main_regex_buckets(llong now) {
+bench_run_main_regex_buckets(llong now, int32 max_input_len) {
     uint32 seed = 0xC0FFEEu;
+    BenchRegexCase (*runtime_regex_cases)[BENCH_LEN_LAST][BENCH_REGEX_CASE_COUNT];
+    BenchRegexBucket *runtime_regex_buckets;
+    char (*runtime_regex_bucket_names)[128];
+    int32 runtime_regex_bucket_count;
+    BenchInputCase *pair_input_cases;
+    char (*pair_input_names)[64];
+    char (*pair_input_storage)[BENCH_RANDOM_INPUT_MAX_LEN + 1];
 
-    bench_build_runtime_regex_buckets();
+    runtime_regex_cases = malloc2(SIZEOF(*runtime_regex_cases) * 2);
+    runtime_regex_buckets = malloc2(SIZEOF(*runtime_regex_buckets) * BENCH_MAIN_REGEX_BUCKET_MAX);
+    runtime_regex_bucket_names = malloc2(SIZEOF(*runtime_regex_bucket_names) * BENCH_MAIN_REGEX_BUCKET_MAX);
 
-    for (int32 bi = 0; bi < bench_runtime_regex_bucket_count; bi += 1) {
-        BenchRegexBucket *regex_bucket = &bench_runtime_regex_buckets[bi];
+    bench_build_runtime_regex_buckets(runtime_regex_cases, runtime_regex_buckets,
+                                      runtime_regex_bucket_names,
+                                      &runtime_regex_bucket_count);
+
+    pair_input_cases = malloc2(SIZEOF(*pair_input_cases) * BENCH_REGEX_CASE_COUNT);
+    pair_input_names = malloc2(SIZEOF(*pair_input_names) * BENCH_REGEX_CASE_COUNT);
+    pair_input_storage = malloc2(SIZEOF(*pair_input_storage) * BENCH_REGEX_CASE_COUNT);
+
+    for (int32 bi = 0; bi < runtime_regex_bucket_count; bi += 1) {
+        BenchRegexBucket *regex_bucket = &runtime_regex_buckets[bi];
         regex_t *compiled = NULL;
         char dispatch_csv_file[1024];
         char matchers_csv_file[1024];
@@ -1470,12 +1469,13 @@ bench_run_main_regex_buckets(llong now) {
         for (int32 ii = 0; ii < BENCH_INPUT_LEN_LAST; ii += 1) {
             BenchInputBucket input_bucket;
 
-            if (bench_input_length_class_max(ii) > bench_max_input_len) {
+            if (bench_input_length_class_max(ii) > max_input_len) {
                 continue;
             }
 
             bench_build_pair_input_bucket(regex_bucket, compiled, ii, &seed,
-                                          &input_bucket);
+                                          &input_bucket, pair_input_cases,
+                                          pair_input_names, pair_input_storage);
             bench_libc_vs_dispatch_pairwise(dispatch_csv, regex_bucket,
                                             &input_bucket, compiled);
             bench_meta_matchers_pairwise(matchers_csv, regex_bucket,
@@ -1490,6 +1490,13 @@ bench_run_main_regex_buckets(llong now) {
         bench_close_csv(dispatch_csv, dispatch_csv_file);
         bench_close_csv(matchers_csv, matchers_csv_file);
     }
+
+    free2(pair_input_cases, SIZEOF(*pair_input_cases) * BENCH_REGEX_CASE_COUNT);
+    free2(pair_input_names, SIZEOF(*pair_input_names) * BENCH_REGEX_CASE_COUNT);
+    free2(pair_input_storage, SIZEOF(*pair_input_storage) * BENCH_REGEX_CASE_COUNT);
+    free2(runtime_regex_cases, SIZEOF(*runtime_regex_cases) * 2);
+    free2(runtime_regex_buckets, SIZEOF(*runtime_regex_buckets) * BENCH_MAIN_REGEX_BUCKET_MAX);
+    free2(runtime_regex_bucket_names, SIZEOF(*runtime_regex_bucket_names) * BENCH_MAIN_REGEX_BUCKET_MAX);
     return;
 }
 
@@ -1711,15 +1718,22 @@ bench_run_generated_pattern_buckets(llong now) {
 int32
 main(int32 argc, char **argv) {
     llong now;
+    int32 max_input_len;
 
-    bench_parse_args(argc, argv);
+#if !defined(META_BENCH_MAX_INPUT_LEN)
+    max_input_len = 128;
+#else
+    max_input_len = META_BENCH_MAX_INPUT_LEN;
+#endif
+
+    bench_parse_args(argc, argv, &max_input_len);
     setlocale(LC_ALL, "C");
     mkdir("benchmarks", 0777);
 
-    printf("bench_max_input_len=%d\n", bench_max_input_len);
+    printf("bench_max_input_len=%d\n", max_input_len);
     now = (llong)time(NULL);
 
-    bench_run_main_regex_buckets(now);
+    bench_run_main_regex_buckets(now, max_input_len);
 
     /* bench_run_generated_pattern_buckets(now); */
 
