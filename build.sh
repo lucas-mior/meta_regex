@@ -99,7 +99,8 @@ vtags.sed tags > .tags.vim     2> /dev/null || true
 trace_off
 
 printf "\nChecking preprocessor...\n"
-if needs_rebuild "bin/meta_preproc" meta.h meta_preproc.h meta_preproc*.c; then
+if needs_rebuild "bin/meta_preproc"
+    meta.h meta_preproc.h meta_preproc*.c; then
     printf "Building preprocessor...\n"
     trace_on
     $CC $CPPFLAGS -O2 -flto $CFLAGS meta_preproc_0_main.c -o bin/meta_preproc $LDFLAGS
