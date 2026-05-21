@@ -1189,6 +1189,33 @@ bench_regex_length_class_from_ops(int32 op_count) {
 }
 
 static void
+bench_process_regex_array(BenchRegexCase *array, int32 array_len, char *array_name,
+                          int32 f, int32 *counts) {
+    for (int32 i = 0; i < array_len; i += 1) {
+        BenchRegexCase c = array[i];
+        int32 op_count = bench_regex_op_count(c.regex);
+        enum BenchRegexLengthClass length_class = bench_regex_length_class_from_ops(op_count);
+
+        if (length_class == BENCH_LEN_LAST) {
+            error2("Skipping regex at index %d from %s with %d ops; no benchmark "
+                   "length bucket exists above 64 ops: " BLUE("\"%s\"") "\n",
+                   i, array_name, op_count, c.regex->string);
+            continue;
+        }
+
+        c.regex_len = op_count;
+        c.length_class = length_class;
+
+        bench_runtime_regex_cases[f][length_class][counts[length_class]] = c;
+        counts[length_class] += 1;
+    }
+    return;
+}
+
+#define BENCH_PROCESS_ARRAY(arr, f) \
+    bench_process_regex_array((arr), LENGTH(arr), #arr, (f), counts[f])
+
+static void
 bench_build_runtime_regex_buckets(void) {
     int32 counts[2][BENCH_LEN_LAST];
 
@@ -1200,45 +1227,8 @@ bench_build_runtime_regex_buckets(void) {
              SIZEOF(bench_runtime_regex_bucket_names));
     bench_runtime_regex_bucket_count = 0;
 
-    for (int32 i = 0; i < LENGTH(bench_regex_cases); i += 1) {
-        BenchRegexCase c = bench_regex_cases[i];
-        int32 op_count = bench_regex_op_count(c.regex);
-        enum BenchRegexLengthClass length_class = bench_regex_length_class_from_ops(op_count);
-
-        if (length_class == BENCH_LEN_LAST) {
-            error2("Skipping regex at index %d with %d ops; no benchmark "
-                   "length bucket exists above 64 ops: " BLUE("\"%s\"") "\n",
-                   i, op_count, c.regex->string);
-            continue;
-        }
-
-        c.regex_len = op_count;
-        c.length_class = length_class;
-
-        bench_runtime_regex_cases[0][length_class]
-                                 [counts[0][length_class]] = c;
-        counts[0][length_class] += 1;
-    }
-
-    for (int32 i = 0; i < LENGTH(bench_regex_backref_cases); i += 1) {
-        BenchRegexCase c = bench_regex_backref_cases[i];
-        int32 op_count = bench_regex_op_count(c.regex);
-        enum BenchRegexLengthClass length_class = bench_regex_length_class_from_ops(op_count);
-
-        if (length_class == BENCH_LEN_LAST) {
-            error2("Skipping regex at index %d with %d ops; no benchmark "
-                   "length bucket exists above 64 ops: " BLUE("\"%s\"") "\n",
-                   i, op_count, c.regex->string);
-            continue;
-        }
-
-        c.regex_len = op_count;
-        c.length_class = length_class;
-
-        bench_runtime_regex_cases[1][length_class]
-                                 [counts[1][length_class]] = c;
-        counts[1][length_class] += 1;
-    }
+    BENCH_PROCESS_ARRAY(bench_regex_cases, 0);
+    BENCH_PROCESS_ARRAY(bench_regex_backref_cases, 1);
 
     for (int32 f = 0; f < 2; f += 1) {
         for (int32 l = 0; l < BENCH_LEN_LAST; l += 1) {
@@ -1281,6 +1271,8 @@ bench_build_runtime_regex_buckets(void) {
     }
     return;
 }
+
+#undef BENCH_PROCESS_ARRAY
 
 static uint32
 bench_random_next(uint32 *state) {
