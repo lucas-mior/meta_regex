@@ -145,7 +145,8 @@ cc gen/your_code_baked.c -o your_program
   * All the considerations made on the static DFA item about binary size and
     cache locality apply here as well.
 - Tagged NFA
-  * This is ~almost~ always slower than all the others, never use it.
+  * This is ~almost~ always slower than all the others, never use it. Its
+    purpose is to sanity check the pre processor TNFA construction.
 
 ## TODO
 - Implement heuristics for the high level dispatcher
