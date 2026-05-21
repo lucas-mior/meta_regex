@@ -91,12 +91,6 @@ needs_rebuild() {
     return 1
 }
 
-generate_bench_pattern_header() {
-    out="$1"
-    pattern_dir="$2"
-    python3 process_patterns.py "$out" "$pattern_dir"
-}
-
 trace_on
 ctags --kinds-C=+l+d \
     cbase/*.c cbase/*.h ./*.h ./*.c posix/*.c posix/*.h \
@@ -121,18 +115,21 @@ fi
 printf "\nChecking generated files...\n"
 trace_on
 
-if needs_rebuild "gen/main_tests_array2.h" main_tests_array.h bin/meta_preproc; then
+if needs_rebuild "gen/main_tests_array2.h" 
+    main_tests_array.h bin/meta_preproc; then
     ./bin/meta_preproc main_tests_array.h > gen/main_tests_array2.h
 fi
 
-if needs_rebuild "gen/main_bench_regexes2.h" main_bench_regexes.h bin/meta_preproc; then
+if needs_rebuild "gen/main_bench_regexes2.h"
+    main_bench_regexes.h bin/meta_preproc; then
     ./bin/meta_preproc main_bench_regexes.h > gen/main_bench_regexes2.h
 fi
 
 case "$target" in
 bench|all|callgrind)
-    if needs_rebuild "gen/main_bench_patterns.h" process_patterns.py "$dir/0patterns"/*; then
-        generate_bench_pattern_header gen/main_bench_patterns.h "$dir/0patterns"
+    if needs_rebuild "gen/main_bench_patterns.h"
+        process_patterns.py "$dir/0patterns"/*; then
+        python3 process_patterns.py gen/main_bench_patterns.h "$dir/0patterns"
     fi
     
     if needs_rebuild "gen/main_bench_patterns2.h" gen/main_bench_patterns.h bin/meta_preproc; then
