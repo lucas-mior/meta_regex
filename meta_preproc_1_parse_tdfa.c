@@ -1,4 +1,5 @@
-/* Tagged DFA construction helpers. */
+#include "primitives.h"
+#include "meta_preproc.h"
 
 typedef struct TdfaBuildConfig {
     int32 tnfa_state;
