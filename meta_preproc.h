@@ -37,10 +37,10 @@
 
 
 typedef struct PreprocConfig {
-    int32 emit_static_dfa;
-    int32 emit_tnfa;
-    int32 emit_tdfa;
-    int32 emit_tdfa_transition_index;
+    bool emit_static_dfa;
+    bool emit_tnfa;
+    bool emit_tdfa;
+    bool emit_tdfa_transition_index;
 
     int32 max_static_dfa_states;
     int32 max_tnfa_tags;
