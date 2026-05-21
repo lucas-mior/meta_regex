@@ -5,20 +5,39 @@
 #include "meta_preproc_1_parse_source.c"
 #include "meta_preproc_2_gen.c"
 
+static void
+usage(void) {
+    fprintf(stderr, "Usage: %s [options] <file.c>\n", program);
+    return;
+}
+
 int32
 main(int32 argc, char **argv) {
     FILE *input_file = NULL;
     int64 file_size = 0;
     char *buffer = NULL;
+    char *filename = NULL;
+    char *option;
+    program = argv[0];
 
     if (argc < 2) {
-        fprintf(stderr, "Usage: preprocessor [options] <file.c>\n");
+        usage();
         exit(EXIT_FAILURE);
     }
 
-    input_file = fopen(argv[1], "r");
+    for (int i = 1; i < argc; i += 1) {
+        PARSE_OPTION(argv[i], option)
+        filename = argv[i];
+    }
+
+    if (filename == NULL) {
+        usage();
+        exit(EXIT_FAILURE);
+    }
+
+    input_file = fopen(filename, "r");
     if (input_file == NULL) {
-        fprintf(stderr, "Error opening file.\n");
+        error("Error opening %s: %s.\n", filename, strerror(errno));
         exit(EXIT_FAILURE);
     }
 
