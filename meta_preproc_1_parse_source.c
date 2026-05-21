@@ -4,7 +4,6 @@
 
 /* Source scanner and R(...) extraction entry point. */
 
-
 static char *
 preproc_find_macro_end(char *macro_start) {
     char *p = macro_start;
@@ -97,12 +96,14 @@ preproc_copy_trimmed_slice(char *dst, int32 dst_size, char *start, char *end) {
         return;
     }
 
-    while (start < end && (*start == ' ' || *start == '\t' || *start == '\n'
-                           || *start == '\r')) {
+    while (start < end
+           && (*start == ' ' || *start == '\t' || *start == '\n'
+               || *start == '\r')) {
         start += 1;
     }
-    while (end > start && (end[-1] == ' ' || end[-1] == '\t'
-                           || end[-1] == '\n' || end[-1] == '\r')) {
+    while (end > start
+           && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n'
+               || end[-1] == '\r')) {
         end -= 1;
     }
 
@@ -882,9 +883,9 @@ parse_source_code(char *buffer, int64 source_len) {
         }
 
         flags = preproc_parse_regex_flags(flags_buffer);
-        if ((flags & META_RE_YESSUB)
-            && (flags & META_RE_NOSUB)) {
-            error("R() flags cannot request both extract and no-submatch mode: %s\n",
+        if ((flags & META_RE_YESSUB) && (flags & META_RE_NOSUB)) {
+            error("R() flags cannot request both extract and no-submatch mode: "
+                  "%s\n",
                   flags_buffer);
             exit(EXIT_FAILURE);
         }

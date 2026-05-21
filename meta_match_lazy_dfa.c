@@ -81,8 +81,7 @@ static void lazy_dfa_init_state(LazyDfaState *state, LazyDfaKey key);
 static void lazy_dfa_ensure_closure(MetaRegex *regex, LazyDfa *ldfa,
                                     LazyDfaState *state, int32 curr_is_word);
 static void lazy_dfa_compute_closure_from_key(MetaRegex *regex, LazyDfa *ldfa,
-                                              LazyDfaKey *key,
-                                              NfaStateSet *set,
+                                              LazyDfaKey *key, NfaStateSet *set,
                                               int32 *is_accepting,
                                               int32 curr_is_word);
 static void lazy_dfa_push_pc(int32 *stack, int32 *stack_ptr, int32 pc,
@@ -240,8 +239,7 @@ lazy_dfa_push_pc(int32 *stack, int32 *stack_ptr, int32 pc, int32 op_count) {
 static void
 lazy_dfa_compute_closure_from_key(MetaRegex *regex, LazyDfa *ldfa,
                                   LazyDfaKey *key, NfaStateSet *set,
-                                  int32 *is_accepting,
-                                  int32 curr_is_word) {
+                                  int32 *is_accepting, int32 curr_is_word) {
     MetaOp *ops = regex->ops;
     int32 stack[META_MAX_OPS];
     int32 stack_ptr = 0;
@@ -311,10 +309,9 @@ lazy_dfa_compute_closure_from_key(MetaRegex *regex, LazyDfa *ldfa,
         } else if (op->type == META_OP_GROUP_START) {
             int32 depth = 0;
 
-            lazy_dfa_push_pc(stack, &stack_ptr, current_pc + 1,
-                             ldfa->op_count);
-            for (int32 i = current_pc + 1; i < ldfa->op_count
-                 && ops[i].type != META_OP_END; i += 1) {
+            lazy_dfa_push_pc(stack, &stack_ptr, current_pc + 1, ldfa->op_count);
+            for (int32 i = current_pc + 1;
+                 i < ldfa->op_count && ops[i].type != META_OP_END; i += 1) {
                 if (ops[i].type == META_OP_GROUP_START) {
                     depth += 1;
                 } else if (ops[i].type == META_OP_GROUP_END) {
@@ -323,8 +320,7 @@ lazy_dfa_compute_closure_from_key(MetaRegex *regex, LazyDfa *ldfa,
                     }
                     depth -= 1;
                 } else if (ops[i].type == META_OP_ALTERNATION && depth == 0) {
-                    lazy_dfa_push_pc(stack, &stack_ptr, i + 1,
-                                     ldfa->op_count);
+                    lazy_dfa_push_pc(stack, &stack_ptr, i + 1, ldfa->op_count);
                 }
             }
         } else if (op->type == META_OP_ALTERNATION) {
@@ -344,8 +340,7 @@ lazy_dfa_compute_closure_from_key(MetaRegex *regex, LazyDfa *ldfa,
             }
             lazy_dfa_push_pc(stack, &stack_ptr, i, ldfa->op_count);
         } else if (op->type == META_OP_GROUP_END) {
-            lazy_dfa_push_pc(stack, &stack_ptr, current_pc + 1,
-                             ldfa->op_count);
+            lazy_dfa_push_pc(stack, &stack_ptr, current_pc + 1, ldfa->op_count);
         }
 
         if (op->type == META_OP_LITERAL || op->type == META_OP_CLASS
@@ -410,7 +405,8 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
         prev_is_word = 0;
     }
 
-    current_state_id = prev_is_word ? ldfa->start_state_w : ldfa->start_state_nw;
+    current_state_id
+        = prev_is_word ? ldfa->start_state_w : ldfa->start_state_nw;
     if (current_state_id < 0) {
         return -1;
     }
@@ -461,7 +457,8 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
                     for (int32 k = 0; k < ldfa->pc_words; k += 1) {
                         next_key.bits[k] = next_core.bits[k];
                     }
-                    next_key.prev_is_word = ldfa->uses_context ? curr_is_word : 0;
+                    next_key.prev_is_word
+                        = ldfa->uses_context ? curr_is_word : 0;
 
                     next_id = lazy_dfa_get_or_add_state(ldfa, &next_key);
                 }

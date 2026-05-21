@@ -657,9 +657,7 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
         fprintf(out, ".min_match_len = %d, ", regex->min_match_len);
         fprintf(out, ".flags = (enum MetaRegexFlags)((%s) | %s), ",
                 regex->flags_buffer[0] ? regex->flags_buffer : "0",
-                regex->extract_submatches
-                    ? "META_RE_YESSUB"
-                    : "META_RE_NOSUB");
+                regex->extract_submatches ? "META_RE_YESSUB" : "META_RE_NOSUB");
         fprintf(out, ".used_ops = (enum MetaOpType)%u, ", regex->used_ops);
         fprintf(out, ".fastmap = {");
 

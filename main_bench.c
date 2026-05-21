@@ -528,8 +528,8 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
     seconds = bench_timediff(t0, t1);
     bench_write_engine_row(csv, test_name, variant, regex_bucket, input_bucket,
-                           "LIBC", "LIBC", "LIBC", regex_bucket->count,
-                           seconds, matches);
+                           "LIBC", "LIBC", "LIBC", regex_bucket->count, seconds,
+                           matches);
 
     for (int32 w = 0; w < META_BENCH_WARMUP_ITERATIONS; w += 1) {
         for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
@@ -591,11 +591,10 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
 
             if (bench_result_mismatch(ref_result, actual_result, ref_pm,
                                       actual_pm, LENGTH(ref_pm), extract)) {
-                bench_report_mismatch("meta_matchers_pairwise", regex_bucket,
-                                      rc, input_bucket, ic,
-                                      MATCHER_str(matcher), matcher,
-                                      ref_result, actual_result, ref_pm,
-                                      actual_pm, LENGTH(ref_pm), extract);
+                bench_report_mismatch(
+                    "meta_matchers_pairwise", regex_bucket, rc, input_bucket,
+                    ic, MATCHER_str(matcher), matcher, ref_result,
+                    actual_result, ref_pm, actual_pm, LENGTH(ref_pm), extract);
                 exit(EXIT_FAILURE);
             }
             run_pairs += 1;
@@ -618,9 +617,9 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
                 }
 
                 input_len = strlen32(ic->input);
-                result = bench_run_meta_matcher_one(
-                    rc->regex, ic->input, input_len, matcher, pmatch,
-                    LENGTH(pmatch), extract);
+                result = bench_run_meta_matcher_one(rc->regex, ic->input,
+                                                    input_len, matcher, pmatch,
+                                                    LENGTH(pmatch), extract);
                 bench_absorb_result(result, pmatch, extract);
             }
         }
@@ -640,9 +639,9 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
                 }
 
                 input_len = strlen32(ic->input);
-                result = bench_run_meta_matcher_one(
-                    rc->regex, ic->input, input_len, matcher, pmatch,
-                    LENGTH(pmatch), extract);
+                result = bench_run_meta_matcher_one(rc->regex, ic->input,
+                                                    input_len, matcher, pmatch,
+                                                    LENGTH(pmatch), extract);
                 if (result == 0) {
                     matches += 1;
                 }
@@ -678,7 +677,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
     memset64(regex_buckets, 0, SIZEOF(regex_buckets));
     memset64(regex_bucket_names, 0, SIZEOF(regex_bucket_names));
 
-    bucket_cases = malloc2(SIZEOF(*bucket_cases)*array_len*BENCH_LEN_LAST);
+    bucket_cases = malloc2(SIZEOF(*bucket_cases)*array_len * BENCH_LEN_LAST);
     input_cases = malloc2(SIZEOF(*input_cases)*array_len);
     input_names = malloc2(SIZEOF(*input_names)*array_len);
     input_storage = malloc2(SIZEOF(*input_storage)*array_len);
@@ -711,8 +710,8 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
 
         if (length_class == BENCH_LEN_LAST) {
             error2("Skipping regex at index %d from %s with %d ops; no "
-                   "benchmark length bucket exists above 64 ops: "
-                   BLUE("\"%s\"") "\n",
+                   "benchmark length bucket exists above 64 ops: " BLUE(
+                       "\"%s\"") "\n",
                    i, array_name, op_count,
                    c.regex != NULL ? c.regex->string : "(null)");
             continue;
@@ -729,8 +728,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
     SNPRINTF(csv_file, "benchmarks/%s-%lld.csv", array_name, now);
     csv = fopen(csv_file, "w");
     if (csv == NULL) {
-        error("Error opening %s for writing: %s.\n", csv_file,
-              strerror(errno));
+        error("Error opening %s for writing: %s.\n", csv_file, strerror(errno));
         exit(EXIT_FAILURE);
     }
     fprintf(csv,
@@ -762,8 +760,8 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
             int32 compiled_result;
             BenchRegexCase *c = &regex_buckets[l].cases[i];
 
-            compiled_result = regcomp(&compiled[i], c->regex->string,
-                                      REG_EXTENDED);
+            compiled_result
+                = regcomp(&compiled[i], c->regex->string, REG_EXTENDED);
             if (compiled_result != 0) {
                 char error_message[256];
                 regerror(compiled_result, &compiled[i], error_message,
@@ -834,8 +832,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
 
 #if META_BENCH_ENABLE_NO_EXTRACT_VARIANTS
             bench_run_pairwise_variant(csv, test_name, &regex_buckets[l],
-                                       &input_bucket, compiled, enabled,
-                                       false);
+                                       &input_bucket, compiled, enabled, false);
 #endif
 #if META_BENCH_ENABLE_EXTRACT_VARIANTS
             bench_run_pairwise_variant(csv, test_name, &regex_buckets[l],
@@ -858,7 +855,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
     free2(input_storage, SIZEOF(*input_storage)*array_len);
     free2(input_names, SIZEOF(*input_names)*array_len);
     free2(input_cases, SIZEOF(*input_cases)*array_len);
-    free2(bucket_cases, SIZEOF(*bucket_cases)*array_len*BENCH_LEN_LAST);
+    free2(bucket_cases, SIZEOF(*bucket_cases)*array_len * BENCH_LEN_LAST);
     return;
 }
 
