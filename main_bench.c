@@ -1685,6 +1685,8 @@ int32
 main(int32 argc, char **argv) {
     llong now;
     int32 max_input_len = 128;
+    (void)argc;
+    (void)argv;
 
     setlocale(LC_ALL, "C");
     mkdir("benchmarks", 0777);
