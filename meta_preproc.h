@@ -54,10 +54,10 @@ typedef struct PreprocConfig {
 } PreprocConfig;
 
 static PreprocConfig preproc_config = {
-    .emit_static_dfa = 1,
-    .emit_tnfa = 1,
-    .emit_tdfa = 1,
-    .emit_tdfa_transition_index = 1,
+    .emit_static_dfa = true,
+    .emit_tnfa = true,
+    .emit_tdfa = true,
+    .emit_tdfa_transition_index = true,
 
     .max_static_dfa_states = META_MAX_STATIC_DFA_STATES,
     .max_tnfa_tags = PREPROC_MAX_TNFA_TAGS,

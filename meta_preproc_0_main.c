@@ -32,7 +32,7 @@ preproc_parse_int32(char *name, char *value, int32 min_value, int32 max_value) {
     return (int32)parsed;
 }
 
-static int32
+static bool
 preproc_parse_bool(char *name, char *value) {
     if (value == NULL) {
         error("Missing value for %s. Expected %s=true or %s=false.\n", name,
@@ -41,22 +41,22 @@ preproc_parse_bool(char *name, char *value) {
     }
 
     if (strcmp(value, "true") == 0) {
-        return 1;
+        return true;
     }
     if (strcmp(value, "on") == 0) {
-        return 1;
+        return true;
     }
     if (strcmp(value, "yes") == 0) {
-        return 1;
+        return true;
     }
     if (strcmp(value, "false") == 0) {
-        return 0;
+        return false;
     }
     if (strcmp(value, "off") == 0) {
-        return 0;
+        return false;
     }
     if (strcmp(value, "no") == 0) {
-        return 0;
+        return false;
     }
 
     error("Invalid value for %s: %s. Expected true or false.\n", name, value);
