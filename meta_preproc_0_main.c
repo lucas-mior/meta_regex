@@ -74,23 +74,23 @@ usage(void) {
     error2("  emit_tdfa=true|false (default = true)\n");
     error2("  emit_tdfa_transition_index=true|false (default = true)\n");
     error2("  max_static_dfa_states=N (default = %d)\n",
-            META_MAX_STATIC_DFA_STATES);
+           META_MAX_STATIC_DFA_STATES);
     error2("  max_tnfa_tags=N (default = %d)\n",
-            PREPROC_MAX_TNFA_TAGS);
+           PREPROC_MAX_TNFA_TAGS);
     error2("  max_tnfa_states=N (default = %d)\n",
-            PREPROC_MAX_TNFA_STATES);
+           PREPROC_MAX_TNFA_STATES);
     error2("  max_tnfa_transitions=N (default = %d)\n",
-            PREPROC_MAX_TNFA_TRANSITIONS);
+           PREPROC_MAX_TNFA_TRANSITIONS);
     error2("  max_tdfa_states=N (default = %d)\n",
-            PREPROC_MAX_TDFA_STATES);
+           PREPROC_MAX_TDFA_STATES);
     error2("  max_tdfa_transitions=N (default = %d)\n",
-            PREPROC_MAX_TDFA_TRANSITIONS);
+           PREPROC_MAX_TDFA_TRANSITIONS);
     error2("  max_tdfa_registers=N (default = %d)\n",
-            PREPROC_MAX_TDFA_REGISTERS);
+           PREPROC_MAX_TDFA_REGISTERS);
     error2("  max_tdfa_regops=N (default = %d)\n",
-            PREPROC_MAX_TDFA_REGOPS);
+           PREPROC_MAX_TDFA_REGOPS);
     error2("  max_tdfa_transition_index_entries=N (default = %d)\n",
-            PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES);
+           PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES);
     return;
 }
 // clang-format on
