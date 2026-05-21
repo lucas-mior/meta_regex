@@ -5,6 +5,7 @@
 
 #include "meta.h"
 #include "primitives.h"
+#include "meta_util.c"
 
 // clang-format off
 static const MatcherFeatures match_features_tnfa = {
