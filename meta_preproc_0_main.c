@@ -203,11 +203,6 @@ main(int32 argc, char **argv) {
     fseek(input_file, 0, SEEK_SET);
 
     buffer = malloc2(file_size + 1);
-    if (buffer == NULL) {
-        fprintf(stderr, "Error allocating memory.\n");
-        exit(EXIT_FAILURE);
-    }
-
     if (fread64(buffer, 1, file_size, input_file) != file_size) {
         fprintf(stderr, "Error reading file.\n");
         exit(EXIT_FAILURE);
