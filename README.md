@@ -132,7 +132,8 @@ cc gen/your_code_baked.c -o your_program
   * Does not support group extraction
   * The pre processor only creates it if it does not exceed specified limits
   * In general, the fastest. Use it if you don't need group extraction or back
-    references.
+    references and your regexes aren't complicated enough to make it impractical
+    to store the entire DFA in the binary.
 - Lazy DFA
   * Does not support group extraction
   * Good performance, but not as good as static DFA.
