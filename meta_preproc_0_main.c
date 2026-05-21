@@ -192,8 +192,7 @@ main(int32 argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    input_file = fopen(filename, "r");
-    if (input_file == NULL) {
+    if ((input_file = fopen(filename, "r")) == NULL) {
         error("Error opening %s: %s.\n", filename, strerror(errno));
         exit(EXIT_FAILURE);
     }
