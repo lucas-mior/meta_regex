@@ -37,7 +37,7 @@ typedef struct LazyDfaKey {
 } LazyDfaKey;
 
 #define HASH_KEY_TYPE LazyDfaKey
-#define HASH_KEY_FIXED_LEN 0
+#define HASH_KEY_FIXED_LEN 1
 #define HASH_VALUE_TYPE int32
 #define HASH_VALUE_FORMATTER "%d"
 #define HASH_TYPE map
@@ -224,14 +224,12 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
             }
         }
 
-        if (!hash_lookup_map(ldfa->state_map, &start_key, SIZEOF(start_key),
-                             &current_state_id)) {
+        if (!hash_lookup_map(ldfa->state_map, &start_key, &current_state_id)) {
             current_state_id = ldfa->num_states;
             if (current_state_id < META_MAX_LAZY_DFA_STATES) {
                 ldfa->num_states += 1;
                 lazy_dfa_init_state(&ldfa->states[current_state_id], start_key);
-                hash_insert_map(ldfa->state_map, &start_key,
-                                SIZEOF(start_key), current_state_id);
+                hash_insert_map(ldfa->state_map, &start_key, current_state_id);
             } else {
                 return -1;
             }
@@ -291,15 +289,13 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
                     }
                     next_key.prev_is_word = curr_is_word;
 
-                    if (!hash_lookup_map(ldfa->state_map, &next_key,
-                                         SIZEOF(next_key), &next_id)) {
+                    if (!hash_lookup_map(ldfa->state_map, &next_key, &next_id)) {
                         next_id = ldfa->num_states;
                         if (next_id < META_MAX_LAZY_DFA_STATES) {
                             ldfa->num_states += 1;
                             lazy_dfa_init_state(&ldfa->states[next_id],
                                                 next_key);
-                            hash_insert_map(ldfa->state_map, &next_key,
-                                            SIZEOF(next_key), next_id);
+                            hash_insert_map(ldfa->state_map, &next_key, next_id);
                         } else {
                             next_id = -1;
                         }
