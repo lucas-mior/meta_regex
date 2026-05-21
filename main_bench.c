@@ -418,9 +418,16 @@ bench_write_row_with_pair_count(FILE *csv, char *block, char *variant,
                                 int32 matches) {
     int64 total_iterations = iterations_per_pair*(int64)run_pair_count;
     double ns_per_match = 0.0;
+    char *feature_name;
 
     if (total_iterations > 0) {
         ns_per_match = (seconds*1000000000.0) / (double)total_iterations;
+    }
+
+    if (regex_bucket->is_backref) {
+        feature_name = "with_backreferences";
+    } else {
+        feature_name = "no_backreferences";
     }
 
     bench_csv_string(csv, block);
@@ -429,8 +436,7 @@ bench_write_row_with_pair_count(FILE *csv, char *block, char *variant,
     fputc(',', csv);
     bench_csv_string(csv, bench_length_class_name(regex_bucket->length_class));
     fprintf(csv, ",%d,", regex_bucket->max_regex_len);
-    bench_csv_string(csv,
-                     bench_feature_class_name(regex_bucket->feature_class));
+    bench_csv_string(csv, feature_name);
     fputc(',', csv);
     bench_csv_string(csv, regex_bucket->name);
     fputc(',', csv);
@@ -1127,7 +1133,7 @@ bench_meta_matchers_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
     return;
 }
 
-#define BENCH_MAIN_REGEX_BUCKET_MAX (BENCH_FEATURE_LAST*BENCH_LEN_LAST)
+#define BENCH_MAIN_REGEX_BUCKET_MAX (2 * BENCH_LEN_LAST)
 #define BENCH_RANDOM_INPUT_ATTEMPTS 500
 #define BENCH_RANDOM_INPUT_MAX_LEN 4096
 
@@ -1137,7 +1143,7 @@ bench_meta_matchers_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
 
 static int32 bench_max_input_len = META_BENCH_MAX_INPUT_LEN;
 
-static BenchRegexCase bench_runtime_regex_cases[BENCH_FEATURE_LAST]
+static BenchRegexCase bench_runtime_regex_cases[2]
                                                [BENCH_LEN_LAST]
                                                [LENGTH(bench_regex_cases)];
 static BenchRegexBucket
@@ -1149,6 +1155,7 @@ static BenchInputCase bench_pair_input_cases[LENGTH(bench_regex_cases)];
 static char bench_pair_input_names[LENGTH(bench_regex_cases)][64];
 static char bench_pair_input_storage[LENGTH(bench_regex_cases)]
                                     [BENCH_RANDOM_INPUT_MAX_LEN + 1];
+
 static int32
 bench_regex_op_count(MetaRegex *regex) {
     if (regex == NULL) {
@@ -1181,17 +1188,9 @@ bench_regex_length_class_from_ops(int32 op_count) {
     return BENCH_LEN_LAST;
 }
 
-static enum BenchRegexFeatureClass
-bench_regex_feature_class_from_ops(MetaRegex *regex) {
-    if (regex != NULL && (regex->used_ops & META_OP_BACKREF) != 0) {
-        return BENCH_FEATURE_ALL;
-    }
-    return BENCH_FEATURE_NO_BACKREFS;
-}
-
 static void
 bench_build_runtime_regex_buckets(void) {
-    int32 counts[BENCH_FEATURE_LAST][BENCH_LEN_LAST];
+    int32 counts[2][BENCH_LEN_LAST];
 
     memset64(counts, 0, SIZEOF(counts));
     memset64(bench_runtime_regex_cases, 0, SIZEOF(bench_runtime_regex_cases));
@@ -1204,10 +1203,7 @@ bench_build_runtime_regex_buckets(void) {
     for (int32 i = 0; i < LENGTH(bench_regex_cases); i += 1) {
         BenchRegexCase c = bench_regex_cases[i];
         int32 op_count = bench_regex_op_count(c.regex);
-        enum BenchRegexLengthClass length_class
-            = bench_regex_length_class_from_ops(op_count);
-        enum BenchRegexFeatureClass feature_class
-            = bench_regex_feature_class_from_ops(c.regex);
+        enum BenchRegexLengthClass length_class = bench_regex_length_class_from_ops(op_count);
 
         if (length_class == BENCH_LEN_LAST) {
             error2("Skipping regex at index %d with %d ops; no benchmark "
@@ -1218,31 +1214,57 @@ bench_build_runtime_regex_buckets(void) {
 
         c.regex_len = op_count;
         c.length_class = length_class;
-        c.feature_class = feature_class;
 
-        bench_runtime_regex_cases[feature_class][length_class]
-                                 [counts[feature_class][length_class]] = c;
-        counts[feature_class][length_class] += 1;
+        bench_runtime_regex_cases[0][length_class]
+                                 [counts[0][length_class]] = c;
+        counts[0][length_class] += 1;
     }
 
-    for (int32 f = 0; f < BENCH_FEATURE_LAST; f += 1) {
+    for (int32 i = 0; i < LENGTH(bench_regex_backref_cases); i += 1) {
+        BenchRegexCase c = bench_regex_backref_cases[i];
+        int32 op_count = bench_regex_op_count(c.regex);
+        enum BenchRegexLengthClass length_class = bench_regex_length_class_from_ops(op_count);
+
+        if (length_class == BENCH_LEN_LAST) {
+            error2("Skipping regex at index %d with %d ops; no benchmark "
+                   "length bucket exists above 64 ops: " BLUE("\"%s\"") "\n",
+                   i, op_count, c.regex->string);
+            continue;
+        }
+
+        c.regex_len = op_count;
+        c.length_class = length_class;
+
+        bench_runtime_regex_cases[1][length_class]
+                                 [counts[1][length_class]] = c;
+        counts[1][length_class] += 1;
+    }
+
+    for (int32 f = 0; f < 2; f += 1) {
         for (int32 l = 0; l < BENCH_LEN_LAST; l += 1) {
             int32 count = counts[f][l];
             int32 index;
+            char *feature_name;
 
             if (count <= 0) {
                 continue;
             }
 
+            if (f == 0) {
+                feature_name = "no_backreferences";
+            } else {
+                feature_name = "with_backreferences";
+            }
+
             index = bench_runtime_regex_bucket_count;
             SNPRINTF(bench_runtime_regex_bucket_names[index],
-                     "runtime_%s_ops_%s", bench_feature_class_name(f),
+                     "runtime_%s_ops_%s", feature_name,
                      bench_length_class_name(l));
 
             bench_runtime_regex_buckets[index].name
                 = bench_runtime_regex_bucket_names[index];
             bench_runtime_regex_buckets[index].length_class = l;
-            bench_runtime_regex_buckets[index].feature_class = f;
+            bench_runtime_regex_buckets[index].is_backref = f;
             bench_runtime_regex_buckets[index].max_regex_len
                 = bench_length_class_max(l);
             bench_runtime_regex_buckets[index].cases
@@ -1432,10 +1454,15 @@ bench_run_main_regex_buckets(llong now) {
         char matchers_csv_file[1024];
         FILE *dispatch_csv;
         FILE *matchers_csv;
-        char *feature_name
-            = bench_feature_class_name(regex_bucket->feature_class);
-        char *regex_len_name
-            = bench_length_class_name(regex_bucket->length_class);
+        char *feature_name;
+        char *regex_len_name;
+
+        if (regex_bucket->is_backref) {
+            feature_name = "with_backreferences";
+        } else {
+            feature_name = "no_backreferences";
+        }
+        regex_len_name = bench_length_class_name(regex_bucket->length_class);
 
         SNPRINTF(dispatch_csv_file,
                  "benchmarks/%s-regex_ops_%s-libc_vs_meta-%lld.csv",

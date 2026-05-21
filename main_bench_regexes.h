@@ -3,31 +3,24 @@
 
 #include "meta.h"
 
-typedef enum BenchRegexLengthClass {
+enum BenchRegexLengthClass {
     BENCH_LEN_1_8,
     BENCH_LEN_9_16,
     BENCH_LEN_17_32,
     BENCH_LEN_33_64,
     BENCH_LEN_LAST,
-} BenchRegexLengthClass;
-
-typedef enum BenchRegexFeatureClass {
-    BENCH_FEATURE_NO_BACKREFS,
-    BENCH_FEATURE_ALL,
-    BENCH_FEATURE_LAST,
-} BenchRegexFeatureClass;
+};
 
 typedef struct BenchRegexCase {
     MetaRegex *regex;
     int32 regex_len;
     enum BenchRegexLengthClass length_class;
-    enum BenchRegexFeatureClass feature_class;
 } BenchRegexCase;
 
 typedef struct BenchRegexBucket {
     char *name;
     enum BenchRegexLengthClass length_class;
-    enum BenchRegexFeatureClass feature_class;
+    int32 is_backref;
     int32 max_regex_len;
     BenchRegexCase *cases;
     int32 count;
@@ -54,19 +47,6 @@ bench_length_class_max(enum BenchRegexLengthClass c) {
     case BENCH_LEN_33_64: return 64;
     case BENCH_LEN_LAST:
     default: return 0;
-    }
-}
-
-static char *
-bench_feature_class_name(enum BenchRegexFeatureClass c) {
-    switch (c) {
-    case BENCH_FEATURE_NO_BACKREFS:
-        return "no_backreferences";
-    case BENCH_FEATURE_ALL:
-        return "with_backreferences";
-    case BENCH_FEATURE_LAST:
-    default:
-        return "unknown_features";
     }
 }
 
@@ -324,5 +304,16 @@ static BenchRegexCase bench_regex_cases[] = {
 };
 
 #define BENCH_REGEX_CASE_COUNT LENGTH(bench_regex_cases)
+
+static BenchRegexCase bench_regex_backref_cases[] = {
+    { R("([a-z])\\1") },
+    { R("([0-9]+)\\1") },
+    { R("(foo|bar)\\1") },
+    { R("([a-z]{2})([0-9]{2})\\1\\2") },
+    { R("^(a|b).*\\1$") },
+    { R("([[:alpha:]])([[:digit:]])\\2\\1") },
+};
+
+#define BENCH_REGEX_BACKREF_CASE_COUNT LENGTH(bench_regex_backref_cases)
 
 #endif /* META_BENCH_REGEXES_H */

@@ -93,7 +93,6 @@ with open(out_path, "w", encoding="utf-8") as out:
             out.write("        .regex_bucket = {\n")
             out.write(f"            .name = \"{array_name}\",\n")
             out.write(f"            .length_class = {length_class},\n")
-            out.write("            .feature_class = BENCH_FEATURE_NO_BACKREFS,\n")
             out.write(f"            .max_regex_len = {max_len},\n")
             out.write(f"            .cases = {array_name},\n")
             out.write(f"            .count = LENGTH({array_name}),\n")
