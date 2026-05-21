@@ -7,6 +7,10 @@
 #include "meta_preproc_1_parse_source.c"
 #include "meta_preproc_2_gen.c"
 
+#if !defined(error2)
+#define error2(...) fprintf(stderr, __VA_ARGS__)
+#endif
+
 static int32
 preproc_parse_int32(char *name, char *value, int32 min_value, int32 max_value) {
     char *end = NULL;
@@ -59,36 +63,38 @@ preproc_parse_bool(char *name, char *value) {
     exit(EXIT_FAILURE);
 }
 
+// clang-format off
 static void
 usage(void) {
-    fprintf(stderr, "Usage: %s [option=value ...] <file.c>\n", program);
-    fprintf(stderr, "Options:\n");
-    fprintf(stderr, "  help=true\n");
-    fprintf(stderr, "  emit_static_dfa=true|false (default = true)\n");
-    fprintf(stderr, "  emit_tnfa=true|false (default = true)\n");
-    fprintf(stderr, "  emit_tdfa=true|false (default = true)\n");
+    error2("Usage: %s [option=value ...] <file.c>\n", program);
+    error2("Options:\n");
+    error2("  help=true\n");
+    error2("  emit_static_dfa=true|false (default = true)\n");
+    error2("  emit_tnfa=true|false (default = true)\n");
+    error2("  emit_tdfa=true|false (default = true)\n");
     fprintf(stderr,
             "  emit_tdfa_transition_index=true|false (default = true)\n");
-    fprintf(stderr, "  max_static_dfa_states=N (default = %d)\n",
+    error2("  max_static_dfa_states=N (default = %d)\n",
             META_MAX_STATIC_DFA_STATES);
-    fprintf(stderr, "  max_tnfa_tags=N (default = %d)\n",
+    error2("  max_tnfa_tags=N (default = %d)\n",
             PREPROC_MAX_TNFA_TAGS);
-    fprintf(stderr, "  max_tnfa_states=N (default = %d)\n",
+    error2("  max_tnfa_states=N (default = %d)\n",
             PREPROC_MAX_TNFA_STATES);
-    fprintf(stderr, "  max_tnfa_transitions=N (default = %d)\n",
+    error2("  max_tnfa_transitions=N (default = %d)\n",
             PREPROC_MAX_TNFA_TRANSITIONS);
-    fprintf(stderr, "  max_tdfa_states=N (default = %d)\n",
+    error2("  max_tdfa_states=N (default = %d)\n",
             PREPROC_MAX_TDFA_STATES);
-    fprintf(stderr, "  max_tdfa_transitions=N (default = %d)\n",
+    error2("  max_tdfa_transitions=N (default = %d)\n",
             PREPROC_MAX_TDFA_TRANSITIONS);
-    fprintf(stderr, "  max_tdfa_registers=N (default = %d)\n",
+    error2("  max_tdfa_registers=N (default = %d)\n",
             PREPROC_MAX_TDFA_REGISTERS);
-    fprintf(stderr, "  max_tdfa_regops=N (default = %d)\n",
+    error2("  max_tdfa_regops=N (default = %d)\n",
             PREPROC_MAX_TDFA_REGOPS);
-    fprintf(stderr, "  max_tdfa_transition_index_entries=N (default = %d)\n",
+    error2("  max_tdfa_transition_index_entries=N (default = %d)\n",
             PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES);
     return;
 }
+// clang-format on
 
 #define APPLY_BOOL_OPTION(name) \
     do { \
