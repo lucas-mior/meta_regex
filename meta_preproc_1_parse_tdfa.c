@@ -1,3 +1,6 @@
+#include "primitives.h"
+#include "meta_preproc.h"
+
 /* Tagged DFA construction helpers. */
 
 typedef struct TdfaBuildConfig {
