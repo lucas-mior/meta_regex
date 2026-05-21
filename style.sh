@@ -35,5 +35,3 @@ for f in *.c *.h; do
     s/(\S+) \* (\S+)/\1*\2/g;
     ' "$f"
 done
-
-# git commit -a -m "apply clang-format"
