@@ -76,10 +76,23 @@ if [ "$CC" = "clang" ]; then
     CFLAGS="$CFLAGS -Wno-c23-extensions"
 fi
 
+needs_rebuild() {
+    target_file="$1"
+    shift
+    if [ ! -f "$target_file" ]; then
+        return 0
+    fi
+    for src in "$@"; do
+        if [ "$src" -nt "$target_file" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 generate_bench_pattern_header() {
     out="$1"
     pattern_dir="$2"
-
     python3 process_patterns.py "$out" "$pattern_dir"
 }
 
@@ -87,13 +100,18 @@ trace_on
 ctags --kinds-C=+l+d \
     cbase/*.c cbase/*.h ./*.h ./*.c posix/*.c posix/*.h \
     2> /dev/null || true
-vtags.sed tags > .tags.vim       2> /dev/null || true
+vtags.sed tags > .tags.vim     2> /dev/null || true
 trace_off
 
-printf "\nBuilding preprocessor...\n"
-trace_on
-$CC $CPPFLAGS -O2 -flto $CFLAGS meta_preproc_0_main.c -o bin/meta_preproc $LDFLAGS
-trace_off
+printf "\nChecking preprocessor...\n"
+if needs_rebuild "bin/meta_preproc" meta.h meta_preproc.h meta_preproc*.c; then
+    printf "Building preprocessor...\n"
+    trace_on
+    $CC $CPPFLAGS -O2 -flto $CFLAGS meta_preproc_0_main.c -o bin/meta_preproc $LDFLAGS
+    trace_off
+else
+    printf "Preprocessor is up to date.\n"
+fi
 
 if [ "$target" = "preprocessor" ]; then
     exit 0
@@ -116,12 +134,10 @@ esac
 case "$target" in
 all)
     trace_on
-
     $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
     bin/meta_test
     $CC $CPPFLAGS $CFLAGS main_bench.c -o bin/meta_bench $LDFLAGS
     bin/meta_bench
-
     trace_off
     ;;
 test)
