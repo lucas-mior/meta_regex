@@ -1382,40 +1382,6 @@ bench_usage(char *argv0) {
 }
 
 static void
-bench_parse_args(int32 argc, char **argv, int32 *max_input_len) {
-    for (int32 i = 1; i < argc; i += 1) {
-        char *arg = argv[i];
-        char *value = NULL;
-        int32 parsed = 0;
-
-        if (strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0) {
-            bench_usage(argv[0]);
-        }
-
-        if (strcmp(arg, "--max-input-len") == 0) {
-            i += 1;
-            if (i >= argc) {
-                bench_usage(argv[0]);
-            }
-            value = argv[i];
-        } else if (strncmp32(arg, "--max-input-len=", 16) == 0) {
-            value = arg + 16;
-        } else if (arg[0] != '-') {
-            value = arg;
-        } else {
-            bench_usage(argv[0]);
-        }
-
-        if (!bench_parse_input_len_cap(value, &parsed)) {
-            bench_usage(argv[0]);
-        }
-        *max_input_len = parsed;
-    }
-
-    return;
-}
-
-static void
 bench_run_main_regex_buckets(llong now, int32 max_input_len) {
     uint32 seed = 0xC0FFEEu;
     BenchRegexCase (*runtime_regex_cases)[BENCH_LEN_LAST][BENCH_REGEX_CASE_COUNT];
@@ -1718,15 +1684,8 @@ bench_run_generated_pattern_buckets(llong now) {
 int32
 main(int32 argc, char **argv) {
     llong now;
-    int32 max_input_len;
+    int32 max_input_len = 128;
 
-#if !defined(META_BENCH_MAX_INPUT_LEN)
-    max_input_len = 128;
-#else
-    max_input_len = META_BENCH_MAX_INPUT_LEN;
-#endif
-
-    bench_parse_args(argc, argv, &max_input_len);
     setlocale(LC_ALL, "C");
     mkdir("benchmarks", 0777);
 
