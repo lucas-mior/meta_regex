@@ -136,6 +136,10 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
 
 #define BENCH_MAX_MATCHES 16
 
+#if !defined(META_BENCH_ENABLE_EXTRACT_VARIANTS)
+#define META_BENCH_ENABLE_EXTRACT_VARIANTS 0
+#endif
+
 #if !defined(ENABLE_BTNFA)
 #define ENABLE_BTNFA 1
 #endif
@@ -743,7 +747,9 @@ bench_libc_vs_dispatch(FILE *csv, BenchRegexBucket *regex_bucket,
            input_bucket->name);
 
     bench_validate_dispatch(regex_bucket, input_bucket, compiled, false);
+#if META_BENCH_ENABLE_EXTRACT_VARIANTS
     bench_validate_dispatch(regex_bucket, input_bucket, compiled, true);
+#endif
 
     seconds = bench_time_libc_bucket(regex_bucket, input_bucket, compiled,
                                      false, META_BENCH_ITERATIONS, &matches);
@@ -752,12 +758,14 @@ bench_libc_vs_dispatch(FILE *csv, BenchRegexBucket *regex_bucket,
                     input_bucket->count, pair_count, META_BENCH_ITERATIONS,
                     seconds, matches);
 
+#if META_BENCH_ENABLE_EXTRACT_VARIANTS
     seconds = bench_time_libc_bucket(regex_bucket, input_bucket, compiled, true,
                                      META_BENCH_ITERATIONS, &matches);
     bench_write_row(csv, "libc_vs_dispatch", "extract", regex_bucket,
                     input_bucket, "LIBC", "LIBC", "LIBC", regex_bucket->count,
                     input_bucket->count, pair_count, META_BENCH_ITERATIONS,
                     seconds, matches);
+#endif
 
     seconds
         = bench_time_dispatch_bucket(regex_bucket, input_bucket, false, enabled,
@@ -767,6 +775,7 @@ bench_libc_vs_dispatch(FILE *csv, BenchRegexBucket *regex_bucket,
                     regex_bucket->count, input_bucket->count, pair_count,
                     META_BENCH_ITERATIONS, seconds, matches);
 
+#if META_BENCH_ENABLE_EXTRACT_VARIANTS
     seconds
         = bench_time_dispatch_bucket(regex_bucket, input_bucket, true, enabled,
                                      META_BENCH_ITERATIONS, &matches);
@@ -774,6 +783,7 @@ bench_libc_vs_dispatch(FILE *csv, BenchRegexBucket *regex_bucket,
                     input_bucket, "META_DISPATCH", "DISPATCH", "mixed",
                     regex_bucket->count, input_bucket->count, pair_count,
                     META_BENCH_ITERATIONS, seconds, matches);
+#endif
     return;
 }
 
@@ -1037,8 +1047,10 @@ bench_libc_vs_dispatch_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
 
     bench_validate_dispatch_pairwise(regex_bucket, input_bucket, compiled,
                                      false);
+#if META_BENCH_ENABLE_EXTRACT_VARIANTS
     bench_validate_dispatch_pairwise(regex_bucket, input_bucket, compiled,
                                      true);
+#endif
 
     seconds = bench_time_libc_bucket_pairwise(regex_bucket, input_bucket,
                                               compiled, false,
@@ -1049,6 +1061,7 @@ bench_libc_vs_dispatch_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
                                     input_bucket->count, pair_count, pair_count,
                                     META_BENCH_ITERATIONS, seconds, matches);
 
+#if META_BENCH_ENABLE_EXTRACT_VARIANTS
     seconds = bench_time_libc_bucket_pairwise(regex_bucket, input_bucket,
                                               compiled, true,
                                               META_BENCH_ITERATIONS, &matches);
@@ -1056,6 +1069,7 @@ bench_libc_vs_dispatch_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
         csv, "libc_vs_dispatch_pairwise", "extract", regex_bucket, input_bucket,
         "LIBC", "LIBC", "LIBC", regex_bucket->count, input_bucket->count,
         pair_count, pair_count, META_BENCH_ITERATIONS, seconds, matches);
+#endif
 
     seconds = bench_time_dispatch_bucket_pairwise(
         regex_bucket, input_bucket, false, enabled, META_BENCH_ITERATIONS,
@@ -1066,6 +1080,7 @@ bench_libc_vs_dispatch_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
         input_bucket->count, pair_count, pair_count, META_BENCH_ITERATIONS,
         seconds, matches);
 
+#if META_BENCH_ENABLE_EXTRACT_VARIANTS
     seconds = bench_time_dispatch_bucket_pairwise(
         regex_bucket, input_bucket, true, enabled, META_BENCH_ITERATIONS,
         &matches);
@@ -1074,6 +1089,7 @@ bench_libc_vs_dispatch_pairwise(FILE *csv, BenchRegexBucket *regex_bucket,
                                     "DISPATCH", "mixed", regex_bucket->count,
                                     input_bucket->count, pair_count, pair_count,
                                     META_BENCH_ITERATIONS, seconds, matches);
+#endif
     return;
 }
 
@@ -1445,8 +1461,10 @@ bench_run_main_regex_buckets(llong now) {
                                             &input_bucket, compiled);
             bench_meta_matchers_pairwise(matchers_csv, regex_bucket,
                                          &input_bucket, compiled, false);
+#if META_BENCH_ENABLE_EXTRACT_VARIANTS
             bench_meta_matchers_pairwise(matchers_csv, regex_bucket,
                                          &input_bucket, compiled, true);
+#endif
         }
 
         bench_free_regex_bucket(compiled, regex_bucket);
@@ -1658,8 +1676,10 @@ bench_run_generated_pattern_buckets(llong now) {
                                compiled);
         bench_meta_matchers(matchers_csv, regex_bucket, input_bucket, compiled,
                             false);
+#if META_BENCH_ENABLE_EXTRACT_VARIANTS
         bench_meta_matchers(matchers_csv, regex_bucket, input_bucket, compiled,
                             true);
+#endif
 
         bench_free_regex_bucket(compiled, regex_bucket);
         bench_close_csv(dispatch_csv, dispatch_csv_file);
