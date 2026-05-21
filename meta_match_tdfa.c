@@ -35,34 +35,6 @@ static const MatcherFeatures match_features_tdfa = {
 // clang-format on
 
 static int32
-match_tdfa_char_at(uint8 *input, int32 input_len, int32 pos) {
-    if (pos < 0 || pos >= input_len) {
-        return -1;
-    }
-    if (input[pos] == '\0') {
-        return -1;
-    }
-    return input[pos];
-}
-
-static int32
-match_tdfa_at_end(uint8 *input, int32 input_len, int32 pos) {
-    return (pos >= input_len || input[pos] == '\0');
-}
-
-static int32
-match_tdfa_is_word_char(int32 c) {
-    return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-            || (c >= '0' && c <= '9') || c == '_');
-}
-
-static int32
-match_tdfa_word_at(uint8 *input, int32 input_len, int32 pos) {
-    int32 c = match_tdfa_char_at(input, input_len, pos);
-    return (c >= 0 && match_tdfa_is_word_char(c));
-}
-
-static int32
 match_tdfa_valid_reg(MetaTdfa *tdfa, int32 reg) {
     return (reg > 0 && reg <= tdfa->num_registers);
 }
@@ -239,6 +211,8 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     int32 result = REG_NOMATCH;
     int32 extract;
 
+    (void)input_len;
+
     if (DEBUGGING) {
         ASSERT(regex);
         ASSERT(regex->tdfa);
@@ -297,14 +271,10 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         int32 prev_is_w = 0;
         int32 curr_is_w = 0;
 
-        if (start_pos > 0 && start_pos - 1 < input_len
-            && input[start_pos - 1] != '\0') {
+        if (start_pos > 0) {
             prev_is_w = word_table[input[start_pos - 1]];
         }
-        if (start_pos >= 0 && start_pos < input_len
-            && input[start_pos] != '\0') {
-            curr_is_w = word_table[input[start_pos]];
-        }
+        curr_is_w = word_table[input[start_pos]];
 
         if (!prev_is_w && !curr_is_w) {
             state_id = tdfa->start_state_nw_nw;
@@ -329,7 +299,8 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         }
 
         state = &tdfa->states[state_id];
-        at_end = (pos >= input_len || input[pos] == '\0');
+        c = input[pos];
+        at_end = (c == '\0');
         if (state->is_accepting && (!regex->has_end_anchor || at_end)) {
             if (extract
                 && !match_tdfa_save_accept(tdfa, state, regs, saved_tags,
@@ -344,12 +315,8 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
             break;
         }
 
-        c = input[pos];
         if (tdfa->uses_context) {
-            next_is_word = 0;
-            if (pos + 1 < input_len && input[pos + 1] != '\0') {
-                next_is_word = word_table[input[pos + 1]];
-            }
+            next_is_word = word_table[input[pos + 1]];
         } else {
             next_is_word = -1;
         }
