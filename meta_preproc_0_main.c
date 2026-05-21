@@ -1,3 +1,4 @@
+#include "meta.h"
 #include "meta_preproc.h"
 #include <errno.h>
 #include "meta_preproc_1_parse_regex.c"
@@ -56,7 +57,7 @@ usage(void) {
     fprintf(stderr, "  emit_tnfa=true|false\n");
     fprintf(stderr, "  emit_tdfa=true|false\n");
     fprintf(stderr, "  emit_tdfa_transition_index=true|false\n");
-    fprintf(stderr, "  max_static_dfa_states=N\n");
+    fprintf(stderr, "  max_static_dfa_states=N (default = %d)\n", META_MAX_STATIC_DFA_STATES);
     fprintf(stderr, "  max_tnfa_tags=N\n");
     fprintf(stderr, "  max_tnfa_states=N\n");
     fprintf(stderr, "  max_tnfa_transitions=N\n");
