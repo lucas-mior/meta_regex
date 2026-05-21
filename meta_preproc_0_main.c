@@ -12,7 +12,7 @@ main(int32 argc, char **argv) {
     char *buffer = NULL;
 
     if (argc < 2) {
-        fprintf(stderr, "Usage: preprocessor <file.c>\n");
+        fprintf(stderr, "Usage: preprocessor [options] <file.c>\n");
         exit(EXIT_FAILURE);
     }
 
