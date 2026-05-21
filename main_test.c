@@ -23,17 +23,17 @@
 #if !defined(ENABLE_BTNFA)
 #define ENABLE_BTNFA 1
 #endif
-#if !defined(ENABLE_LAZY_DFA)
-#define ENABLE_LAZY_DFA 1
-#endif
-#if !defined(ENABLE_STATIC_DFA)
-#define ENABLE_STATIC_DFA 0
-#endif
 #if !defined(ENABLE_TNFA)
 #define ENABLE_TNFA 0
 #endif
 #if !defined(ENABLE_TDFA)
-#define ENABLE_TDFA 0
+#define ENABLE_TDFA 1
+#endif
+#if !defined(ENABLE_LAZY_DFA)
+#define ENABLE_LAZY_DFA 0
+#endif
+#if !defined(ENABLE_STATIC_DFA)
+#define ENABLE_STATIC_DFA 0
 #endif
 
 static enum Matcher all_matchers[] = {
