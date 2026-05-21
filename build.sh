@@ -99,7 +99,7 @@ vtags.sed tags > .tags.vim     2> /dev/null || true
 trace_off
 
 printf "\nChecking preprocessor...\n"
-if needs_rebuild "bin/meta_preproc"
+if needs_rebuild "bin/meta_preproc" \
     meta.h meta_preproc.h meta_preproc*.c; then
     printf "Building preprocessor...\n"
     trace_on
@@ -117,30 +117,26 @@ fi
 printf "\nChecking generated files...\n"
 trace_on
 
-if needs_rebuild "gen/main_tests_array2.h" 
+if needs_rebuild "gen/main_tests_array2.h" \
     main_tests_array.h bin/meta_preproc; then
     ./bin/meta_preproc main_tests_array.h > gen/main_tests_array2.h
 fi
 
-if needs_rebuild "gen/main_bench_regexes2.h"
+if needs_rebuild "gen/main_bench_regexes2.h" \
     main_bench_regexes.h bin/meta_preproc; then
     ./bin/meta_preproc main_bench_regexes.h > gen/main_bench_regexes2.h
 fi
 
-case "$target" in
-bench|all|callgrind)
-    if needs_rebuild "gen/main_bench_patterns.h"
-        process_patterns.py "$dir/0patterns"/*; then
-        python3 process_patterns.py gen/main_bench_patterns.h "$dir/0patterns"
-    fi
-    
-    if needs_rebuild "gen/main_bench_patterns2.h"
-        gen/main_bench_patterns.h bin/meta_preproc; then
-        ./bin/meta_preproc gen/main_bench_patterns.h \
-            > gen/main_bench_patterns2.h
-    fi
-    ;;
-esac
+if needs_rebuild "gen/main_bench_patterns.h" \
+    process_patterns.py "$dir/0patterns"/*; then
+    python3 process_patterns.py gen/main_bench_patterns.h "$dir/0patterns"
+fi
+
+if needs_rebuild "gen/main_bench_patterns2.h" \
+    gen/main_bench_patterns.h bin/meta_preproc; then
+    ./bin/meta_preproc gen/main_bench_patterns.h \
+        > gen/main_bench_patterns2.h
+fi
 
 trace_off
 

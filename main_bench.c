@@ -1211,7 +1211,7 @@ bench_build_runtime_regex_buckets(BenchRegexCase (*runtime_regex_cases)[BENCH_LE
     BENCH_PROCESS_ARRAY(bench_regex_backref_cases, 1);
 
     for (int32 f = 0; f < 2; f += 1) {
-        for (int32 l = 0; l < BENCH_LEN_LAST; l += 1) {
+        for (enum BenchRegexLengthClass l = 0; l < BENCH_LEN_LAST; l += 1) {
             int32 count = counts[f][l];
             int32 index;
             char *feature_name;
@@ -1432,7 +1432,9 @@ bench_run_main_regex_buckets(llong now, int32 max_input_len) {
         matchers_csv = bench_open_csv(matchers_csv_file);
         compiled = bench_compile_regex_bucket(regex_bucket);
 
-        for (int32 ii = 0; ii < BENCH_INPUT_LEN_LAST; ii += 1) {
+        for (enum BenchInputLengthClass ii = 0;
+             ii < BENCH_INPUT_LEN_LAST;
+             ii += 1) {
             BenchInputBucket input_bucket;
 
             if (bench_input_length_class_max(ii) > max_input_len) {
