@@ -651,9 +651,15 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
         fprintf(out, ".ops = { %s }, ", regex->op_buffer);
         fprintf(out, ".has_start_anchor = %d, ", regex->has_start);
         fprintf(out, ".has_end_anchor = %d, ", regex->has_end);
-        fprintf(out, ".re_nsub = %d, ", regex->group_counter);
+        fprintf(out, ".re_nsub = %d, ",
+                regex->extract_submatches ? regex->group_counter : 0);
         fprintf(out, ".can_be_null = %d, ", regex->can_be_null);
         fprintf(out, ".min_match_len = %d, ", regex->min_match_len);
+        fprintf(out, ".flags = (enum MetaRegexFlags)((%s) | %s), ",
+                regex->flags_buffer[0] ? regex->flags_buffer : "0",
+                regex->extract_submatches
+                    ? "META_RE_EXTRACT"
+                    : "META_RE_NOSUB");
         fprintf(out, ".used_ops = (enum MetaOpType)%u, ", regex->used_ops);
         fprintf(out, ".fastmap = {");
 

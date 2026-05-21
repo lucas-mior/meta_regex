@@ -4,6 +4,124 @@
 
 /* Source scanner and R(...) extraction entry point. */
 
+
+static char *
+preproc_find_macro_end(char *macro_start) {
+    char *p = macro_start;
+    int32 depth = 0;
+    int32 in_string = 0;
+    int32 in_char = 0;
+    int32 in_line_comment = 0;
+    int32 in_block_comment = 0;
+
+    while (*p != '\0') {
+        if (in_line_comment) {
+            if (*p == '\n') {
+                in_line_comment = 0;
+            }
+            p += 1;
+            continue;
+        }
+        if (in_block_comment) {
+            if (p[0] == '*' && p[1] == '/') {
+                in_block_comment = 0;
+                p += 2;
+            } else {
+                p += 1;
+            }
+            continue;
+        }
+        if (in_string) {
+            if (p[0] == '\\' && p[1] != '\0') {
+                p += 2;
+            } else if (p[0] == '"') {
+                in_string = 0;
+                p += 1;
+            } else {
+                p += 1;
+            }
+            continue;
+        }
+        if (in_char) {
+            if (p[0] == '\\' && p[1] != '\0') {
+                p += 2;
+            } else if (p[0] == '\'') {
+                in_char = 0;
+                p += 1;
+            } else {
+                p += 1;
+            }
+            continue;
+        }
+
+        if (p[0] == '/' && p[1] == '/') {
+            in_line_comment = 1;
+            p += 2;
+            continue;
+        }
+        if (p[0] == '/' && p[1] == '*') {
+            in_block_comment = 1;
+            p += 2;
+            continue;
+        }
+        if (*p == '"') {
+            in_string = 1;
+            p += 1;
+            continue;
+        }
+        if (*p == '\'') {
+            in_char = 1;
+            p += 1;
+            continue;
+        }
+
+        if (*p == '(') {
+            depth += 1;
+        } else if (*p == ')') {
+            depth -= 1;
+            if (depth == 0) {
+                return p;
+            }
+        }
+        p += 1;
+    }
+
+    return NULL;
+}
+
+static void
+preproc_copy_trimmed_slice(char *dst, int32 dst_size, char *start, char *end) {
+    int32 len;
+
+    if (dst_size <= 0) {
+        return;
+    }
+
+    while (start < end && (*start == ' ' || *start == '\t' || *start == '\n'
+                           || *start == '\r')) {
+        start += 1;
+    }
+    while (end > start && (end[-1] == ' ' || end[-1] == '\t'
+                           || end[-1] == '\n' || end[-1] == '\r')) {
+        end -= 1;
+    }
+
+    len = (int32)(end - start);
+    if (len >= dst_size) {
+        len = dst_size - 1;
+    }
+    if (len > 0) {
+        memcpy64(dst, start, len);
+    }
+    dst[len] = '\0';
+    return;
+}
+
+static enum MetaRegexFlags
+preproc_parse_regex_flags(char *flags_expr) {
+    return META_RE_parse(flags_expr);
+}
+
 static RegexList
 parse_source_code(char *buffer, int64 source_len) {
     RegexList list = {0};
@@ -16,9 +134,12 @@ parse_source_code(char *buffer, int64 source_len) {
         char *quote_start = NULL;
         char *quote_end = NULL;
         char *paren_end = NULL;
+        char *flags_start = NULL;
+        char *flags_end = NULL;
         char raw_string[PREPROC_MAX_STRING_LEN] = {0};
         char regex_string[PREPROC_MAX_STRING_LEN] = {0};
         char op_buffer[PREPROC_OP_BUFFER_SIZE] = {0};
+        char flags_buffer[PREPROC_MAX_FLAGS_EXPR] = "0";
         char *op_ptr = op_buffer;
         int32 space = SIZEOF(op_buffer);
         bool has_start = false;
@@ -34,6 +155,8 @@ parse_source_code(char *buffer, int64 source_len) {
         uint8 fastmap[META_FASTMAP_SIZE] = {0};
         bool can_be_null = false;
         enum MetaOpType used_ops = 0;
+        enum MetaRegexFlags flags = META_RE_NONE;
+        bool extract_submatches = false;
 
         {
             char *scan = cursor;
@@ -736,15 +859,52 @@ parse_source_code(char *buffer, int64 source_len) {
             space -= w;
         }
 
-        paren_end = strchr(quote_end, ')');
+        paren_end = preproc_find_macro_end(found_macro);
+        if (paren_end == NULL) {
+            error("Error parsing regex: closing ')' not found.\n");
+            exit(EXIT_FAILURE);
+        }
+
+        flags_start = quote_end + 1;
+        while (flags_start < paren_end
+               && (*flags_start == ' ' || *flags_start == '\t'
+                   || *flags_start == '\n' || *flags_start == '\r')) {
+            flags_start += 1;
+        }
+        if (flags_start < paren_end && *flags_start == ',') {
+            flags_start += 1;
+            flags_end = paren_end;
+            preproc_copy_trimmed_slice(flags_buffer, SIZEOF(flags_buffer),
+                                       flags_start, flags_end);
+            if (flags_buffer[0] == '\0') {
+                strcpy(flags_buffer, "0");
+            }
+        }
+
+        flags = preproc_parse_regex_flags(flags_buffer);
+        if ((flags & META_RE_EXTRACT)
+            && (flags & META_RE_NOSUB)) {
+            error("R() flags cannot request both extract and no-submatch mode: %s\n",
+                  flags_buffer);
+            exit(EXIT_FAILURE);
+        }
+
+        extract_submatches = preproc_config.default_extract_submatches;
+        if (flags & META_RE_EXTRACT) {
+            extract_submatches = true;
+        }
+        if (flags & META_RE_NOSUB) {
+            extract_submatches = false;
+        }
+
         original_string_length = (int32)(quote_end - quote_start) + 1;
 
-        if ((used_ops & META_OP_BACKREF) == 0
+        if (extract_submatches && (used_ops & META_OP_BACKREF) == 0
             && (preproc_config.emit_tnfa || preproc_config.emit_tdfa)) {
             regex->tnfa = malloc2(SIZEOF(*regex->tnfa));
             if (!build_tnfa_from_ops(regex->tnfa, temp_ops, temp_ops_count,
                                      group_counter)) {
-                fprintf(stderr, "Warning: TNFA construction failed for %.*s.",
+                fprintf(stderr, "Warning: TNFA construction failed for %.*s.\n",
                         original_string_length, quote_start);
                 regex->tnfa = NULL;
             }
@@ -753,7 +913,7 @@ parse_source_code(char *buffer, int64 source_len) {
                 regex->tdfa = malloc2(SIZEOF(*regex->tdfa));
                 if (!build_tdfa_from_tnfa(regex->tdfa, regex->tnfa)) {
                     fprintf(stderr,
-                            "Warning: TDFA construction failed for %.*s.",
+                            "Warning: TDFA construction failed for %.*s.\n",
                             original_string_length, quote_start);
                     regex->tdfa = NULL;
                 }
@@ -767,6 +927,9 @@ parse_source_code(char *buffer, int64 source_len) {
         regex->has_end = has_end;
         regex->group_counter = group_counter;
         regex->can_be_null = can_be_null;
+        regex->flags = flags;
+        regex->extract_submatches = extract_submatches;
+        strncpy32(regex->flags_buffer, flags_buffer, PREPROC_MAX_FLAGS_EXPR);
         regex->used_ops = used_ops;
         memcpy64(regex->fastmap, fastmap, META_FASTMAP_SIZE);
         memcpy64(regex->temp_ops, temp_ops,

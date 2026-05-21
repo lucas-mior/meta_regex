@@ -59,6 +59,10 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
         return REG_NOMATCH;
     }
 
+    if ((regex->flags & META_RE_NOSUB) && pmatch_len > 1) {
+        pmatch_len = 1;
+    }
+
     switch (matcher) {
     case MATCHER_BTNFA: {
         if (regex->has_start_anchor) {
@@ -268,7 +272,12 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
         return REG_NOMATCH;
     }
 
-    needs_extraction = (regex->re_nsub > 0 && pmatch_len > 1);
+    if ((regex->flags & META_RE_NOSUB) && pmatch_len > 1) {
+        pmatch_len = 1;
+    }
+
+    needs_extraction = ((regex->flags & META_RE_NOSUB) == 0
+                        && regex->re_nsub > 0 && pmatch_len > 1);
     matcher = meta_choose_matcher(regex, input_len, needs_extraction,
                                   matchers_enabled);
 

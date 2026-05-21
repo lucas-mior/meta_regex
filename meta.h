@@ -11,6 +11,18 @@
 #define META_MAX_LAZY_DFA_STATES 2048
 #define META_PC_WORDS (META_MAX_OPS / 32)
 
+#define ENUM_PREFIX_ META_RE_
+#define ENUM_NAME MetaRegexFlags
+#define ENUM_BITFLAGS 1
+#define ENUM_FIELDS \
+    X(EXTRACT) \
+    X(NOSUB)
+#include "xenums.c"
+
+#define META_REGEX_FLAG_NONE META_RE_NONE
+#define META_REGEX_FLAG_EXTRACT_SUBMATCHES META_RE_EXTRACT
+#define META_REGEX_FLAG_NO_SUBMATCHES META_RE_NOSUB
+
 /* TNFA limits */
 #define META_MAX_TNFA_TAGS 256
 #define META_MAX_TNFA_STATES 1024
@@ -318,6 +330,7 @@ typedef struct MetaRegex {
     int32 re_nsub;
     int32 can_be_null;
     int32 min_match_len;
+    enum MetaRegexFlags flags;
     enum MetaOpType used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
 
@@ -344,6 +357,9 @@ typedef struct MatcherFeatures {
     bool extracts;
 } MatcherFeatures;
 
-#define R(...) (&(MetaRegex){ .string = __VA_ARGS__ })
+#define META_R_SELECT(_1, _2, NAME, ...) NAME
+#define META_R_1(STR) (&(MetaRegex){ .string = (STR), .flags = META_RE_NONE })
+#define META_R_2(STR, FLAGS) (&(MetaRegex){ .string = (STR), .flags = (enum MetaRegexFlags)(FLAGS) })
+#define R(...) META_R_SELECT(__VA_ARGS__, META_R_2, META_R_1)(__VA_ARGS__)
 
 #endif /* META_REGEX_H */

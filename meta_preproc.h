@@ -14,6 +14,7 @@
 #define PREPROC_MAX_GROUP_STACK 32
 #define PREPROC_MAX_TEMP_OPS 1024
 #define PREPROC_MAX_CLASS_NAME 16
+#define PREPROC_MAX_FLAGS_EXPR 256
 #define PREPROC_MAX_NFA_ITEMS 1024
 #define PREPROC_MAX_BRANCHES 128
 #define PREPROC_NFA_BITSET_WORDS 64
@@ -41,6 +42,7 @@ typedef struct PreprocConfig {
     bool emit_tnfa;
     bool emit_tdfa;
     bool emit_tdfa_transition_index;
+    bool default_extract_submatches;
 
     int32 max_static_dfa_states;
     int32 max_tnfa_tags;
@@ -58,6 +60,7 @@ static PreprocConfig preproc_config = {
     .emit_tnfa = true,
     .emit_tdfa = true,
     .emit_tdfa_transition_index = true,
+    .default_extract_submatches = true,
 
     .max_static_dfa_states = META_MAX_STATIC_DFA_STATES,
     .max_tnfa_tags = PREPROC_MAX_TNFA_TAGS,
@@ -186,6 +189,9 @@ typedef struct ExtractedRegex {
     int32 group_counter;
     bool can_be_null;
     int32 min_match_len;
+    enum MetaRegexFlags flags;
+    bool extract_submatches;
+    char flags_buffer[PREPROC_MAX_FLAGS_EXPR];
     uint32 used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
     
