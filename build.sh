@@ -117,19 +117,30 @@ if [ "$target" = "preprocessor" ]; then
     exit 0
 fi
 
+printf "\nChecking generated files...\n"
 trace_on
-./bin/meta_preproc main_tests_array.h   > gen/main_tests_array2.h
-./bin/meta_preproc main_bench_regexes.h > gen/main_bench_regexes2.h
-trace_off
+
+if needs_rebuild "gen/main_tests_array2.h" main_tests_array.h bin/meta_preproc; then
+    ./bin/meta_preproc main_tests_array.h > gen/main_tests_array2.h
+fi
+
+if needs_rebuild "gen/main_bench_regexes2.h" main_bench_regexes.h bin/meta_preproc; then
+    ./bin/meta_preproc main_bench_regexes.h > gen/main_bench_regexes2.h
+fi
 
 case "$target" in
 bench|all|callgrind)
-    trace_on
-    generate_bench_pattern_header gen/main_bench_patterns.h "$dir/0patterns"
-    ./bin/meta_preproc gen/main_bench_patterns.h > gen/main_bench_patterns2.h
-    trace_off
+    if needs_rebuild "gen/main_bench_patterns.h" process_patterns.py "$dir/0patterns"/*; then
+        generate_bench_pattern_header gen/main_bench_patterns.h "$dir/0patterns"
+    fi
+    
+    if needs_rebuild "gen/main_bench_patterns2.h" gen/main_bench_patterns.h bin/meta_preproc; then
+        ./bin/meta_preproc gen/main_bench_patterns.h > gen/main_bench_patterns2.h
+    fi
     ;;
 esac
+
+trace_off
 
 case "$target" in
 all)
