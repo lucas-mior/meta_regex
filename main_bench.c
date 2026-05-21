@@ -907,25 +907,11 @@ main(int32 argc, char **argv) {
     int32 max_input_len = META_BENCH_MAX_INPUT_LEN;
     uint32 seed = 0xC0FFEEu;
     enum Matcher enabled = MATCHER_NONE;
+    (void)argc;
+    (void)argv;
 
     setlocale(LC_ALL, "C");
     mkdir("benchmarks", 0777);
-
-    for (int32 i = 1; i < argc; i += 1) {
-        if (strcmp(argv[i], "--max-input-len") == 0) {
-            i += 1;
-            if (i >= argc || !bench_parse_input_len_cap(argv[i],
-                                                        &max_input_len)) {
-                bench_usage(argv[0]);
-            }
-        } else if (strncmp(argv[i], "--max-input-len=", 16) == 0) {
-            if (!bench_parse_input_len_cap(argv[i] + 16, &max_input_len)) {
-                bench_usage(argv[0]);
-            }
-        } else if (!bench_parse_input_len_cap(argv[i], &max_input_len)) {
-            bench_usage(argv[0]);
-        }
-    }
 
     for (int32 i = 0; i < LENGTH(bench_matchers); i += 1) {
         if (bench_matcher_compile_enabled(bench_matchers[i])) {
