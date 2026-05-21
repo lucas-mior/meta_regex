@@ -750,8 +750,7 @@ parse_source_code(char *buffer, int64 source_len) {
                 if (!build_tdfa_from_tnfa(regex->tdfa, regex->tnfa)) {
                     fprintf(stderr,
                             "Warning: TDFA construction failed for %.*s.",
-                            original_string_length,
-                            quote_start);
+                            original_string_length, quote_start);
                     regex->tdfa = NULL;
                 }
             }

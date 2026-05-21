@@ -8,10 +8,9 @@
 #include "meta_preproc_2_gen.c"
 
 static int32
-preproc_parse_int32(char *name, char *value, int32 min_value,
-                    int32 max_value) {
+preproc_parse_int32(char *name, char *value, int32 min_value, int32 max_value) {
     char *end = NULL;
-    long parsed;
+    int64 parsed;
 
     if (value == NULL) {
         error("Missing value for %s. Expected %s=N.\n", name, name);
@@ -56,7 +55,8 @@ usage(void) {
     fprintf(stderr, "  emit_static_dfa=true|false (default = true)\n");
     fprintf(stderr, "  emit_tnfa=true|false (default = true)\n");
     fprintf(stderr, "  emit_tdfa=true|false (default = true)\n");
-    fprintf(stderr, "  emit_tdfa_transition_index=true|false (default = true)\n");
+    fprintf(stderr,
+            "  emit_tdfa_transition_index=true|false (default = true)\n");
     fprintf(stderr, "  max_static_dfa_states=N (default = %d)\n",
             META_MAX_STATIC_DFA_STATES);
     fprintf(stderr, "  max_tnfa_tags=N (default = %d)\n",
@@ -122,7 +122,7 @@ main(int32 argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    for (int i = 1; i < argc; i += 1) {
+    for (int32 i = 1; i < argc; i += 1) {
         PARSE_OPTION(argv[i], help)
         PARSE_OPTION(argv[i], emit_static_dfa)
         PARSE_OPTION(argv[i], emit_tnfa)
@@ -140,7 +140,8 @@ main(int32 argc, char **argv) {
 
         if (strchr(argv[i], '=')) {
             error("Unknown preprocessor option: %s. Options must use exact "
-                  "name=value form.\n", argv[i]);
+                  "name=value form.\n",
+                  argv[i]);
             usage();
             exit(EXIT_FAILURE);
         }
