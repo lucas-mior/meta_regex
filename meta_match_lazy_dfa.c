@@ -69,7 +69,6 @@ typedef struct LazyDfa {
     LazyDfaState states[META_MAX_LAZY_DFA_STATES];
 } LazyDfa;
 
-static int32 lazy_dfa_word(int32 c);
 static void add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                                 int32 *is_accepting, int32 prev_is_word,
                                 int32 curr_is_word);
@@ -83,14 +82,6 @@ static void lazy_dfa_ensure_closure(MetaRegex *regex, LazyDfa *ldfa,
 static int32 lazy_dfa_op_count(MetaRegex *regex);
 static int32 lazy_dfa_pc_words(int32 op_count);
 static int32 lazy_dfa_ctz32(uint32 word);
-
-static int32
-lazy_dfa_word(int32 c) {
-    if (c < 0 || c >= META_ALPHABET_SIZE) {
-        return 0;
-    }
-    return word_table[c];
-}
 
 static int32
 lazy_dfa_op_count(MetaRegex *regex) {
@@ -197,7 +188,11 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
     int32 prev_is_word;
     (void)input_len;
 
-    prev_is_word = (offset > 0) ? lazy_dfa_word(input[offset - 1]) : 0;
+    if (offset > 0) {
+        prev_is_word = word_table[input[offset - 1]];
+    } else {
+        prev_is_word = 0;
+    }
 
     if (ldfa == NULL) {
         ldfa = malloc2(SIZEOF(*ldfa));
@@ -267,7 +262,7 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
             LazyDfaState *state = &ldfa->states[current_state_id];
 
             if (state->next[b] == 0) {
-                int32 curr_is_word = lazy_dfa_word(b);
+                int32 curr_is_word = word_table[b];
                 NfaStateSet next_core;
                 int32 set_is_empty = 1;
 
