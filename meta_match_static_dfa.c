@@ -4,6 +4,7 @@
 #include <regex.h>
 #include "meta.h"
 #include "primitives.h"
+#include "meta_util.c"
 
 // clang-format off
 static const MatcherFeatures match_features_static_dfa = {
@@ -46,8 +47,7 @@ match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
 
     if (offset > 0) {
         uint8 prev_b = input[offset - 1];
-        if ((prev_b >= 'a' && prev_b <= 'z') || (prev_b >= 'A' && prev_b <= 'Z')
-            || (prev_b >= '0' && prev_b <= '9') || prev_b == '_') {
+        if (word_table[prev_b]) {
             start_idx = regex->static_dfa->start_state_w;
         }
     }
