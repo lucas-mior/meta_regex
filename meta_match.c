@@ -34,6 +34,21 @@ static MatcherFeatures matchers[] = {
     [MATCHER_STATIC_DFA] = match_features_static_dfa,
 };
 
+
+static int32
+meta_regex_unanchored_scan_done(MetaRegex *regex, int32 input_len, int32 offset,
+                                uint8 b) {
+    if (b == '\0') {
+        return 1;
+    }
+
+    if (input_len >= 0 && regex->min_match_len > 0) {
+        return offset >= input_len - regex->min_match_len;
+    }
+
+    return 0;
+}
+
 static int32
 meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
                                 regmatch_t *pmatch, int32 pmatch_len,
@@ -68,7 +83,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
                 }
             }
 
-            if (b == '\0') {
+            if (meta_regex_unanchored_scan_done(regex, input_len, j, b)) {
                 break;
             }
         }
@@ -95,7 +110,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
                 }
             }
 
-            if (b == '\0') {
+            if (meta_regex_unanchored_scan_done(regex, input_len, j, b)) {
                 break;
             }
         }
@@ -122,7 +137,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
                 }
             }
 
-            if (b == '\0') {
+            if (meta_regex_unanchored_scan_done(regex, input_len, j, b)) {
                 break;
             }
         }
@@ -150,7 +165,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
                 }
             }
 
-            if (b == '\0') {
+            if (meta_regex_unanchored_scan_done(regex, input_len, j, b)) {
                 break;
             }
         }
@@ -178,7 +193,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
                 }
             }
 
-            if (b == '\0') {
+            if (meta_regex_unanchored_scan_done(regex, input_len, j, b)) {
                 break;
             }
         }
