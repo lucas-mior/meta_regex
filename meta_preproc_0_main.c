@@ -1,5 +1,8 @@
 #include "meta_preproc.h"
-#include "meta_preproc_1_parse.c"
+#include "meta_preproc_1_parse_regex.c"
+#include "meta_preproc_1_parse_tnfa.c"
+#include "meta_preproc_1_parse_tdfa.c"
+#include "meta_preproc_1_parse_source.c"
 #include "meta_preproc_2_gen.c"
 
 int32
