@@ -53,19 +53,28 @@ usage(void) {
     fprintf(stderr, "Usage: %s [option=value ...] <file.c>\n", program);
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  help=true\n");
-    fprintf(stderr, "  emit_static_dfa=true|false\n");
-    fprintf(stderr, "  emit_tnfa=true|false\n");
-    fprintf(stderr, "  emit_tdfa=true|false\n");
-    fprintf(stderr, "  emit_tdfa_transition_index=true|false\n");
-    fprintf(stderr, "  max_static_dfa_states=N (default = %d)\n", META_MAX_STATIC_DFA_STATES);
-    fprintf(stderr, "  max_tnfa_tags=N\n");
-    fprintf(stderr, "  max_tnfa_states=N\n");
-    fprintf(stderr, "  max_tnfa_transitions=N\n");
-    fprintf(stderr, "  max_tdfa_states=N\n");
-    fprintf(stderr, "  max_tdfa_transitions=N\n");
-    fprintf(stderr, "  max_tdfa_registers=N\n");
-    fprintf(stderr, "  max_tdfa_regops=N\n");
-    fprintf(stderr, "  max_tdfa_transition_index_entries=N\n");
+    fprintf(stderr, "  emit_static_dfa=true|false (default = true)\n");
+    fprintf(stderr, "  emit_tnfa=true|false (default = true)\n");
+    fprintf(stderr, "  emit_tdfa=true|false (default = true)\n");
+    fprintf(stderr, "  emit_tdfa_transition_index=true|false (default = true)\n");
+    fprintf(stderr, "  max_static_dfa_states=N (default = %d)\n",
+            META_MAX_STATIC_DFA_STATES);
+    fprintf(stderr, "  max_tnfa_tags=N (default = %d)\n",
+            PREPROC_MAX_TNFA_TAGS);
+    fprintf(stderr, "  max_tnfa_states=N (default = %d)\n",
+            PREPROC_MAX_TNFA_STATES);
+    fprintf(stderr, "  max_tnfa_transitions=N (default = %d)\n",
+            PREPROC_MAX_TNFA_TRANSITIONS);
+    fprintf(stderr, "  max_tdfa_states=N (default = %d)\n",
+            PREPROC_MAX_TDFA_STATES);
+    fprintf(stderr, "  max_tdfa_transitions=N (default = %d)\n",
+            PREPROC_MAX_TDFA_TRANSITIONS);
+    fprintf(stderr, "  max_tdfa_registers=N (default = %d)\n",
+            PREPROC_MAX_TDFA_REGISTERS);
+    fprintf(stderr, "  max_tdfa_regops=N (default = %d)\n",
+            PREPROC_MAX_TDFA_REGOPS);
+    fprintf(stderr, "  max_tdfa_transition_index_entries=N (default = %d)\n",
+            PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES);
     return;
 }
 
