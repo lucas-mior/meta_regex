@@ -130,16 +130,16 @@ cc gen/your_code_baked.c -o your_program
 - Static DFA
   * Tends to bloat the binary
   * Does not support group extraction
-  * The pre processor only creates it if it does not exceed specified limits
-  * In general, the fastest. Use it if you don't need group extraction or back
-    references and your regexes aren't complicated enough to make it impractical
-    to store the entire DFA in the binary.
+  * The pre processor only creates it if it does not exceed specified limits.
+    This is done for 2 reaons: first, to not generate huge binaries. Second,
+    to improve cache locality. Lazy DFA is better if you need complicated
+    regular expressions with lot of possible states.
 - Lazy DFA
   * Does not support group extraction
-  * Good performance, but not as good as static DFA.
 - Tagged DFA
   * The only one that supports group extraction besides BTNFA.
-  * Good performance, but not as good as static DFA.
+  * All the considerations about binary size and cache locality apply here
+    as well.
 - Tagged NFA
   * This is ~almost~ always slower than all the others, never use it.
 
