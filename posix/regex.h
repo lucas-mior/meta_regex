@@ -45,31 +45,31 @@ extern "C" {
 typedef int64 int64;
 
 /* The type of object sizes, in places where the traditional code
-   uses ulong int.  */
+   uses uint64 int32.  */
 typedef int64 __re_long_size_t;
 
 #else
 
 /* The traditional GNU regex implementation mishandles strings longer
    than INT_MAX.  */
-typedef uint int64;
-typedef ulong int __re_long_size_t;
+typedef uint32 int64;
+typedef uint64 int32 __re_long_size_t;
 
 #endif
 
-/* The following two types have to be signed and unsigned integer type
+/* The following two types have to be signed and uinteger type
    wide enough to hold a value of a pointer.  For most ANSI compilers
-   ptrdiff_t and int64 should be likely OK.  Still size of these two
+   int64 and int64 should be likely OK.  Still size of these two
    types is 2 for Microsoft C.  Ugh... */
-typedef long int s_reg_t;
-typedef ulong int active_reg_t;
+typedef int64 int32 s_reg_t;
+typedef uint64 int32 active_reg_t;
 
 /* The following bits are used to determine the regexp syntax we
    recognize.  The set/not-set meanings are chosen so that Emacs syntax
    remains the value 0.  The bits are given in alphabetical order, and
    the definitions shifted by one from the previous bit; thus, when we
    add or remove a bit, only one other definition need change.  */
-typedef ulong int reg_syntax_t;
+typedef uint64 int32 reg_syntax_t;
 
 #ifdef __USE_GNU
 /* If this bit is not set, then \ inside a bracket expression is literal.
@@ -96,7 +96,7 @@ typedef ulong int reg_syntax_t;
            before a close-group or an alternation operator.
 
    This bit could be (re)combined with RE_CONTEXT_INDEP_OPS, because
-   POSIX draft 11.2 says that * etc. in leading positions is undefined.
+   POSIX draft 11.2 says that*etc. in leading positions is undefined.
    We already implemented a previous draft which made those constructs
    invalid, though, so we haven't changed the code back.  */
 #define RE_CONTEXT_INDEP_ANCHORS (RE_CHAR_CLASSES << 1)
@@ -394,7 +394,7 @@ typedef enum {
    other fields are private to the regex routines.  */
 
 #ifndef RE_TRANSLATE_TYPE
-#define __RE_TRANSLATE_TYPE uchar *
+#define __RE_TRANSLATE_TYPE uint8 *
 #ifdef __USE_GNU
 #define RE_TRANSLATE_TYPE __RE_TRANSLATE_TYPE
 #endif
@@ -475,14 +475,14 @@ typedef struct re_pattern_buffer regex_t;
 /* Type for byte offsets within the string.  POSIX mandates this.  */
 #ifdef _REGEX_LARGE_OFFSETS
 /* POSIX 1003.1-2008 requires that regoff_t be at least as wide as
-   ptrdiff_t and ssize_t.  We don't know of any hosts where ptrdiff_t
-   is wider than ssize_t, so ssize_t is safe.  ptrdiff_t is not
-   visible here, so use ssize_t.  */
-typedef ssize_t regoff_t;
+   int64 and int64.  We don't know of any hosts where int64
+   is wider than int64, so int64 is safe.  int64 is not
+   visible here, so use int64.  */
+typedef int64 regoff_t;
 #else
 /* The traditional GNU regex implementation mishandles strings longer
    than INT_MAX.  */
-typedef int regoff_t;
+typedef int32 regoff_t;
 #endif
 
 #ifdef __USE_GNU
@@ -556,7 +556,7 @@ extern char *re_compile_pattern(char *__pattern, int64 __length,
 /* Compile a fastmap for the compiled pattern in BUFFER; used to
    accelerate searches.  Return 0 if successful and -2 if was an
    internal error.  */
-extern int re_compile_fastmap(struct re_pattern_buffer *__buffer);
+extern int32 re_compile_fastmap(struct re_pattern_buffer *__buffer);
 
 /* Search in the string STRING (with length LENGTH) for the pattern
    compiled into BUFFER.  Start searching at position START, for RANGE
@@ -594,8 +594,8 @@ extern regoff_t re_match_2(struct re_pattern_buffer *__buffer, char *__string1,
 /* Set REGS to hold NUM_REGS registers, storing them in STARTS and
    ENDS.  Subsequent matches using BUFFER and REGS will use this memory
    for recording register information.  STARTS and ENDS must be
-   allocated with malloc, and must each be at least 'NUM_REGS * sizeof
-   (regoff_t)' bytes long.
+   allocated with malloc, and must each be at least 'NUM_REGS*sizeof
+   (regoff_t)' bytes int64.
 
    If NUM_REGS == 0, then subsequent matches should allocate their own
    register data.
@@ -611,7 +611,7 @@ extern void re_set_registers(struct re_pattern_buffer *__buffer,
 #if defined _REGEX_RE_COMP || (defined _LIBC && defined __USE_MISC)
 /* 4.2 bsd compatibility.  */
 extern char *re_comp(char *);
-extern int re_exec(char *);
+extern int32 re_exec(char *);
 #endif
 
 /* For plain 'restrict', use glibc's __restrict if defined.
@@ -652,15 +652,15 @@ extern int re_exec(char *);
 #endif
 
 /* POSIX compatibility.  */
-extern int regcomp(regex_t *_Restrict_ __preg, char *_Restrict_ __pattern,
-                   int __cflags);
+extern int32 regcomp(regex_t *_Restrict_ __preg, char *_Restrict_ __pattern,
+                   int32 __cflags);
 
-extern int regexec(regex_t *_Restrict_ __preg, char *_Restrict_ __String,
+extern int32 regexec(regex_t *_Restrict_ __preg, char *_Restrict_ __String,
                    int64 __nmatch,
                    regmatch_t __pmatch[_Restrict_arr_ _REGEX_NELTS(__nmatch)],
-                   int __eflags);
+                   int32 __eflags);
 
-extern int64 regerror(int __errcode, regex_t *_Restrict_ __preg,
+extern int64 regerror(int32 __errcode, regex_t *_Restrict_ __preg,
                       char *_Restrict_ __errbuf, int64 __errbuf_size)
     _Attr_access_((__write_only__, 3, 4));
 

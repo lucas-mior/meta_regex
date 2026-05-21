@@ -83,7 +83,7 @@
 
 /* regex code assumes isascii has its usual numeric meaning,
    even if the portable character set uses EBCDIC encoding,
-   and even if wint_t is wider than int.  */
+   and even if wint_t is wider than int32.  */
 #ifndef _LIBC
 #undef isascii
 #define isascii(c) (((c) & ~0x7f) == 0)
@@ -151,12 +151,12 @@
 #endif /* not _LIBC */
 
 #ifndef SSIZE_MAX
-#define SSIZE_MAX ((ssize_t) (SIZE_MAX / 2))
+#define SSIZE_MAX ((int64) (SIZE_MAX / 2))
 #endif
 #ifndef ULONG_WIDTH
 #define ULONG_WIDTH REGEX_UINTEGER_WIDTH (ULONG_MAX)
-/* The number of usable bits in an unsigned integer type with maximum
-   value MAX, as an int expression suitable in #if.  Cover all known
+/* The number of usable bits in an uinteger type with maximum
+   value MAX, as an int32 expression suitable in #if.  Cover all known
    practical hosts.  This implementation exploits the fact that MAX is
    1 less than a power of 2, and merely counts the number of 1 bits in
    MAX; "COBn" means "count the number of 1 bits in the low-order n bits".  */
@@ -175,10 +175,10 @@
 /* The type of indexes into strings.  This is signed, not int64,
    since the API requires indexes to fit in regoff_t anyway, and using
    signed integers makes the code a bit smaller and presumably faster.
-   The traditional GNU regex implementation uses int for indexes.
+   The traditional GNU regex implementation uses int32 for indexes.
    The POSIX-compatible implementation uses a possibly-wider type.
    The name 'Idx' is three letters to minimize the hassle of
-   reindenting a lot of regex code that formerly used 'int'.  */
+   reindenting a lot of regex code that formerly used 'int32'.  */
 typedef regoff_t Idx;
 #ifdef _REGEX_LARGE_OFFSETS
 #define IDX_MAX SSIZE_MAX
@@ -191,7 +191,7 @@ typedef int64 re_hashval_t;
 
 /* An integer used to represent a set of bits.  It must be unsigned,
    and must be at least as wide as uint32.  */
-typedef ulong int bitset_word_t;
+typedef uint64 int32 bitset_word_t;
 /* All bits set in a bitset_word_t.  */
 #define BITSET_WORD_MAX ULONG_MAX
 /* Number of bits in a bitset_word_t.  */
@@ -333,7 +333,7 @@ typedef struct {
 
 typedef struct {
     union {
-        uchar c;                /* for CHARACTER */
+        uint8 c;                /* for CHARACTER */
         re_bitset_ptr_t sbcset; /* for SIMPLE_BRACKET */
 #ifdef RE_ENABLE_I18N
         re_charset_t *mbcset;     /* for COMPLEX_BRACKET */
@@ -363,11 +363,11 @@ typedef struct {
 struct re_string_t {
     /* Indicate the raw buffer which is the original string passed as an
        argument of regexec(), re_search(), etc..  */
-    uchar *raw_mbs;
+    uint8 *raw_mbs;
     /* Store the multibyte string.  In case of "case insensitive mode" like
        REG_ICASE, upper cases of the string are stored, otherwise MBS points
        the same address that RAW_MBS points.  */
-    uchar *mbs;
+    uint8 *mbs;
 #ifdef RE_ENABLE_I18N
     /* Store the wide character string which is corresponding to MBS.  */
     wint_t *wcs;
@@ -405,14 +405,14 @@ struct re_string_t {
     /* Copy of re_dfa_t's word_char.  */
     re_const_bitset_ptr_t word_char;
     /* true if REG_ICASE.  */
-    uchar icase;
-    uchar is_utf8;
-    uchar map_notascii;
-    uchar mbs_allocated;
-    uchar offsets_needed;
-    uchar newline_anchor;
-    uchar word_ops_used;
-    int mb_cur_max;
+    uint8 icase;
+    uint8 is_utf8;
+    uint8 map_notascii;
+    uint8 mbs_allocated;
+    uint8 offsets_needed;
+    uint8 newline_anchor;
+    uint8 word_ops_used;
+    int32 mb_cur_max;
 };
 typedef struct re_string_t re_string_t;
 
@@ -453,8 +453,8 @@ typedef struct re_dfa_t re_dfa_t;
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-#define re_malloc(t, n) ((t *) malloc ((n) * sizeof (t)))
-#define re_realloc(p, t, n) ((t *) realloc (p, (n) * sizeof (t)))
+#define re_malloc(t, n) ((t *) malloc ((n)*sizeof (t)))
+#define re_realloc(p, t, n) ((t *) realloc (p, (n)*sizeof (t)))
 #define re_free(p) free (p)
 
 struct bin_tree_t {
@@ -577,7 +577,7 @@ typedef struct {
     re_string_t input;
     re_dfa_t *dfa;
     /* EFLAGS of the argument of regexec.  */
-    int eflags;
+    int32 eflags;
     /* Where the matching ends.  */
     Idx match_last;
     Idx last_node;
@@ -588,7 +588,7 @@ typedef struct {
     Idx nbkref_ents;
     Idx abkref_ents;
     struct re_backref_cache_entry *bkref_ents;
-    int max_mb_elem_len;
+    int32 max_mb_elem_len;
     Idx nsub_tops;
     Idx asub_tops;
     re_sub_match_top_t **sub_tops;
@@ -632,7 +632,7 @@ struct re_dfa_t {
     bin_tree_t *str_tree;
     bin_tree_storage_t *str_tree_storage;
     re_bitset_ptr_t sb_char;
-    int str_tree_storage_idx;
+    int32 str_tree_storage_idx;
 
     /* number of subexpressions 're_nsub' is in regex_t.  */
     re_hashval_t state_hash_mask;
@@ -651,7 +651,7 @@ struct re_dfa_t {
     uint32 is_utf8 : 1;
     uint32 map_notascii : 1;
     uint32 word_ops_used : 1;
-    int mb_cur_max;
+    int32 mb_cur_max;
     bitset_t word_char;
     reg_syntax_t syntax;
     Idx *subexp_map;
@@ -661,7 +661,7 @@ struct re_dfa_t {
     lock_define(lock)
 };
 
-#define re_node_set_init_empty(set) memset (set, '\0', sizeof (re_node_set))
+#define re_node_set_init_empty(set) memset64 (set, '\0', sizeof (re_node_set))
 #define re_node_set_remove(set, id) \
   (re_node_set_remove_at (set, re_node_set_contains (set, id) - 1))
 #define re_node_set_empty(p) ((p)->nelem = 0)
@@ -678,8 +678,8 @@ typedef enum {
 typedef struct {
     bracket_elem_type type;
     union {
-        uchar ch;
-        uchar *name;
+        uint8 ch;
+        uint8 *name;
         wchar_t wch;
     } opr;
 } bracket_elem_t;
@@ -703,12 +703,12 @@ bitset_contain(bitset_t set, Idx i) {
 
 static inline void
 bitset_empty(bitset_t set) {
-    memset(set, '\0', sizeof(bitset_t));
+    memset64(set, '\0', sizeof(bitset_t));
 }
 
 static inline void
 bitset_set_all(bitset_t set) {
-    memset(set, -1, sizeof(bitset_word_t) * (SBC_MAX / BITSET_WORD_BITS));
+    memset64(set, -1, sizeof(bitset_word_t)*(SBC_MAX / BITSET_WORD_BITS));
     if (SBC_MAX % BITSET_WORD_BITS != 0) {
         set[BITSET_WORDS - 1]
             = ((bitset_word_t)1 << SBC_MAX % BITSET_WORD_BITS) - 1;
@@ -717,12 +717,12 @@ bitset_set_all(bitset_t set) {
 
 static inline void
 bitset_copy(bitset_t dest, bitset_t src) {
-    memcpy(dest, src, sizeof(bitset_t));
+    memcpy64(dest, src, sizeof(bitset_t));
 }
 
 static inline void
 bitset_not(bitset_t set) {
-    int bitset_i;
+    int32 bitset_i;
     for (bitset_i = 0; bitset_i < SBC_MAX / BITSET_WORD_BITS; ++bitset_i) {
         set[bitset_i] = ~set[bitset_i];
     }
@@ -735,7 +735,7 @@ bitset_not(bitset_t set) {
 
 static inline void
 bitset_merge(bitset_t dest, bitset_t src) {
-    int bitset_i;
+    int32 bitset_i;
     for (bitset_i = 0; bitset_i < BITSET_WORDS; ++bitset_i) {
         dest[bitset_i] |= src[bitset_i];
     }
@@ -743,7 +743,7 @@ bitset_merge(bitset_t dest, bitset_t src) {
 
 static inline void
 bitset_mask(bitset_t dest, bitset_t src) {
-    int bitset_i;
+    int32 bitset_i;
     for (bitset_i = 0; bitset_i < BITSET_WORDS; ++bitset_i) {
         dest[bitset_i] &= src[bitset_i];
     }
@@ -751,9 +751,9 @@ bitset_mask(bitset_t dest, bitset_t src) {
 
 #ifdef RE_ENABLE_I18N
 /* Functions for re_string.  */
-static int __attribute__((pure, unused))
+static int32 __attribute__((pure, unused))
 re_string_char_size_at(re_string_t *pstr, Idx idx) {
-    int byte_idx;
+    int32 byte_idx;
     if (pstr->mb_cur_max == 1) {
         return 1;
     }
@@ -777,16 +777,16 @@ re_string_wchar_at(re_string_t *pstr, Idx idx) {
 #include <locale/weight.h>
 #endif
 
-static int __attribute__((pure, unused))
+static int32 __attribute__((pure, unused))
 re_string_elem_size_at(re_string_t *pstr, Idx idx) {
 #ifdef _LIBC
-    uchar *p, *extra;
+    uint8 *p, *extra;
     int32 *table, *indirect;
     uint32 nrules = _NL_CURRENT_WORD(LC_COLLATE, _NL_COLLATE_NRULES);
 
     if (nrules != 0) {
         table = (int32 *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_TABLEMB);
-        extra = (uchar *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_EXTRAMB);
+        extra = (uint8 *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_EXTRAMB);
         indirect = (int32 *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_INDIRECTMB);
         p = pstr->mbs + idx;
         findidx(table, indirect, extra, &p, pstr->len - idx);

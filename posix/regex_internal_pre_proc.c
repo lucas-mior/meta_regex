@@ -17,7 +17,7 @@ re_string_allocate(re_string_t *pstr, char *str, Idx len, Idx init_len,
 
     pstr->word_char = dfa->word_char;
     pstr->word_ops_used = dfa->word_ops_used;
-    pstr->mbs = pstr->mbs_allocated ? pstr->mbs : (uchar *)str;
+    pstr->mbs = pstr->mbs_allocated ? pstr->mbs : (uint8 *)str;
     pstr->valid_len = (pstr->mbs_allocated || dfa->mb_cur_max > 1) ? 0 : len;
     pstr->valid_raw_len = pstr->valid_len;
     return REG_NOERROR;
@@ -27,7 +27,7 @@ static reg_errcode_t __attribute_warn_unused_result__
 re_string_construct(re_string_t *pstr, char *str, Idx len,
                     RE_TRANSLATE_TYPE trans, bool icase, re_dfa_t *dfa) {
     reg_errcode_t ret;
-    memset(pstr, '\0', sizeof(re_string_t));
+    memset64(pstr, '\0', sizeof(re_string_t));
     re_string_construct_common(str, len, pstr, trans, icase, dfa);
 
     if (len > 0) {
@@ -36,10 +36,10 @@ re_string_construct(re_string_t *pstr, char *str, Idx len,
             return ret;
         }
     }
-    pstr->mbs = pstr->mbs_allocated ? pstr->mbs : (uchar *)str;
+    pstr->mbs = pstr->mbs_allocated ? pstr->mbs : (uint8 *)str;
 
     if (icase) {
-            build_upper_buffer(pstr);
+        build_upper_buffer(pstr);
     } else {
 
         {
@@ -58,7 +58,7 @@ re_string_construct(re_string_t *pstr, char *str, Idx len,
 static reg_errcode_t __attribute_warn_unused_result__
 re_string_realloc_buffers(re_string_t *pstr, Idx new_buf_len) {
     if (pstr->mbs_allocated) {
-        uchar *new_mbs = re_realloc(pstr->mbs, uchar, new_buf_len);
+        uint8 *new_mbs = re_realloc(pstr->mbs, uint8, new_buf_len);
         if (__glibc_unlikely(new_mbs == NULL)) {
             return REG_ESPACE;
         }
@@ -71,7 +71,7 @@ re_string_realloc_buffers(re_string_t *pstr, Idx new_buf_len) {
 static void
 re_string_construct_common(char *str, Idx len, re_string_t *pstr,
                            RE_TRANSLATE_TYPE trans, bool icase, re_dfa_t *dfa) {
-    pstr->raw_mbs = (uchar *)str;
+    pstr->raw_mbs = (uint8 *)str;
     pstr->len = len;
     pstr->raw_len = len;
     pstr->trans = trans;
@@ -89,7 +89,7 @@ build_upper_buffer(re_string_t *pstr) {
     end_idx = (pstr->bufs_len > pstr->len) ? pstr->len : pstr->bufs_len;
 
     for (char_idx = pstr->valid_len; char_idx < end_idx; ++char_idx) {
-        int ch = pstr->raw_mbs[pstr->raw_mbs_idx + char_idx];
+        int32 ch = pstr->raw_mbs[pstr->raw_mbs_idx + char_idx];
         if (__glibc_unlikely(pstr->trans != NULL)) {
             ch = pstr->trans[ch];
         }
@@ -105,7 +105,7 @@ re_string_translate_buffer(re_string_t *pstr) {
     end_idx = (pstr->bufs_len > pstr->len) ? pstr->len : pstr->bufs_len;
 
     for (buf_idx = pstr->valid_len; buf_idx < end_idx; ++buf_idx) {
-        int ch = pstr->raw_mbs[pstr->raw_mbs_idx + buf_idx];
+        int32 ch = pstr->raw_mbs[pstr->raw_mbs_idx + buf_idx];
         pstr->mbs[buf_idx] = pstr->trans[ch];
     }
 
@@ -114,7 +114,7 @@ re_string_translate_buffer(re_string_t *pstr) {
 }
 
 static reg_errcode_t __attribute_warn_unused_result__
-re_string_reconstruct(re_string_t *pstr, Idx idx, int eflags) {
+re_string_reconstruct(re_string_t *pstr, Idx idx, int32 eflags) {
     Idx offset;
 
     if (__glibc_unlikely(pstr->raw_mbs_idx <= idx)) {
@@ -131,7 +131,7 @@ re_string_reconstruct(re_string_t *pstr, Idx idx, int eflags) {
             = ((eflags & REG_NOTBOL) ? CONTEXT_BEGBUF
                                      : CONTEXT_NEWLINE | CONTEXT_BEGBUF);
         if (!pstr->mbs_allocated) {
-            pstr->mbs = (uchar *)pstr->raw_mbs;
+            pstr->mbs = (uint8 *)pstr->raw_mbs;
         }
         offset = idx;
     }
@@ -144,7 +144,7 @@ re_string_reconstruct(re_string_t *pstr, Idx idx, int eflags) {
                     = re_string_context_at(pstr, offset - 1, eflags);
 
                 if (__glibc_unlikely(pstr->mbs_allocated)) {
-                    memmove(pstr->mbs, pstr->mbs + offset,
+                    memmove64(pstr->mbs, pstr->mbs + offset,
                             pstr->valid_len - offset);
                 }
                 pstr->valid_len -= offset;
@@ -154,7 +154,7 @@ re_string_reconstruct(re_string_t *pstr, Idx idx, int eflags) {
         } else {
             pstr->valid_len = 0;
             {
-                int c = pstr->raw_mbs[pstr->raw_mbs_idx + offset - 1];
+                int32 c = pstr->raw_mbs[pstr->raw_mbs_idx + offset - 1];
                 pstr->valid_raw_len = 0;
                 if (pstr->trans) {
                     c = pstr->trans[c];
@@ -174,23 +174,23 @@ re_string_reconstruct(re_string_t *pstr, Idx idx, int eflags) {
     pstr->raw_mbs_idx = idx;
     pstr->len -= offset;
     pstr->stop -= offset;
-        if (__glibc_unlikely(pstr->mbs_allocated)) {
-            if (pstr->icase) {
-                build_upper_buffer(pstr);
-            } else if (pstr->trans != NULL) {
-                re_string_translate_buffer(pstr);
-            }
-        } else {
-            pstr->valid_len = pstr->len;
+    if (__glibc_unlikely(pstr->mbs_allocated)) {
+        if (pstr->icase) {
+            build_upper_buffer(pstr);
+        } else if (pstr->trans != NULL) {
+            re_string_translate_buffer(pstr);
         }
+    } else {
+        pstr->valid_len = pstr->len;
+    }
 
     pstr->cur_idx = 0;
     return REG_NOERROR;
 }
 
-static uchar __attribute__((pure))
+static uint8 __attribute__((pure))
 re_string_peek_byte_case(re_string_t *pstr, Idx idx) {
-    int ch;
+    int32 ch;
     Idx off;
 
     if (__glibc_likely(!pstr->mbs_allocated)) {
@@ -202,7 +202,7 @@ re_string_peek_byte_case(re_string_t *pstr, Idx idx) {
     return ch;
 }
 
-static uchar
+static uint8
 re_string_fetch_byte_case(re_string_t *pstr) {
     if (__glibc_likely(!pstr->mbs_allocated)) {
         return re_string_fetch_byte(pstr);
@@ -218,9 +218,9 @@ re_string_destruct(re_string_t *pstr) {
     }
 }
 
-static uint
-re_string_context_at(re_string_t *input, Idx idx, int eflags) {
-    int c;
+static uint32
+re_string_context_at(re_string_t *input, Idx idx, int32 eflags) {
+    int32 c;
     if (__glibc_unlikely(idx < 0)) {
 
         return input->tip_context;
@@ -296,7 +296,7 @@ re_node_set_init_copy(re_node_set *dest, re_node_set *src) {
             dest->alloc = dest->nelem = 0;
             return REG_ESPACE;
         }
-        memcpy(dest->elems, src->elems, src->nelem * sizeof(Idx));
+        memcpy64(dest->elems, src->elems, src->nelem*sizeof(Idx));
     } else {
         re_node_set_init_empty(dest);
     }
@@ -375,7 +375,7 @@ re_node_set_add_intersect(re_node_set *dest, re_node_set *src1,
         }
     }
 
-    memcpy(dest->elems, dest->elems + sbase, delta * sizeof(Idx));
+    memcpy64(dest->elems, dest->elems + sbase, delta*sizeof(Idx));
 
     return REG_NOERROR;
 }
@@ -411,12 +411,12 @@ re_node_set_init_union(re_node_set *dest, re_node_set *src1,
         dest->elems[id++] = src1->elems[i1++];
     }
     if (i1 < src1->nelem) {
-        memcpy(dest->elems + id, src1->elems + i1,
-               (src1->nelem - i1) * sizeof(Idx));
+        memcpy64(dest->elems + id, src1->elems + i1,
+               (src1->nelem - i1)*sizeof(Idx));
         id += src1->nelem - i1;
     } else if (i2 < src2->nelem) {
-        memcpy(dest->elems + id, src2->elems + i2,
-               (src2->nelem - i2) * sizeof(Idx));
+        memcpy64(dest->elems + id, src2->elems + i2,
+               (src2->nelem - i2)*sizeof(Idx));
         id += src2->nelem - i2;
     }
     dest->nelem = id;
@@ -429,8 +429,8 @@ re_node_set_merge(re_node_set *dest, re_node_set *src) {
     if (src == NULL || src->nelem == 0) {
         return REG_NOERROR;
     }
-    if (dest->alloc < 2 * src->nelem + dest->nelem) {
-        Idx new_alloc = 2 * (src->nelem + dest->alloc);
+    if (dest->alloc < 2*src->nelem + dest->nelem) {
+        Idx new_alloc = 2*(src->nelem + dest->alloc);
         Idx *new_buffer = re_realloc(dest->elems, Idx, new_alloc);
         if (__glibc_unlikely(new_buffer == NULL)) {
             return REG_ESPACE;
@@ -443,11 +443,11 @@ re_node_set_merge(re_node_set *dest, re_node_set *src) {
 
         DEBUG_ASSERT(dest->elems);
         dest->nelem = src->nelem;
-        memcpy(dest->elems, src->elems, src->nelem * sizeof(Idx));
+        memcpy64(dest->elems, src->elems, src->nelem*sizeof(Idx));
         return REG_NOERROR;
     }
 
-    for (sbase = dest->nelem + 2 * src->nelem, is = src->nelem - 1,
+    for (sbase = dest->nelem + 2*src->nelem, is = src->nelem - 1,
         id = dest->nelem - 1;
          is >= 0 && id >= 0;) {
         if (dest->elems[id] == src->elems[is]) {
@@ -462,11 +462,11 @@ re_node_set_merge(re_node_set *dest, re_node_set *src) {
     if (is >= 0) {
 
         sbase -= is + 1;
-        memcpy(dest->elems + sbase, src->elems, (is + 1) * sizeof(Idx));
+        memcpy64(dest->elems + sbase, src->elems, (is + 1)*sizeof(Idx));
     }
 
     id = dest->nelem - 1;
-    is = dest->nelem + 2 * src->nelem - 1;
+    is = dest->nelem + 2*src->nelem - 1;
     delta = is - sbase + 1;
     if (delta == 0) {
         return REG_NOERROR;
@@ -485,7 +485,7 @@ re_node_set_merge(re_node_set *dest, re_node_set *src) {
             dest->elems[id + delta] = dest->elems[id];
             if (--id < 0) {
 
-                memcpy(dest->elems, dest->elems + sbase, delta * sizeof(Idx));
+                memcpy64(dest->elems, dest->elems + sbase, delta*sizeof(Idx));
                 break;
             }
         }
@@ -512,7 +512,7 @@ re_node_set_insert(re_node_set *set, Idx elem) {
 
     if (set->alloc == set->nelem) {
         Idx *new_elems;
-        set->alloc = set->alloc * 2;
+        set->alloc = set->alloc*2;
         new_elems = re_realloc(set->elems, Idx, set->alloc);
         if (__glibc_unlikely(new_elems == NULL)) {
             return false;
@@ -541,7 +541,7 @@ re_node_set_insert_last(re_node_set *set, Idx elem) {
 
     if (set->alloc == set->nelem) {
         Idx *new_elems;
-        set->alloc = (set->alloc + 1) * 2;
+        set->alloc = (set->alloc + 1)*2;
         new_elems = re_realloc(set->elems, Idx, set->alloc);
         if (__glibc_unlikely(new_elems == NULL)) {
             return false;
@@ -601,7 +601,7 @@ re_node_set_remove_at(re_node_set *set, Idx idx) {
 static Idx
 re_dfa_add_node(re_dfa_t *dfa, re_token_t token) {
     if (__glibc_unlikely(dfa->nodes_len >= dfa->nodes_alloc)) {
-        int64 new_nodes_alloc = dfa->nodes_alloc * 2;
+        int64 new_nodes_alloc = dfa->nodes_alloc*2;
         Idx *new_nexts, *new_indices;
         re_node_set *new_edests, *new_eclosures;
         re_token_t *new_nodes;
@@ -647,7 +647,7 @@ re_dfa_add_node(re_dfa_t *dfa, re_token_t token) {
 }
 
 static re_hashval_t
-calc_state_hash(re_node_set *nodes, uint context) {
+calc_state_hash(re_node_set *nodes, uint32 context) {
     re_hashval_t hash = nodes->nelem + context;
     Idx i;
     for (i = 0; i < nodes->nelem; i++) {
@@ -688,7 +688,7 @@ re_acquire_state(reg_errcode_t *err, re_dfa_t *dfa, re_node_set *nodes) {
 }
 static re_dfastate_t *__attribute_warn_unused_result__
 re_acquire_state_context(reg_errcode_t *err, re_dfa_t *dfa, re_node_set *nodes,
-                         uint context) {
+                         uint32 context) {
     re_hashval_t hash;
     re_dfastate_t *new_state;
     struct re_state_table_entry *spot;
@@ -739,7 +739,7 @@ register_state(re_dfa_t *dfa, re_dfastate_t *newstate, re_hashval_t hash) {
 
     spot = dfa->state_table + (hash & dfa->state_hash_mask);
     if (__glibc_unlikely(spot->alloc <= spot->num)) {
-        Idx new_alloc = 2 * spot->num + 2;
+        Idx new_alloc = 2*spot->num + 2;
         re_dfastate_t **new_array
             = re_realloc(spot->array, re_dfastate_t *, new_alloc);
         if (__glibc_unlikely(new_array == NULL)) {
@@ -807,7 +807,7 @@ create_ci_newstate(re_dfa_t *dfa, re_node_set *nodes, re_hashval_t hash) {
 }
 
 static re_dfastate_t *__attribute_warn_unused_result__
-create_cd_newstate(re_dfa_t *dfa, re_node_set *nodes, uint context,
+create_cd_newstate(re_dfa_t *dfa, re_node_set *nodes, uint32 context,
                    re_hashval_t hash) {
     Idx i, nctx_nodes = 0;
     reg_errcode_t err;
@@ -829,7 +829,7 @@ create_cd_newstate(re_dfa_t *dfa, re_node_set *nodes, uint context,
     for (i = 0; i < nodes->nelem; i++) {
         re_token_t *node = dfa->nodes + nodes->elems[i];
         re_token_type_t type = node->type;
-        uint constraint = node->constraint;
+        uint32 constraint = node->constraint;
 
         if (type == CHARACTER && !constraint) {
             continue;
