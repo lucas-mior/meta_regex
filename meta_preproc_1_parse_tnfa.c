@@ -1,3 +1,6 @@
+#include "meta.h"
+#include "meta_preproc.h"
+#include "primitives.h"
 /* Tagged NFA construction helpers. */
 
 static int32
@@ -340,8 +343,6 @@ tnfa_add_atom_transition(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
     return tnfa_add_transition(tnfa, kind, pc, next_pc, ops[pc].value,
                                ops[pc].mask, 0, META_TNFA_TAG_NONE);
 }
-
-static int32 tnfa_tag_is_fixed(ParsedTnfa *tnfa, int32 tag);
 
 static int32
 tnfa_fixed_find_group_end(ParsedOp *ops, int32 ops_count, int32 start) {

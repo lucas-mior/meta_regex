@@ -163,7 +163,8 @@ typedef struct RegexList {
     int32 capacity;
 } RegexList;
 
-RegexList parse_source_code(char *buffer, int64 source_len);
-void generate_source_code(char *source, int64 source_len, RegexList *list, FILE *out);
+static RegexList parse_source_code(char *buffer, int64 source_len);
+static void generate_source_code(char *source, int64 source_len, RegexList *list, FILE *out);
+static int32 tnfa_tag_is_fixed(ParsedTnfa *tnfa, int32 tag);
 
 #endif /* META_PREPROC_H */
