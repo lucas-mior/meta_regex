@@ -230,8 +230,8 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
             if (current_state_id < META_MAX_LAZY_DFA_STATES) {
                 ldfa->num_states += 1;
                 lazy_dfa_init_state(&ldfa->states[current_state_id], start_key);
-                ASSERT(hash_insert_map(ldfa->state_map, &start_key,
-                                       SIZEOF(start_key), current_state_id));
+                hash_insert_map(ldfa->state_map, &start_key,
+                                SIZEOF(start_key), current_state_id);
             } else {
                 return -1;
             }
@@ -298,8 +298,8 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
                             ldfa->num_states += 1;
                             lazy_dfa_init_state(&ldfa->states[next_id],
                                                 next_key);
-                            ASSERT(hash_insert_map(ldfa->state_map, &next_key,
-                                                   SIZEOF(next_key), next_id));
+                            hash_insert_map(ldfa->state_map, &next_key,
+                                            SIZEOF(next_key), next_id);
                         } else {
                             next_id = -1;
                         }
