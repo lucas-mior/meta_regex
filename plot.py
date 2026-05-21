@@ -245,7 +245,7 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False):
 
         ax.set_title(
             f"{info['block']} | {variant_label} | {info['feature_class']} | "
-            f"regex <= {info['regex_max_len']}"
+            f"n regex ops <= {info['regex_max_len']}"
         )
         ax.set_xlabel("max input length")
         ax.set_ylabel(ylabel)
