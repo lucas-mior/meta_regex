@@ -196,7 +196,7 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
 
     if (ldfa == NULL) {
         ldfa = malloc2(SIZEOF(*ldfa));
-        ldfa->state_map = hash_create_map(META_MAX_LAZY_DFA_STATES, "dfa");
+        ldfa->state_map = hash_create_map(256, "dfa");
         ldfa->num_states = 1;
         ldfa->op_count = lazy_dfa_op_count(regex);
         ldfa->pc_words = lazy_dfa_pc_words(ldfa->op_count);
