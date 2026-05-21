@@ -59,12 +59,6 @@ tdfa_tag_is_fixed(ParsedTdfa *tdfa, int32 tag) {
             && tdfa->tags[tag - 1].fixed_base_tag > 0);
 }
 
-static int32
-tnfa_tag_is_fixed(ParsedTnfa *tnfa, int32 tag) {
-    return (tag > 0 && tag <= tnfa->num_tags
-            && tnfa->tags[tag - 1].fixed_base_tag > 0);
-}
-
 static void
 tdfa_normalize_ops(ParsedTdfa *tdfa, int32 first_op) {
     int32 write = first_op;

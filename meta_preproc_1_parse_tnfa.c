@@ -25,6 +25,12 @@ tnfa_new_state(ParsedTnfa *tnfa) {
     return state;
 }
 
+static int32
+tnfa_tag_is_fixed(ParsedTnfa *tnfa, int32 tag) {
+    return (tag > 0 && tag <= tnfa->num_tags
+            && tnfa->tags[tag - 1].fixed_base_tag > 0);
+}
+
 static bool
 tnfa_add_transition(ParsedTnfa *tnfa, enum MetaTnfaTransitionKind kind,
                     int32 from, int32 to, int32 value, uint32 *mask,
