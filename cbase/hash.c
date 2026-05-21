@@ -222,9 +222,8 @@ CAT(hash_zero_, HASH_TYPE)(struct Map *map) {
     return;
 }
 
-static struct Map *
-CAT(hash_create_, HASH_TYPE)(uint32 length, char *name) {
-    struct Map *map;
+static void
+CAT(hash_init_, HASH_TYPE)(struct Map *map, uint32 length, char *name) {
     int64 array_size;
     int64 slot_states_size;
     uint32 capacity = 1;
@@ -245,7 +244,6 @@ CAT(hash_create_, HASH_TYPE)(uint32 length, char *name) {
     array_size = capacity*sizeof(Bucket);
     slot_states_size = capacity*sizeof(int8);
 
-    map = xmalloc(sizeof(*map), false);
     name_len = strlen32(name);
     map->name = xmalloc(name_len + 1, false);
     memcpy64(map->name, name, name_len + 1);
@@ -268,7 +266,35 @@ CAT(hash_create_, HASH_TYPE)(uint32 length, char *name) {
     if (DEBUGGING) {
         CAT(hash_print_summary_, HASH_TYPE)(map);
     }
+    return;
+}
+
+static struct Map
+CAT(CAT(hash_create_, HASH_TYPE), _value)(uint32 length, char *name) {
+    struct Map map;
+    CAT(hash_init_, HASH_TYPE)(&map, length, name);
     return map;
+}
+
+static struct Map *
+CAT(hash_create_, HASH_TYPE)(uint32 length, char *name) {
+    struct Map *map = xmalloc(sizeof(*map), false);
+    CAT(hash_init_, HASH_TYPE)(map, length, name);
+    return map;
+}
+
+static void
+CAT(hash_deinit_, HASH_TYPE)(struct Map *map) {
+    if (map == NULL) {
+        return;
+    }
+#if HASH_DUPLICATE_KEYS
+    arena_destroy(map->arena_keys);
+#endif
+    xmunmap(map->array, map->size);
+    xmunmap(map->slot_states, map->slot_states_size);
+    free(map->name);
+    return;
 }
 
 static void
@@ -276,11 +302,7 @@ CAT(hash_destroy_, HASH_TYPE)(struct Map *map) {
     if (map == NULL) {
         return;
     }
-#if !HASH_KEY_FIXED_LEN && HASH_DUPLICATE_KEYS
-    arena_destroy(map->arena_keys);
-#endif
-    xmunmap(map->array, map->size);
-    xmunmap(map->slot_states, map->slot_states_size);
+    CAT(hash_deinit_, HASH_TYPE)(map);
     free(map);
     return;
 }
@@ -700,7 +722,10 @@ static inline void
 CAT(hash_functions_sink_, HASH_TYPE)(void) {
     (void)CAT(hash_functions_sink_, HASH_TYPE);
     (void)CAT(hash_zero_, HASH_TYPE);
+    (void)CAT(hash_init_, HASH_TYPE);
+    (void)CAT(CAT(hash_create_, HASH_TYPE), _value);
     (void)CAT(hash_create_, HASH_TYPE);
+    (void)CAT(hash_deinit_, HASH_TYPE);
     (void)CAT(hash_destroy_, HASH_TYPE);
     (void)CAT(hash_resize_, HASH_TYPE);
     (void)CAT(hash_probe_, HASH_TYPE);
@@ -787,6 +812,8 @@ hash_expected_collisions(void *map) {
 
 // Have to add these declarations so that clangd does not complain
 struct Hash_map_by_value;
+static void hash_deinit_map_by_value(struct Hash_map_by_value *);
+static struct Hash_map_by_value hash_create_map_by_value_value(uint32, char *);
 static struct Hash_map_by_value *hash_create_map_by_value(uint32, char *);
 static void hash_destroy_map_by_value(struct Hash_map_by_value *);
 static uint32 hash_ndeleted_map_by_value(struct Hash_map_by_value *);
@@ -905,6 +932,16 @@ main(void) {
                                strings[i].s, strings[i].len, strings[i].value));
     }
     ASSERT_EQUAL(hash_length(map), 10);
+
+    {
+        struct Hash_map map_value = hash_create_map_value(16, "strings_map_value");
+
+        ASSERT(hash_insert_map(&map_value, str1.s, str1.len, str1.value));
+        ASSERT(hash_lookup_map(&map_value, str1.s, str1.len, &test));
+        ASSERT_EQUAL(test, str1.value);
+
+        hash_deinit_map(&map_value);
+    }
 
     hash_destroy_map(map);
     free(strings);
