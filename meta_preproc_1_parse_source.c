@@ -882,7 +882,7 @@ parse_source_code(char *buffer, int64 source_len) {
         }
 
         flags = preproc_parse_regex_flags(flags_buffer);
-        if ((flags & META_RE_EXTRACT)
+        if ((flags & META_RE_YESSUB)
             && (flags & META_RE_NOSUB)) {
             error("R() flags cannot request both extract and no-submatch mode: %s\n",
                   flags_buffer);
@@ -890,7 +890,7 @@ parse_source_code(char *buffer, int64 source_len) {
         }
 
         extract_submatches = preproc_config.default_extract_submatches;
-        if (flags & META_RE_EXTRACT) {
+        if (flags & META_RE_YESSUB) {
             extract_submatches = true;
         }
         if (flags & META_RE_NOSUB) {
