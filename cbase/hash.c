@@ -387,7 +387,7 @@ CAT(hash_resize_, HASH_TYPE)(struct Map *map) {
     return;
 }
 
-static bool
+INLINE bool
 CAT(hash_probe_, HASH_TYPE)(struct Map *map, HASH_KEY_TYPE *key
 #if !HASH_KEY_FIXED_LEN
                             , int32 key_length
@@ -597,7 +597,7 @@ CAT(hash_overwrite_, HASH_TYPE)(struct Map *map, HASH_KEY_TYPE *key
 
 #endif /* HASH_VALUE_TYPE (only define overwrite functions for HashMaps, not for HashSets) */
 
-static bool
+INLINE bool
 CAT(hash_lookup_pre_calc_, HASH_TYPE)(struct Map *map,
                                       HASH_KEY_TYPE *key
 #if !HASH_KEY_FIXED_LEN
@@ -625,7 +625,7 @@ CAT(hash_lookup_pre_calc_, HASH_TYPE)(struct Map *map,
     return false;
 }
 
-static bool
+INLINE bool
 CAT(hash_lookup_, HASH_TYPE)(struct Map *map, HASH_KEY_TYPE *key
 #if !HASH_KEY_FIXED_LEN
                              , int32 key_length
