@@ -16,7 +16,7 @@ tnfa_group_end_tag(int32 group) {
 static int32
 tnfa_new_state(ParsedTnfa *tnfa) {
     int32 state = tnfa->num_states;
-    if (state >= PREPROC_MAX_TNFA_STATES) {
+    if (state >= preproc_config.max_tnfa_states) {
         return -1;
     }
     tnfa->states[state].first_transition = -1;
@@ -30,10 +30,10 @@ tnfa_add_transition(ParsedTnfa *tnfa, enum MetaTnfaTransitionKind kind,
                     int32 from, int32 to, int32 value, uint32 *mask,
                     int32 priority, int32 tag) {
     if (from < 0 || from >= tnfa->num_states || to < 0
-        || to >= PREPROC_MAX_TNFA_STATES) {
+        || to >= preproc_config.max_tnfa_states) {
         return false;
     }
-    if (tnfa->num_transitions >= PREPROC_MAX_TNFA_TRANSITIONS) {
+    if (tnfa->num_transitions >= preproc_config.max_tnfa_transitions) {
         return false;
     }
 
@@ -481,10 +481,10 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
 
     memset64(tnfa, 0, SIZEOF(*tnfa));
 
-    if (ops_count + 1 > PREPROC_MAX_TNFA_STATES) {
+    if (ops_count + 1 > preproc_config.max_tnfa_states) {
         return false;
     }
-    if (group_count*2 > PREPROC_MAX_TNFA_TAGS) {
+    if (group_count*2 > preproc_config.max_tnfa_tags) {
         return false;
     }
 
@@ -698,4 +698,3 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
 
     return true;
 }
-

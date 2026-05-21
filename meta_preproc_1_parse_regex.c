@@ -1,4 +1,5 @@
-/* Regex parsing helpers: POSIX classes, alternation normalization, fastmap/first-set helpers. */
+/* Regex parsing helpers: POSIX classes, alternation normalization,
+ * fastmap/first-set helpers. */
 
 static void
 set_fastmap_bit(uint8 *fastmap, int32 c) {
@@ -284,4 +285,3 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uint8 *fastmap,
 
     return 0;
 }
-

@@ -85,7 +85,6 @@ static int32 lazy_dfa_op_count(MetaRegex *regex);
 static int32 lazy_dfa_pc_words(int32 op_count);
 static int32 lazy_dfa_ctz32(uint32 word);
 
-
 static int32
 lazy_dfa_word(int32 c) {
     if (c < 0 || c >= META_ALPHABET_SIZE) {
@@ -276,7 +275,8 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
                 lazy_dfa_ensure_closure(regex, ldfa, state, curr_is_word);
                 state->accepts_before[b] = state->closure_accepts[curr_is_word];
 
-                compute_core_transitions(regex->ops, &state->closure[curr_is_word],
+                compute_core_transitions(regex->ops,
+                                         &state->closure[curr_is_word],
                                          ldfa->pc_words, b, &next_core);
 
                 for (int32 k = 0; k < META_PC_WORDS; k += 1) {
@@ -302,7 +302,8 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
                         next_id = ldfa->num_states;
                         if (next_id < META_MAX_LAZY_DFA_STATES) {
                             ldfa->num_states += 1;
-                            lazy_dfa_init_state(&ldfa->states[next_id], next_key);
+                            lazy_dfa_init_state(&ldfa->states[next_id],
+                                                next_key);
                             ASSERT(hash_insert_map(ldfa->state_map, &next_key,
                                                    SIZEOF(next_key), next_id));
                         } else {
@@ -449,8 +450,7 @@ add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
 
 static void
 compute_core_transitions(MetaOp *ops, NfaStateSet *current_closed_set,
-                         int32 pc_words, int32 c,
-                         NfaStateSet *next_core_set) {
+                         int32 pc_words, int32 c, NfaStateSet *next_core_set) {
     for (int32 i = 0; i < META_PC_WORDS; i += 1) {
         next_core_set->bits[i] = 0;
     }
@@ -486,14 +486,11 @@ compute_core_transitions(MetaOp *ops, NfaStateSet *current_closed_set,
                 if (next_op->type == META_OP_STAR
                     || next_op->type == META_OP_PLUS) {
                     next_core_set->bits[i / 32] |= (1u << (i % 32));
-                    next_core_set->bits[(i + 2) / 32]
-                        |= (1u << ((i + 2) % 32));
+                    next_core_set->bits[(i + 2) / 32] |= (1u << ((i + 2) % 32));
                 } else if (next_op->type == META_OP_OPTIONAL) {
-                    next_core_set->bits[(i + 2) / 32]
-                        |= (1u << ((i + 2) % 32));
+                    next_core_set->bits[(i + 2) / 32] |= (1u << ((i + 2) % 32));
                 } else {
-                    next_core_set->bits[(i + 1) / 32]
-                        |= (1u << ((i + 1) % 32));
+                    next_core_set->bits[(i + 1) / 32] |= (1u << ((i + 1) % 32));
                 }
             }
 

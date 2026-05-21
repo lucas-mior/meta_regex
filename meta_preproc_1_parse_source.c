@@ -1,6 +1,6 @@
 /* Source scanner and R(...) extraction entry point. */
 
-RegexList
+static RegexList
 parse_source_code(char *buffer, int64 source_len) {
     RegexList list = {0};
     char *cursor = buffer;
@@ -735,21 +735,23 @@ parse_source_code(char *buffer, int64 source_len) {
         paren_end = strchr(quote_end, ')');
         original_string_length = (int32)(quote_end - quote_start) + 1;
 
-        if ((used_ops & META_OP_BACKREF) == 0) {
+        if ((used_ops & META_OP_BACKREF) == 0
+            && (preproc_config.emit_tnfa || preproc_config.emit_tdfa)) {
             regex->tnfa = malloc2(SIZEOF(*regex->tnfa));
             if (!build_tnfa_from_ops(regex->tnfa, temp_ops, temp_ops_count,
                                      group_counter)) {
-                fprintf(stderr, "Warning: TNFA construction failed for %.*s.\n",
+                fprintf(stderr, "Warning: TNFA construction failed for %.*s.",
                         original_string_length, quote_start);
                 regex->tnfa = NULL;
             }
 
-            if (regex->tnfa != NULL) {
+            if (regex->tnfa != NULL && preproc_config.emit_tdfa) {
                 regex->tdfa = malloc2(SIZEOF(*regex->tdfa));
                 if (!build_tdfa_from_tnfa(regex->tdfa, regex->tnfa)) {
                     fprintf(stderr,
-                            "Warning: TDFA construction failed for %.*s.\n",
-                            original_string_length, quote_start);
+                            "Warning: TDFA construction failed for %.*s.",
+                            original_string_length,
+                            quote_start);
                     regex->tdfa = NULL;
                 }
             }

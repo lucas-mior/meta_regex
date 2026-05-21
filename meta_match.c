@@ -34,7 +34,6 @@ static MatcherFeatures matchers[] = {
     [MATCHER_STATIC_DFA] = match_features_static_dfa,
 };
 
-
 static int32
 meta_regex_unanchored_scan_done(MetaRegex *regex, int32 input_len, int32 offset,
                                 uint8 b) {

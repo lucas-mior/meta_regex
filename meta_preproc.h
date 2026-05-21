@@ -35,6 +35,41 @@
 #define PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES \
     (PREPROC_MAX_TDFA_STATES*PREPROC_TDFA_TRANS_INDEX_MAX_STRIDE)
 
+
+typedef struct PreprocConfig {
+    int32 emit_static_dfa;
+    int32 emit_tnfa;
+    int32 emit_tdfa;
+    int32 emit_tdfa_transition_index;
+
+    int32 max_static_dfa_states;
+    int32 max_tnfa_tags;
+    int32 max_tnfa_states;
+    int32 max_tnfa_transitions;
+    int32 max_tdfa_states;
+    int32 max_tdfa_transitions;
+    int32 max_tdfa_registers;
+    int32 max_tdfa_regops;
+    int32 max_tdfa_transition_index_entries;
+} PreprocConfig;
+
+static PreprocConfig preproc_config = {
+    .emit_static_dfa = 1,
+    .emit_tnfa = 1,
+    .emit_tdfa = 1,
+    .emit_tdfa_transition_index = 1,
+
+    .max_static_dfa_states = META_MAX_STATIC_DFA_STATES,
+    .max_tnfa_tags = PREPROC_MAX_TNFA_TAGS,
+    .max_tnfa_states = PREPROC_MAX_TNFA_STATES,
+    .max_tnfa_transitions = PREPROC_MAX_TNFA_TRANSITIONS,
+    .max_tdfa_states = PREPROC_MAX_TDFA_STATES,
+    .max_tdfa_transitions = PREPROC_MAX_TDFA_TRANSITIONS,
+    .max_tdfa_registers = PREPROC_MAX_TDFA_REGISTERS,
+    .max_tdfa_regops = PREPROC_MAX_TDFA_REGOPS,
+    .max_tdfa_transition_index_entries = PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES,
+};
+
 #define ENUM_PREFIX_ PREPROC_FAIL_
 #define ENUM_NAME PreprocFailReason
 #define ENUM_BITFLAGS 1

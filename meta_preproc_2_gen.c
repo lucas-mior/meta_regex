@@ -246,7 +246,7 @@ static void
 emit_tnfa(ExtractedRegex *regex, FILE *out) {
     ParsedTnfa *tnfa = regex->tnfa;
 
-    if (tnfa == NULL) {
+    if (!preproc_config.emit_tnfa || tnfa == NULL) {
         fprintf(out, ", .tnfa = NULL");
         return;
     }
@@ -336,7 +336,7 @@ static void
 emit_tdfa(ExtractedRegex *regex, FILE *out) {
     ParsedTdfa *tdfa = regex->tdfa;
 
-    if (tdfa == NULL) {
+    if (!preproc_config.emit_tdfa || tdfa == NULL) {
         fprintf(out, ", .tdfa = NULL");
         return;
     }
@@ -464,6 +464,12 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
     int32 start_dfa_w = 0;
     int32 start_dfa_nw = 0;
 
+    if (!preproc_config.emit_static_dfa
+        || preproc_config.max_static_dfa_states <= 2) {
+        fprintf(out, ", .static_dfa = NULL");
+        return;
+    }
+
     for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
         dfa_transitions[0][c] = 0;
         dfa_accept[0][c] = 0;
@@ -554,7 +560,7 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
 
                 if (match_id != -1) {
                     dfa_transitions[d][c] = match_id;
-                } else if (dfa_count < META_MAX_STATIC_DFA_STATES) {
+                } else if (dfa_count < preproc_config.max_static_dfa_states) {
                     dfa_sets[dfa_count] = next_kernel;
                     for (int32 k = 0; k < META_ALPHABET_SIZE; k += 1) {
                         dfa_transitions[dfa_count][k] = 0;
@@ -618,7 +624,7 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
     return;
 }
 
-void
+static void
 generate_source_code(char *source, int64 source_len, RegexList *list,
                      FILE *out) {
     int64 current_offset = 0;
@@ -657,7 +663,9 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
         emit_tnfa(regex, out);
         emit_tdfa(regex, out);
 
-        if (regex->used_ops & META_OP_BACKREF) {
+        if (!preproc_config.emit_static_dfa) {
+            fprintf(out, ", .static_dfa = NULL");
+        } else if (regex->used_ops & META_OP_BACKREF) {
             fprintf(
                 stderr,
                 "Warning: Regex " BLUE(

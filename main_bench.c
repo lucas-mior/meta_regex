@@ -1338,7 +1338,7 @@ bench_build_pair_input_bucket(BenchRegexBucket *regex_bucket, regex_t *compiled,
 static int32
 bench_parse_input_len_cap(char *s, int32 *out) {
     char *end = NULL;
-    long value;
+    int64 value;
 
     if (s == NULL || *s == '\0') {
         return 0;
@@ -1386,7 +1386,7 @@ bench_parse_args(int32 argc, char **argv) {
                 bench_usage(argv[0]);
             }
             value = argv[i];
-        } else if (strncmp(arg, "--max-input-len=", 16) == 0) {
+        } else if (strncmp32(arg, "--max-input-len=", 16) == 0) {
             value = arg + 16;
         } else if (arg[0] != '-') {
             value = arg;

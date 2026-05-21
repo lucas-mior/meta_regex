@@ -1,5 +1,4 @@
-#include "primitives.h"
-#include "meta_preproc.h"
+/* Tagged DFA construction helpers. */
 
 typedef struct TdfaBuildConfig {
     int32 tnfa_state;
@@ -106,7 +105,7 @@ tdfa_add_regop(ParsedTdfa *tdfa, enum MetaTdfaRegOpKind kind, int32 dst,
         return true;
     }
 
-    if (tdfa->num_ops >= PREPROC_MAX_TDFA_REGOPS) {
+    if (tdfa->num_ops >= preproc_config.max_tdfa_regops) {
         return false;
     }
 
@@ -451,7 +450,7 @@ tdfa_add_state(TdfaBuildState *states, ParsedTdfa *tdfa, ParsedTnfa *tnfa,
     TdfaBuildState *build_state;
     MetaTdfaState *state;
 
-    if (tdfa->num_states >= PREPROC_MAX_TDFA_STATES) {
+    if (tdfa->num_states >= preproc_config.max_tdfa_states) {
         return -1;
     }
 
@@ -468,7 +467,7 @@ tdfa_add_state(TdfaBuildState *states, ParsedTdfa *tdfa, ParsedTnfa *tnfa,
     if (tdfa->transition_index_stride > 0) {
         int32 base = state_id*tdfa->transition_index_stride;
         int32 end = base + tdfa->transition_index_stride;
-        if (end > PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES) {
+        if (end > preproc_config.max_tdfa_transition_index_entries) {
             return -1;
         }
         for (int32 i = base; i < end; i += 1) {
@@ -505,7 +504,7 @@ tdfa_add_state(TdfaBuildState *states, ParsedTdfa *tdfa, ParsedTnfa *tnfa,
             if (t == 0 || tdfa_tag_is_fixed(tdfa, t)) {
                 build_state->regs[i*tag_count + t] = 0;
             } else {
-                if (*next_register > PREPROC_MAX_TDFA_REGISTERS) {
+                if (*next_register > preproc_config.max_tdfa_registers) {
                     return -1;
                 }
                 build_state->regs[i*tag_count + t] = *next_register;
@@ -562,7 +561,7 @@ tdfa_emit_transition_ops(ParsedTdfa *tdfa, TdfaBuildState *source,
 static bool
 tdfa_add_transition(ParsedTdfa *tdfa, int32 from, int32 to, int32 symbol,
                     int32 next_is_word, int32 first_op, int32 op_count) {
-    if (tdfa->num_transitions >= PREPROC_MAX_TDFA_TRANSITIONS) {
+    if (tdfa->num_transitions >= preproc_config.max_tdfa_transitions) {
         return false;
     }
 
@@ -585,7 +584,8 @@ tdfa_add_transition(ParsedTdfa *tdfa, int32 from, int32 to, int32 symbol,
             context_offset = next_is_word*META_ALPHABET_SIZE;
         }
         index = from*tdfa->transition_index_stride + context_offset + symbol;
-        if (index < 0 || index >= PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES) {
+        if (index < 0
+            || index >= preproc_config.max_tdfa_transition_index_entries) {
             return false;
         }
         tdfa->transition_index[index] = transition_id;
@@ -611,8 +611,9 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
     if (tdfa == NULL || tnfa == NULL) {
         return false;
     }
-    if (tnfa->num_tags < 0 || tnfa->num_tags > PREPROC_MAX_TNFA_TAGS
-        || tnfa->num_states <= 0 || tnfa->num_states > PREPROC_MAX_TNFA_STATES
+    if (tnfa->num_tags < 0 || tnfa->num_tags > preproc_config.max_tnfa_tags
+        || tnfa->num_states <= 0
+        || tnfa->num_states > preproc_config.max_tnfa_states
         || tnfa->num_transitions < 0) {
         return false;
     }
@@ -630,19 +631,26 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
         tdfa->tags[i] = tnfa->tags[i];
     }
 
+    if (tnfa->num_tags > preproc_config.max_tdfa_registers) {
+        return false;
+    }
+
     tag_count = tnfa->num_tags + 1;
     next_register = tnfa->num_tags + 1;
     work_capacity = tnfa->num_states + tnfa->num_transitions + 1;
     uses_context = tdfa_tnfa_has_context_assertions(tnfa);
     tdfa->uses_context = uses_context;
     tdfa->transition_index_stride
-        = uses_context ? META_ALPHABET_SIZE*2 : META_ALPHABET_SIZE;
+        = preproc_config.emit_tdfa_transition_index
+              ? (uses_context ? META_ALPHABET_SIZE*2 : META_ALPHABET_SIZE)
+              : 0;
     tdfa->transition_index_count = 0;
     if (work_capacity <= 0 || work_capacity > PREPROC_MAX_TDFA_WORK_CONFIGS) {
         return false;
     }
 
-    build_states = malloc2(SIZEOF(*build_states)*PREPROC_MAX_TDFA_STATES);
+    build_states
+        = malloc2(SIZEOF(*build_states)*preproc_config.max_tdfa_states);
     work = malloc2(SIZEOF(*work)*work_capacity);
     closed = malloc2(SIZEOF(*closed)*work_capacity);
     stack = malloc2(SIZEOF(*stack)*work_capacity);
@@ -653,7 +661,8 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
         || edge_indices == NULL) {
         return false;
     }
-    memset64(build_states, 0, SIZEOF(*build_states)*PREPROC_MAX_TDFA_STATES);
+    memset64(build_states, 0,
+             SIZEOF(*build_states)*preproc_config.max_tdfa_states);
 
     initial.tnfa_state = tnfa->start_state;
     initial.source_config = -1;
@@ -794,4 +803,3 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
     tdfa->num_registers = next_register - 1;
     return true;
 }
-
