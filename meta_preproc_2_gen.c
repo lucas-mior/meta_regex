@@ -589,10 +589,12 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
         fprintf(out, ", .static_dfa = NULL");
     } else {
         fprintf(out,
-                ", .static_dfa = &(StaticDfa){ .num_states = %d, "
-                ".start_state_w = %d, .start_state_nw = %d, "
-                ".states = (StaticDfaState[]){ \n",
-                dfa_count, start_dfa_w, start_dfa_nw);
+                ", .static_dfa = (StaticDfa *)&(struct { "
+                "int32 num_states; int32 start_state_w; "
+                "int32 start_state_nw; StaticDfaState states[%d]; "
+                "}){ .num_states = %d, .start_state_w = %d, "
+                ".start_state_nw = %d, .states = { \n",
+                dfa_count, dfa_count, start_dfa_w, start_dfa_nw);
         for (int32 i = 0; i < dfa_count; i += 1) {
             bool has_accepts = false;
             bool has_transitions = false;

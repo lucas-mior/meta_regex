@@ -74,7 +74,7 @@ typedef struct StaticDfa {
     int32 num_states;
     int32 start_state_w;
     int32 start_state_nw;
-    StaticDfaState *states;
+    StaticDfaState states[];
 } StaticDfa;
 
 typedef struct NfaStateSet {

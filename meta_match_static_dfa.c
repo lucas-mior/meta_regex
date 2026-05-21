@@ -38,9 +38,10 @@ static inline __attribute__((always_inline)) int32
 #endif
 match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
                  regmatch_t *pmatch, int32 pmatch_len) {
-    StaticDfaState *states = regex->static_dfa->states;
+    StaticDfa *dfa = regex->static_dfa;
+    StaticDfaState *states = dfa->states;
     StaticDfaState *current_state_ptr;
-    int32 start_idx = regex->static_dfa->start_state_nw;
+    int32 start_idx = dfa->start_state_nw;
     int32 last_accept;
 
     (void)input_len;
@@ -48,7 +49,7 @@ match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
     if (offset > 0) {
         uint8 prev_b = input[offset - 1];
         if (word_table[prev_b]) {
-            start_idx = regex->static_dfa->start_state_w;
+            start_idx = dfa->start_state_w;
         }
     }
 
