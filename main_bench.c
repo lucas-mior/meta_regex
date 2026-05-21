@@ -137,7 +137,7 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
 #define BENCH_MAX_MATCHES 16
 
 #if !defined(META_BENCH_ENABLE_EXTRACT_VARIANTS)
-#define META_BENCH_ENABLE_EXTRACT_VARIANTS 0
+#define META_BENCH_ENABLE_EXTRACT_VARIANTS 1
 #endif
 
 #if !defined(ENABLE_BTNFA)
@@ -147,13 +147,13 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
 #define ENABLE_TNFA 0
 #endif
 #if !defined(ENABLE_TDFA)
-#define ENABLE_TDFA 0
+#define ENABLE_TDFA 1
 #endif
 #if !defined(ENABLE_LAZY_DFA)
 #define ENABLE_LAZY_DFA 1
 #endif
 #if !defined(ENABLE_STATIC_DFA)
-#define ENABLE_STATIC_DFA 0
+#define ENABLE_STATIC_DFA 1
 #endif
 
 static enum Matcher bench_matchers[] = {
