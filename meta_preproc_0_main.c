@@ -138,11 +138,9 @@ main(int32 argc, char **argv) {
         filename = argv[i];
     }
 
-    if (help != NULL) {
-        if (preproc_parse_bool("help", help)) {
-            usage();
-            exit(EXIT_SUCCESS);
-        }
+    if (help) {
+        usage();
+        exit(EXIT_SUCCESS);
     }
 
     APPLY_BOOL_OPTION(emit_static_dfa);
