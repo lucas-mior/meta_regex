@@ -69,7 +69,6 @@ typedef struct LazyDfa {
     LazyDfaState states[META_MAX_LAZY_DFA_STATES];
 } LazyDfa;
 
-static void lazy_dfa_init_word_table(void);
 static int32 lazy_dfa_word(int32 c);
 static void add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
                                 int32 *is_accepting, int32 prev_is_word,
