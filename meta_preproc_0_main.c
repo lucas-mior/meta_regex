@@ -18,6 +18,7 @@ main(int32 argc, char **argv) {
     char *buffer = NULL;
     char *filename = NULL;
     char *option;
+    char *c;
     program = argv[0];
 
     if (argc < 2) {
@@ -25,8 +26,9 @@ main(int32 argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    for (int i = 1; i < argc; i += 1) {
+    for (int i = 1; i <= argc; i += 1) {
         PARSE_OPTION(argv[i], option)
+        PARSE_OPTION(argv[i], c)
         filename = argv[i];
     }
 
