@@ -40,6 +40,11 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
                                 enum Matcher matcher) {
     int32 result;
 
+    if (regex->min_match_len > 0 && input_len >= 0
+        && input_len < regex->min_match_len) {
+        return REG_NOMATCH;
+    }
+
     switch (matcher) {
     case MATCHER_BTNFA: {
         if (regex->has_start_anchor) {
@@ -242,6 +247,11 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
             pmatch[k].rm_so = -1;
             pmatch[k].rm_eo = -1;
         }
+    }
+
+    if (regex->min_match_len > 0 && input_len >= 0
+        && input_len < regex->min_match_len) {
+        return REG_NOMATCH;
     }
 
     needs_extraction = (regex->re_nsub > 0 && pmatch_len > 1);

@@ -645,6 +645,7 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
         fprintf(out, ".has_end_anchor = %d, ", regex->has_end);
         fprintf(out, ".re_nsub = %d, ", regex->group_counter);
         fprintf(out, ".can_be_null = %d, ", regex->can_be_null);
+        fprintf(out, ".min_match_len = %d, ", regex->min_match_len);
         fprintf(out, ".used_ops = (enum MetaOpType)%u, ", regex->used_ops);
         fprintf(out, ".fastmap = {");
 

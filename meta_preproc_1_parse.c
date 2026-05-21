@@ -285,6 +285,193 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uint8 *fastmap,
     return 0;
 }
 
+
+
+static int32
+preproc_minlen_find_group_end(ParsedOp *ops, int32 ops_count, int32 start) {
+    int32 depth = 0;
+
+    if (start < 0 || start >= ops_count
+        || ops[start].type != META_OP_GROUP_START) {
+        return ops_count;
+    }
+
+    for (int32 i = start + 1; i < ops_count; i += 1) {
+        if (ops[i].type == META_OP_GROUP_START) {
+            depth += 1;
+        } else if (ops[i].type == META_OP_GROUP_END) {
+            if (depth == 0) {
+                return i;
+            }
+            depth -= 1;
+        }
+    }
+    return ops_count;
+}
+
+static int32
+preproc_minlen_find_alt_target(ParsedOp *ops, int32 ops_count, int32 alt_pc) {
+    int32 depth = 0;
+
+    for (int32 i = alt_pc + 1; i < ops_count; i += 1) {
+        if (ops[i].type == META_OP_GROUP_START) {
+            depth += 1;
+        } else if (ops[i].type == META_OP_GROUP_END) {
+            if (depth == 0) {
+                return i;
+            }
+            depth -= 1;
+        }
+    }
+    return ops_count;
+}
+
+static void
+preproc_minlen_relax(int32 *dist, int32 from, int32 to, int32 cost,
+                     int32 limit, bool *changed) {
+    int32 new_dist;
+
+    if (from < 0 || from > limit || to < 0 || to > limit) {
+        return;
+    }
+    if (dist[from] >= 0x3fffffff) {
+        return;
+    }
+    new_dist = dist[from] + cost;
+    if (new_dist < dist[to]) {
+        dist[to] = new_dist;
+        *changed = true;
+    }
+    return;
+}
+
+static int32
+preproc_compute_min_match_len(ParsedOp *ops, int32 ops_count) {
+    int32 dist[PREPROC_MAX_TEMP_OPS + 1];
+    int32 inf = 0x3fffffff;
+
+    if (ops_count <= 0) {
+        return 0;
+    }
+    if (ops_count > PREPROC_MAX_TEMP_OPS) {
+        return 0;
+    }
+
+    for (int32 i = 0; i <= ops_count; i += 1) {
+        dist[i] = inf;
+    }
+
+    dist[0] = 0;
+
+    /* Top-level alternatives are possible starting points as well. */
+    {
+        int32 depth = 0;
+        for (int32 i = 0; i < ops_count; i += 1) {
+            if (ops[i].type == META_OP_GROUP_START) {
+                depth += 1;
+            } else if (ops[i].type == META_OP_GROUP_END) {
+                if (depth > 0) {
+                    depth -= 1;
+                }
+            } else if (ops[i].type == META_OP_ALTERNATION && depth == 0) {
+                dist[i + 1] = 0;
+            }
+        }
+    }
+
+    for (int32 pass = 0; pass <= ops_count; pass += 1) {
+        bool changed = false;
+
+        for (int32 pc = 0; pc < ops_count; pc += 1) {
+            ParsedOp *op = &ops[pc];
+            enum MetaOpType type = op->type;
+
+            if (dist[pc] >= inf) {
+                continue;
+            }
+
+            if (type == META_OP_LITERAL || type == META_OP_CLASS
+                || type == META_OP_ANY) {
+                int32 next = pc + 1;
+
+                if (next < ops_count) {
+                    enum MetaOpType q = ops[next].type;
+                    if (q == META_OP_STAR || q == META_OP_OPTIONAL) {
+                        preproc_minlen_relax(dist, pc, pc + 2, 0, ops_count,
+                                             &changed);
+                    } else if (q == META_OP_BOUNDED && ops[next].min == 0) {
+                        preproc_minlen_relax(dist, pc, pc + 2, 0, ops_count,
+                                             &changed);
+                    }
+                    if (q == META_OP_BOUNDED) {
+                        preproc_minlen_relax(dist, pc, pc + 2, ops[next].min,
+                                             ops_count, &changed);
+                    }
+                }
+
+                preproc_minlen_relax(dist, pc, pc + 1, 1, ops_count,
+                                     &changed);
+            } else if (type == META_OP_SPLIT) {
+                preproc_minlen_relax(dist, pc, pc + op->value, 0, ops_count,
+                                     &changed);
+                preproc_minlen_relax(dist, pc, pc + op->min, 0, ops_count,
+                                     &changed);
+            } else if (type == META_OP_JUMP) {
+                preproc_minlen_relax(dist, pc, pc + op->value, 0, ops_count,
+                                     &changed);
+            } else if (type == META_OP_GROUP_START) {
+                int32 depth = 0;
+                int32 group_end;
+
+                preproc_minlen_relax(dist, pc, pc + 1, 0, ops_count,
+                                     &changed);
+
+                group_end = preproc_minlen_find_group_end(ops, ops_count, pc);
+                for (int32 i = pc + 1; i < group_end; i += 1) {
+                    if (ops[i].type == META_OP_GROUP_START) {
+                        depth += 1;
+                    } else if (ops[i].type == META_OP_GROUP_END) {
+                        if (depth > 0) {
+                            depth -= 1;
+                        }
+                    } else if (ops[i].type == META_OP_ALTERNATION
+                               && depth == 0) {
+                        preproc_minlen_relax(dist, pc, i + 1, 0, ops_count,
+                                             &changed);
+                    }
+                }
+            } else if (type == META_OP_ALTERNATION) {
+                preproc_minlen_relax(
+                    dist, pc,
+                    preproc_minlen_find_alt_target(ops, ops_count, pc), 0,
+                    ops_count, &changed);
+            } else if (type == META_OP_GROUP_END
+                       || type == META_OP_WORD_START
+                       || type == META_OP_WORD_END
+                       || type == META_OP_WORD_BOUNDARY
+                       || type == META_OP_NON_WORD_BOUNDARY
+                       || type == META_OP_STAR || type == META_OP_PLUS
+                       || type == META_OP_OPTIONAL || type == META_OP_BOUNDED
+                       || type == META_OP_BACKREF) {
+                preproc_minlen_relax(dist, pc, pc + 1, 0, ops_count,
+                                     &changed);
+            } else {
+                preproc_minlen_relax(dist, pc, pc + 1, 0, ops_count,
+                                     &changed);
+            }
+        }
+
+        if (!changed) {
+            break;
+        }
+    }
+
+    if (dist[ops_count] >= inf) {
+        return 0;
+    }
+    return dist[ops_count];
+}
+
 static int32
 tnfa_group_start_tag(int32 group) {
     return group*2 - 1;
@@ -1806,6 +1993,7 @@ parse_source_code(char *buffer, int64 source_len) {
         int32 temp_ops_count = 0;
         uint8 fastmap[META_FASTMAP_SIZE] = {0};
         bool can_be_null = false;
+        int32 min_match_len = 0;
         enum MetaOpType used_ops = 0;
 
         {
@@ -2439,6 +2627,8 @@ parse_source_code(char *buffer, int64 source_len) {
             }
         }
 
+        min_match_len = preproc_compute_min_match_len(temp_ops, temp_ops_count);
+
         for (int32 i = 0; i <= temp_ops_count; i += 1) {
             int32 w = 0;
             if (i == temp_ops_count) {
@@ -2539,6 +2729,7 @@ parse_source_code(char *buffer, int64 source_len) {
         regex->has_end = has_end;
         regex->group_counter = group_counter;
         regex->can_be_null = can_be_null;
+        regex->min_match_len = min_match_len;
         regex->used_ops = used_ops;
         memcpy64(regex->fastmap, fastmap, META_FASTMAP_SIZE);
         memcpy64(regex->temp_ops, temp_ops,

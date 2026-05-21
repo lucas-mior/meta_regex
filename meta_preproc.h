@@ -150,6 +150,7 @@ typedef struct ExtractedRegex {
     bool has_end;
     int32 group_counter;
     bool can_be_null;
+    int32 min_match_len;
     uint32 used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
     

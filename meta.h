@@ -317,6 +317,7 @@ typedef struct MetaRegex {
     int32 has_end_anchor;
     int32 re_nsub;
     int32 can_be_null;
+    int32 min_match_len;
     enum MetaOpType used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
 
