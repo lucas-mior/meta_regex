@@ -299,11 +299,11 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
 
         if (start_pos > 0 && start_pos - 1 < input_len
             && input[start_pos - 1] != '\0') {
-            prev_is_w = match_tdfa_word_table[input[start_pos - 1]];
+            prev_is_w = word_table[input[start_pos - 1]];
         }
         if (start_pos >= 0 && start_pos < input_len
             && input[start_pos] != '\0') {
-            curr_is_w = match_tdfa_word_table[input[start_pos]];
+            curr_is_w = word_table[input[start_pos]];
         }
 
         if (!prev_is_w && !curr_is_w) {
@@ -348,7 +348,7 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         if (tdfa->uses_context) {
             next_is_word = 0;
             if (pos + 1 < input_len && input[pos + 1] != '\0') {
-                next_is_word = match_tdfa_word_table[input[pos + 1]];
+                next_is_word = word_table[input[pos + 1]];
             }
         } else {
             next_is_word = -1;

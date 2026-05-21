@@ -301,22 +301,9 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     return result;
 }
 
-static const uint8 match_tnfa_word_table[256]
-    = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1,
-       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-       0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-       1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
 static int32
 match_tnfa_is_word_char(int32 c) {
-    return (c >= 0 && c < 256 && match_tnfa_word_table[(uint8)c]);
+    return (c >= 0 && c < 256 && word_table[(uint8)c]);
 }
 
 static int32
@@ -342,10 +329,10 @@ match_tnfa_assertion_matches(enum MetaTnfaTransitionKind kind, uint8 *input,
     int32 curr_is_w = 0;
 
     if (pos > 0 && pos - 1 < input_len && input[pos - 1] != '\0') {
-        prev_is_w = match_tnfa_word_table[input[pos - 1]];
+        prev_is_w = word_table[input[pos - 1]];
     }
     if (pos >= 0 && pos < input_len && input[pos] != '\0') {
-        curr_is_w = match_tnfa_word_table[input[pos]];
+        curr_is_w = word_table[input[pos]];
     }
 
     if (kind == META_TNFA_TRANS_WORD_START) {
