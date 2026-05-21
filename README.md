@@ -151,7 +151,7 @@ cc gen/your_code_baked.c -o your_program
 ## TODO
 - Implement heuristics for the high level dispatcher
 - Implement arguments for the pre processor
-  * limits
+  * ~~limits~~
   * heuristics
 - Organize testing, benchmarking and plotting
 - Implement
