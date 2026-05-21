@@ -72,8 +72,7 @@ usage(void) {
     error2("  emit_static_dfa=true|false (default = true)\n");
     error2("  emit_tnfa=true|false (default = true)\n");
     error2("  emit_tdfa=true|false (default = true)\n");
-    fprintf(stderr,
-            "  emit_tdfa_transition_index=true|false (default = true)\n");
+    error2("  emit_tdfa_transition_index=true|false (default = true)\n");
     error2("  max_static_dfa_states=N (default = %d)\n",
             META_MAX_STATIC_DFA_STATES);
     error2("  max_tnfa_tags=N (default = %d)\n",
