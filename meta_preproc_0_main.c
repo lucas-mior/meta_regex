@@ -203,7 +203,7 @@ main(int32 argc, char **argv) {
 
     buffer = malloc2(file_size + 1);
     if (fread64(buffer, 1, file_size, input_file) != file_size) {
-        fprintf(stderr, "Error reading file.\n");
+        error("Error reading %s: %s.\n", filename, strerror(errno));
         exit(EXIT_FAILURE);
     }
     buffer[file_size] = '\0';
