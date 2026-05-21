@@ -39,7 +39,19 @@ preproc_parse_bool(char *name, char *value) {
     if (strcmp(value, "true") == 0) {
         return 1;
     }
+    if (strcmp(value, "on") == 0) {
+        return 1;
+    }
+    if (strcmp(value, "yes") == 0) {
+        return 1;
+    }
     if (strcmp(value, "false") == 0) {
+        return 0;
+    }
+    if (strcmp(value, "off") == 0) {
+        return 0;
+    }
+    if (strcmp(value, "no") == 0) {
         return 0;
     }
 
