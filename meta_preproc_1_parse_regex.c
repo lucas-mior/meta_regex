@@ -1,3 +1,7 @@
+#include "primitives.h"
+#include "meta.h"
+#include "meta_preproc.h"
+
 /* Regex parsing helpers: POSIX classes, alternation normalization,
  * fastmap/first-set helpers. */
 
