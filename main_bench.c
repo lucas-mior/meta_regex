@@ -721,7 +721,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
         c.regex_len = op_count;
         c.length_class = length_class;
 
-        index = length_class*array_len + counts[length_class];
+        index = (int32)length_class*array_len + counts[length_class];
         bucket_cases[index] = c;
         counts[length_class] += 1;
     }
