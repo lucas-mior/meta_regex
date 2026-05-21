@@ -133,7 +133,7 @@ cc gen/your_code_baked.c -o your_program
   * The pre processor only creates it if it does not exceed specified limits.
     This is done for 2 reaons: first, to not generate huge binaries. Second,
     to improve cache locality. Lazy DFA is better if you need complicated
-    regular expressions with lot of possible states.
+    regular expressions with many possible states.
 - Lazy DFA
   * Does not support group extraction
 - Tagged DFA
