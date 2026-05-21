@@ -136,8 +136,8 @@ cc gen/your_code_baked.c -o your_program
     regular expressions with many possible states. I still have not come up
     with a good heuristic for this. By default, the runtime matcher will always
     choose static DFA over the lazy DFA, if it is available. So ultimately the
-    pre processor is defining which regular expressions are worth compiling or
-    not.
+    pre processor is defining which regular expressions are worth compiling to a
+    complete DFA or not.
 - Lazy DFA
   * Does not support group extraction.
 - Tagged DFA
