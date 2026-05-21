@@ -124,22 +124,26 @@ cc gen/your_code_baked.c -o your_program
 
 ## Overview of the available matchers
 - BTNFA
-  * The only one that supports backreferences
+  * The only one that supports backreferences.
   * Vulnerable to the problem described [here](https://swtch.com/~rsc/regexp/regexp1.html).
-  * In general, slower than the others (except Tagged NFA)
+  * In general, slower than the others (except Tagged NFA).
 - Static DFA
-  * Tends to bloat the binary
-  * Does not support group extraction
+  * Tends to bloat the binary.
+  * Does not support group extraction.
   * The pre processor only creates it if it does not exceed specified limits.
     This is done for 2 reaons: first, to not generate huge binaries. Second,
     to improve cache locality. Lazy DFA is better if you need complicated
-    regular expressions with many possible states.
+    regular expressions with many possible states. I still have not come up
+    with a good heuristic for this. By default, the runtime matcher will always
+    choose static DFA over the lazy DFA, if it is available. So ultimately the
+    pre processor is defining which regular expressions are worth compiling or
+    not.
 - Lazy DFA
-  * Does not support group extraction
+  * Does not support group extraction.
 - Tagged DFA
   * The only one that supports group extraction besides BTNFA.
-  * All the considerations about binary size and cache locality apply here
-    as well.
+  * All the considerations made on the static DFA item about binary size and
+    cache locality apply here as well.
 - Tagged NFA
   * This is ~almost~ always slower than all the others, never use it.
 
