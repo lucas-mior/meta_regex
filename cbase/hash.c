@@ -325,9 +325,8 @@ CAT(hash_resize_, HASH_TYPE)(struct Map *map) {
         rehash_probe = rehash_base;
 
         while (rehash_step < new_capacity) {
-            Bucket *target = &new_array[rehash_probe];
-
             if (new_slot_states[rehash_probe] == HASH_SLOT_FREE) {
+                Bucket *target = &new_array[rehash_probe];
 #if HASH_KEY_FIXED_LEN
                 memcpy64(&target->key, &iterator->key, sizeof(HASH_KEY_TYPE));
 #else
@@ -379,7 +378,7 @@ CAT(hash_probe_, HASH_TYPE)(struct Map *map, HASH_KEY_TYPE *key
     int32 first_tombstone = -1;
 
     while (i < capacity) {
-        Bucket *iterator = &map->array[probe];
+        Bucket *iterator;
         int64 state = map->slot_states[probe];
 
         if (state == HASH_SLOT_FREE) {
@@ -394,6 +393,7 @@ CAT(hash_probe_, HASH_TYPE)(struct Map *map, HASH_KEY_TYPE *key
                 first_tombstone = (int32)probe;
             }
         } else {
+            iterator = &map->array[probe];
 #if HASH_KEY_FIXED_LEN
             (void)hash;
             if (!memcmp64(&iterator->key, key, sizeof(HASH_KEY_TYPE)))
