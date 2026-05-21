@@ -66,12 +66,13 @@ typedef struct LazyDfa {
     int32 num_states;
     int32 op_count;
     int32 pc_words;
+    int32 uses_context;
+    int32 start_state_nw;
+    int32 start_state_w;
+    LazyDfaKey start_key_base;
     LazyDfaState states[META_MAX_LAZY_DFA_STATES];
 } LazyDfa;
 
-static void add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
-                                int32 *is_accepting, int32 prev_is_word,
-                                int32 curr_is_word);
 static void compute_core_transitions(MetaOp *ops,
                                      NfaStateSet *current_closed_set,
                                      int32 pc_words, int32 c,
@@ -79,9 +80,29 @@ static void compute_core_transitions(MetaOp *ops,
 static void lazy_dfa_init_state(LazyDfaState *state, LazyDfaKey key);
 static void lazy_dfa_ensure_closure(MetaRegex *regex, LazyDfa *ldfa,
                                     LazyDfaState *state, int32 curr_is_word);
+static void lazy_dfa_compute_closure_from_key(MetaRegex *regex, LazyDfa *ldfa,
+                                              LazyDfaKey *key,
+                                              NfaStateSet *set,
+                                              int32 *is_accepting,
+                                              int32 curr_is_word);
+static void lazy_dfa_push_pc(int32 *stack, int32 *stack_ptr, int32 pc,
+                             int32 op_count);
+static int32 lazy_dfa_get_or_add_state(LazyDfa *ldfa, LazyDfaKey *key);
+static void lazy_dfa_init_start_states(MetaRegex *regex, LazyDfa *ldfa);
+static int32 lazy_dfa_uses_context(MetaRegex *regex);
 static int32 lazy_dfa_op_count(MetaRegex *regex);
 static int32 lazy_dfa_pc_words(int32 op_count);
 static int32 lazy_dfa_ctz32(uint32 word);
+static int32 lazy_dfa_set_is_empty(NfaStateSet *set, int32 pc_words);
+
+static int32
+lazy_dfa_uses_context(MetaRegex *regex) {
+    enum MetaOpType context_ops = (enum MetaOpType)(
+        META_OP_WORD_START | META_OP_WORD_END | META_OP_WORD_BOUNDARY
+        | META_OP_NON_WORD_BOUNDARY);
+
+    return ((regex->used_ops & context_ops) != 0);
+}
 
 static int32
 lazy_dfa_op_count(MetaRegex *regex) {
@@ -127,6 +148,16 @@ lazy_dfa_ctz32(uint32 word) {
 #endif
 }
 
+static int32
+lazy_dfa_set_is_empty(NfaStateSet *set, int32 pc_words) {
+    for (int32 k = 0; k < pc_words; k += 1) {
+        if (set->bits[k] != 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 static void
 lazy_dfa_init_state(LazyDfaState *state, LazyDfaKey key) {
     state->key = key;
@@ -143,36 +174,208 @@ lazy_dfa_init_state(LazyDfaState *state, LazyDfaKey key) {
     return;
 }
 
+static int32
+lazy_dfa_get_or_add_state(LazyDfa *ldfa, LazyDfaKey *key) {
+    int32 state_id;
+
+    if (hash_lookup_map(&ldfa->state_map, key, &state_id)) {
+        return state_id;
+    }
+
+    state_id = ldfa->num_states;
+    if (state_id >= META_MAX_LAZY_DFA_STATES) {
+        return -1;
+    }
+
+    ldfa->num_states += 1;
+    lazy_dfa_init_state(&ldfa->states[state_id], *key);
+    hash_insert_map(&ldfa->state_map, key, state_id);
+    return state_id;
+}
+
+static void
+lazy_dfa_init_start_states(MetaRegex *regex, LazyDfa *ldfa) {
+    LazyDfaKey key;
+    int32 depth = 0;
+
+    for (int32 i = 0; i < META_PC_WORDS; i += 1) {
+        key.bits[i] = 0;
+    }
+    key.prev_is_word = 0;
+    key.bits[0] = 1;
+
+    for (int32 i = 0; regex->ops[i].type != META_OP_END; i += 1) {
+        if (regex->ops[i].type == META_OP_GROUP_START) {
+            depth += 1;
+        } else if (regex->ops[i].type == META_OP_GROUP_END) {
+            depth -= 1;
+        } else if (regex->ops[i].type == META_OP_ALTERNATION && depth == 0) {
+            key.bits[(i + 1) / 32] |= (1u << ((i + 1) % 32));
+        }
+    }
+
+    ldfa->start_key_base = key;
+
+    key.prev_is_word = 0;
+    ldfa->start_state_nw = lazy_dfa_get_or_add_state(ldfa, &key);
+
+    if (ldfa->uses_context) {
+        key.prev_is_word = 1;
+        ldfa->start_state_w = lazy_dfa_get_or_add_state(ldfa, &key);
+    } else {
+        ldfa->start_state_w = ldfa->start_state_nw;
+    }
+    return;
+}
+
+static void
+lazy_dfa_push_pc(int32 *stack, int32 *stack_ptr, int32 pc, int32 op_count) {
+    if (pc >= 0 && pc < op_count && *stack_ptr < META_MAX_OPS) {
+        stack[*stack_ptr] = pc;
+        *stack_ptr += 1;
+    }
+    return;
+}
+
+static void
+lazy_dfa_compute_closure_from_key(MetaRegex *regex, LazyDfa *ldfa,
+                                  LazyDfaKey *key, NfaStateSet *set,
+                                  int32 *is_accepting,
+                                  int32 curr_is_word) {
+    MetaOp *ops = regex->ops;
+    int32 stack[META_MAX_OPS];
+    int32 stack_ptr = 0;
+
+    *is_accepting = 0;
+
+    for (int32 k = 0; k < ldfa->pc_words; k += 1) {
+        set->bits[k] = 0;
+    }
+
+    for (int32 w = 0; w < ldfa->pc_words; w += 1) {
+        uint32 word = key->bits[w];
+
+        while (word != 0) {
+            int32 bit = lazy_dfa_ctz32(word);
+            int32 pc = w*32 + bit;
+
+            lazy_dfa_push_pc(stack, &stack_ptr, pc, ldfa->op_count);
+            word &= word - 1;
+        }
+    }
+
+    while (stack_ptr > 0) {
+        int32 current_pc;
+        MetaOp *op;
+
+        stack_ptr -= 1;
+        current_pc = stack[stack_ptr];
+
+        if ((set->bits[current_pc / 32] & (1u << (current_pc % 32))) != 0) {
+            continue;
+        }
+
+        set->bits[current_pc / 32] |= (1u << (current_pc % 32));
+        op = &ops[current_pc];
+
+        if (op->type == META_OP_END) {
+            *is_accepting = 1;
+        } else if (op->type == META_OP_SPLIT) {
+            lazy_dfa_push_pc(stack, &stack_ptr, current_pc + op->value,
+                             ldfa->op_count);
+            lazy_dfa_push_pc(stack, &stack_ptr, current_pc + op->min,
+                             ldfa->op_count);
+        } else if (op->type == META_OP_JUMP) {
+            lazy_dfa_push_pc(stack, &stack_ptr, current_pc + op->value,
+                             ldfa->op_count);
+        } else if (op->type == META_OP_WORD_BOUNDARY) {
+            if (key->prev_is_word != curr_is_word) {
+                lazy_dfa_push_pc(stack, &stack_ptr, current_pc + 1,
+                                 ldfa->op_count);
+            }
+        } else if (op->type == META_OP_NON_WORD_BOUNDARY) {
+            if (key->prev_is_word == curr_is_word) {
+                lazy_dfa_push_pc(stack, &stack_ptr, current_pc + 1,
+                                 ldfa->op_count);
+            }
+        } else if (op->type == META_OP_WORD_START) {
+            if (!key->prev_is_word && curr_is_word) {
+                lazy_dfa_push_pc(stack, &stack_ptr, current_pc + 1,
+                                 ldfa->op_count);
+            }
+        } else if (op->type == META_OP_WORD_END) {
+            if (key->prev_is_word && !curr_is_word) {
+                lazy_dfa_push_pc(stack, &stack_ptr, current_pc + 1,
+                                 ldfa->op_count);
+            }
+        } else if (op->type == META_OP_GROUP_START) {
+            int32 depth = 0;
+
+            lazy_dfa_push_pc(stack, &stack_ptr, current_pc + 1,
+                             ldfa->op_count);
+            for (int32 i = current_pc + 1; i < ldfa->op_count
+                 && ops[i].type != META_OP_END; i += 1) {
+                if (ops[i].type == META_OP_GROUP_START) {
+                    depth += 1;
+                } else if (ops[i].type == META_OP_GROUP_END) {
+                    if (depth == 0) {
+                        break;
+                    }
+                    depth -= 1;
+                } else if (ops[i].type == META_OP_ALTERNATION && depth == 0) {
+                    lazy_dfa_push_pc(stack, &stack_ptr, i + 1,
+                                     ldfa->op_count);
+                }
+            }
+        } else if (op->type == META_OP_ALTERNATION) {
+            int32 depth = 0;
+            int32 i = current_pc + 1;
+
+            while (i < ldfa->op_count && ops[i].type != META_OP_END) {
+                if (ops[i].type == META_OP_GROUP_START) {
+                    depth += 1;
+                } else if (ops[i].type == META_OP_GROUP_END) {
+                    if (depth == 0) {
+                        break;
+                    }
+                    depth -= 1;
+                }
+                i += 1;
+            }
+            lazy_dfa_push_pc(stack, &stack_ptr, i, ldfa->op_count);
+        } else if (op->type == META_OP_GROUP_END) {
+            lazy_dfa_push_pc(stack, &stack_ptr, current_pc + 1,
+                             ldfa->op_count);
+        }
+
+        if (op->type == META_OP_LITERAL || op->type == META_OP_CLASS
+            || op->type == META_OP_ANY) {
+            MetaOp *next_op = &ops[current_pc + 1];
+
+            if (next_op->type == META_OP_STAR
+                || next_op->type == META_OP_OPTIONAL) {
+                lazy_dfa_push_pc(stack, &stack_ptr, current_pc + 2,
+                                 ldfa->op_count);
+            }
+        }
+    }
+    return;
+}
+
 static void
 lazy_dfa_ensure_closure(MetaRegex *regex, LazyDfa *ldfa, LazyDfaState *state,
                         int32 curr_is_word) {
     NfaStateSet *closed_set;
     int32 is_acc = 0;
 
-    curr_is_word = !!curr_is_word;
+    curr_is_word = ldfa->uses_context ? !!curr_is_word : 0;
     if (state->closure_ready[curr_is_word]) {
         return;
     }
 
     closed_set = &state->closure[curr_is_word];
-    for (int32 k = 0; k < META_PC_WORDS; k += 1) {
-        closed_set->bits[k] = 0;
-    }
-
-    for (int32 w = 0; w < ldfa->pc_words; w += 1) {
-        uint32 word = state->key.bits[w];
-
-        while (word != 0) {
-            int32 bit = lazy_dfa_ctz32(word);
-            int32 pc = w*32 + bit;
-
-            if (pc < ldfa->op_count) {
-                add_epsilon_closure(regex->ops, pc, closed_set, &is_acc,
-                                    state->key.prev_is_word, curr_is_word);
-            }
-            word &= word - 1;
-        }
-    }
+    lazy_dfa_compute_closure_from_key(regex, ldfa, &state->key, closed_set,
+                                      &is_acc, curr_is_word);
 
     state->closure_accepts[curr_is_word] = is_acc;
     state->closure_ready[curr_is_word] = 1;
@@ -188,52 +391,28 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
     int32 prev_is_word;
     (void)input_len;
 
-    if (offset > 0) {
-        prev_is_word = word_table[input[offset - 1]];
-    } else {
-        prev_is_word = 0;
-    }
-
     if (ldfa == NULL) {
         ldfa = malloc2(SIZEOF(*ldfa));
         ldfa->state_map = hash_create_map_value(256, "dfa");
         ldfa->num_states = 1;
         ldfa->op_count = lazy_dfa_op_count(regex);
         ldfa->pc_words = lazy_dfa_pc_words(ldfa->op_count);
+        ldfa->uses_context = lazy_dfa_uses_context(regex);
+        ldfa->start_state_nw = -1;
+        ldfa->start_state_w = -1;
+        lazy_dfa_init_start_states(regex, ldfa);
         regex->lazy_dfa = ldfa;
     }
 
-    {
-        LazyDfaKey start_key;
-        int32 depth = 0;
+    if (ldfa->uses_context && offset > 0) {
+        prev_is_word = word_table[input[offset - 1]];
+    } else {
+        prev_is_word = 0;
+    }
 
-        for (int32 i = 0; i < META_PC_WORDS; i += 1) {
-            start_key.bits[i] = 0;
-        }
-        start_key.prev_is_word = prev_is_word;
-        start_key.bits[0] = 1;
-
-        for (int32 i = 0; regex->ops[i].type != META_OP_END; i += 1) {
-            if (regex->ops[i].type == META_OP_GROUP_START) {
-                depth += 1;
-            } else if (regex->ops[i].type == META_OP_GROUP_END) {
-                depth -= 1;
-            } else if (regex->ops[i].type == META_OP_ALTERNATION
-                       && depth == 0) {
-                start_key.bits[(i + 1) / 32] |= (1u << ((i + 1) % 32));
-            }
-        }
-
-        if (!hash_lookup_map(&ldfa->state_map, &start_key, &current_state_id)) {
-            current_state_id = ldfa->num_states;
-            if (current_state_id < META_MAX_LAZY_DFA_STATES) {
-                ldfa->num_states += 1;
-                lazy_dfa_init_state(&ldfa->states[current_state_id], start_key);
-                hash_insert_map(&ldfa->state_map, &start_key, current_state_id);
-            } else {
-                return -1;
-            }
-        }
+    current_state_id = prev_is_word ? ldfa->start_state_w : ldfa->start_state_nw;
+    if (current_state_id < 0) {
+        return -1;
     }
 
     for (int32 i = offset;; i += 1) {
@@ -258,11 +437,11 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
         if (current_state_id > 0
             && current_state_id < META_MAX_LAZY_DFA_STATES) {
             LazyDfaState *state = &ldfa->states[current_state_id];
+            int32 next_id = state->next[b];
 
-            if (state->next[b] == 0) {
-                int32 curr_is_word = word_table[b];
+            if (next_id == 0) {
+                int32 curr_is_word = ldfa->uses_context ? word_table[b] : 0;
                 NfaStateSet next_core;
-                int32 set_is_empty = 1;
 
                 lazy_dfa_ensure_closure(regex, ldfa, state, curr_is_word);
                 state->accepts_before[b] = state->closure_accepts[curr_is_word];
@@ -271,43 +450,28 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
                                          &state->closure[curr_is_word],
                                          ldfa->pc_words, b, &next_core);
 
-                for (int32 k = 0; k < META_PC_WORDS; k += 1) {
-                    if (next_core.bits[k] != 0) {
-                        set_is_empty = 0;
-                        break;
-                    }
-                }
-
-                if (set_is_empty) {
-                    state->next[b] = -1;
+                if (lazy_dfa_set_is_empty(&next_core, ldfa->pc_words)) {
+                    next_id = -1;
                 } else {
                     LazyDfaKey next_key;
-                    int32 next_id = 0;
 
                     for (int32 k = 0; k < META_PC_WORDS; k += 1) {
+                        next_key.bits[k] = 0;
+                    }
+                    for (int32 k = 0; k < ldfa->pc_words; k += 1) {
                         next_key.bits[k] = next_core.bits[k];
                     }
-                    next_key.prev_is_word = curr_is_word;
+                    next_key.prev_is_word = ldfa->uses_context ? curr_is_word : 0;
 
-                    if (!hash_lookup_map(&ldfa->state_map, &next_key, &next_id)) {
-                        next_id = ldfa->num_states;
-                        if (next_id < META_MAX_LAZY_DFA_STATES) {
-                            ldfa->num_states += 1;
-                            lazy_dfa_init_state(&ldfa->states[next_id],
-                                                next_key);
-                            hash_insert_map(&ldfa->state_map, &next_key, next_id);
-                        } else {
-                            next_id = -1;
-                        }
-                    }
-                    state->next[b] = next_id;
+                    next_id = lazy_dfa_get_or_add_state(ldfa, &next_key);
                 }
+                state->next[b] = next_id;
             }
 
             if (state->accepts_before[b]) {
                 last_accept = i;
             }
-            current_state_id = state->next[b];
+            current_state_id = next_id;
 
             if (current_state_id == -1) {
                 break;
@@ -331,117 +495,9 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
 }
 
 static void
-add_epsilon_closure(MetaOp *ops, int32 pc, NfaStateSet *set,
-                    int32 *is_accepting, int32 prev_is_word,
-                    int32 curr_is_word) {
-    int32 stack[META_MAX_OPS];
-    int32 stack_ptr = 0;
-
-    stack[stack_ptr] = pc;
-    stack_ptr += 1;
-
-    while (stack_ptr > 0) {
-        int32 current_pc;
-        MetaOp *op;
-
-        stack_ptr -= 1;
-        current_pc = stack[stack_ptr];
-
-        if ((set->bits[current_pc / 32] & (1u << (current_pc % 32))) != 0) {
-            continue;
-        }
-
-        set->bits[current_pc / 32] |= (1u << (current_pc % 32));
-        op = &ops[current_pc];
-
-        if (op->type == META_OP_END) {
-            *is_accepting = 1;
-        } else if (op->type == META_OP_SPLIT) {
-            stack[stack_ptr] = current_pc + op->value;
-            stack_ptr += 1;
-            stack[stack_ptr] = current_pc + op->min;
-            stack_ptr += 1;
-        } else if (op->type == META_OP_JUMP) {
-            stack[stack_ptr] = current_pc + op->value;
-            stack_ptr += 1;
-        } else if (op->type == META_OP_WORD_BOUNDARY) {
-            if (prev_is_word != curr_is_word) {
-                stack[stack_ptr] = current_pc + 1;
-                stack_ptr += 1;
-            }
-        } else if (op->type == META_OP_NON_WORD_BOUNDARY) {
-            if (prev_is_word == curr_is_word) {
-                stack[stack_ptr] = current_pc + 1;
-                stack_ptr += 1;
-            }
-        } else if (op->type == META_OP_WORD_START) {
-            if (!prev_is_word && curr_is_word) {
-                stack[stack_ptr] = current_pc + 1;
-                stack_ptr += 1;
-            }
-        } else if (op->type == META_OP_WORD_END) {
-            if (prev_is_word && !curr_is_word) {
-                stack[stack_ptr] = current_pc + 1;
-                stack_ptr += 1;
-            }
-        } else if (op->type == META_OP_GROUP_START) {
-            int32 depth = 0;
-
-            stack[stack_ptr] = current_pc + 1;
-            stack_ptr += 1;
-            for (int32 i = current_pc + 1; ops[i].type != META_OP_END; i += 1) {
-                if (ops[i].type == META_OP_GROUP_START) {
-                    depth += 1;
-                } else if (ops[i].type == META_OP_GROUP_END) {
-                    if (depth == 0) {
-                        break;
-                    }
-                    depth -= 1;
-                } else if (ops[i].type == META_OP_ALTERNATION && depth == 0) {
-                    stack[stack_ptr] = i + 1;
-                    stack_ptr += 1;
-                }
-            }
-        } else if (op->type == META_OP_ALTERNATION) {
-            int32 depth = 0;
-            int32 i = current_pc + 1;
-
-            while (ops[i].type != META_OP_END) {
-                if (ops[i].type == META_OP_GROUP_START) {
-                    depth += 1;
-                } else if (ops[i].type == META_OP_GROUP_END) {
-                    if (depth == 0) {
-                        break;
-                    }
-                    depth -= 1;
-                }
-                i += 1;
-            }
-            stack[stack_ptr] = i;
-            stack_ptr += 1;
-        } else if (op->type == META_OP_GROUP_END) {
-            stack[stack_ptr] = current_pc + 1;
-            stack_ptr += 1;
-        }
-
-        if (op->type == META_OP_LITERAL || op->type == META_OP_CLASS
-            || op->type == META_OP_ANY) {
-            MetaOp *next_op = &ops[current_pc + 1];
-
-            if (next_op->type == META_OP_STAR
-                || next_op->type == META_OP_OPTIONAL) {
-                stack[stack_ptr] = current_pc + 2;
-                stack_ptr += 1;
-            }
-        }
-    }
-    return;
-}
-
-static void
 compute_core_transitions(MetaOp *ops, NfaStateSet *current_closed_set,
                          int32 pc_words, int32 c, NfaStateSet *next_core_set) {
-    for (int32 i = 0; i < META_PC_WORDS; i += 1) {
+    for (int32 i = 0; i < pc_words; i += 1) {
         next_core_set->bits[i] = 0;
     }
 
