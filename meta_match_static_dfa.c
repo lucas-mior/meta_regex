@@ -64,7 +64,7 @@ match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
             last_accept = i;
         }
 
-        if (i >= input_len) {
+        if (b == '\0') {
             break;
         }
 
