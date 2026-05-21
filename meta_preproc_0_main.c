@@ -128,7 +128,7 @@ main(int32 argc, char **argv) {
         PARSE_OPTION(argv[i], max_tdfa_regops)
         PARSE_OPTION(argv[i], max_tdfa_transition_index_entries)
 
-        if (strchr(argv[i], '=') != NULL) {
+        if (strchr(argv[i], '=')) {
             error("Unknown preprocessor option: %s. Options must use exact "
                   "name=value form.\n", argv[i]);
             usage();
