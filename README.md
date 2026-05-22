@@ -59,64 +59,117 @@ cd meta_regex
 
 ## Usage Example
 
-The engine uses a preprocessor to transform regex strings into static opcode
-arrays. You define regexes using the R() macro. The meta_preproc.c program
-expands this into a pointer to an anonymous MetaRegex literal.
+The engine uses a C preprocessor step to transform `R(...)` regex macros into
+static `MetaRegex` literals. Runtime matching is done through `meta_regex_match()`.
+
+The `R()` macro accepts:
+
+```c
+R("pattern")
+R("pattern", flags)
+
+// The currently exposed regex flags are:
+
+META_RE_NONE    // equivalent to not passing anything
+META_RE_YESSUB  // explicitly enable capturing groups
+META_RE_NOSUB   // explicitly disable capturing groups
+```
+
+META_RE_NOSUB tells the preprocessor/runtime that subgroup extraction is not
+needed for that regex. pmatch[0] may still be used for the whole match, but
+subgroups are suppressed. META_RE_YESSUB forces extraction support for that
+regex when the preprocessor default is configured otherwise.
 
 1. Write your C code
 ```C
 #include <stdio.h>
+#include <string.h>
 #include <regex.h>
-#include "meta_regex.h"
-#include "meta_regex_match.c"
+
+#include "meta.h"
+#include "meta_match.c"
 
 int32
 main(void) {
-    char *text;
-    MetaRegex *re;
+    char *text = "The price is 42 dollars";
+    int32 text_len = (int32)strlen(text);
+    MetaRegex *re = R("is ([0-9]+)");
     regmatch_t matches[2];
     int32 result;
 
-    text = "The price is 42 dollars";
-    re = R("is ([0-9]+)");
+    enum Matcher enabled_matchers = (enum Matcher)(
+        MATCHER_BTNFA
+        | MATCHER_TNFA
+        | MATCHER_TDFA
+        | MATCHER_LAZY_DFA
+        | MATCHER_STATIC_DFA
+    );
 
-    if (re == NULL) {
-        return 1;
-    }
+    result = meta_regex_match(
+        re,
+        (uint8 *)text,
+        text_len,
+        matches,
+        sizeof(matches)/sizeof(*matches),
+        enabled_matchers
+    );
 
-    result = meta_regex_match(re, text, 2, matches);
     if (result != 0) {
         return 1;
     }
 
-    printf("Match found!\n");
-    {
-        int32 start;
-        int32 end;
+    printf("Match found: %.*s\n",
+           (int32)(matches[0].rm_eo - matches[0].rm_so),
+           text + matches[0].rm_so);
 
-        start = (int32)matches[1].rm_so;
-        end = (int32)matches[1].rm_eo;
-        printf("Captured value: %.*s\n", end - start, text + start);
-    }
+    printf("Captured value: %.*s\n",
+           (int32)(matches[1].rm_eo - matches[1].rm_so),
+           text + matches[1].rm_so);
 
     return 0;
 }
 ```
 
-2. Run the Preprocessor
-Your build pipeline must run meta_preproc first to generate the expanded source
-code:
-```sh
+3. Run the preprocessor
+
+Your build pipeline must compile and run meta_preproc before compiling the
+final program.
+
 # 1. Compile the preprocessor
-cc meta_preproc.c -o bin/meta_preproc
+```sh
+cc -std=c11 -O2 -flto \
+    -I./cbase -I. \
+    meta_preproc_0_main.c \
+    -o bin/meta_preproc \
+```
 
 # 2. Generate C code with compiled regexes
+```sh
 ./bin/meta_preproc your_code.c > gen/your_code_baked.c
+```
 
 # 3. Compile the final program
-cc gen/your_code_baked.c -o your_program
-
+```sh
+cc -std=c11 -O2 -flto \
+    -I./cbase -I. \
+    gen/your_code_baked.c \
+    -o your_program \
 ./your_program
+```
+
+The preprocessor also accepts configuration options as option=value, for
+example:
+
+```sh
+./bin/meta_preproc default_extract_submatches=false your_code.c \
+    > gen/your_code_baked.c
+```
+
+With that global default disabled, use META_RE_YESSUB on individual R()
+macros that still need capture extraction:
+
+```c
+MetaRegex *re = R("([a-z]+)=([0-9]+)", META_RE_YESSUB);
 ```
 
 ## Project structure
