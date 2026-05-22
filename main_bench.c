@@ -126,7 +126,7 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
 #endif
 
 #if !defined(META_BENCH_ITERATIONS)
-#define META_BENCH_ITERATIONS 2
+#define META_BENCH_ITERATIONS 100
 #endif
 
 #if !defined(META_BENCH_WARMUP_ITERATIONS)
@@ -746,6 +746,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
         regex_buckets[l].max_regex_len = bench_length_class_max(l);
         regex_buckets[l].cases = bucket_cases + l*array_len;
         regex_buckets[l].count = counts[l];
+        ASSERT_MORE(counts[l], 10);
 
         compiled = malloc2(SIZEOF(*compiled)*regex_buckets[l].count);
         for (int32 i = 0; i < regex_buckets[l].count; i += 1) {
@@ -915,7 +916,7 @@ main(int32 argc, char **argv) {
 
     now = (llong)time(NULL);
     BENCH_PROCESS_ARRAY(bench_regex_cases, 0);
-    BENCH_PROCESS_ARRAY(bench_regex_backref_cases, 1);
+    /* BENCH_PROCESS_ARRAY(bench_regex_backref_cases, 1); */
 
     printf("bench_sink_result=%d bench_sink_offsets=%lld\n", bench_sink_result,
            (llong)bench_sink_offsets);
