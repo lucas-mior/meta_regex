@@ -15,12 +15,12 @@ import matplotlib.pyplot as plt
 # keeps the same color everywhere.
 CANONICAL_SERIES_COLORS = {
     "LIBC": "#000000",
-    "META_DISPATCH": "#0072B2",  # blue
-    "BTNFA": "#E69F00",          # orange
-    "TNFA": "#009E73",           # green
-    "TDFA": "#D55E00",           # vermillion
-    "LAZY_DFA": "#CC79A7",       # reddish purple
-    "STATIC_DFA": "#56B4E9",     # sky blue
+    "META_DISPATCH": "#cc4400",
+    "BTNFA": "#d69F00",       
+    "TNFA": "#bbbbbb",       
+    "TDFA": "#009e73",      
+    "LAZY_DFA": "#CC79A7", 
+    "STATIC_DFA": "#56B4E9",  
 }
 
 CANONICAL_SERIES_ORDER = [
