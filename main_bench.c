@@ -143,7 +143,7 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
 #endif
 
 #if !defined(ENABLE_BTNFA)
-#define ENABLE_BTNFA 0
+#define ENABLE_BTNFA 1
 #endif
 #if !defined(ENABLE_TNFA)
 #define ENABLE_TNFA 0
@@ -152,10 +152,10 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
 #define ENABLE_TDFA 1
 #endif
 #if !defined(ENABLE_LAZY_DFA)
-#define ENABLE_LAZY_DFA 0
+#define ENABLE_LAZY_DFA 1
 #endif
 #if !defined(ENABLE_STATIC_DFA)
-#define ENABLE_STATIC_DFA 0
+#define ENABLE_STATIC_DFA 1
 #endif
 
 static enum Matcher bench_matchers[] = {
@@ -908,7 +908,7 @@ main(int32 argc, char **argv) {
 
     now = (llong)time(NULL);
     BENCH_PROCESS_ARRAY(bench_regex_cases, 0);
-    /* BENCH_PROCESS_ARRAY(bench_regex_backref_cases, 1); */
+    BENCH_PROCESS_ARRAY(bench_regex_backref_cases, 1);
 
     printf("bench_sink_result=%d bench_sink_offsets=%lld\n", bench_sink_result,
            (llong)bench_sink_offsets);
