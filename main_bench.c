@@ -897,7 +897,7 @@ main(int32 argc, char **argv) {
     (void)argc;
     (void)argv;
 
-    srand(43u);
+    srand(44u);
 
     setlocale(LC_ALL, "C");
     mkdir("benchmarks", 0777);
