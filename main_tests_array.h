@@ -4,8 +4,8 @@
 #include "main_tests.h"
 
 static RegexTest ascii_no_group_no_backref[] = {
-    {"abc5def",      R("[0-9]")},
-    {"hello world",  R("[0-9]")},
+    {"abc5def",      R("[0-9]", META_RE_NOSUB)},
+    {"hello world",  R("[0-9]", META_RE_NOSUB)},
     {"2hello world", R("^[0-9]")},
     {"hello 2",      R("^[0-9]")},
     {"test end5",    R("[0-9]$")},
