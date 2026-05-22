@@ -744,7 +744,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
         regex_buckets[l].length_class = l;
         regex_buckets[l].is_backref = is_backref;
         regex_buckets[l].max_regex_len = bench_length_class_max(l);
-        regex_buckets[l].cases = bucket_cases + l*array_len;
+        regex_buckets[l].cases = bucket_cases + (int32)l*array_len;
         regex_buckets[l].count = counts[l];
         ASSERT_MORE(counts[l], 10);
 
