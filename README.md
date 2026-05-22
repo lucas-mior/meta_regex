@@ -80,7 +80,7 @@ needed for that regex. pmatch[0] may still be used for the whole match, but
 subgroups are suppressed. META_RE_YESSUB forces extraction support for that
 regex when the preprocessor default is configured otherwise.
 
-1. Write your C code
+### 1. Write your C code
 ```C
 #include <stdio.h>
 #include <string.h>
@@ -130,12 +130,12 @@ main(void) {
 }
 ```
 
-3. Run the preprocessor
+### 2. Run the preprocessor
 
 Your build pipeline must compile and run meta_preproc before compiling the
 final program.
 
-# 1. Compile the preprocessor
+#### 1. Compile the preprocessor
 ```sh
 cc -std=c11 -O2 -flto \
     -I./cbase -I. \
@@ -143,12 +143,12 @@ cc -std=c11 -O2 -flto \
     -o bin/meta_preproc \
 ```
 
-# 2. Generate C code with compiled regexes
+#### 2. Generate C code with compiled regexes
 ```sh
 ./bin/meta_preproc your_code.c > gen/your_code_baked.c
 ```
 
-# 3. Compile the final program
+### 3. Compile the final program
 ```sh
 cc -std=c11 -O2 -flto \
     -I./cbase -I. \
