@@ -6,6 +6,15 @@ is_word_char(int32 c) {
             || (c >= '0' && c <= '9') || c == '_');
 }
 
+static int32
+static_dfa_uses_word_context(ExtractedRegex *regex) {
+    enum MetaOpType context_ops = (enum MetaOpType)(
+        META_OP_WORD_START | META_OP_WORD_END | META_OP_WORD_BOUNDARY
+        | META_OP_NON_WORD_BOUNDARY);
+
+    return (regex->used_ops & context_ops) != 0;
+}
+
 static void
 compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
                         int32 prev_is_w, int32 curr_is_w, int32 *is_accepting) {
@@ -463,9 +472,11 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
     int32 dfa_count = 1;
     int32 start_dfa_w = 0;
     int32 start_dfa_nw = 0;
+    int32 uses_word_context = static_dfa_uses_word_context(regex);
+    int32 min_start_state_count = uses_word_context ? 3 : 2;
 
     if (!preproc_config.emit_static_dfa
-        || preproc_config.max_static_dfa_states <= 2) {
+        || preproc_config.max_static_dfa_states < min_start_state_count) {
         fprintf(out, ", .static_dfa = NULL");
         return;
     }
@@ -495,17 +506,21 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
         }
     }
 
-    DfaSet start_set_nw = start_set_base;
-    start_set_nw.prev_is_w = 0;
-
-    DfaSet start_set_w = start_set_base;
-    start_set_w.prev_is_w = 1;
-
-    dfa_sets[1] = start_set_nw;
+    start_set_base.prev_is_w = 0;
+    dfa_sets[1] = start_set_base;
     start_dfa_nw = 1;
-    dfa_sets[2] = start_set_w;
-    start_dfa_w = 2;
-    dfa_count = 3;
+
+    if (uses_word_context) {
+        DfaSet start_set_w = start_set_base;
+        start_set_w.prev_is_w = 1;
+
+        dfa_sets[2] = start_set_w;
+        start_dfa_w = 2;
+        dfa_count = 3;
+    } else {
+        start_dfa_w = start_dfa_nw;
+        dfa_count = 2;
+    }
 
     for (int32 d = 1; d < dfa_count; d += 1) {
         if (fail_reasons != 0) {
@@ -513,7 +528,7 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
         }
 
         for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
-            int32 curr_is_w = is_word_char(c);
+            int32 curr_is_w = uses_word_context ? is_word_char(c) : 0;
             int32 is_acc = 0;
             DfaSet accept_closure = dfa_sets[d];
             DfaSet next_kernel = {0};
@@ -525,7 +540,7 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
 
             dfa_accept[d][c] = (uint8)is_acc;
 
-            next_kernel.prev_is_w = curr_is_w;
+            next_kernel.prev_is_w = uses_word_context ? curr_is_w : 0;
             for (int32 i = 0; i < PREPROC_NFA_BITSET_WORDS; i += 1) {
                 next_kernel.bits[i] = 0;
             }
