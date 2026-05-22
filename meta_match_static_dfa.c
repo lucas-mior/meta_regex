@@ -46,7 +46,12 @@ match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
 
     (void)input_len;
 
-    if (offset > 0) {
+    /*
+        If the generator proved that word context is irrelevant, it emits the
+        same start state for both previous-byte contexts. In that common case,
+        avoid reading input[offset - 1] and avoid the word_table lookup.
+    */
+    if (dfa->start_state_w != start_idx && offset > 0) {
         uint8 prev_b = input[offset - 1];
         if (word_table[prev_b]) {
             start_idx = dfa->start_state_w;
