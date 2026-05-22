@@ -18,7 +18,7 @@ This is an exploration: don't use it in production.
 - When you know that input is not very long
   * The performance is not competitive when input is long
 - If you like to pass the length of your input instead of only relying on the
-  nul termination
+  nul termination (note: the matcher still expects nul termination).
 - If you don't care about binary size
   * The ahead of time static DFA needs to store lots of metadata
 - If you can make assumptions about your input data and your regexes
