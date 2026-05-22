@@ -436,15 +436,8 @@ bench_write_engine_row(FILE *csv, char *test_name, char *variant,
     return;
 }
 
-static uint32
-bench_random_next(uint32 *state) {
-    *state = (*state*1664525u) + 1013904223u;
-    return *state;
-}
-
 static void
-bench_generate_random_input(char *out, enum BenchInputLengthClass c,
-                            uint32 *seed) {
+bench_generate_random_input(char *out, enum BenchInputLengthClass c) {
     static char alphabet[] = "abcdefghijklmnopqrstuvwxyz0123456789 "
                              "_-./:;,@[](){}";
     int32 min_len = bench_input_length_class_min(c);
@@ -453,11 +446,11 @@ bench_generate_random_input(char *out, enum BenchInputLengthClass c,
     int32 len = min_len;
 
     if (span > 1) {
-        len += (int32)(bench_random_next(seed) % (uint32)span);
+        len += (int32)(rand() % (uint32)span);
     }
 
     for (int32 j = 0; j < len; j += 1) {
-        uint32 r = bench_random_next(seed);
+        uint32 r = rand();
         out[j] = alphabet[r % (SIZEOF(alphabet) - 1)];
     }
     out[len] = '\0';
@@ -661,8 +654,7 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
 static void
 bench_process_regex_array(BenchRegexCase *array, int32 array_len,
                           char *array_name, int32 is_backref, llong now,
-                          int32 max_input_len, uint32 *seed,
-                          enum Matcher enabled) {
+                          int32 max_input_len, enum Matcher enabled) {
     BenchRegexCase *bucket_cases;
     BenchRegexBucket regex_buckets[BENCH_LEN_LAST];
     char regex_bucket_names[BENCH_LEN_LAST][128];
@@ -791,7 +783,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
                          bench_input_length_class_name(ii), ri);
 
                 for (int32 k = 0; k < BENCH_RANDOM_INPUT_ATTEMPTS; k += 1) {
-                    bench_generate_random_input(input_storage[ri], ii, seed);
+                    bench_generate_random_input(input_storage[ri], ii);
                     if (bench_run_libc_one(&compiled[ri], input_storage[ri],
                                            NULL, 0, false)
                         == 0) {
@@ -806,8 +798,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
                     not_matched += 1;
                     if (input_storage[ri][0] == '\0'
                         && bench_input_length_class_min(ii) > 0) {
-                        bench_generate_random_input(input_storage[ri], ii,
-                                                    seed);
+                        bench_generate_random_input(input_storage[ri], ii);
                     }
                 }
 
@@ -861,7 +852,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
 
 #define BENCH_PROCESS_ARRAY(arr, is_backref) \
     bench_process_regex_array((arr), LENGTH(arr), #arr, (is_backref), now, \
-                              max_input_len, &seed, enabled)
+                              max_input_len, enabled)
 
 static int32
 bench_parse_input_len_cap(char *s, int32 *out) {
@@ -902,10 +893,11 @@ int32
 main(int32 argc, char **argv) {
     llong now;
     int32 max_input_len = META_BENCH_MAX_INPUT_LEN;
-    uint32 seed = 0xC0FFEEu;
     enum Matcher enabled = MATCHER_NONE;
     (void)argc;
     (void)argv;
+
+    srand(43u);
 
     setlocale(LC_ALL, "C");
     mkdir("benchmarks", 0777);
