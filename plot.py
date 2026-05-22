@@ -16,11 +16,11 @@ import matplotlib.pyplot as plt
 CANONICAL_SERIES_COLORS = {
     "LIBC": "#000000",
     "META_DISPATCH": "#cc4400",
-    "BTNFA": "#d69F00",       
-    "TNFA": "#bbbbbb",       
-    "TDFA": "#009e73",      
-    "LAZY_DFA": "#CC79A7", 
-    "STATIC_DFA": "#56B4E9",  
+    "BTNFA": "#d69F00",
+    "TNFA": "#bbbbbb",
+    "TDFA": "#009e73",
+    "LAZY_DFA": "#CC79A7",
+    "STATIC_DFA": "#56B4E9",
 }
 
 CANONICAL_SERIES_ORDER = [
