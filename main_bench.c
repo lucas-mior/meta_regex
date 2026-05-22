@@ -223,7 +223,10 @@ bench_matcher_compile_enabled(enum Matcher matcher) {
 
 static int32
 bench_matcher_supports_regex(MetaRegex *regex, enum Matcher matcher,
-                             bool extract) {
+                             enum Matcher enabled, bool extract) {
+    if ((enabled & matcher) == 0) {
+        return 0;
+    }
     if (!bench_matcher_compile_enabled(matcher)) {
         return 0;
     }
@@ -578,7 +581,8 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
             int32 ref_result;
             int32 actual_result;
 
-            if (!bench_matcher_supports_regex(rc->regex, matcher, extract)) {
+            if (!bench_matcher_supports_regex(rc->regex, matcher, enabled,
+                                              extract)) {
                 continue;
             }
 
@@ -611,7 +615,7 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
                 int32 input_len;
                 int32 result;
 
-                if (!bench_matcher_supports_regex(rc->regex, matcher,
+                if (!bench_matcher_supports_regex(rc->regex, matcher, enabled,
                                                   extract)) {
                     continue;
                 }
@@ -633,7 +637,7 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
                 int32 input_len;
                 int32 result;
 
-                if (!bench_matcher_supports_regex(rc->regex, matcher,
+                if (!bench_matcher_supports_regex(rc->regex, matcher, enabled,
                                                   extract)) {
                     continue;
                 }
@@ -672,6 +676,11 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
     char (*input_storage)[BENCH_RANDOM_INPUT_MAX_LEN + 1];
     char csv_file[1024];
     FILE *csv;
+    enum Matcher array_enabled = enabled;
+
+    if (!is_backref) {
+        array_enabled &= ~MATCHER_BTNFA;
+    }
 
     memset64(counts, 0, SIZEOF(counts));
     memset64(regex_buckets, 0, SIZEOF(regex_buckets));
@@ -832,11 +841,13 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
 
 #if META_BENCH_ENABLE_NO_EXTRACT_VARIANTS
             bench_run_pairwise_variant(csv, test_name, &regex_buckets[l],
-                                       &input_bucket, compiled, enabled, false);
+                                       &input_bucket, compiled, array_enabled,
+                                       false);
 #endif
 #if META_BENCH_ENABLE_EXTRACT_VARIANTS
             bench_run_pairwise_variant(csv, test_name, &regex_buckets[l],
-                                       &input_bucket, compiled, enabled, true);
+                                       &input_bucket, compiled, array_enabled,
+                                       true);
 #endif
         }
 
