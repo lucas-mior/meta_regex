@@ -446,11 +446,11 @@ bench_generate_random_input(char *out, enum BenchInputLengthClass c) {
     int32 len = min_len;
 
     if (span > 1) {
-        len += (int32)(rand() % (uint32)span);
+        len += (int32)((uint32)rand() % (uint32)span);
     }
 
     for (int32 j = 0; j < len; j += 1) {
-        uint32 r = rand();
+        uint32 r = (uint32)rand();
         out[j] = alphabet[r % (SIZEOF(alphabet) - 1)];
     }
     out[len] = '\0';
