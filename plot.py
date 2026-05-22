@@ -67,6 +67,10 @@ VARIANT_STYLES = {
     "extract": "-",
 }
 
+# Slight transparency keeps overlapping extract/no_extract and matcher lines
+# readable without changing the canonical colors themselves.
+PLOT_ALPHA = 0.78
+
 
 def parse_args():
     p = argparse.ArgumentParser(description="Plot Meta regex benchmark CSV files.")
@@ -364,6 +368,7 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False, separate_variants=
                 linewidth=2.0,
                 markersize=4.5,
                 color=color,
+                alpha=PLOT_ALPHA,
                 label=label,
             )
             plotted.append((name, variant))
@@ -420,7 +425,12 @@ def plot_csv(path, out_dir, metric, log_x=False, log_y=False, separate_variants=
             "feature_class": feature,
             "variant": variant_label,
             "series": [
-                {"name": name, "variant": variant, "color": used_colors[name]}
+                {
+                    "name": name,
+                    "variant": variant,
+                    "color": used_colors[name],
+                    "alpha": PLOT_ALPHA,
+                }
                 for name, variant in plotted
             ],
             "rows": [
