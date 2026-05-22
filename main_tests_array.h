@@ -2,6 +2,7 @@
 #define META_TESTS_ARRAY_H
 
 #include "main_tests.h"
+#include "meta.h"
 
 static RegexTest ascii_no_group_no_backref[] = {
     {"abc5def",      R("[0-9]", META_RE_NOSUB)},
