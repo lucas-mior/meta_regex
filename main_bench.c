@@ -142,14 +142,6 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
 #define META_BENCH_MAX_INPUT_LEN 1024
 #endif
 
-#if !defined(META_BENCH_ENABLE_NO_EXTRACT_VARIANTS)
-#define META_BENCH_ENABLE_NO_EXTRACT_VARIANTS 1
-#endif
-
-#if !defined(META_BENCH_ENABLE_EXTRACT_VARIANTS)
-#define META_BENCH_ENABLE_EXTRACT_VARIANTS 1
-#endif
-
 #if !defined(ENABLE_BTNFA)
 #define ENABLE_BTNFA 0
 #endif
@@ -822,11 +814,11 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
                      bench_length_class_name(l),
                      bench_input_length_class_name(ii));
 
-#if META_BENCH_ENABLE_NO_EXTRACT_VARIANTS
+#if 1
             bench_run_pairwise_variant(csv, test_name, &regex_buckets[l],
                                        &input_bucket, compiled, enabled, false);
 #endif
-#if META_BENCH_ENABLE_EXTRACT_VARIANTS
+#if 1
             bench_run_pairwise_variant(csv, test_name, &regex_buckets[l],
                                        &input_bucket, compiled, enabled, true);
 #endif
