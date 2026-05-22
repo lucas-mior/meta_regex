@@ -24,6 +24,9 @@ This is an exploration: don't use it in production.
 - If you can make assumptions about your input data and your regexes
 - If you want absolute control over the regex matcher
   * You can enable/disable which matchers you want
+  * You can pass flags to the pre processor that builds the regex:
+      + You can enable/disable submatch extraction for each regex
+      + TODO: enable/disable matchers for each regex
   * TODO: You can tweak the heuristic parameters used to select the matcher
 - If you want to make it easier to not depend on libc
   * The regex pre processor and runtime matchers use only some simple libc
