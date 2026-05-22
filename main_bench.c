@@ -139,7 +139,7 @@ bench_input_length_class_max(enum BenchInputLengthClass c) {
 #define BENCH_RANDOM_INPUT_MAX_LEN 4096
 
 #if !defined(META_BENCH_MAX_INPUT_LEN)
-#define META_BENCH_MAX_INPUT_LEN 128
+#define META_BENCH_MAX_INPUT_LEN 1024
 #endif
 
 #if !defined(META_BENCH_ENABLE_NO_EXTRACT_VARIANTS)
