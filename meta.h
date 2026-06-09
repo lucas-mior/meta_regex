@@ -15,8 +15,8 @@
 #define ENUM_NAME MetaRegexFlags
 #define ENUM_BITFLAGS 1
 #define ENUM_FIELDS \
-    X(YESSUB) \
-    X(NOSUB)
+    X(META_RE_YESSUB) \
+    X(META_RE_NOSUB)
 #include "xenums.c"
 
 /* TNFA limits */
@@ -45,24 +45,24 @@
 #define ENUM_NAME MetaOpType
 #define ENUM_BITFLAGS 1
 #define ENUM_FIELDS \
-    X(END) \
-    X(LITERAL) \
-    X(ANY) \
-    X(CLASS) \
-    X(GROUP_START) \
-    X(GROUP_END) \
-    X(STAR) \
-    X(PLUS) \
-    X(OPTIONAL) \
-    X(ALTERNATION) \
-    X(BOUNDED) \
-    X(SPLIT) \
-    X(JUMP) \
-    X(WORD_START) \
-    X(WORD_END) \
-    X(WORD_BOUNDARY) \
-    X(NON_WORD_BOUNDARY) \
-    X(BACKREF)
+    X(META_OP_END) \
+    X(META_OP_LITERAL) \
+    X(META_OP_ANY) \
+    X(META_OP_CLASS) \
+    X(META_OP_GROUP_START) \
+    X(META_OP_GROUP_END) \
+    X(META_OP_STAR) \
+    X(META_OP_PLUS) \
+    X(META_OP_OPTIONAL) \
+    X(META_OP_ALTERNATION) \
+    X(META_OP_BOUNDED) \
+    X(META_OP_SPLIT) \
+    X(META_OP_JUMP) \
+    X(META_OP_WORD_START) \
+    X(META_OP_WORD_END) \
+    X(META_OP_WORD_BOUNDARY) \
+    X(META_OP_NON_WORD_BOUNDARY) \
+    X(META_OP_BACKREF)
 #include "xenums.c"
 
 typedef struct MetaOp {

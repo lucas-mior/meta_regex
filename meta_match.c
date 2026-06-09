@@ -17,11 +17,11 @@
 #define ENUM_NAME Matcher
 #define ENUM_BITFLAGS 1
 #define ENUM_FIELDS \
-    X(BTNFA) \
-    X(TNFA) \
-    X(LAZY_DFA) \
-    X(STATIC_DFA) \
-    X(TDFA)
+    X(MATCHER_BTNFA) \
+    X(MATCHER_TNFA) \
+    X(MATCHER_LAZY_DFA) \
+    X(MATCHER_STATIC_DFA) \
+    X(MATCHER_TDFA)
 #include "xenums.c"
 
 #define HEURISTIC_DFA_MIN_INPUT_LEN 1
