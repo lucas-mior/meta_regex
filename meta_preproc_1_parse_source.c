@@ -140,7 +140,7 @@ parse_source_code(char *buffer, int64 source_len) {
         char raw_string[PREPROC_MAX_STRING_LEN] = {0};
         char regex_string[PREPROC_MAX_STRING_LEN] = {0};
         char op_buffer[PREPROC_OP_BUFFER_SIZE] = {0};
-        char flags_buffer[PREPROC_MAX_FLAGS_EXPR] = "0";
+        char flags_buffer[PREPROC_MAX_FLAGS_EXPR] = "META_RE_NONE";
         char *op_ptr = op_buffer;
         int32 space = SIZEOF(op_buffer);
         bool has_start = false;
