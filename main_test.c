@@ -132,8 +132,11 @@ report_match_mismatch(char *kind, char *case_name, enum Matcher matcher,
                       char *input, char *regex, int32 reference_result,
                       int32 actual_result, regmatch_t *reference,
                       regmatch_t *actual, int32 pmatch_len, bool extract) {
+    char *matcher_name = MATCHER_str(matcher);
+
     error2("%s mismatch in %s with matcher %s\n", kind, case_name,
-           MATCHER_str(matcher));
+           matcher_name);
+    MATCHER_str_free(matcher_name);
     error2("input " RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n", input,
            regex);
     error2("libc result: %d, meta result: %d\n", reference_result,
@@ -484,9 +487,27 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             fatal(EXIT_FAILURE);
         }
 
-        fseek(file, 0, SEEK_END);
+        if (fseek(file, 0, SEEK_END) != 0) {
+            error("Error seeking file %s: %s.\n", path,
+                  strerror(errno));
+            fatal(EXIT_FAILURE);
+        }
         file_size = ftell(file);
-        fseek(file, 0, SEEK_SET);
+        if (file_size < 0) {
+            error("Error getting size of file %s: %s.\n", path,
+                  strerror(errno));
+            fatal(EXIT_FAILURE);
+        }
+        if (file_size > INT32_MAX) {
+            error("Input file %s is too large: %lld bytes.\n", path,
+                  (llong)file_size);
+            fatal(EXIT_FAILURE);
+        }
+        if (fseek(file, 0, SEEK_SET) != 0) {
+            error("Error seeking file %s: %s.\n", path,
+                  strerror(errno));
+            fatal(EXIT_FAILURE);
+        }
 
         bytes_pretty(size_pretty, file_size);
         SNPRINTF(case_name, "%s[%s]", entry->d_name, size_pretty);

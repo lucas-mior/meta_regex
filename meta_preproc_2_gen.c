@@ -596,10 +596,12 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
            original_string_length, quote_start, dfa_count);
 
     if (fail_reasons) {
+        char *fail_reason_names = PREPROC_FAIL_str(fail_reasons);
+
         fprintf(stderr,
                 "Warning: DFA conversion failed for %.*s because of %s.\n",
-                original_string_length, quote_start,
-                PREPROC_FAIL_str(fail_reasons));
+                original_string_length, quote_start, fail_reason_names);
+        PREPROC_FAIL_str_free(fail_reason_names);
         fprintf(stderr, "static dfa will not be available at runtime.\n");
         fprintf(out, ", .static_dfa = NULL");
     } else {

@@ -310,7 +310,10 @@ bench_report_mismatch(char *block, BenchRegexBucket *regex_bucket,
            block, regex_bucket->name, input_bucket->name, input_case->name,
            engine);
     if (matcher != MATCHER_NONE) {
-        error2(" (%s)", MATCHER_str(matcher));
+        char *matcher_name = MATCHER_str(matcher);
+
+        error2(" (%s)", matcher_name);
+        MATCHER_str_free(matcher_name);
     }
     error2("\n");
     error2("input " RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n",
@@ -578,10 +581,13 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
 
             if (bench_result_mismatch(ref_result, actual_result, ref_pm,
                                       actual_pm, LENGTH(ref_pm), extract)) {
+                char *matcher_name = MATCHER_str(matcher);
+
                 bench_report_mismatch(
                     "meta_matchers_pairwise", regex_bucket, rc, input_bucket,
-                    ic, MATCHER_str(matcher), matcher, ref_result,
-                    actual_result, ref_pm, actual_pm, LENGTH(ref_pm), extract);
+                    ic, matcher_name, matcher, ref_result, actual_result, ref_pm,
+                    actual_pm, LENGTH(ref_pm), extract);
+                MATCHER_str_free(matcher_name);
                 exit(EXIT_FAILURE);
             }
             run_pairs += 1;
@@ -637,10 +643,14 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
         }
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
         seconds = bench_timediff(t0, t1);
-        bench_write_engine_row(csv, test_name, variant, regex_bucket,
-                               input_bucket, "META", MATCHER_str(matcher),
-                               MATCHER_str(matcher), run_pairs, seconds,
-                               matches);
+        {
+            char *matcher_name = MATCHER_str(matcher);
+
+            bench_write_engine_row(csv, test_name, variant, regex_bucket,
+                                   input_bucket, "META", matcher_name,
+                                   matcher_name, run_pairs, seconds, matches);
+            MATCHER_str_free(matcher_name);
+        }
     }
     return;
 }
