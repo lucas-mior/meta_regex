@@ -1,5 +1,5 @@
 #include "primitives.h"
-#include "meta.h"
+#include "meta_regex.h"
 #include "meta_preproc.h"
 
 /* Source scanner and R(...) extraction entry point. */

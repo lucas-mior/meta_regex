@@ -8,8 +8,10 @@
 #include <sys/stat.h>
 #include <time.h>
 
-#include "util.c"
-#include "meta.h"
+#define CBASE_IMPLEMENT
+#include "cbase.h"
+
+#include "meta_regex.h"
 #include "meta_match.c"
 #include "gen/main_bench_regexes2.h"
 

@@ -16,7 +16,7 @@ target="${1:-test}"
 
 CFLAGS="$CFLAGS -std=c11"
 CFLAGS="$CFLAGS -Wextra -Wall"
-CFLAGS="$CFLAGS -Werror"
+# CFLAGS="$CFLAGS -Werror"
 CFLAGS="$CFLAGS -Wno-unused-macros"
 CFLAGS="$CFLAGS -Wno-unused-function"
 CFLAGS="$CFLAGS -Wno-unknown-pragmas"

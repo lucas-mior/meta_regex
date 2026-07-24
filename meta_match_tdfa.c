@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "meta.h"
+#include "meta_regex.h"
 #include "meta_util.c"
 
 // clang-format off

@@ -4,8 +4,8 @@
 #include <regex.h>
 #include <string.h>
 
-#include "meta.h"
-#include "util.c"
+#include "meta_regex.h"
+#include "cbase.h"
 #include "meta_util.c"
 #include "meta_match_lazy_dfa.c"
 #include "meta_match_btnfa.c"

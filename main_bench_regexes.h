@@ -1,7 +1,7 @@
 #if !defined(META_BENCH_REGEXES_H)
 #define META_BENCH_REGEXES_H
 
-#include "meta.h"
+#include "meta_regex.h"
 
 enum BenchRegexLengthClass {
     BENCH_LEN_1_8,

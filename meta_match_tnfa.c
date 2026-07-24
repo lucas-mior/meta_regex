@@ -3,7 +3,7 @@
 
 #include <regex.h>
 
-#include "meta.h"
+#include "meta_regex.h"
 #include "primitives.h"
 #include "meta_util.c"
 

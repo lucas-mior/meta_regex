@@ -1,4 +1,4 @@
-#include "meta.h"
+#include "meta_regex.h"
 #include "meta_preproc.h"
 #include <errno.h>
 #include "meta_preproc_1_parse_regex.c"

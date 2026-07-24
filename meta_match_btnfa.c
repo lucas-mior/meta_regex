@@ -2,7 +2,7 @@
 #define META_MATCH_BTNFA
 
 #include <regex.h>
-#include "meta.h"
+#include "meta_regex.h"
 #include "meta_util.c"
 #include "primitives.h"
 
