@@ -45,7 +45,7 @@ debug)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=1 $GNUSOURCE"
     CFLAGS="$CFLAGS -g3"
     ;;
-preprocessor|test|bench|all)
+preprocessor|test|bench|all|check)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
     CFLAGS="$CFLAGS -g -O2 -flto"
     ;;
@@ -169,5 +169,15 @@ callgrind)
     $CC $CPPFLAGS $CFLAGS main_bench.c -o bin/meta_bench $LDFLAGS
     valgrind --tool=callgrind bin/meta_bench
     trace_off
+    ;;
+check)
+    CC=gcc CFLAGS="-fanalyzer -fdiagnostics-color=never" "$0" test
+    CFLAGS="--analyze -Xanalyzer -analyzer-output=text"
+    CFLAGS="$CFLAGS -Xanalyzer -analyzer-werror"
+    CFLAGS="$CFLAGS -Xanalyzer -analyzer-opt-analyze-headers"
+    CFLAGS="$CFLAGS -Wno-unused-command-line-argument"
+    CFLAGS="$CFLAGS -fno-color-diagnostics"
+    CC=clang CFLAGS="$CFLAGS" "$0" test
+    exit
     ;;
 esac
