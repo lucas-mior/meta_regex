@@ -8,6 +8,7 @@
 
 #define CBASE_IMPLEMENT
 #include "cbase.h"
+
 #include "meta_regex.h"
 #include "meta_match.c"
 
