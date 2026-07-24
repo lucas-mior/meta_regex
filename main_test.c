@@ -6,7 +6,8 @@
 #include <errno.h>
 #include <dirent.h>
 
-#include "util.c"
+#define CBASE_IMPLEMENT
+#include "cbase.h"
 #include "meta.h"
 #include "meta_match.c"
 
