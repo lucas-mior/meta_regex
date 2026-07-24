@@ -7,6 +7,9 @@
 #include "meta_preproc_1_parse_source.c"
 #include "meta_preproc_2_gen.c"
 
+#define CBASE_IMPLEMENT
+#include "cbase.h"
+
 #if !defined(error2)
 #define error2(...) fprintf(stderr, __VA_ARGS__)
 #endif
