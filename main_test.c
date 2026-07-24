@@ -95,10 +95,10 @@ matcher_supports_regex(MetaRegex *regex, enum Matcher matcher, bool extract) {
     if (!matcher_storage_available(regex, matcher)) {
         return 0;
     }
-    if (extract && !matchers[matcher].extracts) {
+    if (extract && !matchers[matcher]->extracts) {
         return 0;
     }
-    if ((regex->used_ops & ~matchers[matcher].supports) != 0) {
+    if ((regex->used_ops & ~matchers[matcher]->supports) != 0) {
         return 0;
     }
     return 1;

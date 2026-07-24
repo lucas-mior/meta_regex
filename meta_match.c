@@ -26,12 +26,12 @@
 
 #define HEURISTIC_DFA_MIN_INPUT_LEN 1
 
-static MatcherFeatures matchers[] = {
-    [MATCHER_BTNFA] = match_features_btnfa,
-    [MATCHER_TNFA] = match_features_tnfa,
-    [MATCHER_TDFA] = match_features_tdfa,
-    [MATCHER_LAZY_DFA] = match_features_lazy_dfa,
-    [MATCHER_STATIC_DFA] = match_features_static_dfa,
+static const MatcherFeatures *const matchers[] = {
+    [MATCHER_BTNFA] = &match_features_btnfa,
+    [MATCHER_TNFA] = &match_features_tnfa,
+    [MATCHER_TDFA] = &match_features_tdfa,
+    [MATCHER_LAZY_DFA] = &match_features_lazy_dfa,
+    [MATCHER_STATIC_DFA] = &match_features_static_dfa,
 };
 
 static int32
@@ -219,28 +219,28 @@ meta_choose_matcher(MetaRegex *regex, int32 input_len, bool needs_extraction,
     enum Matcher matcher = MATCHER_BTNFA;
 
     if ((matchers_enabled & MATCHER_TDFA) && regex->tdfa) {
-        if ((regex->used_ops & ~matchers[MATCHER_TDFA].supports) == 0) {
+        if ((regex->used_ops & ~matchers[MATCHER_TDFA]->supports) == 0) {
             matcher = MATCHER_TDFA;
         }
     }
 
     if (matcher == MATCHER_BTNFA && needs_extraction
         && (matchers_enabled & MATCHER_TNFA) && regex->tnfa) {
-        if ((regex->used_ops & ~matchers[MATCHER_TNFA].supports) == 0) {
+        if ((regex->used_ops & ~matchers[MATCHER_TNFA]->supports) == 0) {
             matcher = MATCHER_TNFA;
         }
     }
 
     if (!needs_extraction && input_len >= HEURISTIC_DFA_MIN_INPUT_LEN) {
         if ((matchers_enabled & MATCHER_STATIC_DFA) && regex->static_dfa) {
-            if ((regex->used_ops & ~matchers[MATCHER_STATIC_DFA].supports)
+            if ((regex->used_ops & ~matchers[MATCHER_STATIC_DFA]->supports)
                 == 0) {
                 matcher = MATCHER_STATIC_DFA;
             }
         }
 
         if (matcher == MATCHER_BTNFA && (matchers_enabled & MATCHER_LAZY_DFA)) {
-            if ((regex->used_ops & ~matchers[MATCHER_LAZY_DFA].supports) == 0) {
+            if ((regex->used_ops & ~matchers[MATCHER_LAZY_DFA]->supports) == 0) {
                 matcher = MATCHER_LAZY_DFA;
             }
         }
