@@ -428,7 +428,7 @@ bench_write_engine_row(FILE *csv, char *test_name, char *variant,
     bench_csv_string(csv, selected_matcher_name);
     fprintf(csv, ",%d,%d,%d,%d,%d,%lld,%f,%f,%d\n", regex_bucket->count,
             input_bucket->count, pair_count, run_pair_count,
-            META_BENCH_ITERATIONS, (llong)total_iterations, seconds,
+            META_BENCH_ITERATIONS, total_iterations, seconds,
             ns_per_match, matches);
     return;
 }
