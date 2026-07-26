@@ -499,8 +499,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             fatal(EXIT_FAILURE);
         }
         if (file_size > INT32_MAX) {
-            error("Input file %s is too large: %lld bytes.\n", path,
-                  (llong)file_size);
+            error("Input file %s is too large: %lld bytes.\n", path, file_size);
             fatal(EXIT_FAILURE);
         }
         if (fseek(file, 0, SEEK_SET) != 0) {
@@ -515,7 +514,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         input = malloc2(file_size + 1);
         if (fread64(input, 1, file_size, file) != file_size) {
             error("Error reading %lld bytes from file %s: %s.\n",
-                  (llong)file_size, path, strerror(errno));
+                  file_size, path, strerror(errno));
             fatal(EXIT_FAILURE);
         }
         input[file_size] = '\0';

@@ -896,7 +896,7 @@ bench_usage(char *argv0) {
 
 int32
 main(int32 argc, char **argv) {
-    llong now;
+    int64 now;
     int32 max_input_len = META_BENCH_MAX_INPUT_LEN;
     enum Matcher enabled = MATCHER_NONE;
     (void)argc;
@@ -918,12 +918,12 @@ main(int32 argc, char **argv) {
 
     printf("bench_max_input_len=%d\n", max_input_len);
 
-    now = (llong)time(NULL);
+    now = time(NULL);
     BENCH_PROCESS_ARRAY(bench_regex_cases, 0);
     BENCH_PROCESS_ARRAY(bench_regex_backref_cases, 1);
 
-    printf("bench_sink_result=%d bench_sink_offsets=%lld\n", bench_sink_result,
-           (llong)bench_sink_offsets);
+    printf("bench_sink_result=%d bench_sink_offsets=%lld\n",
+           bench_sink_result, bench_sink_offsets);
 
     return 0;
 }
