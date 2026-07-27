@@ -8,3 +8,5 @@ callgrind.out.*
 *.png
 *.csv
 *.json
+*.cmd
+*.o
