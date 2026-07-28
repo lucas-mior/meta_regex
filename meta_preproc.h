@@ -1,12 +1,7 @@
 #ifndef META_PREPROC_H
 #define META_PREPROC_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-
-#include "cbase/util.c"
+#include "cbase.h"
 #include "meta_regex.h"
 
 #define PREPROC_OP_BUFFER_SIZE 16384

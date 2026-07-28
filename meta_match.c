@@ -2,7 +2,8 @@
 #define META_MATCH_C
 
 #include <regex.h>
-#include <string.h>
+
+#include "cbase.h"
 
 #include "meta_regex.h"
 #include "cbase.h"

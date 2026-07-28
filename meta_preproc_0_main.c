@@ -1,6 +1,5 @@
 #include "meta_regex.h"
 #include "meta_preproc.h"
-#include <errno.h>
 #include "meta_preproc_1_parse_regex.c"
 #include "meta_preproc_1_parse_tnfa.c"
 #include "meta_preproc_1_parse_tdfa.c"
@@ -9,10 +8,6 @@
 
 #define CBASE_IMPLEMENT
 #include "cbase.h"
-
-#if !defined(error2)
-#define error2(...) fprintf(stderr, __VA_ARGS__)
-#endif
 
 static int32
 preproc_parse_int32(char *name, char *value, int32 min_value, int32 max_value) {

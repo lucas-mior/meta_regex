@@ -4,7 +4,7 @@
 #include <regex.h>
 #include "meta_regex.h"
 #include "meta_util.c"
-#include "primitives.h"
+#include "cbase.h"
 
 // clang-format off
 static const MatcherFeatures match_features_btnfa = {

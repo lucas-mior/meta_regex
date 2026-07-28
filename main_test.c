@@ -1,10 +1,4 @@
-#include <assert.h>
 #include <regex.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <locale.h>
-#include <errno.h>
-#include <dirent.h>
 
 #define CBASE_IMPLEMENT
 #include "cbase.h"

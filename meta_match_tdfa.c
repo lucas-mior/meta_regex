@@ -2,10 +2,8 @@
 #define META_MATCH_TDFA_C
 
 #include <regex.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
 
+#include "cbase.h"
 #include "meta_regex.h"
 #include "meta_util.c"
 

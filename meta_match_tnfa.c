@@ -3,8 +3,8 @@
 
 #include <regex.h>
 
+#include "cbase.h"
 #include "meta_regex.h"
-#include "primitives.h"
 #include "meta_util.c"
 
 // clang-format off

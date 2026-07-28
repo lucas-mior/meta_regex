@@ -2,9 +2,10 @@
 #define META_MATCH_LAZY_DFA_C
 
 #include <regex.h>
+
+#include "cbase.h"
 #include "meta_regex.h"
 #include "meta_util.c"
-#include "primitives.h"
 
 // clang-format off
 static const MatcherFeatures match_features_lazy_dfa = {
