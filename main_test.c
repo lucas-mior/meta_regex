@@ -469,8 +469,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         int64 pm_sz;
         regmatch_t *pm_libc;
 
-        if (strcmp(entry->d_name, ".") == 0
-            || strcmp(entry->d_name, "..") == 0) {
+        if (strequal(entry->d_name, ".") || strequal(entry->d_name, "..")) {
             continue;
         }
 

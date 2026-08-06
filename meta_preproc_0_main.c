@@ -38,22 +38,22 @@ preproc_parse_bool(char *name, char *value) {
         exit(EXIT_FAILURE);
     }
 
-    if (strcmp(value, "true") == 0) {
+    if (strequal(value, "true")) {
         return true;
     }
-    if (strcmp(value, "on") == 0) {
+    if (strequal(value, "on")) {
         return true;
     }
-    if (strcmp(value, "yes") == 0) {
+    if (strequal(value, "yes")) {
         return true;
     }
-    if (strcmp(value, "false") == 0) {
+    if (strequal(value, "false")) {
         return false;
     }
-    if (strcmp(value, "off") == 0) {
+    if (strequal(value, "off")) {
         return false;
     }
-    if (strcmp(value, "no") == 0) {
+    if (strequal(value, "no")) {
         return false;
     }
 
