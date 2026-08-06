@@ -542,8 +542,7 @@ init_dfa(re_dfa_t *dfa, int64 pat_len) {
     dfa->mb_cur_max = MB_CUR_MAX;
 
     if (dfa->mb_cur_max == 6
-        && strcmp(_NL_CURRENT(LC_CTYPE, _NL_CTYPE_CODESET_NAME), "UTF-8")
-               == 0) {
+        && strcmp(_NL_CURRENT(LC_CTYPE, _NL_CTYPE_CODESET_NAME), "UTF-8") == 0) {
         dfa->is_utf8 = 1;
     }
     dfa->map_notascii

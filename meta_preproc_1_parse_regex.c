@@ -17,33 +17,33 @@ static void
 populate_posix_class_mask(char *class_name, uint32 *mask) {
     for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
         bool match = false;
-        if (strcmp(class_name, "alnum") == 0) {
+        if (strequal(class_name, "alnum")) {
             match = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
                      || (c >= '0' && c <= '9'));
-        } else if (strcmp(class_name, "alpha") == 0) {
+        } else if (strequal(class_name, "alpha")) {
             match = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
-        } else if (strcmp(class_name, "digit") == 0) {
+        } else if (strequal(class_name, "digit")) {
             match = (c >= '0' && c <= '9');
-        } else if (strcmp(class_name, "space") == 0) {
+        } else if (strequal(class_name, "space")) {
             match = (c == ' ' || c == '\t' || c == '\n' || c == '\r'
                      || c == '\v' || c == '\f');
-        } else if (strcmp(class_name, "lower") == 0) {
+        } else if (strequal(class_name, "lower")) {
             match = (c >= 'a' && c <= 'z');
-        } else if (strcmp(class_name, "upper") == 0) {
+        } else if (strequal(class_name, "upper")) {
             match = (c >= 'A' && c <= 'Z');
-        } else if (strcmp(class_name, "punct") == 0) {
+        } else if (strequal(class_name, "punct")) {
             match = ((c >= 33 && c <= 47) || (c >= 58 && c <= 64)
                      || (c >= 91 && c <= 96) || (c >= 123 && c <= 126));
-        } else if (strcmp(class_name, "xdigit") == 0) {
+        } else if (strequal(class_name, "xdigit")) {
             match = ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')
                      || (c >= 'A' && c <= 'F'));
-        } else if (strcmp(class_name, "print") == 0) {
+        } else if (strequal(class_name, "print")) {
             match = (c >= 32 && c <= 126);
-        } else if (strcmp(class_name, "graph") == 0) {
+        } else if (strequal(class_name, "graph")) {
             match = (c >= 33 && c <= 126);
-        } else if (strcmp(class_name, "blank") == 0) {
+        } else if (strequal(class_name, "blank")) {
             match = (c == ' ' || c == '\t');
-        } else if (strcmp(class_name, "cntrl") == 0) {
+        } else if (strequal(class_name, "cntrl")) {
             match = ((c >= 0 && c <= 31) || (c == 127));
         }
         if (match) {
