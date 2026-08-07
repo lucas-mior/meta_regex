@@ -43,7 +43,15 @@ if echo "$OS" | grep -q "Linux"; then
     fi
 fi
 
-CC=${CC:-cc}
+requested_cc=${CC:-}
+case "$target" in
+"debug"|"test"|"fast_feedback")
+    CC="${requested_cc:-tcc}"
+    ;;
+*)
+    CC="${requested_cc:-cc}"
+    ;;
+esac
 
 case "$target" in
 debug)
@@ -55,7 +63,6 @@ build|preprocessor|test|bench|all|check)
     CFLAGS="$CFLAGS -g -O2 -flto"
     ;;
 fast_feedback)
-    CC=clang
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
     CFLAGS="$CFLAGS -Werror"
     ;;
