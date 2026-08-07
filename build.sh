@@ -2,11 +2,10 @@
 
 # shellcheck disable=SC2086
 
-set -e
-alias trace_on='set -x'
-alias trace_off='{ set +x; } 2>/dev/null'
-
 dir="$(readlink -f "$(dirname "$0")")"
+# shellcheck source=/dev/null
+. "$dir/cbase/common.sh"
+
 cd "$dir" || exit
 cbase="cbase"
 
