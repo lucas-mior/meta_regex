@@ -8,5 +8,8 @@ callgrind.out.*
 *.png
 *.csv
 *.json
+*temp_delete_me*
 *.cmd
 *.o
+bin/
+*.tar.gz
