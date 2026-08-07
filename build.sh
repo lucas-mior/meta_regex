@@ -14,7 +14,7 @@ mkdir -p bin gen
 
 program=$(basename "$(readlink -f "$(dirname "$0")")")
 script=$(basename "$0")
-target="${1:-build}"
+target="${1:-debug}"
 
 printf "
 ${script} ${RED}${1:-} ${2:-}$RES
@@ -187,7 +187,9 @@ bench)
     trace_off
     ;;
 debug)
-    gdb ./bin/regex_test -ex 'break exit' -ex 'run'
+    trace_on
+    $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
+    trace_off
     ;;
 callgrind)
     trace_on
