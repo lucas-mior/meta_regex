@@ -21,7 +21,6 @@
 #include "platform_detection.h"
 
 #include "generic.c"
-#include "minmax.c"
 #include "base_macros.h"
 #include "assert.c"
 #include "memory.c"
