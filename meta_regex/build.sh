@@ -62,7 +62,17 @@ if echo "$OS" | grep -q "Linux"; then
     fi
 fi
 
-CC=${CC:-cc}
+case "$target" in
+debug|test)
+    CC="${CC:-tcc}"
+    ;;
+fast_feedback)
+    CC="${CC:-clang}"
+    ;;
+*)
+    CC="${CC:-cc}"
+    ;;
+esac
 
 case "$target" in
 debug)
