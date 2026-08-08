@@ -11,24 +11,10 @@ cbase="cbase"
 
 mkdir -p bin gen
 
-case "$target" in
-debug|test)
-    CC="${CC:-tcc}"
-    ;;
-fast_feedback)
-    CC="${CC:-clang}"
-    ;;
-*)
-    CC="${CC:-cc}"
-    ;;
-esac
-
-if ! command -v "$CC" > /dev/null 2>&1; then
-    CC=cc
-fi
-
 script=$(basename "$0")
 target="${1:-debug}"
+
+CC=$(get_compiler "$target")
 
 printf "\n${script} ${RED}${1:-} ${2:-}$RES\n"
 
@@ -38,8 +24,8 @@ CPPFLAGS="$CPPFLAGS -I${dir}/${cbase} -I $dir"
 CFLAGS="$CFLAGS -std=c11"
 CFLAGS="$CFLAGS -Wfatal-errors"
 CFLAGS="$CFLAGS -Wextra -Wall"
-CFLAGS="$CFLAGS -Werror=all -Werror=extra"
-CFLAGS="$CFLAGS -Werror"  # Only uncomment occasionally, keep this line
+# # CFLAGS="$CFLAGS -Werror=all -Werror=extra"
+# # CFLAGS="$CFLAGS -Werror"  # Only uncomment occasionally, keep this line
 CFLAGS="$CFLAGS -Wno-missing-field-initializers"
 CFLAGS="$CFLAGS -Wno-type-limits"
 CFLAGS="$CFLAGS -Wno-unknown-pragmas"
