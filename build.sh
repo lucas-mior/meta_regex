@@ -11,36 +11,6 @@ cbase="cbase"
 
 mkdir -p bin gen
 
-script=$(basename "$0")
-target="${1:-debug}"
-
-printf "\n${script} ${RED}${1:-} ${2:-}$RES\n"
-
-CFLAGS="$CFLAGS -std=c11"
-CFLAGS="$CFLAGS -Wfatal-errors"
-CFLAGS="$CFLAGS -Wextra -Wall"
-CFLAGS="$CFLAGS -Werror=all -Werror=extra"
-# CFLAGS="$CFLAGS -Werror"  # Only uncomment occasionally, keep this line
-CFLAGS="$CFLAGS -Wno-gnu-union-cast"
-CFLAGS="$CFLAGS -Wno-missing-field-initializers"
-CFLAGS="$CFLAGS -Wno-type-limits"
-CFLAGS="$CFLAGS -Wno-unknown-pragmas"
-CFLAGS="$CFLAGS -Wno-unused-function"
-CFLAGS="$CFLAGS -Wno-unused-macros"
-CFLAGS="$CFLAGS -Wno-unused-variable"
-
-CPPFLAGS="$CPPFLAGS -D_DEFAULT_SOURCE"
-CPPFLAGS="$CPPFLAGS -I${dir}/${cbase} -I $dir"
-LDFLAGS="$LDFLAGS -lmagic -lm"
-
-OS=$(uname -a)
-
-if echo "$OS" | grep -q "Linux"; then
-    if echo "$OS" | grep -q "GNU"; then
-        GNUSOURCE="-D_GNU_SOURCE"
-    fi
-fi
-
 case "$target" in
 debug|test)
     CC="${CC:-tcc}"
@@ -57,24 +27,26 @@ if ! command -v "$CC" > /dev/null 2>&1; then
     CC=cc
 fi
 
-case "$target" in
-debug)
-    CPPFLAGS="$CPPFLAGS -DDEBUGGING=1 $GNUSOURCE"
-    CFLAGS="$CFLAGS -g3"
-    ;;
-build|preprocessor|test|bench|all|check)
-    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
-    CFLAGS="$CFLAGS -g -O2 -flto"
-    ;;
-fast_feedback)
-    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
-    ;;
-callgrind)
-    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
-    CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
-    CFLAGS="$CFLAGS -g3 -O2 -flto"
-    ;;
-esac
+script=$(basename "$0")
+target="${1:-debug}"
+
+printf "\n${script} ${RED}${1:-} ${2:-}$RES\n"
+
+CPPFLAGS="$CPPFLAGS -D_DEFAULT_SOURCE"
+CPPFLAGS="$CPPFLAGS -I${dir}/${cbase} -I $dir"
+
+CFLAGS="$CFLAGS -std=c11"
+CFLAGS="$CFLAGS -Wfatal-errors"
+CFLAGS="$CFLAGS -Wextra -Wall"
+CFLAGS="$CFLAGS -Werror=all -Werror=extra"
+# CFLAGS="$CFLAGS -Werror"  # Only uncomment occasionally, keep this line
+CFLAGS="$CFLAGS -Wno-gnu-union-cast"
+CFLAGS="$CFLAGS -Wno-missing-field-initializers"
+CFLAGS="$CFLAGS -Wno-type-limits"
+CFLAGS="$CFLAGS -Wno-unknown-pragmas"
+CFLAGS="$CFLAGS -Wno-unused-function"
+CFLAGS="$CFLAGS -Wno-unused-macros"
+CFLAGS="$CFLAGS -Wno-unused-variable"
 
 if [ "$CC" = "clang" ]; then
     CFLAGS="$CFLAGS -Weverything"
@@ -97,6 +69,35 @@ if [ "$CC" = "clang" ]; then
     CFLAGS="$CFLAGS -Wno-assign-enum"
     CFLAGS="$CFLAGS -Wno-implicit-int-enum-cast"
 fi
+
+LDFLAGS="$LDFLAGS -lmagic -lm"
+
+OS=$(uname -a)
+
+if echo "$OS" | grep -q "Linux"; then
+    if echo "$OS" | grep -q "GNU"; then
+        GNUSOURCE="-D_GNU_SOURCE"
+    fi
+fi
+
+case "$target" in
+debug)
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=1 $GNUSOURCE"
+    CFLAGS="$CFLAGS -g3"
+    ;;
+build|preprocessor|test|bench|all|check)
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
+    CFLAGS="$CFLAGS -g -O2 -flto"
+    ;;
+fast_feedback)
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
+    ;;
+callgrind)
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
+    CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
+    CFLAGS="$CFLAGS -g3 -O2 -flto"
+    ;;
+esac
 
 needs_rebuild() {
     target_file="$1"
