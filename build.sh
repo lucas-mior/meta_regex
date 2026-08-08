@@ -11,24 +11,22 @@ cbase="cbase"
 
 mkdir -p bin gen
 
-program=$(basename "$(readlink -f "$(dirname "$0")")")
 script=$(basename "$0")
 target="${1:-debug}"
 
-printf "
-${script} ${RED}${1:-} ${2:-}$RES
-"
+printf "\n${script} ${RED}${1:-} ${2:-}$RES\n"
 
 CFLAGS="$CFLAGS -std=c11"
-CFLAGS="$CFLAGS -Wextra -Wall"
-# CFLAGS="$CFLAGS -Werror"
-CFLAGS="$CFLAGS -Wno-unused-macros"
-CFLAGS="$CFLAGS -Wno-unknown-pragmas"
 CFLAGS="$CFLAGS -Wfatal-errors"
+CFLAGS="$CFLAGS -Wextra -Wall"
+CFLAGS="$CFLAGS -Werror"
 CFLAGS="$CFLAGS -Wno-gnu-union-cast"
 CFLAGS="$CFLAGS -Wno-missing-field-initializers"
-CFLAGS="$CFLAGS -Wno-unused-variable"
 CFLAGS="$CFLAGS -Wno-type-limits"
+CFLAGS="$CFLAGS -Wno-unknown-pragmas"
+CFLAGS="$CFLAGS -Wno-unused-macros"
+CFLAGS="$CFLAGS -Wno-unused-variable"
+CFLAGS="$CFLAGS -Wno-unused-function"
 
 CPPFLAGS="$CPPFLAGS -D_DEFAULT_SOURCE"
 CPPFLAGS="$CPPFLAGS -I${dir}/${cbase} -I $dir"
@@ -69,10 +67,8 @@ build|preprocessor|test|bench|all|check)
     ;;
 fast_feedback)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
-    CFLAGS="$CFLAGS -Werror"
     ;;
 callgrind)
-    CFLAGS="$CFLAGS -Wno-unused-variable"
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
     CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
     CFLAGS="$CFLAGS -g3 -O2 -flto"
@@ -116,10 +112,7 @@ needs_rebuild() {
 }
 
 trace_on
-ctags --kinds-C=+l+d \
-    cbase/*.c cbase/*.h ./*.h ./*.c posix/*.c posix/*.h \
-    2> /dev/null || true
-vtags.sed tags > .tags.vim     2> /dev/null || true
+build_tags cbase . posix
 trace_off
 
 printf "\nChecking preprocessor...\n"
