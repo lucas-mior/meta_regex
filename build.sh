@@ -26,14 +26,13 @@ CFLAGS="$CFLAGS -Wfatal-errors"
 CFLAGS="$CFLAGS -Wextra -Wall"
 CFLAGS="$CFLAGS -Werror=all -Werror=extra"
 CFLAGS="$CFLAGS -Werror"  # Only uncomment occasionally, keep this line
-CFLAGS="$CFLAGS -Wno-missing-field-initializers"
-CFLAGS="$CFLAGS -Wno-unused-function"
 
 if [ "$CC" = "clang" ]; then
     CFLAGS="$CFLAGS -Weverything"
     CFLAGS="$CFLAGS -Wno-assign-enum"
     CFLAGS="$CFLAGS -Wno-c++-compat"
     CFLAGS="$CFLAGS -Wno-c++-keyword"
+    CFLAGS="$CFLAGS -Wno-c23-extensions"
     CFLAGS="$CFLAGS -Wno-cast-qual"
     CFLAGS="$CFLAGS -Wno-constant-logical-operand"
     CFLAGS="$CFLAGS -Wno-covered-switch-default"
@@ -41,12 +40,18 @@ if [ "$CC" = "clang" ]; then
     CFLAGS="$CFLAGS -Wno-disabled-macro-expansion"
     CFLAGS="$CFLAGS -Wno-float-equal"
     CFLAGS="$CFLAGS -Wno-format-nonliteral"
+    CFLAGS="$CFLAGS -Wno-format-pedantic"
     CFLAGS="$CFLAGS -Wno-implicit-int-enum-cast"
     CFLAGS="$CFLAGS -Wno-implicit-void-ptr-cast"
+    CFLAGS="$CFLAGS -Wno-missing-field-initializers"
     CFLAGS="$CFLAGS -Wno-padded"
     CFLAGS="$CFLAGS -Wno-pre-c11-compat"
+    CFLAGS="$CFLAGS -Wno-type-limits"
+    CFLAGS="$CFLAGS -Wno-unknown-pragmas"
     CFLAGS="$CFLAGS -Wno-unsafe-buffer-usage"
+    CFLAGS="$CFLAGS -Wno-unused-function"
     CFLAGS="$CFLAGS -Wno-unused-macros"
+    CFLAGS="$CFLAGS -Wno-unused-variable"
 fi
 
 LDFLAGS="$LDFLAGS -lmagic -lm"
@@ -71,21 +76,12 @@ build|preprocessor|test|bench|all|check)
 fast_feedback)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
     ;;
+callgrind)
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
+    CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
+    CFLAGS="$CFLAGS -g3 -O2 -flto"
+    ;;
 esac
-
-needs_rebuild() {
-    target_file="$1"
-    shift
-    if [ ! -f "$target_file" ]; then
-        return 0
-    fi
-    for src in "$@"; do
-        if [ "$src" -nt "$target_file" ]; then
-            return 0
-        fi
-    done
-    return 1
-}
 
 trace_on
 build_tags cbase . posix
@@ -96,7 +92,7 @@ if needs_rebuild "bin/meta_preproc" \
     meta.h meta_preproc.h meta_preproc*.c; then
     printf "Building preprocessor...\n"
     trace_on
-    $CC $CPPFLAGS -O2 -flto $CFLAGS \
+    $CC $CPPFLAGS $CFLAGS -O2 -flto \
         meta_preproc_0_main.c -o bin/meta_preproc $LDFLAGS
     trace_off
 else
@@ -163,6 +159,12 @@ bench)
 debug)
     trace_on
     $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
+    trace_off
+    ;;
+callgrind)
+    trace_on
+    $CC $CPPFLAGS $CFLAGS main_bench.c -o bin/meta_bench $LDFLAGS
+    valgrind --tool=callgrind bin/meta_bench
     trace_off
     ;;
 check)
