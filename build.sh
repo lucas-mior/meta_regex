@@ -71,11 +71,6 @@ build|preprocessor|test|bench|all|check)
 fast_feedback)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
     ;;
-callgrind)
-    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
-    CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
-    CFLAGS="$CFLAGS -g3 -O2 -flto"
-    ;;
 esac
 
 needs_rebuild() {
@@ -168,12 +163,6 @@ bench)
 debug)
     trace_on
     $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
-    trace_off
-    ;;
-callgrind)
-    trace_on
-    $CC $CPPFLAGS $CFLAGS main_bench.c -o bin/meta_bench $LDFLAGS
-    valgrind --tool=callgrind bin/meta_bench
     trace_off
     ;;
 check)
