@@ -32,7 +32,6 @@ CFLAGS="$CFLAGS -Wno-unused-function"
 if [ "$CC" = "clang" ]; then
     CFLAGS="$CFLAGS -Weverything"
     CFLAGS="$CFLAGS -Wno-assign-enum"
-    CFLAGS="$CFLAGS -Wno-c++-compat"
     CFLAGS="$CFLAGS -Wno-c++-keyword"
     CFLAGS="$CFLAGS -Wno-cast-qual"
     CFLAGS="$CFLAGS -Wno-constant-logical-operand"
