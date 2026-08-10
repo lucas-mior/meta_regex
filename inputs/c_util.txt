@@ -22,7 +22,6 @@
 
 #include "generic.c"
 #include "base_macros.h"
-#include "assert.c"
 #include "memory.c"
 #include "utf8.c"
 
