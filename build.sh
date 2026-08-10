@@ -143,10 +143,12 @@ fast_feedback)
     trace_off
     ;;
 test)
-    trace_on
-    $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
-    bin/meta_test
-    trace_off
+    TEST_DEFINE_MODULE=0 \
+    TEST_DEFINE_TESTING=0 \
+    TEST_EXE_PATH=bin/meta_test \
+    TEST_REQUIRE_TESTING_MARKER=0 \
+    TEST_SKIP_MAIN=0 \
+        test "" main_test.c
     ;;
 bench)
     trace_on
