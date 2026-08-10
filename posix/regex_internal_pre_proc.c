@@ -1,3 +1,5 @@
+#include "cbase.h"
+
 static reg_errcode_t __attribute_warn_unused_result__
 re_string_allocate(re_string_t *pstr, char *str, Idx len, Idx init_len,
                    RE_TRANSLATE_TYPE trans, bool icase, re_dfa_t *dfa) {

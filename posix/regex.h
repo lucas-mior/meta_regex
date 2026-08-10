@@ -20,6 +20,8 @@
 #ifndef _REGEX_H
 #define _REGEX_H 1
 
+#include "cbase.h"
+
 #include <sys/types.h>
 
 /* Allow the use in C++ code.  */

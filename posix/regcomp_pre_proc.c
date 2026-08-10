@@ -1,3 +1,5 @@
+#include "cbase.h"
+
 static char __re_error_msgid[] = {
 
     gettext_noop("Success") "\0"

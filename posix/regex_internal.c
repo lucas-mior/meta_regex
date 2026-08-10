@@ -17,6 +17,8 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
+#include "cbase.h"
+
 static void re_string_construct_common(char *str, Idx len, re_string_t *pstr,
                                        RE_TRANSLATE_TYPE trans, bool icase,
                                        re_dfa_t *dfa);

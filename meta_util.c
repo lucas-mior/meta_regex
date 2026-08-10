@@ -1,6 +1,8 @@
 #if !defined(META_UTIL_C)
 #define META_UTIL_C
 
+#include "cbase.h"
+
 static int32
 is_word_char(uint8 c) {
     int32 match = 0;

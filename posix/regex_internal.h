@@ -20,6 +20,8 @@
 #ifndef _REGEX_INTERNAL_H
 #define _REGEX_INTERNAL_H 1
 
+#include "cbase.h"
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>

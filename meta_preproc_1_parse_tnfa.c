@@ -1,6 +1,6 @@
+#include "cbase.h"
 #include "meta_regex.h"
 #include "meta_preproc.h"
-#include "primitives.h"
 /* Tagged NFA construction helpers. */
 
 static int32

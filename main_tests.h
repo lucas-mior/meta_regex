@@ -1,6 +1,7 @@
 #if !defined(META_TESTS_H)
 #define META_TESTS_H
 
+#include "cbase.h"
 #include "meta_regex.h"
 #include <regex.h>
 #define MAX_MATCHES 10

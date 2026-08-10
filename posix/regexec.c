@@ -17,6 +17,8 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
+#include "cbase.h"
+
 static reg_errcode_t match_ctx_init(re_match_context_t *cache, int32 eflags,
                                     Idx n);
 static void match_ctx_clean(re_match_context_t *mctx);

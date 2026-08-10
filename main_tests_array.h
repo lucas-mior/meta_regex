@@ -1,6 +1,7 @@
 #if !defined(META_TESTS_ARRAY_H)
 #define META_TESTS_ARRAY_H
 
+#include "cbase.h"
 #include "main_tests.h"
 #include "meta_regex.h"
 

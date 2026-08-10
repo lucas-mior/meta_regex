@@ -43,6 +43,7 @@ buckets = []
 with open(out_path, "w", encoding="utf-8") as out:
     out.write("#if !defined(META_BENCH_PATTERNS_H)\n")
     out.write("#define META_BENCH_PATTERNS_H\n\n")
+    out.write("#include \"cbase.h\"\n")
     out.write("#include \"meta.h\"\n\n")
     out.write("typedef struct GeneratedBenchRegexBucket {\n")
     out.write("    char *array_name;\n")

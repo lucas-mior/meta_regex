@@ -1,3 +1,5 @@
+#include "cbase.h"
+
 static reg_errcode_t extend_buffers(re_match_context_t *mctx, int32 min_len);
 int32
 regexec(regex_t *__restrict preg, char *__restrict string, int64 nmatch,
