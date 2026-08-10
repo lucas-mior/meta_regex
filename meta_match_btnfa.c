@@ -1,10 +1,11 @@
 #if !defined(META_MATCH_BTNFA)
 #define META_MATCH_BTNFA
 
+#include "cbase.h"
+
 #include <regex.h>
 #include "meta_regex.h"
 #include "meta_util.c"
-#include "cbase.h"
 
 // clang-format off
 static const MatcherFeatures match_features_btnfa = {

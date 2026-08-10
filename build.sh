@@ -18,7 +18,6 @@ CC=$(get_compiler "$target")
 
 printf "\n${script} ${RED}${1:-} ${2:-}$RES\n"
 
-CPPFLAGS="$CPPFLAGS -D_DEFAULT_SOURCE"
 CPPFLAGS="$CPPFLAGS -I${dir}/${cbase} -I $dir"
 
 CFLAGS="$CFLAGS -std=c11"
@@ -54,28 +53,20 @@ fi
 
 LDFLAGS="$LDFLAGS -lmagic -lm"
 
-OS=$(uname -a)
-
-if echo "$OS" | grep -q "Linux"; then
-    if echo "$OS" | grep -q "GNU"; then
-        GNUSOURCE="-D_GNU_SOURCE"
-    fi
-fi
-
 case "$target" in
 debug)
-    CPPFLAGS="$CPPFLAGS -DDEBUGGING=1 $GNUSOURCE"
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=1"
     CFLAGS="$CFLAGS -g3"
     ;;
 build|preprocessor|test|bench|all|check)
-    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0"
     CFLAGS="$CFLAGS -g -O2 -flto"
     ;;
 fast_feedback)
-    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0"
     ;;
 callgrind)
-    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0 $GNUSOURCE"
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0"
     CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
     CFLAGS="$CFLAGS -g3 -O2 -flto"
     ;;

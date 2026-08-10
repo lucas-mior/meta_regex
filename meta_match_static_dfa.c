@@ -1,9 +1,9 @@
 #if !defined(META_MATCH_STATIC_DFA)
 #define META_MATCH_STATIC_DFA
 
-#include <regex.h>
-
 #include "cbase.h"
+
+#include <regex.h>
 #include "meta_regex.h"
 #include "meta_util.c"
 

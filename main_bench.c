@@ -1,7 +1,7 @@
-#include <regex.h>
-
 #define CBASE_IMPLEMENT
 #include "cbase.h"
+
+#include <regex.h>
 
 #include "meta_regex.h"
 #include "meta_match.c"

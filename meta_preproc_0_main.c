@@ -1,3 +1,6 @@
+#define CBASE_IMPLEMENT
+#include "cbase.h"
+
 #include "meta_regex.h"
 #include "meta_preproc.h"
 #include "meta_preproc_1_parse_regex.c"
@@ -5,9 +8,6 @@
 #include "meta_preproc_1_parse_tdfa.c"
 #include "meta_preproc_1_parse_source.c"
 #include "meta_preproc_2_gen.c"
-
-#define CBASE_IMPLEMENT
-#include "cbase.h"
 
 static int32
 preproc_parse_int32(char *name, char *value, int32 min_value, int32 max_value) {
