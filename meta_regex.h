@@ -1,7 +1,7 @@
 #if !defined(META_REGEX_H)
 #define META_REGEX_H
 
-#include "cbase/util.c"
+#include "cbase.h"
 
 #define META_ALPHABET_SIZE 256
 #define META_MAX_STATIC_DFA_STATES 256
