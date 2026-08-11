@@ -873,7 +873,7 @@ bench_parse_input_len_cap(char *s, int32 *out) {
     return 1;
 }
 
-static void __attribute((noreturn))
+static noreturn void
 bench_usage(char *argv0) {
     fprintf(stderr,
             "Usage: %s [--max-input-len N]\n"

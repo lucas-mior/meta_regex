@@ -18,6 +18,8 @@
 #if !defined(UTIL_C)
 #define UTIL_C
 
+#include <stdnoreturn.h>
+
 #include "platform_detection.h"
 
 #include "generic.c"
@@ -81,8 +83,8 @@ _Generic((ARRAY), \
 static char *notifiers[2] = {"dunstify", "notify-send"};
 
 static void error_async_safe(char *message);
-static void fatal(int) __attribute__((noreturn));
-static void util_segv_handler(int32) __attribute__((noreturn));
+static noreturn void fatal(int);
+static noreturn void util_segv_handler(int32);
 static int32 itoa2(char *, int32, llong);
 static long atoi2(char *);
 INLINE void *memchr64(void *pointer, int32 value, int64 size);
@@ -973,7 +975,7 @@ util_string_int32(int32 *number, char *string) {
     }
 }
 
-static void __attribute__((noreturn))
+static noreturn void
 util_die_notify(char *program_name, char *format, ...) {
     int32 n;
     va_list args;
