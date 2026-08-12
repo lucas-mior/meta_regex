@@ -2,12 +2,11 @@
 
 # shellcheck disable=SC2086
 
-dir="$(readlink -f "$(dirname "$0")")"
-# shellcheck source=/dev/null
-. "$dir/cbase/common.sh"
-
+dir=$(dirname "$(readlink -f "$0")")
 cd "$dir" || exit
-cbase="cbase"
+
+# shellcheck source=./cbase/common.sh
+. "./cbase/common.sh"
 
 mkdir -p bin gen
 
@@ -18,7 +17,7 @@ CC=$(common_get_compiler "$mode")
 
 common_build_print_invocation "$script"
 
-CPPFLAGS="$CPPFLAGS -I${dir}/${cbase} -I $dir"
+CPPFLAGS="$CPPFLAGS -I. -Icbase"
 
 CFLAGS="$CFLAGS -std=c11"
 CFLAGS="$CFLAGS -Wfatal-errors"
