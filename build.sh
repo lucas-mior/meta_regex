@@ -49,6 +49,7 @@ if [ "$CC" = "clang" ]; then
     CFLAGS="$CFLAGS -Wno-unsafe-buffer-usage"
     CFLAGS="$CFLAGS -Wno-unused-macros"
     CFLAGS="$CFLAGS -Wno-unused-variable"
+    CFLAGS="$CFLAGS -Wno-used-but-marked-unused"
 fi
 
 LDFLAGS="$LDFLAGS -lmagic -lm"
