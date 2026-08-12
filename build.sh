@@ -12,11 +12,11 @@ cbase="cbase"
 mkdir -p bin gen
 
 script=$(basename "$0")
-build_parse_args "$@"
+common_build_parse_args "$@"
 
-CC=$(get_compiler "$mode")
+CC=$(common_get_compiler "$mode")
 
-build_print_invocation "$script"
+common_build_print_invocation "$script"
 
 CPPFLAGS="$CPPFLAGS -I${dir}/${cbase} -I $dir"
 
@@ -73,11 +73,11 @@ callgrind)
 esac
 
 trace_on
-build_tags cbase . posix
+common_build_tags cbase . posix
 trace_off
 
 printf "\nChecking preprocessor...\n"
-if needs_rebuild "bin/meta_preproc" \
+if common_needs_rebuild "bin/meta_preproc" \
     meta.h meta_preproc.h meta_preproc*.c; then
     printf "Building preprocessor...\n"
     trace_on
@@ -95,22 +95,22 @@ fi
 printf "\nChecking generated files...\n"
 trace_on
 
-if needs_rebuild "gen/main_tests_array2.h" \
+if common_needs_rebuild "gen/main_tests_array2.h" \
     main_tests_array.h bin/meta_preproc; then
     ./bin/meta_preproc main_tests_array.h > gen/main_tests_array2.h
 fi
 
-if needs_rebuild "gen/main_bench_regexes2.h" \
+if common_needs_rebuild "gen/main_bench_regexes2.h" \
     main_bench_regexes.h bin/meta_preproc; then
     ./bin/meta_preproc main_bench_regexes.h > gen/main_bench_regexes2.h
 fi
 
-if needs_rebuild "gen/main_bench_patterns.h" \
+if common_needs_rebuild "gen/main_bench_patterns.h" \
     process_patterns.py "$dir/0patterns"/*; then
     python3 process_patterns.py gen/main_bench_patterns.h "$dir/0patterns"
 fi
 
-if needs_rebuild "gen/main_bench_patterns2.h" \
+if common_needs_rebuild "gen/main_bench_patterns2.h" \
     gen/main_bench_patterns.h bin/meta_preproc; then
     ./bin/meta_preproc gen/main_bench_patterns.h \
         > gen/main_bench_patterns2.h
@@ -139,7 +139,7 @@ test)
     TEST_EXE_PATH=bin/meta_test \
     TEST_REQUIRE_TESTING_MARKER=0 \
     TEST_SKIP_MAIN=0 \
-        test "" main_test.c
+        common_test "" main_test.c
     ;;
 bench)
     trace_on
