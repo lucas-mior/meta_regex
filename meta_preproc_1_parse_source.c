@@ -257,7 +257,7 @@ parse_source_code(char *buffer, int64 source_len) {
             continue;
         }
 
-        quote_start = strchr(found_macro, '"');
+        quote_start = memchr64(found_macro, strlen32(found_macro), '"');
         if (quote_start == NULL) {
             error("Error parsing regex: Quotes not found.\n");
             exit(EXIT_FAILURE);
@@ -878,7 +878,7 @@ parse_source_code(char *buffer, int64 source_len) {
             preproc_copy_trimmed_slice(flags_buffer, SIZEOF(flags_buffer),
                                        flags_start, flags_end);
             if (flags_buffer[0] == '\0') {
-                strcpy(flags_buffer, "0");
+                memcpy64(flags_buffer, STRLIT("0") + 1);
             }
         }
 
