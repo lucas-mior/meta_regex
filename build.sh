@@ -12,11 +12,11 @@ cbase="cbase"
 mkdir -p bin gen
 
 script=$(basename "$0")
-target="${1:-debug}"
+build_parse_args "$@"
 
-CC=$(get_compiler "$target")
+CC=$(get_compiler "$mode")
 
-printf "\n${script} ${RED}${1:-} ${2:-}$RES\n"
+build_print_invocation "$script"
 
 CPPFLAGS="$CPPFLAGS -I${dir}/${cbase} -I $dir"
 
@@ -53,7 +53,7 @@ fi
 
 LDFLAGS="$LDFLAGS -lmagic -lm"
 
-case "$target" in
+case "$mode" in
 debug)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=1"
     CFLAGS="$CFLAGS -g3"
@@ -88,7 +88,7 @@ else
     printf "Preprocessor is up to date.\n"
 fi
 
-if [ "$target" = "preprocessor" ]; then
+if [ "$mode" = "preprocessor" ]; then
     exit 0
 fi
 
@@ -118,7 +118,7 @@ fi
 
 trace_off
 
-case "$target" in
+case "$mode" in
 build|all)
     trace_on
     $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
