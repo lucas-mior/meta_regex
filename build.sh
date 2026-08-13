@@ -89,10 +89,8 @@ trace_on
 common_build_tags cbase . posix
 trace_off
 
-printf "\nChecking preprocessor...\n"
 if common_outdated "bin/meta_preproc" \
     meta.h meta_preproc.h meta_preproc*.c; then
-    printf "Building preprocessor...\n"
     trace_on
     $CC $CPPFLAGS $CFLAGS -O2 -flto \
         meta_preproc_0_main.c -o bin/meta_preproc $LDFLAGS
