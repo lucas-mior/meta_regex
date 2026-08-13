@@ -172,3 +172,13 @@ check)
     exit
     ;;
 esac
+
+
+case "$mode" in
+all|bench|build|callgrind|check|debug|fast_feedback|preprocessor|test)
+    ;;
+*)
+    echo "Unknown mode $mode"
+    exit 1
+    ;;
+esac
