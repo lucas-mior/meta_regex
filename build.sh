@@ -13,6 +13,14 @@ mkdir -p bin gen
 script=$(basename "$0")
 common_build_parse_args "$@"
 
+case "$mode" in
+all|bench|build|callgrind|check|debug|fast_feedback|preprocessor|test)
+    ;;
+*)
+    common_build_unknown_mode
+    ;;
+esac
+
 CC=$(common_get_compiler "$mode")
 
 common_build_print_invocation "$script"
@@ -69,6 +77,11 @@ callgrind)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0"
     CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
     CFLAGS="$CFLAGS -g3 -O2 -flto"
+    ;;
+all|bench|build|callgrind|check|debug|fast_feedback|preprocessor|test)
+    ;;
+*)
+    common_build_unknown_mode
     ;;
 esac
 
@@ -159,26 +172,6 @@ callgrind)
     trace_off
     ;;
 check)
-    set +e
-    CC=gcc CFLAGS="-fanalyzer -fdiagnostics-color=never" "$0" test
-
-    CFLAGS="--analyze -Xanalyzer -analyzer-output=text"
-    CFLAGS="$CFLAGS -Xanalyzer -analyzer-werror"
-    CFLAGS="$CFLAGS -Xanalyzer -analyzer-opt-analyze-headers"
-    CFLAGS="$CFLAGS -Wno-unused-command-line-argument"
-    CFLAGS="$CFLAGS -fno-color-diagnostics"
-    CC=clang CFLAGS="$CFLAGS" "$0" test
-
-    exit
-    ;;
-esac
-
-
-case "$mode" in
-all|bench|build|callgrind|check|debug|fast_feedback|preprocessor|test)
-    ;;
-*)
-    echo "Unknown mode $mode"
-    exit 1
+    common_build_run_analyzers test
     ;;
 esac
