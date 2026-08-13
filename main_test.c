@@ -630,23 +630,10 @@ run_extensive_regex_tests(MetaRegex **tests, int32 tests_len,
     return failed;
 }
 
-static void
-seed_regex_sample_random(void) {
-    struct timespec time_seed;
-    uint64 seed;
-
-    time_monotonic_precise(&time_seed);
-    seed = (uint64)time_seed.tv_sec;
-    seed ^= (uint64)time_seed.tv_nsec << 32;
-    seed ^= (uint64)time(NULL);
-    rand_int_seed(seed);
-
-    return;
-}
-
 static MetaRegex **
 random_regex_sample(MetaRegex **tests, int32 tests_len, int32 *sample_len) {
     MetaRegex **sample;
+    rand_int_seed(time(NULL));
 
     *sample_len = tests_len / 2;
     if (*sample_len < 1) {
