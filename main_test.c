@@ -244,6 +244,8 @@ main(void) {
             regexes_extensive, LENGTH(regexes_extensive), "regexes_extensive");
     }
 
+    printf("Exiting from %s...\n", __FILE__);
+
     if (extensive_failed) {
         exit(EXIT_FAILURE);
     }
