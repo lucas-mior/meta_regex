@@ -167,6 +167,6 @@ callgrind)
     trace_off
     ;;
 check)
-    common_build_run_analyzers build
+    common_build_run_analyzers debug
     ;;
 esac
