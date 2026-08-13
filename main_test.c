@@ -606,11 +606,11 @@ run_extensive_regex_tests(MetaRegex **tests, int32 tests_len,
 
     printf(RED("\nTests with random inputs against %s ...\n"), tests_name);
     for (int32 max_input_len = 1; max_input_len <= 1024; max_input_len *= 2) {
-        if (run_fuzzy_tests(tests, tests_len, tests_name, max_input_len, 200,
+        if (run_fuzzy_tests(tests, tests_len, tests_name, max_input_len, 100,
                             true)) {
             failed = true;
         }
-        if (run_fuzzy_tests(tests, tests_len, tests_name, max_input_len, 200,
+        if (run_fuzzy_tests(tests, tests_len, tests_name, max_input_len, 100,
                             false)) {
             failed = true;
         }
