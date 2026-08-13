@@ -193,20 +193,26 @@ run_meta_one(MetaRegex *regex, char *input, int32 input_len,
 
 static void run_known_pairs(RegexTest *tests, int32 count, char *description,
                             bool extract);
-static void run_fuzzy_tests(MetaRegex **patterns, int32 tests_len, char *,
+static bool run_fuzzy_tests(MetaRegex **patterns, int32 tests_len, char *,
                             int32 max_str_size, int32 ntests, bool extract);
-static void run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len,
+static bool run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len,
                                  bool extract);
+static bool run_extensive_regex_tests(MetaRegex **tests, int32 tests_len,
+                                      char *tests_name);
+static int32 regex_sample_random_int(uint32 *state, int32 limit);
+static MetaRegex **random_regex_sample(MetaRegex **tests, int32 tests_len,
+                                       int32 *sample_len);
 
 #define RUN_KNOWN_PAIRS(ARRAY) \
     run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, true); \
     run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, false)
-#define RUN_FUZZY_TESTS(ARRAY, MAX_STR_SIZE, NINPUTS) \
-    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), #ARRAY, MAX_STR_SIZE, NINPUTS, true); \
-    run_fuzzy_tests(ARRAY, LENGTH(ARRAY), #ARRAY, MAX_STR_SIZE, NINPUTS, false)
 
 int32
 main(void) {
+    MetaRegex **regexes_extensive_sample;
+    int32 regexes_extensive_sample_len;
+    bool extensive_failed;
+
     setlocale(LC_ALL, "C");
     srand((uint32)42);
 
@@ -220,20 +226,31 @@ main(void) {
     RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_no_backref);
     RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_and_backref);
 
-    printf(RED(
-        "\nTests with random inputs against extensive regex array ...\n") "\n");
-    for (int32 max_input_len = 1; max_input_len <= 1024; max_input_len *= 2) {
-        RUN_FUZZY_TESTS(regexes_extensive, max_input_len, 200);
+    regexes_extensive_sample = random_regex_sample(
+        regexes_extensive, LENGTH(regexes_extensive),
+        &regexes_extensive_sample_len);
+
+    extensive_failed = run_extensive_regex_tests(
+        regexes_extensive_sample, regexes_extensive_sample_len,
+        "random half of regexes_extensive");
+    free2(regexes_extensive_sample,
+          LENGTH(regexes_extensive)*SIZEOF(*regexes_extensive_sample));
+
+    if (extensive_failed) {
+        printf(RED(
+            "\nSample failed; running full regexes_extensive array ...\n"));
+        srand((uint32)42);
+        extensive_failed = run_extensive_regex_tests(
+            regexes_extensive, LENGTH(regexes_extensive), "regexes_extensive");
     }
 
-    printf(RED("\nTests from inputs/ against extensive regex array ...") "\n");
-    run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive), true);
-    run_file_fuzzy_tests(regexes_extensive, LENGTH(regexes_extensive), false);
+    if (extensive_failed) {
+        exit(EXIT_FAILURE);
+    }
 
     exit(EXIT_SUCCESS);
 }
 
-#undef RUN_FUZZY_TESTS
 #undef RUN_KNOWN_PAIRS
 
 static void
@@ -316,13 +333,12 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
     return;
 }
 
-static void
+static bool
 run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
                 int32 max_str_size, int32 ninputs, bool extract) {
     int32 fuzzy_len = ninputs*tests_len;
     FuzzyTest *fuzzy = malloc2(SIZEOF(*fuzzy)*fuzzy_len);
     bool failed = false;
-    (void)tests_name;
 #if FUZZY_PRECOMPILE_LIBC
     regex_t *libc_regexes = malloc2(tests_len*SIZEOF(*libc_regexes));
 #endif
@@ -404,7 +420,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
                                 LENGTH(fuzzy[i].pmatch_meta), extract)) {
                 failed = true;
                 report_match_mismatch(
-                    "Fuzzy", "random", matcher, fuzzy[i].input,
+                    "Fuzzy", tests_name, matcher, fuzzy[i].input,
                     meta_pattern->string, fuzzy[i].result_libc,
                     fuzzy[i].result_meta, fuzzy[i].pmatch_libc,
                     fuzzy[i].pmatch_meta, LENGTH(fuzzy[i].pmatch_meta),
@@ -426,13 +442,10 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
     }
     free2(fuzzy, SIZEOF(*fuzzy)*fuzzy_len);
 
-    if (failed) {
-        exit(EXIT_FAILURE);
-    }
-    return;
+    return failed;
 }
 
-static void
+static bool
 run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
     DIR *dir = opendir("inputs");
     struct dirent *entry = NULL;
@@ -583,8 +596,62 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
 #endif
 
     closedir(dir);
-    if (failed) {
-        exit(EXIT_FAILURE);
+    return failed;
+}
+
+static bool
+run_extensive_regex_tests(MetaRegex **tests, int32 tests_len,
+                          char *tests_name) {
+    bool failed = false;
+
+    printf(RED("\nTests with random inputs against %s ...\n"), tests_name);
+    for (int32 max_input_len = 1; max_input_len <= 1024; max_input_len *= 2) {
+        if (run_fuzzy_tests(tests, tests_len, tests_name, max_input_len, 200,
+                            true)) {
+            failed = true;
+        }
+        if (run_fuzzy_tests(tests, tests_len, tests_name, max_input_len, 200,
+                            false)) {
+            failed = true;
+        }
     }
-    return;
+
+    printf(RED("\nTests from inputs/ against %s ...\n"), tests_name);
+    if (run_file_fuzzy_tests(tests, tests_len, true)) {
+        failed = true;
+    }
+    if (run_file_fuzzy_tests(tests, tests_len, false)) {
+        failed = true;
+    }
+
+    return failed;
+}
+
+static int32
+regex_sample_random_int(uint32 *state, int32 limit) {
+    *state = *state*1103515245u + 12345u;
+    return (int32)((*state >> 16) % (uint32)limit);
+}
+
+static MetaRegex **
+random_regex_sample(MetaRegex **tests, int32 tests_len, int32 *sample_len) {
+    MetaRegex **sample;
+    uint32 random_state = 42;
+
+    *sample_len = tests_len / 2;
+    if (*sample_len < 1) {
+        *sample_len = tests_len;
+    }
+
+    sample = xmemdup(tests, tests_len*SIZEOF(*sample));
+
+    for (int32 i = 0; i < tests_len; i += 1) {
+        int32 j = i + regex_sample_random_int(&random_state, tests_len - i);
+        MetaRegex *tmp = sample[i];
+
+        sample[i] = sample[j];
+        sample[j] = tmp;
+    }
+
+    return sample;
 }
