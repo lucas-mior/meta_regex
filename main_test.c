@@ -199,7 +199,6 @@ static bool run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len,
                                  bool extract);
 static bool run_extensive_regex_tests(MetaRegex **tests, int32 tests_len,
                                       char *tests_name);
-static void seed_regex_sample_random(void);
 static MetaRegex **random_regex_sample(MetaRegex **tests, int32 tests_len,
                                        int32 *sample_len);
 
@@ -215,7 +214,6 @@ main(void) {
 
     setlocale(LC_ALL, "C");
     srand((uint32)42);
-    seed_regex_sample_random();
 
     printf(RED("\nTests with known (input, regex) pairs ...\n"));
     RUN_KNOWN_PAIRS(ascii_no_group_no_backref);
@@ -633,7 +631,7 @@ run_extensive_regex_tests(MetaRegex **tests, int32 tests_len,
 static MetaRegex **
 random_regex_sample(MetaRegex **tests, int32 tests_len, int32 *sample_len) {
     MetaRegex **sample;
-    rand_int_seed(time(NULL));
+    rand_int_seed((uint64)time(NULL));
 
     *sample_len = tests_len / 2;
     if (*sample_len < 1) {
