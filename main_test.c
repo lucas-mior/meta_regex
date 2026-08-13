@@ -199,7 +199,7 @@ static bool run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len,
                                  bool extract);
 static bool run_extensive_regex_tests(MetaRegex **tests, int32 tests_len,
                                       char *tests_name);
-static int32 regex_sample_random_int(uint32 *state, int32 limit);
+static void seed_regex_sample_random(void);
 static MetaRegex **random_regex_sample(MetaRegex **tests, int32 tests_len,
                                        int32 *sample_len);
 
@@ -215,6 +215,7 @@ main(void) {
 
     setlocale(LC_ALL, "C");
     srand((uint32)42);
+    seed_regex_sample_random();
 
     printf(RED("\nTests with known (input, regex) pairs ...\n"));
     RUN_KNOWN_PAIRS(ascii_no_group_no_backref);
@@ -629,18 +630,25 @@ run_extensive_regex_tests(MetaRegex **tests, int32 tests_len,
     return failed;
 }
 
-static int32
-regex_sample_random_int(uint32 *state, int32 limit) {
-    *state = *state*1103515245u + 12345u;
-    return (int32)((*state >> 16) % (uint32)limit);
+static void
+seed_regex_sample_random(void) {
+    struct timespec time_seed;
+    uint64 seed;
+
+    time_monotonic_precise(&time_seed);
+    seed = (uint64)time_seed.tv_sec;
+    seed ^= (uint64)time_seed.tv_nsec << 32;
+    seed ^= (uint64)time(NULL);
+    rand_int_seed(seed);
+
+    return;
 }
 
 static MetaRegex **
 random_regex_sample(MetaRegex **tests, int32 tests_len, int32 *sample_len) {
     MetaRegex **sample;
-    uint32 random_state = 42;
 
-    *sample_len = tests_len / 4;
+    *sample_len = tests_len / 2;
     if (*sample_len < 1) {
         *sample_len = tests_len;
     }
@@ -648,7 +656,7 @@ random_regex_sample(MetaRegex **tests, int32 tests_len, int32 *sample_len) {
     sample = xmemdup(tests, tests_len*SIZEOF(*sample));
 
     for (int32 i = 0; i < tests_len; i += 1) {
-        int32 j = i + regex_sample_random_int(&random_state, tests_len - i);
+        int32 j = i + (int32)(rand_int() % (uint32)(tests_len - i));
         MetaRegex *tmp = sample[i];
 
         sample[i] = sample[j];
