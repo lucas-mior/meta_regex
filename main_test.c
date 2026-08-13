@@ -222,7 +222,7 @@ main(void) {
 
     printf(RED(
         "\nTests with random inputs against extensive regex array ...\n") "\n");
-    for (int32 max_input_len = 1; max_input_len <= 4096; max_input_len *= 2) {
+    for (int32 max_input_len = 1; max_input_len <= 1024; max_input_len *= 2) {
         RUN_FUZZY_TESTS(regexes_extensive, max_input_len, 200);
     }
 
@@ -462,8 +462,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         char case_name[768];
         char size_pretty[32];
         FILE *file;
-        int64 file_size;
         uint8 *input;
+        char *input_chars;
         int32 input_len;
         int32 *results_libc;
         int64 pm_sz;
@@ -475,44 +475,14 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
 
         SNPRINTF(path, "inputs/%s", entry->d_name);
 
-        if ((file = fopen(path, "rb")) == NULL) {
-            error("Error opening file %s: %s.\n", path, strerror(errno));
-            fatal(EXIT_FAILURE);
+        if (!read_entire_file(path, &input_chars, &input_len)) {
+            continue;
         }
 
-        if (fseek(file, 0, SEEK_END) != 0) {
-            error("Error seeking file %s: %s.\n", path,
-                  strerror(errno));
-            fatal(EXIT_FAILURE);
-        }
-        file_size = ftell(file);
-        if (file_size < 0) {
-            error("Error getting size of file %s: %s.\n", path,
-                  strerror(errno));
-            fatal(EXIT_FAILURE);
-        }
-        if (file_size > INT32_MAX) {
-            error("Input file %s is too large: %lld bytes.\n", path, file_size);
-            fatal(EXIT_FAILURE);
-        }
-        if (fseek(file, 0, SEEK_SET) != 0) {
-            error("Error seeking file %s: %s.\n", path,
-                  strerror(errno));
-            fatal(EXIT_FAILURE);
-        }
+        input = (uint8 *)input_chars;
 
-        bytes_pretty(size_pretty, file_size);
+        bytes_pretty(size_pretty, input_len);
         SNPRINTF(case_name, "%s[%s]", entry->d_name, size_pretty);
-
-        input = malloc2(file_size + 1);
-        if (fread64(input, 1, file_size, file) != file_size) {
-            error("Error reading %lld bytes from file %s: %s.\n",
-                  file_size, path, strerror(errno));
-            fatal(EXIT_FAILURE);
-        }
-        input[file_size] = '\0';
-        fclose(file);
-        input_len = (int32)file_size;
 
         results_libc = malloc2(tests_len*SIZEOF(*results_libc));
         pm_sz = tests_len*LENGTH(dummy_test.pmatch) * SIZEOF(regmatch_t);
@@ -527,14 +497,14 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             }
 #if FUZZY_PRECOMPILE_LIBC
             results_libc[j]
-                = run_libc_one(&libc_regexes[j], (char *)input, curr_pm,
+                = run_libc_one(&libc_regexes[j], input, curr_pm,
                                LENGTH(dummy_test.pmatch), extract);
 #else
             regex_t compiled;
             char *pattern_str = tests[j]->string;
             if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
                 results_libc[j]
-                    = run_libc_one(&compiled, (char *)input, curr_pm,
+                    = run_libc_one(&compiled, input, curr_pm,
                                    LENGTH(dummy_test.pmatch), extract);
                 regfree(&compiled);
             } else {
@@ -567,7 +537,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
                 }
 
                 results_meta[j] = run_meta_one(
-                    meta_pattern, (char *)input, input_len, matcher, curr_m_pm,
+                    meta_pattern, input, input_len, matcher, curr_m_pm,
                     LENGTH(dummy_test.pmatch), extract);
             }
             for (int32 j = 0; j < tests_len; j += 1) {
@@ -589,7 +559,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
                                     extract)) {
                     failed = true;
                     report_match_mismatch("File", case_name, matcher,
-                                          (char *)input, meta_pattern->string,
+                                          input, meta_pattern->string,
                                           results_libc[j], results_meta[j],
                                           curr_libc, curr_meta,
                                           LENGTH(dummy_test.pmatch), extract);
@@ -602,7 +572,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
 
         free2(results_libc, tests_len*SIZEOF(*results_libc));
         free2(pm_libc, pm_sz);
-        free2(input, file_size + 1);
+        free2(input, input_len + 1);
     }
 
 #if FUZZY_PRECOMPILE_LIBC

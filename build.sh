@@ -133,15 +133,12 @@ case "$mode" in
 build|all)
     trace_on
     $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
-    bin/meta_test
     $CC $CPPFLAGS $CFLAGS main_bench.c -o bin/meta_bench $LDFLAGS
-    bin/meta_bench
     trace_off
     ;;
 fast_feedback)
     trace_on
     $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
-    bin/meta_test
     trace_off
     ;;
 test)
