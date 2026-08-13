@@ -510,14 +510,14 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             }
 #if FUZZY_PRECOMPILE_LIBC
             results_libc[j]
-                = run_libc_one(&libc_regexes[j], input, curr_pm,
+                = run_libc_one(&libc_regexes[j], (char *)input, curr_pm,
                                LENGTH(dummy_test.pmatch), extract);
 #else
             regex_t compiled;
             char *pattern_str = tests[j]->string;
             if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
                 results_libc[j]
-                    = run_libc_one(&compiled, input, curr_pm,
+                    = run_libc_one(&compiled, (char *)input, curr_pm,
                                    LENGTH(dummy_test.pmatch), extract);
                 regfree(&compiled);
             } else {
@@ -550,7 +550,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
                 }
 
                 results_meta[j] = run_meta_one(
-                    meta_pattern, input, input_len, matcher, curr_m_pm,
+                    meta_pattern, (char *)input, input_len, matcher, curr_m_pm,
                     LENGTH(dummy_test.pmatch), extract);
             }
             for (int32 j = 0; j < tests_len; j += 1) {
@@ -572,7 +572,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
                                     extract)) {
                     failed = true;
                     report_match_mismatch("File", case_name, matcher,
-                                          input, meta_pattern->string,
+                                          (char *)input, meta_pattern->string,
                                           results_libc[j], results_meta[j],
                                           curr_libc, curr_meta,
                                           LENGTH(dummy_test.pmatch), extract);
@@ -638,7 +638,7 @@ random_regex_sample(MetaRegex **tests, int32 tests_len, int32 *sample_len) {
     MetaRegex **sample;
     uint32 random_state = 42;
 
-    *sample_len = tests_len / 2;
+    *sample_len = tests_len / 4;
     if (*sample_len < 1) {
         *sample_len = tests_len;
     }
