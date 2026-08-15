@@ -59,7 +59,7 @@ if [ "$CC" = "clang" ] || [ "$CC" = "zig cc" ]; then
     CFLAGS="$CFLAGS -Wno-used-but-marked-unused"
 fi
 
-LDFLAGS="$LDFLAGS -lmagic -lm"
+LDFLAGS="$LDFLAGS -lm"
 
 case "$mode" in
 debug)
