@@ -25,7 +25,7 @@ CC=$(common_get_compiler "$mode")
 
 common_build_print_invocation "$script"
 
-CPPFLAGS="$CPPFLAGS -Isrc -Icbase"
+CPPFLAGS="$CPPFLAGS -I. -Isrc -Icbase"
 
 CFLAGS="$CFLAGS -std=c11"
 CFLAGS="$CFLAGS -Wfatal-errors"
@@ -107,13 +107,13 @@ printf "\nChecking generated files...\n"
 trace_on
 
 if common_outdated "gen/main_tests_array2.h" \
-    main_tests_array.h bin/meta_preproc; then
-    ./bin/meta_preproc main_tests_array.h > gen/main_tests_array2.h
+    src/main_tests_array.h bin/meta_preproc; then
+    ./bin/meta_preproc src/main_tests_array.h > gen/main_tests_array2.h
 fi
 
 if common_outdated "gen/main_bench_regexes2.h" \
-    main_bench_regexes.h bin/meta_preproc; then
-    ./bin/meta_preproc main_bench_regexes.h > gen/main_bench_regexes2.h
+    src/main_bench_regexes.h bin/meta_preproc; then
+    ./bin/meta_preproc src/main_bench_regexes.h > gen/main_bench_regexes2.h
 fi
 
 if common_outdated "gen/main_bench_patterns.h" \
