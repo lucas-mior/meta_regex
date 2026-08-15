@@ -25,7 +25,7 @@ CC=$(common_get_compiler "$mode")
 
 common_build_print_invocation "$script"
 
-CPPFLAGS="$CPPFLAGS -I. -Icbase"
+CPPFLAGS="$CPPFLAGS -Isrc -Icbase"
 
 CFLAGS="$CFLAGS -std=c11"
 CFLAGS="$CFLAGS -Wfatal-errors"
@@ -90,10 +90,10 @@ common_build_tags cbase . posix
 trace_off
 
 if common_outdated "bin/meta_preproc" \
-    meta.h meta_preproc.h meta_preproc*.c; then
+    src/meta_regex.h src/meta_preproc.h src/meta_preproc*.c; then
     trace_on
     $CC $CPPFLAGS $CFLAGS -O2 -flto \
-        meta_preproc_0_main.c -o bin/meta_preproc $LDFLAGS
+        src/meta_preproc_0_main.c -o bin/meta_preproc $LDFLAGS
     trace_off
 else
     printf "Preprocessor is up to date.\n"
@@ -132,13 +132,13 @@ trace_off
 case "$mode" in
 build|all)
     trace_on
-    $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
-    $CC $CPPFLAGS $CFLAGS main_bench.c -o bin/meta_bench $LDFLAGS
+    $CC $CPPFLAGS $CFLAGS src/main_test.c -o bin/meta_test $LDFLAGS
+    $CC $CPPFLAGS $CFLAGS src/main_bench.c -o bin/meta_bench $LDFLAGS
     trace_off
     ;;
 fast_feedback)
     trace_on
-    $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
+    $CC $CPPFLAGS $CFLAGS src/main_test.c -o bin/meta_test $LDFLAGS
     trace_off
     ;;
 test)
@@ -147,22 +147,22 @@ test)
     TEST_EXE_PATH=bin/meta_test \
     TEST_REQUIRE_TESTING_MARKER=0 \
     TEST_SKIP_MAIN=0 \
-        common_test "" main_test.c
+        common_test "" src/main_test.c
     ;;
 bench)
     trace_on
-    $CC $CPPFLAGS $CFLAGS main_bench.c -o bin/meta_bench $LDFLAGS
+    $CC $CPPFLAGS $CFLAGS src/main_bench.c -o bin/meta_bench $LDFLAGS
     bin/meta_bench --max-input-len 1024
     trace_off
     ;;
 debug)
     trace_on
-    $CC $CPPFLAGS $CFLAGS main_test.c -o bin/meta_test $LDFLAGS
+    $CC $CPPFLAGS $CFLAGS src/main_test.c -o bin/meta_test $LDFLAGS
     trace_off
     ;;
 callgrind)
     trace_on
-    $CC $CPPFLAGS $CFLAGS main_bench.c -o bin/meta_bench $LDFLAGS
+    $CC $CPPFLAGS $CFLAGS src/main_bench.c -o bin/meta_bench $LDFLAGS
     valgrind --tool=callgrind bin/meta_bench
     trace_off
     ;;
