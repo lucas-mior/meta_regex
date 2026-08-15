@@ -14,7 +14,7 @@ script=$(basename "$0")
 common_build_parse_args "$@"
 
 case "$mode" in
-all|bench|build|callgrind|check|debug|fast_feedback|preprocessor|test)
+bench|build|callgrind|check|debug|fast_feedback|preprocessor|test)
     ;;
 *)
     common_build_unknown_mode
@@ -31,7 +31,7 @@ CFLAGS="$CFLAGS -std=c11"
 CFLAGS="$CFLAGS -Wfatal-errors"
 CFLAGS="$CFLAGS -Wextra -Wall"
 CFLAGS="$CFLAGS -Werror=all -Werror=extra"
-CFLAGS="$CFLAGS -Werror"  # Only uncomment occasionally, keep this line
+# CFLAGS="$CFLAGS -Werror"  # Only uncomment occasionally, keep this line
 CFLAGS="$CFLAGS -Wno-missing-field-initializers"
 CFLAGS="$CFLAGS -Wno-unused-function"
 
@@ -66,7 +66,7 @@ debug)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=1"
     CFLAGS="$CFLAGS -g3"
     ;;
-build|preprocessor|test|bench|all|check)
+build|preprocessor|test|bench|check)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0"
     CFLAGS="$CFLAGS -g -O2 -flto"
     ;;
@@ -78,7 +78,7 @@ callgrind)
     CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
     CFLAGS="$CFLAGS -g3 -O2 -flto"
     ;;
-all|bench|build|callgrind|check|debug|fast_feedback|preprocessor|test)
+bench|build|callgrind|check|debug|fast_feedback|preprocessor|test)
     ;;
 *)
     common_build_unknown_mode
@@ -130,7 +130,7 @@ fi
 trace_off
 
 case "$mode" in
-build|all)
+build)
     trace_on
     $CC $CPPFLAGS $CFLAGS src/main_test.c -o bin/meta_test $LDFLAGS
     $CC $CPPFLAGS $CFLAGS src/main_bench.c -o bin/meta_bench $LDFLAGS
