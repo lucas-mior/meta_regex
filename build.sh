@@ -14,7 +14,7 @@ script=$(basename "$0")
 common_build_parse_args "$@"
 
 case "$mode" in
-bench|build|callgrind|check|debug|fast_feedback|preprocessor|test)
+bench|build|callgrind|check|cross|debug|fast_feedback|preprocessor|test)
     ;;
 *)
     common_build_unknown_mode
@@ -66,7 +66,7 @@ debug)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=1"
     CFLAGS="$CFLAGS -g3"
     ;;
-build|preprocessor|test|bench|check)
+build|preprocessor|test|bench|check|cross)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0"
     CFLAGS="$CFLAGS -g -O2 -flto"
     ;;
@@ -78,7 +78,7 @@ callgrind)
     CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
     CFLAGS="$CFLAGS -g3 -O2 -flto"
     ;;
-bench|build|callgrind|check|debug|fast_feedback|preprocessor|test)
+bench|build|callgrind|check|cross|debug|fast_feedback|preprocessor|test)
     ;;
 *)
     common_build_unknown_mode
@@ -129,16 +129,36 @@ fi
 
 trace_off
 
+test_exe=bin/meta_test
+bench_exe=bin/meta_bench
+
+if [ "$mode" = "cross" ]; then
+    common_build_cross_all
+    cross="$target"
+
+    CFLAGS="$CFLAGS -Wno-padded"
+    CFLAGS="$CFLAGS -target $cross"
+
+    case "$cross" in
+    *windows*)
+        test_exe=bin/meta_test.exe
+        bench_exe=bin/meta_bench.exe
+        ;;
+    *)
+        ;;
+    esac
+fi
+
 case "$mode" in
 build)
     trace_on
-    $CC $CPPFLAGS $CFLAGS src/main_test.c -o bin/meta_test $LDFLAGS
-    $CC $CPPFLAGS $CFLAGS src/main_bench.c -o bin/meta_bench $LDFLAGS
+    $CC $CPPFLAGS $CFLAGS src/main_test.c -o "$test_exe" $LDFLAGS
+    $CC $CPPFLAGS $CFLAGS src/main_bench.c -o "$bench_exe" $LDFLAGS
     trace_off
     ;;
 fast_feedback)
     trace_on
-    $CC $CPPFLAGS $CFLAGS src/main_test.c -o bin/meta_test $LDFLAGS
+    $CC $CPPFLAGS $CFLAGS src/main_test.c -o "$test_exe" $LDFLAGS
     trace_off
     ;;
 test)
@@ -151,19 +171,25 @@ test)
     ;;
 bench)
     trace_on
-    $CC $CPPFLAGS $CFLAGS src/main_bench.c -o bin/meta_bench $LDFLAGS
+    $CC $CPPFLAGS $CFLAGS src/main_bench.c -o "$bench_exe" $LDFLAGS
     bin/meta_bench --max-input-len 1024
     trace_off
     ;;
 debug)
     trace_on
-    $CC $CPPFLAGS $CFLAGS src/main_test.c -o bin/meta_test $LDFLAGS
+    $CC $CPPFLAGS $CFLAGS src/main_test.c -o "$test_exe" $LDFLAGS
     trace_off
     ;;
 callgrind)
     trace_on
     $CC $CPPFLAGS $CFLAGS src/main_bench.c -o bin/meta_bench $LDFLAGS
     valgrind --tool=callgrind bin/meta_bench
+    trace_off
+    ;;
+cross)
+    trace_on
+    $CC $CPPFLAGS $CFLAGS src/main_test.c -o "$test_exe" $LDFLAGS
+    $CC $CPPFLAGS $CFLAGS src/main_bench.c -o "$bench_exe" $LDFLAGS
     trace_off
     ;;
 check)
