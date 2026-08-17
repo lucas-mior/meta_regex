@@ -85,9 +85,9 @@ bench|build|callgrind|check|cross|debug|fast_feedback|preprocessor|test)
     ;;
 esac
 
-trace_on
-common_build_tags cbase . posix
-trace_off
+# trace_on
+# common_build_tags cbase . posix
+# trace_off
 
 if common_outdated "bin/meta_preproc" \
     src/meta_regex.h src/meta_preproc.h src/meta_preproc*.c; then
