@@ -36,7 +36,7 @@ static const MatcherFeatures match_features_btnfa = {
 typedef struct BtnfaState {
     MetaOp *pc;
     uint8 *input;
-    regmatch_t pmatch[32];
+    MetaRegexMatch pmatch[32];
     uint32 visited_empty[META_PC_WORDS];
 } BtnfaState;
 
@@ -73,7 +73,7 @@ btnfa_quick_lookahead_fails(MetaOp *next_op, uint8 *curr_str) {
 static int32
 btnfa_stack_push(BtnfaState **stack_ptr_ref, int32 *stack_cap_ref,
                  int32 *stack_ptr_count, MetaOp *pc, uint8 *input,
-                 regmatch_t *pmatch, uint32 *visited_empty,
+                 MetaRegexMatch *pmatch, uint32 *visited_empty,
                  int32 is_catastrophic, int32 clear_empty_visited) {
     BtnfaState *stack = *stack_ptr_ref;
     int32 stack_cap = *stack_cap_ref;
@@ -112,7 +112,7 @@ btnfa_stack_push(BtnfaState **stack_ptr_ref, int32 *stack_cap_ref,
 }
 
 static int32
-btnfa_get_backref(regmatch_t *pmatch, int32 group_id, uint8 *string,
+btnfa_get_backref(MetaRegexMatch *pmatch, int32 group_id, uint8 *string,
                   uint8 **backref_ptr, int32 *backref_len) {
     if (group_id < 0 || group_id >= 32) {
         return 0;
@@ -142,14 +142,14 @@ btnfa_backref_matches_at(uint8 *input, uint8 *backref_ptr, int32 backref_len) {
 
 static int32
 match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
-            regmatch_t *pmatch, int64 pmatch_len) {
+            MetaRegexMatch *pmatch, int64 pmatch_len) {
     uint8 *search_ptr = &string[offset];
     int32 match_len = -1;
     static int32 stack_cap = 8192;
     static BtnfaState *stack = NULL;
     int32 stack_ptr = 0;
-    regmatch_t init_pmatch[32];
-    regmatch_t best_pmatch[32];
+    MetaRegexMatch init_pmatch[32];
+    MetaRegexMatch best_pmatch[32];
     uint32 *memo = NULL;
     int32 memo_size = 0;
     int32 step_count = 0;
@@ -212,7 +212,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
     while (stack_ptr > 0) {
         MetaOp *pc;
         uint8 *input;
-        regmatch_t current_pmatch[32];
+        MetaRegexMatch current_pmatch[32];
         uint32 visited_empty[META_PC_WORDS];
 
         step_count += 1;

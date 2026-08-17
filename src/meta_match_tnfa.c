@@ -58,11 +58,11 @@ static int32 match_tnfa_step(MetaTnfa *tnfa, int32 use_state_slices,
                              int32 *next_tags, uint8 *seen, int32 tag_count);
 static void match_tnfa_fill_pmatch(MetaRegex *regex, int32 start_pos,
                                    int32 end_pos, int32 *saved_tags,
-                                   regmatch_t *pmatch, int32 pmatch_len);
+                                   MetaRegexMatch *pmatch, int32 pmatch_len);
 
 static int32
 match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
-           regmatch_t *pmatch, int32 pmatch_len) {
+           MetaRegexMatch *pmatch, int32 pmatch_len) {
     MetaTnfa *tnfa;
     static MetaTnfaConfig *configs_a = NULL;
     static MetaTnfaConfig *configs_b = NULL;
@@ -735,7 +735,7 @@ match_tnfa_saved_tag_value(MetaTnfa *tnfa, int32 *saved_tags, int32 tag_id,
     /*
         Fixed-tag optimization may remove a tag from TNFA/TDFA tracking and
         mark it as derived from another tag by a constant offset. Reconstruct
-        such tags when filling POSIX regmatch_t results; otherwise TNFA reports
+        such tags when filling MetaRegexMatch results; otherwise TNFA reports
         the untracked tag as -1 even though its base tag was captured.
     */
     if (depth > tnfa->num_tags) {
@@ -758,7 +758,7 @@ match_tnfa_saved_tag_value(MetaTnfa *tnfa, int32 *saved_tags, int32 tag_id,
 
 static void
 match_tnfa_fill_pmatch(MetaRegex *regex, int32 start_pos, int32 end_pos,
-                       int32 *saved_tags, regmatch_t *pmatch,
+                       int32 *saved_tags, MetaRegexMatch *pmatch,
                        int32 pmatch_len) {
     MetaTnfa *tnfa = regex->tnfa;
 

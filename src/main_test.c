@@ -99,7 +99,7 @@ matcher_supports_regex(MetaRegex *regex, enum Matcher matcher, bool extract) {
 }
 
 static void
-clear_pmatch(regmatch_t *pmatch, int32 pmatch_len) {
+clear_pmatch(MetaRegexMatch *pmatch, int32 pmatch_len) {
     if (pmatch == NULL) {
         return;
     }
@@ -111,7 +111,7 @@ clear_pmatch(regmatch_t *pmatch, int32 pmatch_len) {
 }
 
 static int32
-pmatch_mismatch(regmatch_t *reference, regmatch_t *actual, int32 len) {
+pmatch_mismatch(MetaRegexMatch *reference, MetaRegexMatch *actual, int32 len) {
     for (int32 i = 0; i < len; i += 1) {
         if (reference[i].rm_so != actual[i].rm_so
             || reference[i].rm_eo != actual[i].rm_eo) {
@@ -124,8 +124,8 @@ pmatch_mismatch(regmatch_t *reference, regmatch_t *actual, int32 len) {
 static void
 report_match_mismatch(char *kind, char *case_name, enum Matcher matcher,
                       char *input, char *regex, int32 reference_result,
-                      int32 actual_result, regmatch_t *reference,
-                      regmatch_t *actual, int32 pmatch_len, bool extract) {
+                      int32 actual_result, MetaRegexMatch *reference,
+                      MetaRegexMatch *actual, int32 pmatch_len, bool extract) {
     char *matcher_name = MATCHER_str(matcher);
 
     error2("%s mismatch in %s with matcher %s\n", kind, case_name,
@@ -149,8 +149,8 @@ report_match_mismatch(char *kind, char *case_name, enum Matcher matcher,
 
 static int32
 result_mismatch(int32 reference_result, int32 actual_result,
-                regmatch_t *reference, regmatch_t *actual, int32 pmatch_len,
-                bool extract) {
+                MetaRegexMatch *reference, MetaRegexMatch *actual,
+                int32 pmatch_len, bool extract) {
     if (reference_result != actual_result) {
         return 1;
     }
@@ -161,24 +161,45 @@ result_mismatch(int32 reference_result, int32 actual_result,
 }
 
 static int32
-run_libc_one(regex_t *compiled, char *input, regmatch_t *pmatch,
+run_libc_one(regex_t *compiled, char *input, MetaRegexMatch *pmatch,
              int32 pmatch_len, bool extract) {
+    regmatch_t libc_pmatch[MAX_MATCHES];
     regmatch_t *pmatch_ptr = NULL;
     int64 nmatch = 0;
+    int32 result;
 
     if (extract) {
-        pmatch_ptr = pmatch;
-        nmatch = pmatch_len;
+        if (pmatch_len > MAX_MATCHES) {
+            error("Too many matches requested.\n");
+            exit(EXIT_FAILURE);
+        }
+
         clear_pmatch(pmatch, pmatch_len);
+        for (int32 i = 0; i < pmatch_len; i += 1) {
+            libc_pmatch[i].rm_so = -1;
+            libc_pmatch[i].rm_eo = -1;
+        }
+
+        pmatch_ptr = libc_pmatch;
+        nmatch = pmatch_len;
     }
-    return regexec(compiled, input, (size_t)nmatch, pmatch_ptr, 0);
+
+    result = regexec(compiled, input, (size_t)nmatch, pmatch_ptr, 0);
+    if (result == 0 && extract) {
+        for (int32 i = 0; i < pmatch_len; i += 1) {
+            pmatch[i].rm_so = (int32)libc_pmatch[i].rm_so;
+            pmatch[i].rm_eo = (int32)libc_pmatch[i].rm_eo;
+        }
+    }
+
+    return result;
 }
 
 static int32
 run_meta_one(MetaRegex *regex, char *input, int32 input_len,
-             enum Matcher matcher, regmatch_t *pmatch, int32 pmatch_len,
+             enum Matcher matcher, MetaRegexMatch *pmatch, int32 pmatch_len,
              bool extract) {
-    regmatch_t *pmatch_ptr = NULL;
+    MetaRegexMatch *pmatch_ptr = NULL;
     int32 nmatch = 0;
 
     if (extract) {
@@ -475,13 +496,12 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         char path[512];
         char case_name[768];
         char size_pretty[32];
-        FILE *file;
         uint8 *input;
         char *input_chars;
         int32 input_len;
         int32 *results_libc;
         int64 pm_sz;
-        regmatch_t *pm_libc;
+        MetaRegexMatch *pm_libc;
 
         if (strequal(entry->d_name, ".") || strequal(entry->d_name, "..")) {
             continue;
@@ -499,11 +519,11 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         SNPRINTF(case_name, "%s[%s]", entry->d_name, size_pretty);
 
         results_libc = malloc2(tests_len*SIZEOF(*results_libc));
-        pm_sz = tests_len*LENGTH(dummy_test.pmatch) * SIZEOF(regmatch_t);
+        pm_sz = tests_len*LENGTH(dummy_test.pmatch) * SIZEOF(MetaRegexMatch);
         pm_libc = malloc2(pm_sz);
 
         for (int32 j = 0; j < tests_len; j += 1) {
-            regmatch_t *curr_pm = NULL;
+            MetaRegexMatch *curr_pm = NULL;
 
             if (extract) {
                 curr_pm = &pm_libc[j*LENGTH(dummy_test.pmatch)];
@@ -529,7 +549,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         for (int32 mi = 0; mi < LENGTH(all_matchers); mi += 1) {
             enum Matcher matcher = all_matchers[mi];
             int32 *results_meta = malloc2(tests_len*SIZEOF(*results_meta));
-            regmatch_t *pm_meta = malloc2(pm_sz);
+            MetaRegexMatch *pm_meta = malloc2(pm_sz);
             if (!matcher_compile_enabled(matcher)) {
                 free2(results_meta, tests_len*SIZEOF(*results_meta));
                 free2(pm_meta, pm_sz);
@@ -538,7 +558,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
 
             for (int32 j = 0; j < tests_len; j += 1) {
                 MetaRegex *meta_pattern = tests[j];
-                regmatch_t *curr_m_pm = NULL;
+                MetaRegexMatch *curr_m_pm = NULL;
 
                 if (!matcher_supports_regex(meta_pattern, matcher, extract)) {
                     results_meta[j] = REG_NOMATCH;
@@ -556,8 +576,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             }
             for (int32 j = 0; j < tests_len; j += 1) {
                 MetaRegex *meta_pattern = tests[j];
-                regmatch_t *curr_libc = NULL;
-                regmatch_t *curr_meta = NULL;
+                MetaRegexMatch *curr_libc = NULL;
+                MetaRegexMatch *curr_meta = NULL;
 
                 if (!matcher_supports_regex(meta_pattern, matcher, extract)) {
                     continue;

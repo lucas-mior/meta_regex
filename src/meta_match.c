@@ -50,7 +50,7 @@ meta_regex_unanchored_scan_done(MetaRegex *regex, int32 input_len, int32 offset,
 
 static int32
 meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
-                                regmatch_t *pmatch, int32 pmatch_len,
+                                MetaRegexMatch *pmatch, int32 pmatch_len,
                                 enum Matcher matcher) {
     int32 result;
 
@@ -251,7 +251,7 @@ meta_choose_matcher(MetaRegex *regex, int32 input_len, bool needs_extraction,
 
 static int32
 meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
-                 regmatch_t *pmatch, int32 pmatch_len,
+                 MetaRegexMatch *pmatch, int32 pmatch_len,
                  enum Matcher matchers_enabled) {
     enum Matcher matcher;
     int32 needs_extraction;

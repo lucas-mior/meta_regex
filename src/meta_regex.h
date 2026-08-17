@@ -19,6 +19,11 @@
     X(META_RE_NOSUB)
 #include "xenums.c"
 
+typedef struct MetaRegexMatch {
+    int32 rm_so;
+    int32 rm_eo;
+} MetaRegexMatch;
+
 /* TNFA limits */
 #define META_MAX_TNFA_TAGS 256
 #define META_MAX_TNFA_STATES 1024

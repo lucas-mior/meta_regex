@@ -38,7 +38,7 @@ static int32
 static inline __attribute__((always_inline)) int32
 #endif
 match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
-                 regmatch_t *pmatch, int32 pmatch_len) {
+                 MetaRegexMatch *pmatch, int32 pmatch_len) {
     StaticDfa *dfa = regex->static_dfa;
     StaticDfaState *states = dfa->states;
     StaticDfaState *current_state_ptr;

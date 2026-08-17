@@ -380,7 +380,7 @@ lazy_dfa_ensure_closure(MetaRegex *regex, LazyDfa *ldfa, LazyDfaState *state,
 
 static int32
 match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
-               regmatch_t *pmatch, int64 pmatch_len) {
+               MetaRegexMatch *pmatch, int64 pmatch_len) {
     LazyDfa *ldfa = regex->lazy_dfa;
     int32 current_state_id;
     int32 last_accept = -1;

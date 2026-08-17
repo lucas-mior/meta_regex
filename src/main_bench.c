@@ -253,7 +253,7 @@ bench_matcher_supports_regex(MetaRegex *regex, enum Matcher matcher,
 }
 
 static void
-bench_clear_pmatch(regmatch_t *pmatch, int32 pmatch_len) {
+bench_clear_pmatch(MetaRegexMatch *pmatch, int32 pmatch_len) {
     if (pmatch == NULL) {
         return;
     }
@@ -265,7 +265,7 @@ bench_clear_pmatch(regmatch_t *pmatch, int32 pmatch_len) {
 }
 
 static int32
-bench_pmatch_mismatch(regmatch_t *reference, regmatch_t *actual,
+bench_pmatch_mismatch(MetaRegexMatch *reference, MetaRegexMatch *actual,
                       int32 pmatch_len) {
     for (int32 i = 0; i < pmatch_len; i += 1) {
         if (reference[i].rm_so != actual[i].rm_so
@@ -278,7 +278,7 @@ bench_pmatch_mismatch(regmatch_t *reference, regmatch_t *actual,
 
 static int32
 bench_result_mismatch(int32 reference_result, int32 actual_result,
-                      regmatch_t *reference, regmatch_t *actual,
+                      MetaRegexMatch *reference, MetaRegexMatch *actual,
                       int32 pmatch_len, bool extract) {
     if (reference_result != actual_result) {
         return 1;
@@ -295,8 +295,8 @@ bench_report_mismatch(char *block, BenchRegexBucket *regex_bucket,
                       BenchInputBucket *input_bucket,
                       BenchInputCase *input_case, char *engine,
                       enum Matcher matcher, int32 reference_result,
-                      int32 actual_result, regmatch_t *reference,
-                      regmatch_t *actual, int32 pmatch_len, bool extract) {
+                      int32 actual_result, MetaRegexMatch *reference,
+                      MetaRegexMatch *actual, int32 pmatch_len, bool extract) {
     error2("%s mismatch in regex bucket %s, input bucket %s, input case %s, "
            "engine %s",
            block, regex_bucket->name, input_bucket->name, input_case->name,
@@ -325,25 +325,45 @@ bench_report_mismatch(char *block, BenchRegexBucket *regex_bucket,
 }
 
 static int32
-bench_run_libc_one(regex_t *compiled, char *input, regmatch_t *pmatch,
+bench_run_libc_one(regex_t *compiled, char *input, MetaRegexMatch *pmatch,
                    int32 pmatch_len, bool extract) {
+    regmatch_t libc_pmatch[BENCH_MAX_MATCHES];
     regmatch_t *pmatch_ptr = NULL;
     int64 nmatch = 0;
+    int32 result;
 
     if (extract) {
+        if (pmatch_len > BENCH_MAX_MATCHES) {
+            error("Too many matches requested.\n");
+            exit(EXIT_FAILURE);
+        }
+
         bench_clear_pmatch(pmatch, pmatch_len);
-        pmatch_ptr = pmatch;
+        for (int32 i = 0; i < pmatch_len; i += 1) {
+            libc_pmatch[i].rm_so = -1;
+            libc_pmatch[i].rm_eo = -1;
+        }
+
+        pmatch_ptr = libc_pmatch;
         nmatch = pmatch_len;
     }
 
-    return regexec(compiled, input, (size_t)nmatch, pmatch_ptr, 0);
+    result = regexec(compiled, input, (size_t)nmatch, pmatch_ptr, 0);
+    if (result == 0 && extract) {
+        for (int32 i = 0; i < pmatch_len; i += 1) {
+            pmatch[i].rm_so = (int32)libc_pmatch[i].rm_so;
+            pmatch[i].rm_eo = (int32)libc_pmatch[i].rm_eo;
+        }
+    }
+
+    return result;
 }
 
 static int32
 bench_run_meta_dispatch_one(MetaRegex *regex, char *input, int32 input_len,
-                            enum Matcher enabled, regmatch_t *pmatch,
+                            enum Matcher enabled, MetaRegexMatch *pmatch,
                             int32 pmatch_len, bool extract) {
-    regmatch_t *pmatch_ptr = NULL;
+    MetaRegexMatch *pmatch_ptr = NULL;
     int32 nmatch = 0;
 
     if (extract) {
@@ -358,9 +378,9 @@ bench_run_meta_dispatch_one(MetaRegex *regex, char *input, int32 input_len,
 
 static int32
 bench_run_meta_matcher_one(MetaRegex *regex, char *input, int32 input_len,
-                           enum Matcher matcher, regmatch_t *pmatch,
+                           enum Matcher matcher, MetaRegexMatch *pmatch,
                            int32 pmatch_len, bool extract) {
-    regmatch_t *pmatch_ptr = NULL;
+    MetaRegexMatch *pmatch_ptr = NULL;
     int32 nmatch = 0;
 
     if (extract) {
@@ -374,7 +394,7 @@ bench_run_meta_matcher_one(MetaRegex *regex, char *input, int32 input_len,
 }
 
 static void
-bench_absorb_result(int32 result, regmatch_t *pmatch, bool extract) {
+bench_absorb_result(int32 result, MetaRegexMatch *pmatch, bool extract) {
     bench_sink_result += (result == 0);
     if (extract && pmatch != NULL) {
         bench_sink_offsets += pmatch[0].rm_so + (int64)pmatch[0].rm_eo;
@@ -456,15 +476,15 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
     double seconds;
     struct timespec t0;
     struct timespec t1;
-    regmatch_t pmatch[BENCH_MAX_MATCHES];
+    MetaRegexMatch pmatch[BENCH_MAX_MATCHES];
 
     printf("\n== %s (%s) ==\n", test_name, variant);
 
     for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
         BenchRegexCase *rc = &regex_bucket->cases[ri];
         BenchInputCase *ic = &input_bucket->cases[ri];
-        regmatch_t ref_pm[BENCH_MAX_MATCHES];
-        regmatch_t actual_pm[BENCH_MAX_MATCHES];
+        MetaRegexMatch ref_pm[BENCH_MAX_MATCHES];
+        MetaRegexMatch actual_pm[BENCH_MAX_MATCHES];
         int32 input_len = strlen32(ic->input);
         bool needs_extraction = (rc->regex->re_nsub > 0 && extract);
         enum Matcher selected = meta_choose_matcher(rc->regex, input_len,
@@ -554,8 +574,8 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
         for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
             BenchRegexCase *rc = &regex_bucket->cases[ri];
             BenchInputCase *ic = &input_bucket->cases[ri];
-            regmatch_t ref_pm[BENCH_MAX_MATCHES];
-            regmatch_t actual_pm[BENCH_MAX_MATCHES];
+            MetaRegexMatch ref_pm[BENCH_MAX_MATCHES];
+            MetaRegexMatch actual_pm[BENCH_MAX_MATCHES];
             int32 input_len;
             int32 ref_result;
             int32 actual_result;

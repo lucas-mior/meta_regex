@@ -161,7 +161,7 @@ match_tdfa_saved_tag_value(MetaTdfa *tdfa, int32 *saved_tags, int32 tag_id,
 
 static void
 match_tdfa_fill_pmatch(MetaRegex *regex, int32 start_pos, int32 end_pos,
-                       int32 *saved_tags, regmatch_t *pmatch,
+                       int32 *saved_tags, MetaRegexMatch *pmatch,
                        int32 pmatch_len) {
     MetaTdfa *tdfa = regex->tdfa;
 
@@ -196,7 +196,7 @@ match_tdfa_fill_pmatch(MetaRegex *regex, int32 start_pos, int32 end_pos,
 
 static int32
 match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
-           regmatch_t *pmatch, int32 pmatch_len) {
+           MetaRegexMatch *pmatch, int32 pmatch_len) {
     MetaTdfa *tdfa;
     static int32 *regs = NULL;
     static int32 *saved_tags = NULL;
