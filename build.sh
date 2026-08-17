@@ -104,7 +104,6 @@ if [ "$mode" = "preprocessor" ]; then
 fi
 
 printf "\nChecking generated files...\n"
-trace_on
 
 if common_outdated "gen/main_tests_array2.h" \
     src/main_tests_array.h bin/meta_preproc; then
@@ -126,8 +125,6 @@ if common_outdated "gen/main_bench_patterns2.h" \
     ./bin/meta_preproc gen/main_bench_patterns.h \
         > gen/main_bench_patterns2.h
 fi
-
-trace_off
 
 test_exe=bin/meta_test
 bench_exe=bin/meta_bench
