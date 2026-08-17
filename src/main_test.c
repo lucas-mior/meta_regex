@@ -661,7 +661,7 @@ random_regex_sample(MetaRegex **tests, int32 tests_len, int32 *sample_len) {
     sample = xmemdup(tests, tests_len*SIZEOF(*sample));
 
     for (int32 i = 0; i < tests_len; i += 1) {
-        int32 j = i + (int32)(rand_int() % (uint32)(tests_len - i));
+        int32 j = i + rand_int() % (tests_len - i);
         MetaRegex *tmp = sample[i];
 
         sample[i] = sample[j];
