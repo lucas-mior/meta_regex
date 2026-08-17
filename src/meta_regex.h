@@ -11,6 +11,8 @@
 #define META_MAX_LAZY_DFA_STATES 2048
 #define META_PC_WORDS (META_MAX_OPS / 32)
 
+#define META_REG_NOMATCH 1
+
 #define ENUM_PREFIX_ META_RE_
 #define ENUM_NAME MetaRegexFlags
 #define ENUM_BITFLAGS 1

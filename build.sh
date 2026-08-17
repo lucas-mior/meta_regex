@@ -14,7 +14,7 @@ script=$(basename "$0")
 common_build_parse_args "$@"
 
 case "$mode" in
-bench|build|callgrind|check|cross|debug|fast_feedback|preprocessor|test)
+bench|build|callgrind|check|cross|debug|fast_feedback|preprocessor|standalone|test)
     ;;
 *)
     common_build_unknown_mode
@@ -66,9 +66,13 @@ debug)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=1"
     CFLAGS="$CFLAGS -g3"
     ;;
-build|preprocessor|test|bench|check|cross)
+build|preprocessor|standalone|test|bench|check)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0"
     CFLAGS="$CFLAGS -g -O2 -flto"
+    ;;
+cross)
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=0"
+    CFLAGS="$CFLAGS -g -O2"
     ;;
 fast_feedback)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0"
@@ -78,7 +82,7 @@ callgrind)
     CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
     CFLAGS="$CFLAGS -g3 -O2 -flto"
     ;;
-bench|build|callgrind|check|cross|debug|fast_feedback|preprocessor|test)
+bench|build|callgrind|check|cross|debug|fast_feedback|preprocessor|standalone|test)
     ;;
 *)
     common_build_unknown_mode
@@ -110,6 +114,12 @@ if common_outdated "gen/main_tests_array2.h" \
     ./bin/meta_preproc src/main_tests_array.h > gen/main_tests_array2.h
 fi
 
+if common_outdated "gen/main_standalone_cases2.h" \
+    src/main_standalone_cases.h bin/meta_preproc; then
+    ./bin/meta_preproc src/main_standalone_cases.h \
+        > gen/main_standalone_cases2.h
+fi
+
 if common_outdated "gen/main_bench_regexes2.h" \
     src/main_bench_regexes.h bin/meta_preproc; then
     ./bin/meta_preproc src/main_bench_regexes.h > gen/main_bench_regexes2.h
@@ -128,6 +138,8 @@ fi
 
 test_exe=bin/meta_test
 bench_exe=bin/meta_bench
+standalone_exe=bin/meta_standalone
+cross_use_standalone=0
 
 if [ "$mode" = "cross" ]; then
     common_build_cross_all
@@ -140,6 +152,8 @@ if [ "$mode" = "cross" ]; then
     *windows*)
         test_exe=bin/meta_test.exe
         bench_exe=bin/meta_bench.exe
+        standalone_exe=bin/meta_standalone.exe
+        cross_use_standalone=1
         ;;
     *)
         ;;
@@ -156,6 +170,13 @@ build)
 fast_feedback)
     trace_on
     $CC $CPPFLAGS $CFLAGS src/main_test.c -o "$test_exe" $LDFLAGS
+    trace_off
+    ;;
+standalone)
+    trace_on
+    $CC $CPPFLAGS $CFLAGS src/main_standalone.c \
+        -o "$standalone_exe" $LDFLAGS
+    "$standalone_exe"
     trace_off
     ;;
 test)
@@ -185,8 +206,13 @@ callgrind)
     ;;
 cross)
     trace_on
-    $CC $CPPFLAGS $CFLAGS src/main_test.c -o "$test_exe" $LDFLAGS
-    $CC $CPPFLAGS $CFLAGS src/main_bench.c -o "$bench_exe" $LDFLAGS
+    if [ "$cross_use_standalone" = 1 ]; then
+        $CC $CPPFLAGS $CFLAGS src/main_standalone.c \
+            -o "$standalone_exe" $LDFLAGS
+    else
+        $CC $CPPFLAGS $CFLAGS src/main_test.c -o "$test_exe" $LDFLAGS
+        $CC $CPPFLAGS $CFLAGS src/main_bench.c -o "$bench_exe" $LDFLAGS
+    fi
     trace_off
     ;;
 check)

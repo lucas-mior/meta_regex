@@ -3,8 +3,6 @@
 
 #include "cbase.h"
 
-#include <regex.h>
-
 #include "meta_regex.h"
 #include "meta_util.c"
 #include "meta_match_lazy_dfa.c"
@@ -56,7 +54,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
 
     if (regex->min_match_len > 0 && input_len >= 0
         && input_len < regex->min_match_len) {
-        return REG_NOMATCH;
+        return META_REG_NOMATCH;
     }
 
     if ((regex->flags & META_RE_NOSUB) && pmatch_len > 1) {
@@ -71,7 +69,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
             if (result == 0) {
                 return 0;
             }
-            return REG_NOMATCH;
+            return META_REG_NOMATCH;
         }
 
         for (int32 j = 0;; j += 1) {
@@ -98,7 +96,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
             if (result == 0) {
                 return 0;
             }
-            return REG_NOMATCH;
+            return META_REG_NOMATCH;
         }
 
         for (int32 j = 0;; j += 1) {
@@ -125,7 +123,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
             if (result == 0) {
                 return 0;
             }
-            return REG_NOMATCH;
+            return META_REG_NOMATCH;
         }
 
         for (int32 j = 0;; j += 1) {
@@ -153,7 +151,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
             if (result == 0) {
                 return 0;
             }
-            return REG_NOMATCH;
+            return META_REG_NOMATCH;
         }
 
         for (int32 j = 0;; j += 1) {
@@ -181,7 +179,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
             if (result == 0) {
                 return 0;
             }
-            return REG_NOMATCH;
+            return META_REG_NOMATCH;
         }
 
         for (int32 j = 0;; j += 1) {
@@ -210,7 +208,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
     }
     }
 
-    return REG_NOMATCH;
+    return META_REG_NOMATCH;
 }
 
 static enum Matcher
@@ -257,7 +255,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
     int32 needs_extraction;
 
     if (regex == NULL) {
-        return REG_NOMATCH;
+        return META_REG_NOMATCH;
     }
 
     if (pmatch) {
@@ -269,7 +267,7 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
 
     if (regex->min_match_len > 0 && input_len >= 0
         && input_len < regex->min_match_len) {
-        return REG_NOMATCH;
+        return META_REG_NOMATCH;
     }
 
     if ((regex->flags & META_RE_NOSUB) && pmatch_len > 1) {

@@ -3,7 +3,6 @@
 
 #include "cbase.h"
 
-#include <regex.h>
 #include "meta_regex.h"
 #include "meta_util.c"
 
@@ -96,7 +95,7 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     int32 pos = start_pos;
     int32 accepted = 0;
     int32 accepted_end = -1;
-    int32 result = REG_NOMATCH;
+    int32 result = META_REG_NOMATCH;
     int32 state_count;
     int32 full_tag_count;
     int32 tag_count;
@@ -108,7 +107,7 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     int32 stack_tag_storage_count;
 
     if (regex == NULL || regex->tnfa == NULL) {
-        return REG_NOMATCH;
+        return META_REG_NOMATCH;
     }
 
     tnfa = regex->tnfa;
@@ -118,7 +117,7 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         || (tnfa->num_transitions > 0 && tnfa->transitions == NULL)
         || tnfa->start_state < 0 || tnfa->start_state >= tnfa->num_states
         || tnfa->final_state < 0 || tnfa->final_state >= tnfa->num_states) {
-        return REG_NOMATCH;
+        return META_REG_NOMATCH;
     }
 
     state_count = tnfa->num_states;
@@ -193,7 +192,7 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         || tags_a == NULL || tags_b == NULL || stack_tags == NULL
         || edge_indices == NULL || saved_tags == NULL || work_tags == NULL
         || closed_seen == NULL || seen == NULL) {
-        return REG_NOMATCH;
+        return META_REG_NOMATCH;
     }
 
     if (track_tags) {
@@ -214,7 +213,7 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         current_count, closed, closed_tags, stack, stack_tags, stack_cap,
         closed_seen, edge_indices, work_tags, tag_count);
     if (closed_count < 0) {
-        return REG_NOMATCH;
+        return META_REG_NOMATCH;
     }
 
     {
@@ -242,7 +241,7 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
                                      pos, closed, closed_tags, closed_count,
                                      current, current_tags, seen, tag_count);
         if (next_count < 0) {
-            return REG_NOMATCH;
+            return META_REG_NOMATCH;
         }
         if (next_count == 0) {
             break;
@@ -263,7 +262,7 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
             next_count, current, current_tags, stack, stack_tags, stack_cap,
             closed_seen, edge_indices, work_tags, tag_count);
         if (closed_count < 0) {
-            return REG_NOMATCH;
+            return META_REG_NOMATCH;
         }
 
         tmp_configs = current;

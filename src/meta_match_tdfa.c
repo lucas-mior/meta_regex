@@ -3,7 +3,6 @@
 
 #include "cbase.h"
 
-#include <regex.h>
 #include "meta_regex.h"
 #include "meta_util.c"
 
@@ -206,7 +205,7 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     int32 pos = start_pos;
     int32 accepted = 0;
     int32 accepted_end = -1;
-    int32 result = REG_NOMATCH;
+    int32 result = META_REG_NOMATCH;
     int32 extract;
 
     (void)input_len;
@@ -238,7 +237,7 @@ match_tdfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         || (tdfa->transition_index_stride > 0
             && tdfa->transition_index_stride < META_ALPHABET_SIZE)
         || (tdfa->num_ops > 0 && tdfa->ops == NULL)) {
-        return REG_NOMATCH;
+        return META_REG_NOMATCH;
     }
 
     extract = pmatch && (pmatch_len > 1) && (tdfa->num_tags > 0);

@@ -185,6 +185,9 @@ run_libc_one(regex_t *compiled, char *input, MetaRegexMatch *pmatch,
     }
 
     result = regexec(compiled, input, (size_t)nmatch, pmatch_ptr, 0);
+    if (result == REG_NOMATCH) {
+        result = META_REG_NOMATCH;
+    }
     if (result == 0 && extract) {
         for (int32 i = 0; i < pmatch_len; i += 1) {
             pmatch[i].rm_so = (int32)libc_pmatch[i].rm_so;
@@ -319,7 +322,7 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
             actual[i].input_len = reference[i].input_len;
 
             if (!matcher_supports_regex(meta_regex, matcher, extract)) {
-                actual[i].result = REG_NOMATCH;
+                actual[i].result = META_REG_NOMATCH;
                 continue;
             }
 
@@ -423,7 +426,7 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
             MetaRegex *meta_pattern = tests[fuzzy[i].regex_idx];
 
             if (!matcher_supports_regex(meta_pattern, matcher, extract)) {
-                fuzzy[i].result_meta = REG_NOMATCH;
+                fuzzy[i].result_meta = META_REG_NOMATCH;
                 continue;
             }
 
@@ -542,7 +545,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
                                    LENGTH(dummy_test.pmatch), extract);
                 regfree(&compiled);
             } else {
-                results_libc[j] = REG_NOMATCH;
+                results_libc[j] = META_REG_NOMATCH;
             }
 #endif
         }
@@ -561,7 +564,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
                 MetaRegexMatch *curr_m_pm = NULL;
 
                 if (!matcher_supports_regex(meta_pattern, matcher, extract)) {
-                    results_meta[j] = REG_NOMATCH;
+                    results_meta[j] = META_REG_NOMATCH;
                     continue;
                 }
 
