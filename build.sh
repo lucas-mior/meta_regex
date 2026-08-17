@@ -127,7 +127,7 @@ fi
 
 if common_outdated "gen/main_bench_patterns.h" \
     process_patterns.py "$dir/0patterns"/*; then
-    python3 process_patterns.py gen/main_bench_patterns.h "$dir/0patterns"
+    python process_patterns.py gen/main_bench_patterns.h "$dir/0patterns"
 fi
 
 if common_outdated "gen/main_bench_patterns2.h" \
