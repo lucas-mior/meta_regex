@@ -330,18 +330,10 @@ typedef struct MetaRegex {
     enum MetaOpType used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
 
-    /*
-        Optional tagged NFA representation.
-
-        NULL means no TNFA was generated/stored for this regex.
-    */
+    // Optional tagged NFA representation.
     MetaTnfa *tnfa;
 
-    /*
-        Optional single-pass tagged DFA generated from the TNFA.
-
-        NULL means TDFA determinization failed or was skipped.
-    */
+    // Optional single-pass tagged DFA generated from the TNFA.
     MetaTdfa *tdfa;
 
     StaticDfa *static_dfa;
