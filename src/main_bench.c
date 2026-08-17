@@ -515,7 +515,7 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
     }
 
     matches = 0;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
+    clock_gettime(CLOCK_MONOTONIC, &t0);
     for (int32 it = 0; it < META_BENCH_ITERATIONS; it += 1) {
         for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
             int32 result = bench_run_libc_one(&compiled[ri],
@@ -527,7 +527,7 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
             bench_absorb_result(result, pmatch, extract);
         }
     }
-    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+    clock_gettime(CLOCK_MONOTONIC, &t1);
     seconds = bench_timediff(t0, t1);
     bench_write_engine_row(csv, test_name, variant, regex_bucket, input_bucket,
                            "LIBC", "LIBC", "LIBC", regex_bucket->count, seconds,
@@ -546,7 +546,7 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
     }
 
     matches = 0;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
+    clock_gettime(CLOCK_MONOTONIC, &t0);
     for (int32 it = 0; it < META_BENCH_ITERATIONS; it += 1) {
         for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
             BenchRegexCase *rc = &regex_bucket->cases[ri];
@@ -561,7 +561,7 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
             bench_absorb_result(result, pmatch, extract);
         }
     }
-    clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+    clock_gettime(CLOCK_MONOTONIC, &t1);
     seconds = bench_timediff(t0, t1);
     bench_write_engine_row(csv, test_name, variant, regex_bucket, input_bucket,
                            "META_DISPATCH", "DISPATCH", "mixed",
@@ -630,7 +630,7 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
         }
 
         matches = 0;
-        clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
+        clock_gettime(CLOCK_MONOTONIC, &t0);
         for (int32 it = 0; it < META_BENCH_ITERATIONS; it += 1) {
             for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
                 BenchRegexCase *rc = &regex_bucket->cases[ri];
@@ -653,7 +653,7 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
                 bench_absorb_result(result, pmatch, extract);
             }
         }
-        clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+        clock_gettime(CLOCK_MONOTONIC, &t1);
         seconds = bench_timediff(t0, t1);
         {
             char *matcher_name = MATCHER_str(matcher);
