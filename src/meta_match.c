@@ -281,8 +281,10 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
     matcher = meta_choose_matcher(regex, input_len, needs_extraction,
                                   matchers_enabled);
 
-    return meta_regex_match_with_algorithm(regex, input, input_len, pmatch,
-                                           pmatch_len, matcher);
+    return meta_regex_match_with_algorithm(regex,
+                                           input, input_len,
+                                           pmatch, pmatch_len,
+                                           matcher);
 }
 
 #endif /* META_MATCH_C */
