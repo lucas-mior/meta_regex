@@ -459,7 +459,7 @@ bench_generate_random_input(char *out, enum BenchInputLengthClass c) {
     }
 
     for (int32 j = 0; j < len; j += 1) {
-        uint32 r = (uint32)rand();
+        uint32 r = (uint32)rand_int();
         out[j] = alphabet[r % (SIZEOF(alphabet) - 1)];
     }
     out[len] = '\0';
