@@ -175,6 +175,42 @@ result_mismatch(int32 reference_result, int32 actual_result,
 }
 
 static bool
+is_regex_alpha_escape(char c) {
+    if (c >= 'a' && c <= 'z') {
+        return true;
+    }
+    if (c >= 'A' && c <= 'Z') {
+        return true;
+    }
+    return false;
+}
+
+static bool
+libc_regex_is_portable(MetaRegex *regex) {
+    char *pattern = regex->string;
+
+    for (int32 i = 0; pattern[i] != '\0'; i += 1) {
+        char c;
+
+        if (pattern[i] != '\\') {
+            continue;
+        }
+
+        i += 1;
+        c = pattern[i];
+        if (c == '\0') {
+            break;
+        }
+        if ((c >= '0' && c <= '9') || is_regex_alpha_escape(c)
+            || c == '<' || c == '>') {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool
 libc_submatches_are_portable(MetaRegex *regex) {
     enum MetaOpType repeat_ops = (enum MetaOpType)(
         META_OP_STAR
@@ -345,10 +381,16 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
 
     for (int32 i = 0; i < count; i += 1) {
         regex_t compiled_regex;
-        char *regex = reference[i].meta_regex->string;
-        int32 compiled = regcomp(&compiled_regex, regex, REG_EXTENDED);
+        MetaRegex *meta_regex = reference[i].meta_regex;
+        char *regex = meta_regex->string;
+        bool use_libc = libc_regex_is_portable(meta_regex);
+        int32 compiled = REG_BADPAT;
 
         reference[i].input_len = strlen32(reference[i].input);
+
+        if (use_libc) {
+            compiled = regcomp(&compiled_regex, regex, REG_EXTENDED);
+        }
 
         if (compiled == 0) {
             libc_reference[i] = true;
@@ -456,9 +498,12 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
     for (int32 i = 0; i < tests_len; i += 1) {
         char *pattern_str = tests[i]->string;
 
-        libc_reference[i]
-            = regcomp(&libc_regexes[i], pattern_str, REG_EXTENDED) == 0;
+        libc_reference[i] = false;
         reference_submatches[i] = true;
+        if (libc_regex_is_portable(tests[i])) {
+            libc_reference[i]
+                = regcomp(&libc_regexes[i], pattern_str, REG_EXTENDED) == 0;
+        }
         if (libc_reference[i]) {
             reference_submatches[i] = libc_submatches_are_portable(tests[i]);
         }
@@ -583,9 +628,12 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
     for (int32 i = 0; i < tests_len; i += 1) {
         char *pattern_str = tests[i]->string;
 
-        libc_reference[i]
-            = regcomp(&libc_regexes[i], pattern_str, REG_EXTENDED) == 0;
+        libc_reference[i] = false;
         reference_submatches[i] = true;
+        if (libc_regex_is_portable(tests[i])) {
+            libc_reference[i]
+                = regcomp(&libc_regexes[i], pattern_str, REG_EXTENDED) == 0;
+        }
         if (libc_reference[i]) {
             reference_submatches[i] = libc_submatches_are_portable(tests[i]);
         }
