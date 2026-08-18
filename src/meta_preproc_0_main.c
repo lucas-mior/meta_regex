@@ -190,7 +190,7 @@ main(int32 argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    if ((input_file = fopen(filename, "r")) == NULL) {
+    if ((input_file = fopen(filename, "rb")) == NULL) {
         error("Error opening %s: %s.\n", filename, strerror(errno));
         exit(EXIT_FAILURE);
     }
