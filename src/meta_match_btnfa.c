@@ -640,9 +640,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
         }
     }
 
-    if (memo) {
-        free2(memo, memo_size*SIZEOF(*memo));
-    }
+    free2(memo, memo_size*SIZEOF(*memo));
 
     if (match_len >= 0) {
         if (!regex->has_end_anchor || string[match_len] == '\0') {
