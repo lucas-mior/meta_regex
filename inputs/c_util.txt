@@ -86,7 +86,6 @@ static void error_async_safe(char *message);
 static noreturn void fatal(int);
 static noreturn void util_segv_handler(int32);
 static int32 itoa2(char *, int32, llong);
-static long atoi2(char *);
 INLINE void *memchr64(void *pointer, int32 value, int64 size);
 INLINE int memcmp64(void *left, void *right, int64 size);
 
@@ -559,11 +558,6 @@ itoa2(char *str, int32 size, llong num) {
 }
 
 #define ITOA(buffer, num) itoa2(buffer, sizeof(buffer), num)
-
-long
-atoi2(char *str) {
-    return atoi(str);
-}
 
 static int64
 strftime2(char *buffer, int64 size, char *format, struct tm *time_info) {
