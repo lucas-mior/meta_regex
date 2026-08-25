@@ -657,7 +657,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
 
         SNPRINTF(path, "inputs/%s", entry->d_name);
 
-        if (!read_entire_file(path, &input_chars, &input_len)) {
+        if ((input_len = read_entire_file(path, &input_chars)) < 0) {
             continue;
         }
 
