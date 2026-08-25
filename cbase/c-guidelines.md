@@ -427,12 +427,17 @@ pattern, but using `fork()` directly should be avoided anyway (use the
 
 ### Control flow and error handling
 - Avoid `goto`. Use it only for common cleanup logic.
-- Sometimes a useful patterns to avoid using goto:
+- Sometimes a useful pattern to avoid using goto:
   ```c
   do {
       if ((a = may_fail()) < 0) {
+          break;
       }
-  }
+      if ((b = may_fail2()) < 0) {
+          break;
+      }
+      do_something(a, b);
+  } while (0);
   ```
 
 ### Return value for errors
