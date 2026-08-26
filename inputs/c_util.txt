@@ -1743,13 +1743,13 @@ util_functions_sink(void) {
 #define ENUM_BITFLAGS 0
 #define ENUM_PREFIX_ WEEK_DAY_
 #define ENUM_FIELDS \
-    X(SUNDAY, 0)                   \
-    X(MONDAY)                      \
-    X(TUESDAY, 10)                 \
-    X(WEDNESDAY)                   \
-    X(THURSDAY)                    \
-    X(FRIDAY, 5)                   \
-    X(SATURDAY, 20)
+    XX(SUNDAY, 0)                   \
+    XX(MONDAY)                      \
+    XX(TUESDAY, 10)                 \
+    XX(WEDNESDAY)                   \
+    XX(THURSDAY)                    \
+    XX(FRIDAY, 5)                   \
+    XX(SATURDAY, 20)
 #include "xenums.c"
 
 
@@ -1757,12 +1757,12 @@ util_functions_sink(void) {
 #define ENUM_BITFLAGS 1
 #define ENUM_PREFIX_ POWER_OF2_
 #define ENUM_FIELDS \
-    X(ONE)          \
-    X(TWO)          \
-    X(FOUR)         \
-    X(EIGHT)        \
-    X(SIXTEEN)      \
-    X(THIRTY2)
+    XX(ONE)          \
+    XX(TWO)          \
+    XX(FOUR)         \
+    XX(EIGHT)        \
+    XX(SIXTEEN)      \
+    XX(THIRTY2)
 #include "xenums.c"
 
 

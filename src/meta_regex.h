@@ -17,8 +17,8 @@
 #define ENUM_NAME MetaRegexFlags
 #define ENUM_BITFLAGS 1
 #define ENUM_FIELDS \
-    X(META_RE_YESSUB) \
-    X(META_RE_NOSUB)
+    XX(META_RE_YESSUB) \
+    XX(META_RE_NOSUB)
 #include "xenums.c"
 
 typedef struct MetaRegexMatch {
@@ -52,24 +52,24 @@ typedef struct MetaRegexMatch {
 #define ENUM_NAME MetaOpType
 #define ENUM_BITFLAGS 1
 #define ENUM_FIELDS \
-    X(META_OP_END) \
-    X(META_OP_LITERAL) \
-    X(META_OP_ANY) \
-    X(META_OP_CLASS) \
-    X(META_OP_GROUP_START) \
-    X(META_OP_GROUP_END) \
-    X(META_OP_STAR) \
-    X(META_OP_PLUS) \
-    X(META_OP_OPTIONAL) \
-    X(META_OP_ALTERNATION) \
-    X(META_OP_BOUNDED) \
-    X(META_OP_SPLIT) \
-    X(META_OP_JUMP) \
-    X(META_OP_WORD_START) \
-    X(META_OP_WORD_END) \
-    X(META_OP_WORD_BOUNDARY) \
-    X(META_OP_NON_WORD_BOUNDARY) \
-    X(META_OP_BACKREF)
+    XX(META_OP_END) \
+    XX(META_OP_LITERAL) \
+    XX(META_OP_ANY) \
+    XX(META_OP_CLASS) \
+    XX(META_OP_GROUP_START) \
+    XX(META_OP_GROUP_END) \
+    XX(META_OP_STAR) \
+    XX(META_OP_PLUS) \
+    XX(META_OP_OPTIONAL) \
+    XX(META_OP_ALTERNATION) \
+    XX(META_OP_BOUNDED) \
+    XX(META_OP_SPLIT) \
+    XX(META_OP_JUMP) \
+    XX(META_OP_WORD_START) \
+    XX(META_OP_WORD_END) \
+    XX(META_OP_WORD_BOUNDARY) \
+    XX(META_OP_NON_WORD_BOUNDARY) \
+    XX(META_OP_BACKREF)
 #include "xenums.c"
 
 typedef struct MetaOp {
