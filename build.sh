@@ -14,7 +14,7 @@ script=$(basename "$0")
 common_build_parse_args "$@"
 
 case "$mode" in
-bench|build|callgrind|check|cross|debug|fast_feedback|preprocessor|standalone|test)
+bench|build|callgrind|check|cross|debug|debug-fast|fast_feedback|preprocessor|standalone|test)
     ;;
 *)
     common_build_unknown_mode
@@ -84,6 +84,10 @@ debug)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=1"
     CFLAGS="$CFLAGS -g3"
     ;;
+debug-fast)
+    CPPFLAGS="$CPPFLAGS -DDEBUGGING=1"
+    CFLAGS="$CFLAGS -g2 -O2 -flto"
+    ;;
 build|preprocessor|standalone|test|bench|check)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0"
     CFLAGS="$CFLAGS -g -O2 -flto"
@@ -100,7 +104,7 @@ callgrind)
     CPPFLAGS="$CPPFLAGS -DBENCHMARK=1"
     CFLAGS="$CFLAGS -g3 -O2 -flto"
     ;;
-bench|build|callgrind|check|cross|debug|fast_feedback|preprocessor|standalone|test)
+bench|build|callgrind|check|cross|debug|debug-fast|fast_feedback|preprocessor|standalone|test)
     ;;
 *)
     common_build_unknown_mode
@@ -252,7 +256,7 @@ bench)
     "$bench_exe" --max-input-len 1024
     trace_off
     ;;
-debug)
+debug|debug-fast)
     trace_on
     meta_build_exe "$test_exe" src/main_test.c
     trace_off
