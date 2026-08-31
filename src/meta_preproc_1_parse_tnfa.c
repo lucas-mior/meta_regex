@@ -262,6 +262,8 @@ static bool
 tnfa_add_tagged_choice(ParsedTnfa *tnfa, int32 from, int32 to, int32 priority,
                        int32 tag, int32 *negative_tags,
                        int32 negative_tag_count) {
+    int32 after_tag;
+
     if (tag == META_TNFA_TAG_NONE) {
         return tnfa_add_negative_tag_chain(tnfa, from, to, priority,
                                            negative_tags, negative_tag_count);
@@ -271,8 +273,7 @@ tnfa_add_tagged_choice(ParsedTnfa *tnfa, int32 from, int32 to, int32 priority,
         return tnfa_add_epsilon(tnfa, from, to, priority, tag);
     }
 
-    int32 after_tag = tnfa_new_state(tnfa);
-    if (after_tag < 0) {
+    if ((after_tag = tnfa_new_state(tnfa)) < 0) {
         return false;
     }
     if (!tnfa_add_epsilon(tnfa, from, after_tag, priority, tag)) {
