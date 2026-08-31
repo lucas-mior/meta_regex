@@ -216,8 +216,8 @@ compute_core_transitions(DfaSet *closed_set, ParsedOp *ops, int32 ops_count,
                     ParsedOp *next_op = &ops[t1];
                     if (next_op->type == META_OP_STAR
                         || next_op->type == META_OP_PLUS) {
-                        next_core->bits[i / 32] |= (1u << (i % 32));
                         int32 t2 = i + 2;
+                        next_core->bits[i / 32] |= (1u << (i % 32));
                         if (t2 <= ops_count) {
                             next_core->bits[t2 / 32] |= (1u << (t2 % 32));
                         }
@@ -470,6 +470,7 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
     static uint8 dfa_accept[META_MAX_STATIC_DFA_STATES][META_ALPHABET_SIZE];
     static DfaSet dfa_sets[META_MAX_STATIC_DFA_STATES];
 
+    DfaSet start_set_base = {0};
     int32 dfa_count = 1;
     int32 start_dfa_w = 0;
     int32 start_dfa_nw = 0;
@@ -487,7 +488,6 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
         dfa_accept[0][c] = 0;
     }
 
-    DfaSet start_set_base = {0};
     for (int32 i = 0; i < PREPROC_NFA_BITSET_WORDS; i += 1) {
         start_set_base.bits[i] = 0;
     }
