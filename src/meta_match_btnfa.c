@@ -460,13 +460,14 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
 
             if (pc->type == META_OP_GROUP_START) {
                 int32 group_id = pc->value;
+                int32 has_alt = 0;
+                int32 depth = 0;
+                MetaOp *scan = pc + 1;
+
                 if (group_id >= 0 && group_id < 32) {
                     current_pmatch[group_id].rm_so = (int32)(input - string);
                 }
 
-                int32 has_alt = 0;
-                int32 depth = 0;
-                MetaOp *scan = pc + 1;
                 while (scan->type != META_OP_END) {
                     if (scan->type == META_OP_GROUP_START) {
                         depth += 1;
