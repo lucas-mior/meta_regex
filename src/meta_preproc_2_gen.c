@@ -558,10 +558,12 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
 
             if (has_next) {
                 for (int32 i = 1; i < dfa_count; i += 1) {
+                    bool bits_match;
                     if (dfa_sets[i].prev_is_w != next_kernel.prev_is_w) {
                         continue;
                     }
-                    bool bits_match = true;
+
+                    bits_match = true;
                     for (int32 k = 0; k < PREPROC_NFA_BITSET_WORDS; k += 1) {
                         if (dfa_sets[i].bits[k] != next_kernel.bits[k]) {
                             bits_match = false;
