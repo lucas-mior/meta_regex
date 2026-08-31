@@ -651,6 +651,12 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
                      FILE *out) {
     int64 current_offset = 0;
 
+    fprintf(out, "#if defined(__clang__)\n");
+    fprintf(out, "#pragma clang diagnostic push\n");
+    fprintf(out, "#pragma clang diagnostic ignored "
+                 "\"-Wmissing-field-initializers\"\n");
+    fprintf(out, "#endif\n");
+
     for (int32 i = 0; i < list->count; i += 1) {
         ExtractedRegex *regex = &list->items[i];
 
@@ -714,4 +720,8 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
         fprintf(out, "%.*s", (int32)(source_len - current_offset),
                 source + current_offset);
     }
+
+    fprintf(out, "\n#if defined(__clang__)\n");
+    fprintf(out, "#pragma clang diagnostic pop\n");
+    fprintf(out, "#endif\n");
 }
