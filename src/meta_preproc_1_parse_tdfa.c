@@ -561,12 +561,15 @@ tdfa_emit_transition_ops(ParsedTdfa *tdfa, TdfaBuildState *source,
 static bool
 tdfa_add_transition(ParsedTdfa *tdfa, int32 from, int32 to, int32 symbol,
                     int32 next_is_word, int32 first_op, int32 op_count) {
+    int32 transition_id;
+    MetaTdfaTransition *tr;
+
     if (tdfa->num_transitions >= preproc_config.max_tdfa_transitions) {
         return false;
     }
 
-    int32 transition_id = tdfa->num_transitions;
-    MetaTdfaTransition *tr = &tdfa->transitions[transition_id];
+    transition_id = tdfa->num_transitions;
+    tr = &tdfa->transitions[transition_id];
     tr->from = from;
     tr->to = to;
     tr->symbol = symbol;
