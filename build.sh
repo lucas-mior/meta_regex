@@ -191,7 +191,6 @@ if [ "$mode" = "cross" ]; then
     common_build_cross_all
     cross="$target"
 
-    CFLAGS="$CFLAGS -Wno-padded"
     CFLAGS="$CFLAGS -target $cross"
 
     case "$cross" in
