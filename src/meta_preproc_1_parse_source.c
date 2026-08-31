@@ -158,6 +158,7 @@ parse_source_code(char *buffer, int64 source_len) {
         enum MetaOpType used_ops = 0;
         enum MetaRegexFlags flags = META_RE_NONE;
         bool extract_submatches = false;
+        ExtractedRegex *regex;
 
         {
             char *scan = cursor;
@@ -242,7 +243,7 @@ parse_source_code(char *buffer, int64 source_len) {
             list.items = realloc2(list.items, old_capacity, list.capacity,
                                   SIZEOF(*list.items));
         }
-        ExtractedRegex *regex = &list.items[list.count];
+        regex = &list.items[list.count];
         memset64(regex, 0, SIZEOF(*regex));
 
         regex->source_start_offset = found_macro - buffer;
