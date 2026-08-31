@@ -94,13 +94,14 @@ sort_alternations(ParsedOp *ops, int32 count) {
         } else if (ops[j].type == META_OP_GROUP_END) {
             depth -= 1;
         } else if (ops[j].type == META_OP_ALTERNATION && depth == 0) {
+            int32 key = 98;
+
             if (num_branches >= PREPROC_MAX_BRANCHES - 1) {
                 return;
             }
             branch_starts[num_branches] = current_start;
             branch_ends[num_branches] = j;
 
-            int32 key = 98;
             for (int32 k = current_start; k < j; k += 1) {
                 if (ops[k].type == META_OP_LITERAL) {
                     key = ops[k].value;
@@ -116,15 +117,17 @@ sort_alternations(ParsedOp *ops, int32 count) {
     branch_starts[num_branches] = current_start;
     branch_ends[num_branches] = count;
 
-    int32 final_key = 98;
-    for (int32 k = current_start; k < count; k += 1) {
-        if (ops[k].type == META_OP_LITERAL) {
-            final_key = ops[k].value;
-            break;
+    {
+        int32 final_key = 98;
+        for (int32 k = current_start; k < count; k += 1) {
+            if (ops[k].type == META_OP_LITERAL) {
+                final_key = ops[k].value;
+                break;
+            }
         }
+        branch_keys[num_branches] = final_key;
+        num_branches += 1;
     }
-    branch_keys[num_branches] = final_key;
-    num_branches += 1;
 
     if (num_branches > 1) {
         ParsedOp temp_buf[PREPROC_MAX_TEMP_OPS];
