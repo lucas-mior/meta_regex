@@ -35,6 +35,8 @@ static bool
 tnfa_add_transition(ParsedTnfa *tnfa, enum MetaTnfaTransitionKind kind,
                     int32 from, int32 to, int32 value, uint32 *mask,
                     int32 priority, int32 tag) {
+    MetaTnfaTransition *tr;
+
     if (from < 0 || from >= tnfa->num_states || to < 0
         || to >= preproc_config.max_tnfa_states) {
         return false;
@@ -43,7 +45,7 @@ tnfa_add_transition(ParsedTnfa *tnfa, enum MetaTnfaTransitionKind kind,
         return false;
     }
 
-    MetaTnfaTransition *tr = &tnfa->transitions[tnfa->num_transitions];
+    tr = &tnfa->transitions[tnfa->num_transitions];
     memset64(tr, 0, SIZEOF(*tr));
     tr->kind = kind;
     tr->from = from;
