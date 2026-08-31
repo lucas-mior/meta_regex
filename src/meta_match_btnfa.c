@@ -647,9 +647,11 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
     if (match_len >= 0) {
         if (!regex->has_end_anchor || string[match_len] == '\0') {
             if (pmatch != NULL && pmatch_len > 0) {
+                int64 ext_copy;
+
                 pmatch[0].rm_so = offset;
                 pmatch[0].rm_eo = match_len;
-                int64 ext_copy = (pmatch_len > 32) ? 32 : pmatch_len;
+                ext_copy = (pmatch_len > 32) ? 32 : pmatch_len;
                 for (int64 k = 1; k < ext_copy; k += 1) {
                     pmatch[k] = best_pmatch[k];
                 }
