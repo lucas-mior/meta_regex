@@ -96,8 +96,10 @@ tdfa_normalize_ops(ParsedTdfa *tdfa, int32 first_op) {
 }
 
 static bool
-tdfa_add_regop(ParsedTdfa *tdfa, enum MetaTdfaRegOpKind kind, int32 dst,
-               int32 src) {
+tdfa_add_regop(ParsedTdfa *tdfa, enum MetaTdfaRegOpKind kind,
+               int32 dst, int32 src) {
+    MetaTdfaRegOp *op;
+
     if (kind == META_TDFA_REGOP_COPY && dst == src) {
         return true;
     }
@@ -106,11 +108,12 @@ tdfa_add_regop(ParsedTdfa *tdfa, enum MetaTdfaRegOpKind kind, int32 dst,
         return false;
     }
 
-    MetaTdfaRegOp *op = &tdfa->ops[tdfa->num_ops];
+    op = &tdfa->ops[tdfa->num_ops];
     op->kind = kind;
     op->dst = dst;
     op->src = src;
     tdfa->num_ops += 1;
+
     return true;
 }
 
