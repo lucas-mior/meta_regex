@@ -567,14 +567,15 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
         } else if (op->type == META_OP_GROUP_START) {
             int32 group_end = tnfa_find_group_end(ops, ops_count, pc);
             int32 tag = tnfa_group_start_tag(op->value);
+            int32 branch_count;
+
             if (tnfa_tag_is_fixed(tnfa, tag)) {
                 tag = META_TNFA_TAG_NONE;
             }
-            int32 branch_count = 0;
 
-            branch_count
-                = tnfa_collect_branches(ops, pc + 1, group_end, branch_starts,
-                                        branch_ends, PREPROC_MAX_BRANCHES);
+            branch_count = tnfa_collect_branches(ops, pc + 1, group_end,
+                                                 branch_starts, branch_ends,
+                                                 PREPROC_MAX_BRANCHES);
             if (branch_count == 0) {
                 return false;
             }
