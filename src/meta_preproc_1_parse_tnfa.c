@@ -449,34 +449,32 @@ tnfa_fixed_length_range(ParsedOp *ops, int32 ops_count, int32 start,
 static void
 tnfa_mark_fixed_tags(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count) {
     for (int32 i = 0; i < ops_count; i += 1) {
-        if (ops[i].type != META_OP_GROUP_START) {
-            continue;
+        if (ops[i].type == META_OP_GROUP_START) {
+            int32 group = ops[i].value;
+            int32 end = tnfa_find_group_end(ops, ops_count, i);
+            int32 len;
+            int32 start_tag;
+            int32 end_tag;
+
+            if (end >= ops_count || group <= 0) {
+                continue;
+            }
+
+            len = tnfa_fixed_length_range(ops, ops_count, i + 1, end);
+            if (len < 0) {
+                continue;
+            }
+
+            start_tag = tnfa_group_start_tag(group);
+            end_tag = tnfa_group_end_tag(group);
+            if (start_tag <= 0 || start_tag > tnfa->num_tags || end_tag <= 0
+                || end_tag > tnfa->num_tags) {
+                continue;
+            }
+
+            tnfa->tags[start_tag - 1].fixed_base_tag = end_tag;
+            tnfa->tags[start_tag - 1].fixed_offset = -len;
         }
-
-        int32 group = ops[i].value;
-        int32 end = tnfa_find_group_end(ops, ops_count, i);
-        int32 len;
-        int32 start_tag;
-        int32 end_tag;
-
-        if (end >= ops_count || group <= 0) {
-            continue;
-        }
-
-        len = tnfa_fixed_length_range(ops, ops_count, i + 1, end);
-        if (len < 0) {
-            continue;
-        }
-
-        start_tag = tnfa_group_start_tag(group);
-        end_tag = tnfa_group_end_tag(group);
-        if (start_tag <= 0 || start_tag > tnfa->num_tags || end_tag <= 0
-            || end_tag > tnfa->num_tags) {
-            continue;
-        }
-
-        tnfa->tags[start_tag - 1].fixed_base_tag = end_tag;
-        tnfa->tags[start_tag - 1].fixed_offset = -len;
     }
     return;
 }
