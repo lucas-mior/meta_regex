@@ -173,13 +173,14 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
     }
 
     if (regex->used_ops & META_OP_ALTERNATION) {
+        MetaOp *scan = regex->ops;
         MetaOp *alts[128];
+        int32 depth = 0;
         int32 num_alts = 0;
+
         alts[num_alts] = regex->ops;
         num_alts += 1;
 
-        int32 depth = 0;
-        MetaOp *scan = regex->ops;
         while (scan->type != META_OP_END) {
             if (scan->type == META_OP_GROUP_START) {
                 depth += 1;
