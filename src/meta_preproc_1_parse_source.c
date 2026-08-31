@@ -420,6 +420,8 @@ parse_source_code(char *buffer, int64 source_len) {
                 if (is_group) {
                     int32 target_start = temp_ops_count - 1;
                     int32 depth = 0;
+                    int32 group_len;
+
                     for (int32 i = target_start; i >= 0; i -= 1) {
                         if (temp_ops[i].type == META_OP_GROUP_END) {
                             depth += 1;
@@ -431,7 +433,8 @@ parse_source_code(char *buffer, int64 source_len) {
                             }
                         }
                     }
-                    int32 group_len = temp_ops_count - target_start;
+
+                    group_len = temp_ops_count - target_start;
                     for (int32 i = temp_ops_count - 1; i >= target_start;
                          i -= 1) {
                         temp_ops[i + 1] = temp_ops[i];
@@ -486,6 +489,9 @@ parse_source_code(char *buffer, int64 source_len) {
                     if (is_group) {
                         int32 target_start = temp_ops_count - 1;
                         int32 depth = 0;
+                        int32 group_len;
+                        ParsedOp group_buf[PREPROC_MAX_STRING_LEN];
+
                         for (int32 i = target_start; i >= 0; i -= 1) {
                             if (temp_ops[i].type == META_OP_GROUP_END) {
                                 depth += 1;
@@ -498,8 +504,8 @@ parse_source_code(char *buffer, int64 source_len) {
                                 }
                             }
                         }
-                        int32 group_len = temp_ops_count - target_start;
-                        ParsedOp group_buf[PREPROC_MAX_STRING_LEN];
+
+                        group_len = temp_ops_count - target_start;
 
                         for (int32 i = 0; i < group_len; i += 1) {
                             group_buf[i] = temp_ops[target_start + i];
@@ -618,9 +624,13 @@ parse_source_code(char *buffer, int64 source_len) {
                     regex_index += 1;
                 }
                 while (regex_string[regex_index] != '\0') {
+                    int32 c1;
+                    int32 c2;
+
                     if (!first_char && regex_string[regex_index] == ']') {
                         break;
                     }
+
                     if (regex_string[regex_index] == '['
                         && regex_string[regex_index + 1] == ':') {
                         int32 colon_idx = regex_index + 2;
@@ -647,14 +657,16 @@ parse_source_code(char *buffer, int64 source_len) {
                             continue;
                         }
                     }
-                    int32 c1 = (uint8)regex_string[regex_index];
+
+                    c1 = (uint8)regex_string[regex_index];
                     if (c1 >= 128) {
                         fprintf(stderr,
                                 "Error: Non-ASCII character inside bracket "
                                 "expression is not supported.\n");
                         exit(EXIT_FAILURE);
                     }
-                    int32 c2 = c1;
+
+                    c2 = c1;
                     regex_index += 1;
                     if (regex_string[regex_index] == '-'
                         && regex_string[regex_index + 1] != ']'
