@@ -249,6 +249,12 @@ In general, we must always know the lengths of our strings:
       int32 len = (int32)(end - content);
   }
   ```
+- Lots of functions already return the length, no need to call strlen32 on the
+  result:
+  - snprintf2
+  - SNPRINTF
+  - read_entire_file
+  - lots of other functions in cbase/.
 - Use `strlen32`:
   - for getting the length of a `char *`, when a function is used both with
     literals and with variables and for some reason it does not receive the
