@@ -51,24 +51,24 @@ typedef struct MetaRegexMatch {
 #define ENUM_PREFIX_ META_OP_
 #define ENUM_NAME MetaOpType
 #define ENUM_BITFLAGS 1
-#define ENUM_FIELDS \
-    XX(META_OP_END) \
-    XX(META_OP_LITERAL) \
-    XX(META_OP_ANY) \
-    XX(META_OP_CLASS) \
-    XX(META_OP_GROUP_START) \
-    XX(META_OP_GROUP_END) \
-    XX(META_OP_STAR) \
-    XX(META_OP_PLUS) \
-    XX(META_OP_OPTIONAL) \
-    XX(META_OP_ALTERNATION) \
-    XX(META_OP_BOUNDED) \
-    XX(META_OP_SPLIT) \
-    XX(META_OP_JUMP) \
-    XX(META_OP_WORD_START) \
-    XX(META_OP_WORD_END) \
-    XX(META_OP_WORD_BOUNDARY) \
-    XX(META_OP_NON_WORD_BOUNDARY) \
+#define ENUM_FIELDS                     \
+    XX(META_OP_END)                     \
+    XX(META_OP_LITERAL)                 \
+    XX(META_OP_ANY)                     \
+    XX(META_OP_CLASS)                   \
+    XX(META_OP_GROUP_START)             \
+    XX(META_OP_GROUP_END)               \
+    XX(META_OP_STAR)                    \
+    XX(META_OP_PLUS)                    \
+    XX(META_OP_OPTIONAL)                \
+    XX(META_OP_ALTERNATION)             \
+    XX(META_OP_BOUNDED)                 \
+    XX(META_OP_SPLIT)                   \
+    XX(META_OP_JUMP)                    \
+    XX(META_OP_WORD_START)              \
+    XX(META_OP_WORD_END)                \
+    XX(META_OP_WORD_BOUNDARY)           \
+    XX(META_OP_NON_WORD_BOUNDARY)       \
     XX(META_OP_BACKREF)
 #include "xenums.c"
 
