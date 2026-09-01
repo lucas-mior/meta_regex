@@ -295,14 +295,19 @@ emit_tnfa(ExtractedRegex *regex, StrBuilder *out) {
             char *kind = META_TNFA_TRANS_str(tr->kind);
             uint32 *mask = tr->mask;
 
-            sb_printf(out, "{ .kind = %s, .from = %d, .to = %d, ",
-                           kind, tr->from, tr->to);
-            sb_printf(out, ".value = %d, .mask = {%u, %u, %u, %u, ",
-                           tr->value, mask[0], mask[1], mask[2], mask[3]);
-            sb_printf(out, "%u, %u, %u, %u}, ",
-                           mask[4], mask[5], mask[6], mask[7]);
-            sb_printf(out, ".priority = %d, .tag = %d },\n",
-                           tr->priority, tr->tag);
+            SB_APPEND(out, "{ ");
+            sb_printf(out, ".kind = %s, .from = %d, .to = %d, ",
+                      kind, tr->from, tr->to);
+            sb_printf(out, ".value = %d, .mask = ", tr->value);
+            SB_APPEND(out, "{");
+            sb_printf(out, "%u, %u, %u, %u, ",
+                      mask[0], mask[1], mask[2], mask[3]);
+            sb_printf(out, "%u, %u, %u, %u",
+                      mask[4], mask[5], mask[6], mask[7]);
+            SB_APPEND(out, "}, ");
+            sb_printf(out, ".priority = %d, .tag = %d ",
+                      tr->priority, tr->tag);
+            SB_APPEND(out, "},\n");
             META_TNFA_TRANS_str_free(kind);
         }
         SB_APPEND(out, "}");
@@ -362,11 +367,13 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
         SB_APPEND(out, ", .states = (MetaTdfaState[]){\n");
         for (int32 i = 0; i < tdfa->num_states; i += 1) {
             MetaTdfaState *state = &tdfa->states[i];
-            sb_printf(out, "{ .is_accepting = %d, .first_transition = %d, ",
-                           state->is_accepting, state->first_transition);
+            SB_APPEND(out, "{ ");
+            sb_printf(out, ".is_accepting = %d, .first_transition = %d, ",
+                      state->is_accepting, state->first_transition);
             sb_printf(out, ".transition_count = %d, .first_final_op = %d, ",
-                           state->transition_count, state->first_final_op);
-            sb_printf(out, ".final_op_count = %d },\n", state->final_op_count);
+                      state->transition_count, state->first_final_op);
+            sb_printf(out, ".final_op_count = %d ", state->final_op_count);
+            SB_APPEND(out, "},\n");
         }
         SB_APPEND(out, "}");
     } else {
@@ -377,11 +384,13 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
         SB_APPEND(out, ", .transitions = (MetaTdfaTransition[]){\n");
         for (int32 i = 0; i < tdfa->num_transitions; i += 1) {
             MetaTdfaTransition *tr = &tdfa->transitions[i];
-            sb_printf(out, "{ .from = %d, .to = %d, .symbol = %d, ",
-                           tr->from, tr->to, tr->symbol);
+            SB_APPEND(out, "{ ");
+            sb_printf(out, ".from = %d, .to = %d, .symbol = %d, ",
+                      tr->from, tr->to, tr->symbol);
             sb_printf(out, ".next_is_word = %d, .first_op = %d, ",
-                           tr->next_is_word, tr->first_op);
-            sb_printf(out, ".op_count = %d },\n", tr->op_count);
+                      tr->next_is_word, tr->first_op);
+            sb_printf(out, ".op_count = %d ", tr->op_count);
+            SB_APPEND(out, "},\n");
         }
         SB_APPEND(out, "}");
     } else {
