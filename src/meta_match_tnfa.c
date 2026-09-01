@@ -302,11 +302,6 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
 }
 
 static int32
-match_tnfa_is_word_char(int32 c) {
-    return (c >= 0 && c < 256 && word_table[(uint8)c]);
-}
-
-static int32
 match_tnfa_char_at(uint8 *input, int32 input_len, int32 pos) {
     if (pos < 0 || pos >= input_len) {
         return -1;
