@@ -606,7 +606,8 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, StrBuilder *out) {
             bool has_accepts = false;
             bool has_transitions = false;
 
-            SB_APPEND(out, "{ .is_accepting = {");
+            SB_APPEND(out, "{\n");
+            SB_APPEND(out, ".is_accepting = {");
             for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                 if (dfa_accept[i][c] != 0) {
                     sb_printf(out, "[%d]=1,", c);
