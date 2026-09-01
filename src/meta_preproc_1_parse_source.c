@@ -245,7 +245,7 @@ parse_source_code(char *buffer, int64 source_len) {
                                   SIZEOF(*list.items));
         }
         regex = &list.items[list.count];
-        memset64(regex, 0, SIZEOF(*regex));
+        *regex = (ExtractedRegex){0};
 
         regex->source_start_offset = found_macro - buffer;
 
