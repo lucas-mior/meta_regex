@@ -590,7 +590,12 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, StrBuilder *out) {
 
         SB_APPEND(out, ", .static_dfa = NULL");
     } else {
-        SB_APPEND(out, ", .static_dfa = &(StaticDfa){\n");
+        SB_APPEND(out, ", .static_dfa = (StaticDfa *)&(struct {\n");
+        SB_APPEND(out, "  int32 num_states;\n");
+        SB_APPEND(out, "  int32 start_state_w;\n");
+        SB_APPEND(out, "  int32 start_state_nw;\n");
+        sb_printf(out, "  StaticDfaState states[%d];\n", dfa_count);
+        SB_APPEND(out, "}){\n");
 
         sb_printf(out, ".num_states = %d,", dfa_count);
         sb_printf(out, ".start_state_w = %d, ", start_dfa_w);
