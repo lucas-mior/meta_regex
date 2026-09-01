@@ -14,11 +14,11 @@
 #define ENUM_PREFIX_ MATCHER_
 #define ENUM_NAME Matcher
 #define ENUM_BITFLAGS 1
-#define ENUM_FIELDS \
-    XX(MATCHER_BTNFA) \
-    XX(MATCHER_TNFA) \
-    XX(MATCHER_LAZY_DFA) \
-    XX(MATCHER_STATIC_DFA) \
+#define ENUM_FIELDS            \
+    XX(MATCHER_BTNFA)          \
+    XX(MATCHER_TNFA)           \
+    XX(MATCHER_LAZY_DFA)       \
+    XX(MATCHER_STATIC_DFA)     \
     XX(MATCHER_TDFA)
 #include "xenums.c"
 
