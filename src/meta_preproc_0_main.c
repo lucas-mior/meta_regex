@@ -41,22 +41,22 @@ preproc_parse_bool(char *name, char *value) {
     }
 
     value_len = strlen32(value);
-    if (STREQUAL(value, value_len, STRLIT("true"))) {
+    if (STREQUAL(value, value_len, "true")) {
         return true;
     }
-    if (STREQUAL(value, value_len, STRLIT("on"))) {
+    if (STREQUAL(value, value_len, "on")) {
         return true;
     }
-    if (STREQUAL(value, value_len, STRLIT("yes"))) {
+    if (STREQUAL(value, value_len, "yes")) {
         return true;
     }
-    if (STREQUAL(value, value_len, STRLIT("false"))) {
+    if (STREQUAL(value, value_len, "false")) {
         return false;
     }
-    if (STREQUAL(value, value_len, STRLIT("off"))) {
+    if (STREQUAL(value, value_len, "off")) {
         return false;
     }
-    if (STREQUAL(value, value_len, STRLIT("no"))) {
+    if (STREQUAL(value, value_len, "no")) {
         return false;
     }
 
