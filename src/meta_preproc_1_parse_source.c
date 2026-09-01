@@ -259,8 +259,8 @@ parse_source_code(char *buffer, int64 source_len) {
             continue;
         }
 
-        quote_start = memchr64(found_macro, '"', strlen32(found_macro));
-        if (quote_start == NULL) {
+        if ((quote_start
+                = memchr64(found_macro, '"', strlen32(found_macro))) == NULL) {
             error("Error parsing regex: Quotes not found.\n");
             exit(EXIT_FAILURE);
         }
