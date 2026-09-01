@@ -47,17 +47,7 @@ CPPFLAGS="$CPPFLAGS -I. -Isrc -Icbase"
 
 CFLAGS="$CFLAGS -std=c11"
 CFLAGS="$CFLAGS -Wfatal-errors"
-# CFLAGS="$CFLAGS -Werror"  # Only uncomment occasionally, keep this line
-CFLAGS="$CFLAGS -Wno-missing-field-initializers"
-CFLAGS="$CFLAGS -Wno-unused-function"
-
-if [ "$CC" = "clang" ] || [ "$CC" = "zig cc" ]; then
-    CFLAGS="$CFLAGS -Wno-declaration-after-statement"
-    CFLAGS="$CFLAGS -Wno-missing-field-initializers"
-    CFLAGS="$CFLAGS -Wno-type-limits"
-    CFLAGS="$CFLAGS -Wno-unknown-pragmas"
-    CFLAGS="$CFLAGS -Wno-unused-variable"
-fi
+CFLAGS="$CFLAGS -Werror"  # Only uncomment occasionally, keep this line
 
 LDFLAGS="$LDFLAGS -lm"
 
