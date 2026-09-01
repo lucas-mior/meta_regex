@@ -966,13 +966,16 @@ parse_source_code(char *buffer, int32 source_len) {
         regex->can_be_null = can_be_null;
         regex->flags = flags;
         regex->extract_submatches = extract_submatches;
+
         regex->flags_buffer_len = flags_buffer_len;
         memcpy64(regex->flags_buffer, flags_buffer, flags_buffer_len + 1);
+
         regex->used_ops = used_ops;
         memcpy64(regex->fastmap, fastmap, META_FASTMAP_SIZE);
         memcpy64(regex->temp_ops, temp_ops,
                  temp_ops_count*SIZEOF(*regex->temp_ops));
         regex->temp_ops_count = temp_ops_count;
+
         regex->op_buffer_len = op_buffer_len;
         memcpy64(regex->op_buffer, op_buffer, op_buffer_len);
 
