@@ -201,6 +201,10 @@ main(int32 argc, char **argv) {
     {
         RegexList parsed_list = parse_source_code(buffer, file_size);
         generate_source_code(buffer, file_size, &parsed_list, stdout);
+        for (int32 i = 0; i < parsed_list.count; i += 1) {
+            free2(parsed_list.items[i].op_buffer,
+                  parsed_list.items[i].op_buffer_len + 1);
+        }
         free2(parsed_list.items,
               parsed_list.capacity*SIZEOF(*parsed_list.items));
     }

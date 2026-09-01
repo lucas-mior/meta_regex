@@ -133,12 +133,9 @@ parse_source_code(char *buffer, int32 source_len) {
         char *flags_end = NULL;
         char regex_string[PREPROC_MAX_STRING_LEN] = {0};
         int32 regex_string_len = 0;
-        char op_buffer[PREPROC_OP_BUFFER_SIZE] = {0};
+        StrBuilder op_buffer = {0};
         char flags_buffer[PREPROC_MAX_FLAGS_EXPR] = "META_RE_NONE";
         int32 flags_buffer_len = STRLIT_LEN("META_RE_NONE");
-        int32 op_buffer_len = 0;
-        char *op_ptr = op_buffer;
-        int32 space = SIZEOF(op_buffer);
         bool has_start = false;
         bool has_end = false;
         int32 regex_index = 0;
@@ -829,56 +826,47 @@ parse_source_code(char *buffer, int32 source_len) {
         }
 
         for (int32 i = 0; i <= temp_ops_count; i += 1) {
-            int32 w = 0;
             if (i == temp_ops_count) {
-                w = snprintf2(op_ptr, space, "{META_OP_END, 0, 0, 0, {0}}\n");
+                SB_APPEND(&op_buffer, "{META_OP_END, 0, 0, 0, {0}}\n");
             } else if (temp_ops[i].type == META_OP_LITERAL) {
-                w = snprintf2(op_ptr, space,
-                              "{META_OP_LITERAL, %d, 0, 0, {0}},\n",
-                              temp_ops[i].value);
+                sb_printf(&op_buffer, "{META_OP_LITERAL, %d, 0, 0, {0}},\n",
+                          temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_CLASS) {
-                w = snprintf2(op_ptr, space,
-                              "{META_OP_CLASS, 0, 0, 0, "
-                              "{%u, %u, %u, %u, %u, %u, %u, %u}},\n",
-                              temp_ops[i].mask[0], temp_ops[i].mask[1],
-                              temp_ops[i].mask[2], temp_ops[i].mask[3],
-                              temp_ops[i].mask[4], temp_ops[i].mask[5],
-                              temp_ops[i].mask[6], temp_ops[i].mask[7]);
+                sb_printf(&op_buffer,
+                          "{META_OP_CLASS, 0, 0, 0, "
+                          "{%u, %u, %u, %u, %u, %u, %u, %u}},\n",
+                          temp_ops[i].mask[0], temp_ops[i].mask[1],
+                          temp_ops[i].mask[2], temp_ops[i].mask[3],
+                          temp_ops[i].mask[4], temp_ops[i].mask[5],
+                          temp_ops[i].mask[6], temp_ops[i].mask[7]);
             } else if (temp_ops[i].type == META_OP_BOUNDED) {
-                w = snprintf2(op_ptr, space,
-                              "{META_OP_BOUNDED, 0, %d, %d, {0}},\n",
-                              temp_ops[i].min, temp_ops[i].max);
+                sb_printf(&op_buffer, "{META_OP_BOUNDED, 0, %d, %d, {0}},\n",
+                          temp_ops[i].min, temp_ops[i].max);
             } else if (temp_ops[i].type == META_OP_GROUP_START) {
-                w = snprintf2(op_ptr, space,
-                              "{META_OP_GROUP_START, %d, 0, 0, {0}},\n",
-                              temp_ops[i].value);
+                sb_printf(&op_buffer, "{META_OP_GROUP_START, %d, 0, 0, {0}},\n",
+                          temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_GROUP_END) {
-                w = snprintf2(op_ptr, space,
-                              "{META_OP_GROUP_END, %d, 0, 0, {0}},\n",
-                              temp_ops[i].value);
+                sb_printf(&op_buffer, "{META_OP_GROUP_END, %d, 0, 0, {0}},\n",
+                          temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_SPLIT) {
-                w = snprintf2(op_ptr, space,
-                              "{META_OP_SPLIT, %d, %d, 0, {0}},\n",
-                              temp_ops[i].value, temp_ops[i].min);
+                sb_printf(&op_buffer, "{META_OP_SPLIT, %d, %d, 0, {0}},\n",
+                          temp_ops[i].value, temp_ops[i].min);
             } else if (temp_ops[i].type == META_OP_JUMP) {
-                w = snprintf2(op_ptr, space, "{META_OP_JUMP, %d, 0, 0, {0}},\n",
-                              temp_ops[i].value);
+                sb_printf(&op_buffer, "{META_OP_JUMP, %d, 0, 0, {0}},\n",
+                          temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_WORD_START) {
-                w = snprintf2(op_ptr, space,
-                              "{META_OP_WORD_START, 0, 0, 0, {0}},\n");
+                SB_APPEND(&op_buffer, "{META_OP_WORD_START, 0, 0, 0, {0}},\n");
             } else if (temp_ops[i].type == META_OP_WORD_END) {
-                w = snprintf2(op_ptr, space,
-                              "{META_OP_WORD_END, 0, 0, 0, {0}},\n");
+                SB_APPEND(&op_buffer, "{META_OP_WORD_END, 0, 0, 0, {0}},\n");
             } else if (temp_ops[i].type == META_OP_WORD_BOUNDARY) {
-                w = snprintf2(op_ptr, space,
-                              "{META_OP_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
+                SB_APPEND(&op_buffer,
+                          "{META_OP_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
             } else if (temp_ops[i].type == META_OP_NON_WORD_BOUNDARY) {
-                w = snprintf2(op_ptr, space,
-                              "{META_OP_NON_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
+                SB_APPEND(&op_buffer,
+                          "{META_OP_NON_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
             } else if (temp_ops[i].type == META_OP_BACKREF) {
-                w = snprintf2(op_ptr, space,
-                              "{META_OP_BACKREF, %d, 0, 0, {0}},\n",
-                              temp_ops[i].value);
+                sb_printf(&op_buffer, "{META_OP_BACKREF, %d, 0, 0, {0}},\n",
+                          temp_ops[i].value);
             } else {
                 char *type_str = "META_OP_UNKNOWN";
                 if (temp_ops[i].type == META_OP_STAR) {
@@ -892,12 +880,9 @@ parse_source_code(char *buffer, int32 source_len) {
                 } else if (temp_ops[i].type == META_OP_ANY) {
                     type_str = "META_OP_ANY";
                 }
-                w = snprintf2(op_ptr, space, "{%s, 0, 0, 0, {0}},\n", type_str);
+                sb_printf(&op_buffer, "{%s, 0, 0, 0, {0}},\n", type_str);
             }
-            op_ptr += w;
-            space -= w;
         }
-        op_buffer_len = (int32)(op_ptr - op_buffer);
 
         flags_start = quote_end + 1;
         while (flags_start < paren_end
@@ -976,8 +961,7 @@ parse_source_code(char *buffer, int32 source_len) {
                  temp_ops_count*SIZEOF(*regex->temp_ops));
         regex->temp_ops_count = temp_ops_count;
 
-        regex->op_buffer_len = op_buffer_len;
-        memcpy64(regex->op_buffer, op_buffer, op_buffer_len);
+        regex->op_buffer = sb_steal_exact(&op_buffer, &regex->op_buffer_len);
 
         regex->source_end_offset = (paren_end + 1) - buffer;
         cursor = paren_end + 1;

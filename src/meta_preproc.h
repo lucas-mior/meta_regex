@@ -4,7 +4,6 @@
 #include "cbase.h"
 #include "meta_regex.h"
 
-#define PREPROC_OP_BUFFER_SIZE 16384
 #define PREPROC_MAX_STRING_LEN 256
 #define PREPROC_MAX_GROUP_STACK 32
 #define PREPROC_MAX_TEMP_OPS 1024
@@ -192,7 +191,7 @@ typedef struct ExtractedRegex {
     uint32 used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
     
-    char op_buffer[PREPROC_OP_BUFFER_SIZE];
+    char *op_buffer;
 } ExtractedRegex;
 
 typedef struct RegexList {

@@ -239,19 +239,6 @@ compute_core_transitions(DfaSet *closed_set, ParsedOp *ops, int32 ops_count,
     return;
 }
 
-static int32
-get_branch_weight(ParsedOp *ops, int32 count) {
-    int32 weight = 0;
-
-    for (int32 i = 0; i < count; i += 1) {
-        if (ops[i].type == META_OP_LITERAL || ops[i].type == META_OP_CLASS
-            || ops[i].type == META_OP_ANY || ops[i].type == META_OP_BACKREF) {
-            weight += 1;
-        }
-    }
-    return weight;
-}
-
 static void
 emit_tnfa(ExtractedRegex *regex, FILE *out) {
     ParsedTnfa *tnfa = regex->tnfa;
