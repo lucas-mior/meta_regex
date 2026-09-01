@@ -243,13 +243,13 @@ parse_source_code(char *buffer, int32 source_len) {
         regex = &list.items[list.count];
         *regex = (ExtractedRegex){0};
 
-        regex->source_start_offset = found_macro - buffer;
+        regex->source_start_offset = (int32)(found_macro - buffer);
 
         if (source_end - found_macro >= STRLIT_LEN("R(NULL)")
             && STREQUAL(found_macro, STRLIT_LEN("R(NULL)"),
                         STRLIT("R(NULL)"))) {
             regex->is_null_macro = true;
-            regex->source_end_offset = (found_macro + 7) - buffer;
+            regex->source_end_offset = (int32)((found_macro + 7) - buffer);
             cursor = found_macro + 7;
             list.count += 1;
             continue;
@@ -911,7 +911,7 @@ parse_source_code(char *buffer, int32 source_len) {
         }
 
         // Save data to the extracted AST/IR structure
-        regex->quote_start_offset = quote_start - buffer;
+        regex->quote_start_offset = (int32)(quote_start - buffer);
         regex->original_string_length = original_string_length;
         regex->has_start = has_start;
         regex->has_end = has_end;
@@ -931,7 +931,7 @@ parse_source_code(char *buffer, int32 source_len) {
 
         regex->op_buffer = sb_steal_exact(&op_buffer, &regex->op_buffer_len);
 
-        regex->source_end_offset = (paren_end + 1) - buffer;
+        regex->source_end_offset = (int32)((paren_end + 1) - buffer);
         cursor = paren_end + 1;
 
         list.count += 1;
