@@ -669,7 +669,7 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
         }
 
         // Emulate original printing structure
-        SB_APPEND(&out, "&(MetaRegex){\n"
+        SB_APPEND(&out, "&(MetaRegex){\n");
         sb_printf(&out, ".string = %.*s,\n",
                         regex->original_string_length, quote_start);
         sb_printf(&out, ".ops = { %.*s },\n",
