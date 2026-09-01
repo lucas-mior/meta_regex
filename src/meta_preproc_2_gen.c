@@ -589,13 +589,12 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, StrBuilder *out) {
         error2("static dfa will not be available at runtime.\n");
         SB_APPEND(out, ", .static_dfa = NULL");
     } else {
-        SB_APPEND(out, ", .static_dfa = (StaticDfa *)&(struct {\n");
-        SB_APPEND(out, "int32 num_states; int32 start_state_w; ");
-        sb_printf(out, "int32 start_state_nw; StaticDfaState states[%d]; ",
-                       dfa_count);
-        sb_printf(out, "}){ .num_states = %d, .start_state_w = %d, ",
-                       dfa_count, start_dfa_w);
-        sb_printf(out, ".start_state_nw = %d, .states = { \n", start_dfa_nw);
+        SB_APPEND(out, ", .static_dfa = &(StaticDfa){\n");
+        sb_printf(out, ".num_states = %d,", dfa_count);
+        sb_printf(out, ".start_state_w = %d, ", start_dfa_w);
+        sb_printf(out, ".start_state_nw = %d, ", start_dfa_nw);
+
+        SB_APPEND(out, ".states = { \n");
         for (int32 i = 0; i < dfa_count; i += 1) {
             bool has_accepts = false;
             bool has_transitions = false;
