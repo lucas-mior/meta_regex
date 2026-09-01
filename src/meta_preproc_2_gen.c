@@ -249,12 +249,10 @@ emit_tnfa(ExtractedRegex *regex, StrBuilder *out) {
     }
 
     SB_APPEND(out, ", .tnfa = &(MetaTnfa){ ");
-    sb_printf(out,
-              ".num_tags = %d, .num_states = %d, ",
-              tnfa->num_tags, tnfa->num_states);
-    sb_printf(out,
-              ".num_transitions = %d, .start_state = %d, ",
-              tnfa->num_transitions, tnfa->start_state);
+    sb_printf(out, ".num_tags = %d, .num_states = %d, ",
+                   tnfa->num_tags, tnfa->num_states);
+    sb_printf(out, ".num_transitions = %d, .start_state = %d, ",
+                   tnfa->num_transitions, tnfa->start_state);
     sb_printf(out, ".final_state = %d", tnfa->final_state);
 
     if (tnfa->num_tags > 0) {
@@ -263,13 +261,12 @@ emit_tnfa(ExtractedRegex *regex, StrBuilder *out) {
             MetaTnfaTag *tag = &tnfa->tags[i];
             char *role = META_TNFA_TAG_str(tag->role);
 
-            sb_printf(out,
-                      "{ .id = %d, .group = %d, .role = %s, ",
-                      tag->id, tag->group, role);
-            sb_printf(out,
-                      ".is_multivalued = %d, .fixed_base_tag = %d, ",
-                      tag->is_multivalued, tag->fixed_base_tag);
+            sb_printf(out, "{ .id = %d, .group = %d, .role = %s, ",
+                           tag->id, tag->group, role);
+            sb_printf(out, ".is_multivalued = %d, .fixed_base_tag = %d, ",
+                           tag->is_multivalued, tag->fixed_base_tag);
             sb_printf(out, ".fixed_offset = %d },\n", tag->fixed_offset);
+
             META_TNFA_TAG_str_free(role);
         }
         SB_APPEND(out, "}");
@@ -298,18 +295,14 @@ emit_tnfa(ExtractedRegex *regex, StrBuilder *out) {
             char *kind = META_TNFA_TRANS_str(tr->kind);
             uint32 *mask = tr->mask;
 
-            sb_printf(out,
-                      "{ .kind = %s, .from = %d, .to = %d, ",
-                      kind, tr->from, tr->to);
-            sb_printf(out,
-                      ".value = %d, .mask = {%u, %u, %u, %u, ",
-                      tr->value, mask[0], mask[1], mask[2], mask[3]);
-            sb_printf(out,
-                      "%u, %u, %u, %u}, ",
-                      mask[4], mask[5], mask[6], mask[7]);
-            sb_printf(out,
-                      ".priority = %d, .tag = %d },\n",
-                      tr->priority, tr->tag);
+            sb_printf(out, "{ .kind = %s, .from = %d, .to = %d, ",
+                           kind, tr->from, tr->to);
+            sb_printf(out, ".value = %d, .mask = {%u, %u, %u, %u, ",
+                           tr->value, mask[0], mask[1], mask[2], mask[3]);
+            sb_printf(out, "%u, %u, %u, %u}, ",
+                           mask[4], mask[5], mask[6], mask[7]);
+            sb_printf(out, ".priority = %d, .tag = %d },\n",
+                           tr->priority, tr->tag);
             META_TNFA_TRANS_str_free(kind);
         }
         SB_APPEND(out, "}");
@@ -589,12 +582,10 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, StrBuilder *out) {
     } else {
         SB_APPEND(out, ", .static_dfa = (StaticDfa *)&(struct { ");
         SB_APPEND(out, "int32 num_states; int32 start_state_w; ");
-        sb_printf(out,
-                  "int32 start_state_nw; StaticDfaState states[%d]; ",
-                  dfa_count);
-        sb_printf(out,
-                  "}){ .num_states = %d, .start_state_w = %d, ",
-                  dfa_count, start_dfa_w);
+        sb_printf(out, "int32 start_state_nw; StaticDfaState states[%d]; ",
+                       dfa_count);
+        sb_printf(out, "}){ .num_states = %d, .start_state_w = %d, ",
+                       dfa_count, start_dfa_w);
         sb_printf(out, ".start_state_nw = %d, .states = { \n", start_dfa_nw);
         for (int32 i = 0; i < dfa_count; i += 1) {
             bool has_accepts = false;
@@ -661,17 +652,17 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
         }
 
         // Emulate original printing structure
-        sb_printf(&out,
-                  "&(MetaRegex){ .string = %.*s, ",
-                  regex->original_string_length, quote_start);
-        sb_printf(&out,
-                  ".ops = { %.*s }, ",
-                  regex->op_buffer_len, regex->op_buffer);
+        sb_printf(&out, "&(MetaRegex){ .string = %.*s, ",
+                        regex->original_string_length, quote_start);
+        sb_printf(&out, ".ops = { %.*s }, ",
+                        regex->op_buffer_len, regex->op_buffer);
+
         sb_printf(&out, ".has_start_anchor = %d, ", regex->has_start);
         sb_printf(&out, ".has_end_anchor = %d, ", regex->has_end);
         sb_printf(&out, ".re_nsub = %d, ", re_nsub);
         sb_printf(&out, ".can_be_null = %d, ", regex->can_be_null);
         sb_printf(&out, ".min_match_len = %d, ", regex->min_match_len);
+
         SB_APPEND(&out, ".flags = (enum MetaRegexFlags)((");
         if (regex->flags_buffer_len > 0) {
             SB_APPEND(&out, regex->flags_buffer, regex->flags_buffer_len);
@@ -683,9 +674,7 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
             char *used_ops = META_OP_str((enum MetaOpType)regex->used_ops);
 
             sb_printf(&out, ") | %s), ", submatch_flag_str);
-            sb_printf(&out,
-                      ".used_ops = (enum MetaOpType)(%s), ",
-                      used_ops);
+            sb_printf(&out, ".used_ops = (enum MetaOpType)(%s), ", used_ops);
             META_RE_str_free(submatch_flag_str);
             META_OP_str_free(used_ops);
         }
