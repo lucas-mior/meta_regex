@@ -35,8 +35,8 @@ preproc_parse_bool(char *name, char *value) {
     int32 value_len;
 
     if (value == NULL) {
-        error("Missing value for %s. Expected %s=true or %s=false.\n", name,
-              name, name);
+        error("Missing value for %s. Expected %s=true or %s=false.\n",
+              name, name, name);
         exit(EXIT_FAILURE);
     }
 
@@ -76,20 +76,16 @@ usage(void) {
     error2("  emit_tdfa_transition_index=true|false (default = true)\n");
     error2("  max_static_dfa_states=N (default = %d)\n",
            META_MAX_STATIC_DFA_STATES);
-    error2("  max_tnfa_tags=N (default = %d)\n",
-           PREPROC_MAX_TNFA_TAGS);
-    error2("  max_tnfa_states=N (default = %d)\n",
-           PREPROC_MAX_TNFA_STATES);
+    error2("  max_tnfa_tags=N (default = %d)\n", PREPROC_MAX_TNFA_TAGS);
+    error2("  max_tnfa_states=N (default = %d)\n", PREPROC_MAX_TNFA_STATES);
     error2("  max_tnfa_transitions=N (default = %d)\n",
            PREPROC_MAX_TNFA_TRANSITIONS);
-    error2("  max_tdfa_states=N (default = %d)\n",
-           PREPROC_MAX_TDFA_STATES);
+    error2("  max_tdfa_states=N (default = %d)\n", PREPROC_MAX_TDFA_STATES);
     error2("  max_tdfa_transitions=N (default = %d)\n",
            PREPROC_MAX_TDFA_TRANSITIONS);
     error2("  max_tdfa_registers=N (default = %d)\n",
            PREPROC_MAX_TDFA_REGISTERS);
-    error2("  max_tdfa_regops=N (default = %d)\n",
-           PREPROC_MAX_TDFA_REGOPS);
+    error2("  max_tdfa_regops=N (default = %d)\n", PREPROC_MAX_TDFA_REGOPS);
     error2("  max_tdfa_transition_index_entries=N (default = %d)\n",
            PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES);
     return;
@@ -98,14 +94,14 @@ usage(void) {
 
 #define APPLY_BOOL_OPTION(name) \
     do { \
-        if (name != NULL) { \
+        if (name) { \
             preproc_config.name = preproc_parse_bool(#name, name); \
         } \
     } while (0)
 
 #define APPLY_INT_OPTION(name, min_value, max_value) \
     do { \
-        if (name != NULL) { \
+        if (name) { \
             preproc_config.name \
                 = preproc_parse_int32(#name, name, min_value, max_value); \
         } \

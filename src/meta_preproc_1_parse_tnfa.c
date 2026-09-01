@@ -443,7 +443,10 @@ tnfa_fixed_length_range(ParsedOp *ops, int32 ops_count, int32 start,
         }
     }
 
-    return fixed_len >= 0 ? fixed_len : -1;
+    if (fixed_len >= 0) {
+        return fixed_len;
+    }
+    return -1;
 }
 
 static void

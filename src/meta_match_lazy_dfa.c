@@ -363,7 +363,11 @@ lazy_dfa_ensure_closure(MetaRegex *regex, LazyDfa *ldfa, LazyDfaState *state,
     NfaStateSet *closed_set;
     int32 is_acc = 0;
 
-    curr_is_word = ldfa->uses_context ? !!curr_is_word : 0;
+    if (ldfa->uses_context) {
+        curr_is_word = !!curr_is_word;
+    } else {
+        curr_is_word = 0;
+    }
     if (state->closure_ready[curr_is_word]) {
         return;
     }
@@ -405,8 +409,10 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
         prev_is_word = 0;
     }
 
-    current_state_id
-        = prev_is_word ? ldfa->start_state_w : ldfa->start_state_nw;
+    current_state_id = ldfa->start_state_nw;
+    if (prev_is_word) {
+        current_state_id = ldfa->start_state_w;
+    }
     if (current_state_id < 0) {
         return -1;
     }
@@ -436,9 +442,12 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
             int32 next_id = state->next[b];
 
             if (next_id == 0) {
-                int32 curr_is_word = ldfa->uses_context ? word_table[b] : 0;
+                int32 curr_is_word = 0;
                 NfaStateSet next_core;
 
+                if (ldfa->uses_context) {
+                    curr_is_word = word_table[b];
+                }
                 lazy_dfa_ensure_closure(regex, ldfa, state, curr_is_word);
                 state->accepts_before[b] = state->closure_accepts[curr_is_word];
 
@@ -457,8 +466,10 @@ match_lazy_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
                     for (int32 k = 0; k < ldfa->pc_words; k += 1) {
                         next_key.bits[k] = next_core.bits[k];
                     }
-                    next_key.prev_is_word
-                        = ldfa->uses_context ? curr_is_word : 0;
+                    next_key.prev_is_word = 0;
+                    if (ldfa->uses_context) {
+                        next_key.prev_is_word = curr_is_word;
+                    }
 
                     next_id = lazy_dfa_get_or_add_state(ldfa, &next_key);
                 }

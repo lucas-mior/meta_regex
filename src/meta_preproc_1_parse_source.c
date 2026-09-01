@@ -563,8 +563,12 @@ parse_source_code(char *buffer, int32 source_len) {
                     } else {
                         int32 target_start = temp_ops_count - 1;
                         ParsedOp op_to_repeat = temp_ops[target_start];
+                        int32 extra_ops = (n - m)*2;
 
-                        if (temp_ops_count + m + (n == -1 ? 2 : (n - m)*2)
+                        if (n == -1) {
+                            extra_ops = 2;
+                        }
+                        if (temp_ops_count + m + extra_ops
                             >= PREPROC_MAX_TEMP_OPS) {
                             error2("Quantifier unrolling exceeds max ops.\n");
                             exit(EXIT_FAILURE);
@@ -829,30 +833,38 @@ parse_source_code(char *buffer, int32 source_len) {
             if (i == temp_ops_count) {
                 SB_APPEND(&op_buffer, "{META_OP_END, 0, 0, 0, {0}}\n");
             } else if (temp_ops[i].type == META_OP_LITERAL) {
-                sb_printf(&op_buffer, "{META_OP_LITERAL, %d, 0, 0, {0}},\n",
+                sb_printf(&op_buffer,
+                          "{META_OP_LITERAL, %d, 0, 0, {0}},\n",
                           temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_CLASS) {
                 sb_printf(&op_buffer,
                           "{META_OP_CLASS, 0, 0, 0, "
-                          "{%u, %u, %u, %u, %u, %u, %u, %u}},\n",
+                          "{%u, %u, %u, %u, ",
                           temp_ops[i].mask[0], temp_ops[i].mask[1],
-                          temp_ops[i].mask[2], temp_ops[i].mask[3],
+                          temp_ops[i].mask[2], temp_ops[i].mask[3]);
+                sb_printf(&op_buffer,
+                          "%u, %u, %u, %u}},\n",
                           temp_ops[i].mask[4], temp_ops[i].mask[5],
                           temp_ops[i].mask[6], temp_ops[i].mask[7]);
             } else if (temp_ops[i].type == META_OP_BOUNDED) {
-                sb_printf(&op_buffer, "{META_OP_BOUNDED, 0, %d, %d, {0}},\n",
+                sb_printf(&op_buffer,
+                          "{META_OP_BOUNDED, 0, %d, %d, {0}},\n",
                           temp_ops[i].min, temp_ops[i].max);
             } else if (temp_ops[i].type == META_OP_GROUP_START) {
-                sb_printf(&op_buffer, "{META_OP_GROUP_START, %d, 0, 0, {0}},\n",
+                sb_printf(&op_buffer,
+                          "{META_OP_GROUP_START, %d, 0, 0, {0}},\n",
                           temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_GROUP_END) {
-                sb_printf(&op_buffer, "{META_OP_GROUP_END, %d, 0, 0, {0}},\n",
+                sb_printf(&op_buffer,
+                          "{META_OP_GROUP_END, %d, 0, 0, {0}},\n",
                           temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_SPLIT) {
-                sb_printf(&op_buffer, "{META_OP_SPLIT, %d, %d, 0, {0}},\n",
+                sb_printf(&op_buffer,
+                          "{META_OP_SPLIT, %d, %d, 0, {0}},\n",
                           temp_ops[i].value, temp_ops[i].min);
             } else if (temp_ops[i].type == META_OP_JUMP) {
-                sb_printf(&op_buffer, "{META_OP_JUMP, %d, 0, 0, {0}},\n",
+                sb_printf(&op_buffer,
+                          "{META_OP_JUMP, %d, 0, 0, {0}},\n",
                           temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_WORD_START) {
                 SB_APPEND(&op_buffer, "{META_OP_WORD_START, 0, 0, 0, {0}},\n");
@@ -865,7 +877,8 @@ parse_source_code(char *buffer, int32 source_len) {
                 SB_APPEND(&op_buffer,
                           "{META_OP_NON_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
             } else if (temp_ops[i].type == META_OP_BACKREF) {
-                sb_printf(&op_buffer, "{META_OP_BACKREF, %d, 0, 0, {0}},\n",
+                sb_printf(&op_buffer,
+                          "{META_OP_BACKREF, %d, 0, 0, {0}},\n",
                           temp_ops[i].value);
             } else {
                 char *type_str = "META_OP_UNKNOWN";

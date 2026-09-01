@@ -44,7 +44,7 @@ typedef struct MetaRegexMatch {
 #define META_TNFA_TAG_NONE 0
 #define META_TNFA_POS_TAG(t) ((int32)(t))
 #define META_TNFA_NEG_TAG(t) (-(int32)(t))
-#define META_TNFA_TAG_ID(t) ((t) < 0 ? -(t) : (t))
+#define META_TNFA_TAG_ID(t) (((t) < 0)*-(t) + ((t) >= 0)*(t))
 #define META_TNFA_TAG_IS_NEGATIVE(t) ((t) < 0)
 #define META_TNFA_TAG_IS_POSITIVE(t) ((t) > 0)
 
@@ -354,7 +354,8 @@ typedef struct MatcherFeatures {
 
 #define META_R_SELECT(_1, _2, NAME, ...) NAME
 #define META_R_1(STR) (&(MetaRegex){ .string = (STR), .flags = META_RE_NONE })
-#define META_R_2(STR, FLAGS) (&(MetaRegex){ .string = (STR), .flags = (enum MetaRegexFlags)(FLAGS) })
+#define META_R_2(STR, FLAGS) \
+    (&(MetaRegex){ .string = (STR), .flags = (enum MetaRegexFlags)(FLAGS) })
 #define R(...) META_R_SELECT(__VA_ARGS__, META_R_2, META_R_1)(__VA_ARGS__)
 
 #endif /* META_REGEX_H */

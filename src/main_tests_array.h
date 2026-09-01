@@ -179,7 +179,7 @@ static RegexTest ascii_with_group_no_backref[] = {
     {"b",        R("(|a|b|)[a-z]+")},
     {"ax",       R("(|a|b|)[a-z]+")},
     {"AAa0b1BB", R("([a-z][0-9]){2,4}")},
-    {"bx",       R("(|a|b|)[a-z]+")}, 
+    {"bx",       R("(|a|b|)[a-z]+")},
 };
 
 static RegexTest ascii_with_group_and_backref[] = {

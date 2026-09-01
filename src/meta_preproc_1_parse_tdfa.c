@@ -238,7 +238,10 @@ tdfa_apply_lookahead_tag(TdfaWorkConfig *cfg, int32 tag) {
         return;
     }
 
-    cfg->look[id] = META_TNFA_TAG_IS_NEGATIVE(tag) ? 0 : 1;
+    cfg->look[id] = 1;
+    if (META_TNFA_TAG_IS_NEGATIVE(tag)) {
+        cfg->look[id] = 0;
+    }
     return;
 }
 
@@ -604,6 +607,7 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
     int32 next_register;
     int32 work_capacity;
     int32 uses_context;
+    int32 edge_count;
     TdfaBuildState *build_states = NULL;
     TdfaWorkConfig *work = NULL;
     TdfaWorkConfig *closed = NULL;
@@ -643,10 +647,13 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
     work_capacity = tnfa->num_states + tnfa->num_transitions + 1;
     uses_context = tdfa_tnfa_has_context_assertions(tnfa);
     tdfa->uses_context = uses_context;
-    tdfa->transition_index_stride
-        = preproc_config.emit_tdfa_transition_index
-              ? (uses_context ? META_ALPHABET_SIZE*2 : META_ALPHABET_SIZE)
-              : 0;
+    tdfa->transition_index_stride = 0;
+    if (preproc_config.emit_tdfa_transition_index) {
+        tdfa->transition_index_stride = META_ALPHABET_SIZE;
+        if (uses_context) {
+            tdfa->transition_index_stride = META_ALPHABET_SIZE*2;
+        }
+    }
     tdfa->transition_index_count = 0;
     if (work_capacity <= 0 || work_capacity > PREPROC_MAX_TDFA_WORK_CONFIGS) {
         return false;
@@ -657,9 +664,11 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
     work = malloc2(SIZEOF(*work)*work_capacity);
     closed = malloc2(SIZEOF(*closed)*work_capacity);
     stack = malloc2(SIZEOF(*stack)*work_capacity);
-    edge_indices
-        = malloc2(SIZEOF(*edge_indices)
-                  * (tnfa->num_transitions > 0 ? tnfa->num_transitions : 1));
+    edge_count = 1;
+    if (tnfa->num_transitions > 0) {
+        edge_count = tnfa->num_transitions;
+    }
+    edge_indices = malloc2(SIZEOF(*edge_indices)*edge_count);
     if (build_states == NULL || work == NULL || closed == NULL || stack == NULL
         || edge_indices == NULL) {
         return false;
@@ -736,8 +745,11 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
         for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
             int32 work_count;
             int32 next_min = 0;
-            int32 next_max = uses_context ? 1 : 0;
+            int32 next_max = 0;
 
+            if (uses_context) {
+                next_max = 1;
+            }
             if (uses_context && tdfa_is_word_char(c) != source->curr_is_w) {
                 continue;
             }
@@ -753,14 +765,19 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
 
             for (int32 next_curr = next_min; next_curr <= next_max;
                  next_curr += 1) {
-                int32 prev = uses_context ? tdfa_is_word_char(c) : 0;
-                int32 curr = uses_context ? next_curr : 0;
-                int32 next_is_word = uses_context ? next_curr : -1;
+                int32 prev = 0;
+                int32 curr = 0;
+                int32 next_is_word = -1;
                 int32 closed_count;
                 int32 target_id;
                 int32 first_op;
                 int32 op_count;
 
+                if (uses_context) {
+                    prev = tdfa_is_word_char(c);
+                    curr = next_curr;
+                    next_is_word = next_curr;
+                }
                 closed_count = tdfa_epsilon_closure(
                     tnfa, tag_count, work, work_count, closed, stack,
                     edge_indices, work_capacity, prev, curr);

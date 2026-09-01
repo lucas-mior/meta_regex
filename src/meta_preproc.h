@@ -1,4 +1,4 @@
-#ifndef META_PREPROC_H
+#if !defined(META_PREPROC_H)
 #define META_PREPROC_H
 
 #include "cbase.h"
@@ -166,18 +166,18 @@ typedef struct ParsedTdfa {
 typedef struct ExtractedRegex {
     int64 source_start_offset;
     int64 source_end_offset;
-    
+
     bool is_null_macro;
 
     int64 quote_start_offset;
     int32 original_string_length;
-    
+
     ParsedOp temp_ops[PREPROC_MAX_TEMP_OPS];
     int32 temp_ops_count;
 
     ParsedTnfa *tnfa;
     ParsedTdfa *tdfa;
-    
+
     bool has_start;
     bool has_end;
     int32 group_counter;
@@ -190,7 +190,7 @@ typedef struct ExtractedRegex {
     char flags_buffer[PREPROC_MAX_FLAGS_EXPR];
     uint32 used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
-    
+
     char *op_buffer;
 } ExtractedRegex;
 

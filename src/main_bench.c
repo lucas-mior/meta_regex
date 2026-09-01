@@ -169,7 +169,7 @@ bench_timediff(struct timespec a, struct timespec b) {
 static void
 bench_csv_string(FILE *out, char *s) {
     fputc('"', out);
-    if (s != NULL) {
+    if (s) {
         for (char *p = s; *p != '\0'; p += 1) {
             if (*p == '"') {
                 fputc('"', out);
@@ -297,10 +297,9 @@ bench_report_mismatch(char *block, BenchRegexBucket *regex_bucket,
                       enum Matcher matcher, int32 reference_result,
                       int32 actual_result, MetaRegexMatch *reference,
                       MetaRegexMatch *actual, int32 pmatch_len, bool extract) {
-    error2("%s mismatch in regex bucket %s, input bucket %s, input case %s, "
-           "engine %s",
-           block, regex_bucket->name, input_bucket->name, input_case->name,
-           engine);
+    error2("%s mismatch in regex bucket %s, input bucket %s, input case %s",
+           block, regex_bucket->name, input_bucket->name, input_case->name);
+    error2(", engine %s", engine);
     if (matcher != MATCHER_NONE) {
         char *matcher_name = MATCHER_str(matcher);
 
@@ -310,15 +309,19 @@ bench_report_mismatch(char *block, BenchRegexBucket *regex_bucket,
     error2("\n");
     error2("input " RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n",
            input_case->input, regex_case->regex->string);
-    error2("libc result: %d, actual result: %d\n", reference_result,
-           actual_result);
+    error2("libc result: %d, actual result: %d\n",
+           reference_result, actual_result);
 
     if (reference_result == 0 && actual_result == 0 && extract) {
         int32 group = bench_pmatch_mismatch(reference, actual, pmatch_len);
         if (group >= 0) {
-            error2("capture group %d: libc[%d, %d], actual[%d, %d]\n", group,
-                   (int32)reference[group].rm_so, (int32)reference[group].rm_eo,
-                   (int32)actual[group].rm_so, (int32)actual[group].rm_eo);
+            error2("capture group %d:", group);
+            error2(" libc[%d, %d]",
+                   (int32)reference[group].rm_so,
+                   (int32)reference[group].rm_eo);
+            error2(" actual[%d, %d]\n",
+                   (int32)actual[group].rm_so,
+                   (int32)actual[group].rm_eo);
         }
     }
     return;
@@ -438,10 +441,11 @@ bench_write_engine_row(FILE *csv, char *test_name, char *variant,
     bench_csv_string(csv, matcher_name);
     fputc(',', csv);
     bench_csv_string(csv, selected_matcher_name);
-    fprintf(csv, ",%d,%d,%d,%d,%d,%lld,%f,%f,%d\n", regex_bucket->count,
-            input_bucket->count, pair_count, run_pair_count,
-            META_BENCH_ITERATIONS, total_iterations, seconds,
-            ns_per_match, matches);
+    fprintf(csv, ",%d,%d,%d,%d,%d,",
+            regex_bucket->count, input_bucket->count, pair_count,
+            run_pair_count, META_BENCH_ITERATIONS);
+    fprintf(csv, "%lld,%f,%f,%d\n",
+            total_iterations, seconds, ns_per_match, matches);
     return;
 }
 
@@ -471,13 +475,16 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
                            BenchRegexBucket *regex_bucket,
                            BenchInputBucket *input_bucket, regex_t *compiled,
                            enum Matcher enabled, bool extract) {
-    char *variant = extract ? "extract" : "no_extract";
+    char *variant = "no_extract";
     int32 matches = 0;
     double seconds;
     struct timespec t0;
     struct timespec t1;
     MetaRegexMatch pmatch[BENCH_MAX_MATCHES];
 
+    if (extract) {
+        variant = "extract";
+    }
     printf("\n== %s (%s) ==\n", test_name, variant);
 
     for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
@@ -597,8 +604,8 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
 
                 bench_report_mismatch(
                     "meta_matchers_pairwise", regex_bucket, rc, input_bucket,
-                    ic, matcher_name, matcher, ref_result, actual_result, ref_pm,
-                    actual_pm, LENGTH(ref_pm), extract);
+                    ic, matcher_name, matcher, ref_result, actual_result,
+                    ref_pm, actual_pm, LENGTH(ref_pm), extract);
                 MATCHER_str_free(matcher_name);
                 exit(EXIT_FAILURE);
             }
@@ -717,11 +724,15 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
         }
 
         if (length_class == BENCH_LEN_LAST) {
+            char *regex_string = "(null)";
+
+            if (c.regex) {
+                regex_string = c.regex->string;
+            }
             error2("Skipping regex at index %d from %s with %d ops; no "
                    "benchmark length bucket exists above 64 ops: " BLUE(
                        "\"%s\"") "\n",
-                   i, array_name, op_count,
-                   c.regex != NULL ? c.regex->string : "(null)");
+                   i, array_name, op_count, regex_string);
             continue;
         }
 
@@ -747,14 +758,15 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
             "ns_per_match,matches\n");
 
     for (enum BenchRegexLengthClass l = 0; l < BENCH_LEN_LAST; l += 1) {
+        char *regex_len_name = bench_length_class_name(l);
         regex_t *compiled;
 
         if (counts[l] <= 0) {
             continue;
         }
 
-        SNPRINTF(regex_bucket_names[l], "%s_ops_%s", array_name,
-                 bench_length_class_name(l));
+        SNPRINTF(regex_bucket_names[l], "%s_ops_%s",
+                 array_name, regex_len_name);
 
         regex_buckets[l].name = regex_bucket_names[l];
         regex_buckets[l].length_class = l;
@@ -783,6 +795,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
 
         for (enum BenchInputLengthClass ii = 0; ii < BENCH_INPUT_LEN_LAST;
              ii += 1) {
+            char *input_len_name = bench_input_length_class_name(ii);
             BenchInputBucket input_bucket;
             char test_name[256];
             int32 max_len = bench_input_length_class_max(ii);
@@ -797,7 +810,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
                 int32 matched = 0;
 
                 SNPRINTF(input_names[ri], "random_%s_%d",
-                         bench_input_length_class_name(ii), ri);
+                         input_len_name, ri);
 
                 for (int32 k = 0; k < BENCH_RANDOM_INPUT_ATTEMPTS; k += 1) {
                     bench_generate_random_input(input_storage[ri], ii);
@@ -824,19 +837,18 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
                 input_cases[ri].length_class = ii;
             }
 
-            printf("%s / %s: matching_inputs=%d fallback_inputs=%d\n",
-                   regex_buckets[l].name, bench_input_length_class_name(ii),
-                   yes_matched, not_matched);
+            printf("%s / %s: matching_inputs=%d",
+                   regex_buckets[l].name, input_len_name, yes_matched);
+            printf(" fallback_inputs=%d\n", not_matched);
 
-            input_bucket.name = bench_input_length_class_name(ii);
+            input_bucket.name = input_len_name;
             input_bucket.length_class = ii;
             input_bucket.max_input_len = max_len;
             input_bucket.cases = input_cases;
             input_bucket.count = regex_buckets[l].count;
 
-            SNPRINTF(test_name, "%s_ops_%s_input_%s", array_name,
-                     bench_length_class_name(l),
-                     bench_input_length_class_name(ii));
+            SNPRINTF(test_name, "%s_ops_%s_input_%s",
+                     array_name, regex_len_name, input_len_name);
 
 #if 1
             bench_run_pairwise_variant(csv, test_name, &regex_buckets[l],

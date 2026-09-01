@@ -238,7 +238,8 @@ meta_choose_matcher(MetaRegex *regex, int32 input_len, bool needs_extraction,
         }
 
         if (matcher == MATCHER_BTNFA && (matchers_enabled & MATCHER_LAZY_DFA)) {
-            if ((regex->used_ops & ~matchers[MATCHER_LAZY_DFA]->supports) == 0) {
+            if ((regex->used_ops & ~matchers[MATCHER_LAZY_DFA]->supports)
+                == 0) {
                 matcher = MATCHER_LAZY_DFA;
             }
         }

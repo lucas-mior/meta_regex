@@ -58,11 +58,12 @@ main(void) {
             if (pmatch[j].rm_so != test->expected_match[j].rm_so
                 || pmatch[j].rm_eo != test->expected_match[j].rm_eo) {
                 failed = true;
-                error("Standalone test failed: %s: match %d [%d, %d], "
-                      "expected [%d, %d]\n",
-                      test->name, j, pmatch[j].rm_so, pmatch[j].rm_eo,
-                      test->expected_match[j].rm_so,
-                      test->expected_match[j].rm_eo);
+                error2("Standalone test failed: %s: match %d",
+                       test->name, j);
+                error2(" [%d, %d]", pmatch[j].rm_so, pmatch[j].rm_eo);
+                error2(" expected [%d, %d]\n",
+                       test->expected_match[j].rm_so,
+                       test->expected_match[j].rm_eo);
             }
         }
     }

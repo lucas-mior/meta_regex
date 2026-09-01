@@ -123,8 +123,14 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     state_count = tnfa->num_states;
     full_tag_count = tnfa->num_tags + 1;
     track_tags = (pmatch != NULL && pmatch_len > 1 && tnfa->num_tags > 0);
-    tag_count = track_tags ? full_tag_count : 1;
-    edge_count = (tnfa->num_transitions > 0 ? tnfa->num_transitions : 1);
+    tag_count = 1;
+    if (track_tags) {
+        tag_count = full_tag_count;
+    }
+    edge_count = 1;
+    if (tnfa->num_transitions > 0) {
+        edge_count = tnfa->num_transitions;
+    }
     stack_cap = state_count + edge_count + 1;
     if (cached_slice_tnfa == tnfa) {
         use_state_slices = cached_use_state_slices;

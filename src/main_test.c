@@ -129,13 +129,13 @@ report_match_mismatch(char *kind, char *case_name, enum Matcher matcher,
                       bool compare_submatches) {
     char *matcher_name = MATCHER_str(matcher);
 
-    error2("%s mismatch in %s with matcher %s\n", kind, case_name,
-           matcher_name);
+    error2("%s mismatch in %s with matcher %s\n",
+           kind, case_name, matcher_name);
     MATCHER_str_free(matcher_name);
-    error2("input " RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n", input,
-           regex);
-    error2("reference result: %d, meta result: %d\n", reference_result,
-           actual_result);
+    error2("input " RED("\"%s\"") " against regex " BLUE("\"%s\"") "\n",
+           input, regex);
+    error2("reference result: %d, meta result: %d\n",
+           reference_result, actual_result);
 
     if (reference_result == 0 && actual_result == 0 && extract) {
         int32 compare_len = 1;
@@ -147,9 +147,13 @@ report_match_mismatch(char *kind, char *case_name, enum Matcher matcher,
 
         group = pmatch_mismatch(reference, actual, compare_len);
         if (group >= 0) {
-            error2("capture group %d: reference[%d, %d], meta[%d, %d]\n", group,
-                   (int32)reference[group].rm_so, (int32)reference[group].rm_eo,
-                   (int32)actual[group].rm_so, (int32)actual[group].rm_eo);
+            error2("capture group %d:", group);
+            error2(" reference[%d, %d]",
+                   (int32)reference[group].rm_so,
+                   (int32)reference[group].rm_eo);
+            error2(" meta[%d, %d]\n",
+                   (int32)actual[group].rm_so,
+                   (int32)actual[group].rm_eo);
         }
     }
     return;
@@ -375,9 +379,12 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
     bool *reference_submatches = malloc2(
         count*SIZEOF(*reference_submatches));
     bool failed = false;
+    char *extract_name = "non-extracting";
 
-    printf("\n----- Running %s (%s) -----\n", description,
-           extract ? "extracting" : "non-extracting");
+    if (extract) {
+        extract_name = "extracting";
+    }
+    printf("\n----- Running %s (%s) -----\n", description, extract_name);
 
     for (int32 i = 0; i < count; i += 1) {
         regex_t compiled_regex;
