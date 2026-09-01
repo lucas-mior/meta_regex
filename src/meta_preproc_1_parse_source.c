@@ -660,9 +660,8 @@ parse_source_code(char *buffer, int64 source_len) {
 
                     c1 = (uint8)regex_string[regex_index];
                     if (c1 >= 128) {
-                        fprintf(stderr,
-                                "Error: Non-ASCII character inside bracket "
-                                "expression is not supported.\n");
+                        error2("Error: Non-ASCII character inside bracket "
+                               "expression is not supported.\n");
                         exit(EXIT_FAILURE);
                     }
 
@@ -673,9 +672,8 @@ parse_source_code(char *buffer, int64 source_len) {
                         && regex_string[regex_index + 1] != '\0') {
                         c2 = (uint8)regex_string[regex_index + 1];
                         if (c2 >= 128) {
-                            fprintf(stderr,
-                                    "Error: Non-ASCII character inside bracket "
-                                    "expression is not supported.\n");
+                            error2("Error: Non-ASCII character inside bracket "
+                                   "expression is not supported.\n");
                             exit(EXIT_FAILURE);
                         }
                         regex_index += 2;
@@ -932,9 +930,8 @@ parse_source_code(char *buffer, int64 source_len) {
             if (regex->tnfa != NULL && preproc_config.emit_tdfa) {
                 regex->tdfa = malloc2(SIZEOF(*regex->tdfa));
                 if (!build_tdfa_from_tnfa(regex->tdfa, regex->tnfa)) {
-                    fprintf(stderr,
-                            "Warning: TDFA construction failed for %.*s.\n",
-                            original_string_length, quote_start);
+                    error2("Warning: TDFA construction failed for %.*s.\n",
+                           original_string_length, quote_start);
                     regex->tdfa = NULL;
                 }
             }

@@ -601,11 +601,10 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, FILE *out) {
     if (fail_reasons) {
         char *fail_reason_names = PREPROC_FAIL_str(fail_reasons);
 
-        fprintf(stderr,
-                "Warning: DFA conversion failed for %.*s because of %s.\n",
-                original_string_length, quote_start, fail_reason_names);
+        error2("Warning: DFA conversion failed for %.*s because of %s.\n",
+               original_string_length, quote_start, fail_reason_names);
         PREPROC_FAIL_str_free(fail_reason_names);
-        fprintf(stderr, "static dfa will not be available at runtime.\n");
+        error2("static dfa will not be available at runtime.\n");
         fprintf(out, ", .static_dfa = NULL");
     } else {
         fprintf(out,

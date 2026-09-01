@@ -895,14 +895,13 @@ bench_parse_input_len_cap(char *s, int32 *out) {
 
 static noreturn void
 bench_usage(char *argv0) {
-    fprintf(stderr,
-            "Usage: %s [--max-input-len N]\n"
-            "       %s [--max-input-len=N]\n"
-            "       %s [N]\n"
-            "\n"
-            "N must be between 16 and %d. The benchmark runs only random "
-            "input buckets whose max length is <= N.\n",
-            argv0, argv0, argv0, BENCH_RANDOM_INPUT_MAX_LEN);
+    error2("Usage: %s [--max-input-len N]\n"
+           "       %s [--max-input-len=N]\n"
+           "       %s [N]\n"
+           "\n"
+           "N must be between 16 and %d. The benchmark runs only random "
+           "input buckets whose max length is <= N.\n",
+           argv0, argv0, argv0, BENCH_RANDOM_INPUT_MAX_LEN);
     exit(EXIT_FAILURE);
 }
 
