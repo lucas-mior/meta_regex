@@ -152,16 +152,16 @@ void emit_string_array_initializer(
 );
 void emit_u64_array_initializer(StrBuilder *, char *, uint64 *, int32);
 
-#define token_is_2(TOKEN, WHAT) \
-_Generic((TOKEN), \
-    Token: token_is_val, \
-    Token *: token_is_ptr \
+#define token_is_2(TOKEN, WHAT)                \
+_Generic((TOKEN),                              \
+    Token: token_is_val,                       \
+    Token *: token_is_ptr                      \
 )((TOKEN), (WHAT))
 
-#define token_is_3(TOKEN, WHAT, WHAT_LEN) \
-_Generic((TOKEN), \
-    Token: token_is_val_len, \
-    Token *: token_is_ptr_len \
+#define token_is_3(TOKEN, WHAT, WHAT_LEN)      \
+_Generic((TOKEN),                              \
+    Token: token_is_val_len,                   \
+    Token *: token_is_ptr_len                  \
 )((TOKEN), (WHAT), (WHAT_LEN))
 
 #define TOKEN_IS(...) SELECT_ON_NUM_ARGS(token_is_, __VA_ARGS__)
