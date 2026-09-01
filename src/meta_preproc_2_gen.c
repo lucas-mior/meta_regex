@@ -384,12 +384,10 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
         SB_APPEND(out, ", .transitions = (MetaTdfaTransition[]){\n");
         for (int32 i = 0; i < tdfa->num_transitions; i += 1) {
             MetaTdfaTransition *tr = &tdfa->transitions[i];
-            sb_printf(out,
-                      "{ .from = %d, .to = %d, .symbol = %d, ",
-                      tr->from, tr->to, tr->symbol);
-            sb_printf(out,
-                      ".next_is_word = %d, .first_op = %d, ",
-                      tr->next_is_word, tr->first_op);
+            sb_printf(out, "{ .from = %d, .to = %d, .symbol = %d, ",
+                           tr->from, tr->to, tr->symbol);
+            sb_printf(out, ".next_is_word = %d, .first_op = %d, ",
+                           tr->next_is_word, tr->first_op);
             sb_printf(out, ".op_count = %d },\n", tr->op_count);
         }
         SB_APPEND(out, "}");
