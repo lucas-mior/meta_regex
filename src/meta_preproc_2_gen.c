@@ -369,12 +369,10 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
         SB_APPEND(out, ", .states = (MetaTdfaState[]){\n");
         for (int32 i = 0; i < tdfa->num_states; i += 1) {
             MetaTdfaState *state = &tdfa->states[i];
-            sb_printf(out,
-                      "{ .is_accepting = %d, .first_transition = %d, ",
-                      state->is_accepting, state->first_transition);
-            sb_printf(out,
-                      ".transition_count = %d, .first_final_op = %d, ",
-                      state->transition_count, state->first_final_op);
+            sb_printf(out, "{ .is_accepting = %d, .first_transition = %d, ",
+                           state->is_accepting, state->first_transition);
+            sb_printf(out, ".transition_count = %d, .first_final_op = %d, ",
+                           state->transition_count, state->first_final_op);
             sb_printf(out, ".final_op_count = %d },\n", state->final_op_count);
         }
         SB_APPEND(out, "}");
