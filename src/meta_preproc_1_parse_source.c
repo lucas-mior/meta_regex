@@ -646,7 +646,7 @@ parse_source_code(char *buffer, int64 source_len) {
                         if (found_end) {
                             char class_name[PREPROC_MAX_CLASS_NAME] = {0};
                             int32 name_len = colon_idx - (regex_index + 2);
-                            if (name_len < PREPROC_MAX_CLASS_NAME) {
+                            if (name_len < SIZEOF(class_name)) {
                                 strncpy32(class_name,
                                           &regex_string[regex_index + 2],
                                           name_len);
