@@ -331,27 +331,20 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
     }
 
     SB_APPEND(out, ", .tdfa = &(MetaTdfa){ ");
-    sb_printf(out,
-              ".num_tags = %d, .num_states = %d, ",
-              tdfa->num_tags, tdfa->num_states);
-    sb_printf(out,
-              ".num_transitions = %d, .num_registers = %d, ",
-              tdfa->num_transitions, tdfa->num_registers);
-    sb_printf(out,
-              ".num_ops = %d, .start_state = %d, ",
-              tdfa->num_ops, tdfa->start_state);
-    sb_printf(out,
-              ".start_state_nw_nw = %d, .start_state_nw_w = %d, ",
-              tdfa->start_state_nw_nw, tdfa->start_state_nw_w);
-    sb_printf(out,
-              ".start_state_w_nw = %d, .start_state_w_w = %d, ",
-              tdfa->start_state_w_nw, tdfa->start_state_w_w);
-    sb_printf(out,
-              ".final_register_base = %d, .uses_context = %d, ",
-              tdfa->final_register_base, tdfa->uses_context);
-    sb_printf(out,
-              ".transition_index_stride = %d",
-              tdfa->transition_index_stride);
+    sb_printf(out, ".num_tags = %d, .num_states = %d, ",
+                   tdfa->num_tags, tdfa->num_states);
+    sb_printf(out, ".num_transitions = %d, .num_registers = %d, ",
+                   tdfa->num_transitions, tdfa->num_registers);
+    sb_printf(out, ".num_ops = %d, .start_state = %d, ",
+                   tdfa->num_ops, tdfa->start_state);
+    sb_printf(out, ".start_state_nw_nw = %d, .start_state_nw_w = %d, ",
+                   tdfa->start_state_nw_nw, tdfa->start_state_nw_w);
+    sb_printf(out, ".start_state_w_nw = %d, .start_state_w_w = %d, ",
+                   tdfa->start_state_w_nw, tdfa->start_state_w_w);
+    sb_printf(out, ".final_register_base = %d, .uses_context = %d, ",
+                   tdfa->final_register_base, tdfa->uses_context);
+    sb_printf(out, ".transition_index_stride = %d",
+                   tdfa->transition_index_stride);
 
     if (tdfa->num_tags > 0) {
         SB_APPEND(out, ", .tags = (MetaTnfaTag[]){\n");
