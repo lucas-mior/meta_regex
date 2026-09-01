@@ -908,8 +908,10 @@ parse_source_code(char *buffer, int32 source_len) {
         if (flags_start < paren_end && *flags_start == ',') {
             flags_start += 1;
             flags_end = paren_end;
-            flags_buffer_len = preproc_copy_trimmed_slice(
-                flags_buffer, SIZEOF(flags_buffer), flags_start, flags_end);
+            flags_buffer_len = preproc_copy_trimmed_slice(flags_buffer,
+                                                          SIZEOF(flags_buffer),
+                                                          flags_start,
+                                                          flags_end);
             if (flags_buffer_len == 0) {
                 flags_buffer[0] = '0';
                 flags_buffer[1] = '\0';
