@@ -279,11 +279,11 @@ That means to also avoid calling `strlen32`:
   to optimize the `strlen32`, since it uses `sizeof` to get the length of the
   literal.
 
-Exceptions to this rule are:
-
+## Important pattern:
 - Macros `ENDS_WITH` and `BEGINS_WITH`: they use a macro trick to allow passing
   only the string, or also passing the string length. See `cbase.h`.
-- Functions that in general only operate on short literals. In this case it is
+- Functions that in general only operate on short literals are allowed to
+  receive only the `char *pointer` without the length. In this case it is
   ok to let the function call `strlen32` inside.
 - `StrBuilder`: use this struct and its functions to build long, dynamic
   strings. Do not use it where a single
