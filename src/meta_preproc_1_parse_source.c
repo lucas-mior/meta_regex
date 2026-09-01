@@ -290,7 +290,7 @@ parse_source_code(char *buffer, int32 source_len) {
 
         {
             char *raw_string = quote_start + 1;
-            int32 raw_string_len = quote_end - raw_string;
+            int32 raw_string_len = (int32)(quote_end - raw_string);
 
             for (int32 i = 0; i < raw_string_len; i += 1) {
                 if (regex_string_len >= SIZEOF(regex_string)) {
@@ -897,7 +897,7 @@ parse_source_code(char *buffer, int32 source_len) {
             op_ptr += w;
             space -= w;
         }
-        op_buffer_len = op_ptr - op_buffer;
+        op_buffer_len = (int32)(op_ptr - op_buffer);
 
         flags_start = quote_end + 1;
         while (flags_start < paren_end
