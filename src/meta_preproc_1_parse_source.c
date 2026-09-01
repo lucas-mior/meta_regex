@@ -838,8 +838,8 @@ parse_source_code(char *buffer, int32 source_len) {
                               temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_CLASS) {
                 w = snprintf2(op_ptr, space,
-                              "{META_OP_CLASS, 0, 0, 0, {%u, %u, %u, %u, %u, "
-                              "%u, %u, %u}},\n",
+                              "{META_OP_CLASS, 0, 0, 0, "
+                              "{%u, %u, %u, %u, %u, %u, %u, %u}},\n",
                               temp_ops[i].mask[0], temp_ops[i].mask[1],
                               temp_ops[i].mask[2], temp_ops[i].mask[3],
                               temp_ops[i].mask[4], temp_ops[i].mask[5],
