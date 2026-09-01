@@ -144,10 +144,10 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     stack_tag_storage_count = stack_cap*tag_count;
 
     if (configs_cap < state_count) {
-        configs_a
-            = realloc2(configs_a, configs_cap, state_count, SIZEOF(*configs_a));
-        configs_b
-            = realloc2(configs_b, configs_cap, state_count, SIZEOF(*configs_b));
+        configs_a = realloc2(configs_a,
+                             configs_cap, state_count, SIZEOF(*configs_a));
+        configs_b = realloc2(configs_b,
+                             configs_cap, state_count, SIZEOF(*configs_b));
         configs_cap = state_count;
     }
     if (stack_cap_alloc < stack_cap) {
@@ -155,13 +155,13 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         stack_cap_alloc = stack_cap;
     }
     if (tags_a_cap < tag_storage_count) {
-        tags_a
-            = realloc2(tags_a, tags_a_cap, tag_storage_count, SIZEOF(*tags_a));
+        tags_a = realloc2(tags_a,
+                          tags_a_cap, tag_storage_count, SIZEOF(*tags_a));
         tags_a_cap = tag_storage_count;
     }
     if (tags_b_cap < tag_storage_count) {
-        tags_b
-            = realloc2(tags_b, tags_b_cap, tag_storage_count, SIZEOF(*tags_b));
+        tags_b = realloc2(tags_b,
+                          tags_b_cap, tag_storage_count, SIZEOF(*tags_b));
         tags_b_cap = tag_storage_count;
     }
     if (stack_tags_cap < stack_tag_storage_count) {
@@ -180,8 +180,8 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         saved_tags_cap = tag_count;
     }
     if (work_tags_cap < tag_count) {
-        work_tags
-            = realloc2(work_tags, work_tags_cap, tag_count, SIZEOF(*work_tags));
+        work_tags = realloc2(work_tags,
+                             work_tags_cap, tag_count, SIZEOF(*work_tags));
         work_tags_cap = tag_count;
     }
     if (closed_seen_cap < state_count) {

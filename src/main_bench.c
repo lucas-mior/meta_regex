@@ -7,7 +7,7 @@
 #include "meta_match.c"
 #include "gen/main_bench_regexes2.h"
 
-typedef enum BenchInputLengthClass {
+enum BenchInputLengthClass {
     BENCH_INPUT_LEN_0_16,
     BENCH_INPUT_LEN_17_32,
     BENCH_INPUT_LEN_33_64,
@@ -18,7 +18,7 @@ typedef enum BenchInputLengthClass {
     BENCH_INPUT_LEN_1025_2048,
     BENCH_INPUT_LEN_2049_4096,
     BENCH_INPUT_LEN_LAST,
-} BenchInputLengthClass;
+};
 
 typedef struct BenchInputCase {
     char *name;
@@ -315,13 +315,14 @@ bench_report_mismatch(char *block, BenchRegexBucket *regex_bucket,
     if (reference_result == 0 && actual_result == 0 && extract) {
         int32 group = bench_pmatch_mismatch(reference, actual, pmatch_len);
         if (group >= 0) {
+            int32 reference_so = reference[group].rm_so;
+            int32 reference_eo = reference[group].rm_eo;
+            int32 actual_so = actual[group].rm_so;
+            int32 actual_eo = actual[group].rm_eo;
+
             error2("capture group %d:", group);
-            error2(" libc[%d, %d]",
-                   (int32)reference[group].rm_so,
-                   (int32)reference[group].rm_eo);
-            error2(" actual[%d, %d]\n",
-                   (int32)actual[group].rm_so,
-                   (int32)actual[group].rm_eo);
+            error2(" libc[%d, %d]", reference_so, reference_eo);
+            error2(" actual[%d, %d]\n", actual_so, actual_eo);
         }
     }
     return;
@@ -414,9 +415,11 @@ bench_write_engine_row(FILE *csv, char *test_name, char *variant,
     int32 pair_count = regex_bucket->count;
     int64 total_iterations = META_BENCH_ITERATIONS*(int64)run_pair_count;
     double ns_per_match = 0.0;
-    char *feature_name = regex_bucket->is_backref ? "with_backreferences"
-                                                  : "no_backreferences";
+    char *feature_name = "no_backreferences";
 
+    if (regex_bucket->is_backref) {
+        feature_name = "with_backreferences";
+    }
     if (total_iterations > 0) {
         ns_per_match = (seconds*1000000000.0) / (double)total_iterations;
     }
@@ -441,9 +444,9 @@ bench_write_engine_row(FILE *csv, char *test_name, char *variant,
     bench_csv_string(csv, matcher_name);
     fputc(',', csv);
     bench_csv_string(csv, selected_matcher_name);
-    fprintf(csv, ",%d,%d,%d,%d,%d,",
-            regex_bucket->count, input_bucket->count, pair_count,
-            run_pair_count, META_BENCH_ITERATIONS);
+    fprintf(csv, ",%d,%d,%d,",
+            regex_bucket->count, input_bucket->count, pair_count);
+    fprintf(csv, "%d,%d,", run_pair_count, META_BENCH_ITERATIONS);
     fprintf(csv, "%lld,%f,%f,%d\n",
             total_iterations, seconds, ns_per_match, matches);
     return;
@@ -809,8 +812,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
             for (int32 ri = 0; ri < regex_buckets[l].count; ri += 1) {
                 int32 matched = 0;
 
-                SNPRINTF(input_names[ri], "random_%s_%d",
-                         input_len_name, ri);
+                SNPRINTF(input_names[ri], "random_%s_%d", input_len_name, ri);
 
                 for (int32 k = 0; k < BENCH_RANDOM_INPUT_ATTEMPTS; k += 1) {
                     bench_generate_random_input(input_storage[ri], ii);
@@ -948,7 +950,7 @@ main(int32 argc, char **argv) {
     printf("bench_sink_result=%d bench_sink_offsets=%lld\n",
            bench_sink_result, bench_sink_offsets);
 
-    return 0;
+    exit(EXIT_SUCCESS);
 }
 
 #undef BENCH_PROCESS_ARRAY

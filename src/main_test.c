@@ -147,13 +147,14 @@ report_match_mismatch(char *kind, char *case_name, enum Matcher matcher,
 
         group = pmatch_mismatch(reference, actual, compare_len);
         if (group >= 0) {
+            int32 reference_so = reference[group].rm_so;
+            int32 reference_eo = reference[group].rm_eo;
+            int32 actual_so = actual[group].rm_so;
+            int32 actual_eo = actual[group].rm_eo;
+
             error2("capture group %d:", group);
-            error2(" reference[%d, %d]",
-                   (int32)reference[group].rm_so,
-                   (int32)reference[group].rm_eo);
-            error2(" meta[%d, %d]\n",
-                   (int32)actual[group].rm_so,
-                   (int32)actual[group].rm_eo);
+            error2(" reference[%d, %d]", reference_so, reference_eo);
+            error2(" meta[%d, %d]\n", actual_so, actual_eo);
         }
     }
     return;
@@ -307,69 +308,6 @@ matcher_can_use_reference(bool libc_reference, enum Matcher matcher) {
     }
     return true;
 }
-
-static void run_known_pairs(RegexTest *tests, int32 count, char *description,
-                            bool extract);
-static bool run_fuzzy_tests(MetaRegex **patterns, int32 tests_len, char *,
-                            int32 max_str_size, int32 ntests, bool extract);
-static bool run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len,
-                                 bool extract);
-static bool run_extensive_regex_tests(MetaRegex **tests, int32 tests_len,
-                                      char *tests_name);
-static MetaRegex **random_regex_sample(MetaRegex **tests, int32 tests_len,
-                                       int32 *sample_len);
-
-#define RUN_KNOWN_PAIRS(ARRAY) \
-    run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, true); \
-    run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, false)
-
-int32
-main(void) {
-    MetaRegex **regexes_extensive_sample;
-    int32 regexes_extensive_sample_len;
-    bool extensive_failed;
-
-    setlocale(LC_ALL, "C");
-    srand((uint32)42);
-
-    printf(RED("\nTests with known (input, regex) pairs ...\n"));
-    RUN_KNOWN_PAIRS(ascii_no_group_no_backref);
-    RUN_KNOWN_PAIRS(ascii_with_group_no_backref);
-    RUN_KNOWN_PAIRS(ascii_with_group_and_backref);
-    RUN_KNOWN_PAIRS(utf8_against_ascii);
-    RUN_KNOWN_PAIRS(utf8_against_utf8);
-    RUN_KNOWN_PAIRS(ascii_catastrophic_no_group_no_backref);
-    RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_no_backref);
-    RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_and_backref);
-
-    regexes_extensive_sample = random_regex_sample(
-        regexes_extensive, LENGTH(regexes_extensive),
-        &regexes_extensive_sample_len);
-
-    extensive_failed = run_extensive_regex_tests(
-        regexes_extensive_sample, regexes_extensive_sample_len,
-        "random half of regexes_extensive");
-    free2(regexes_extensive_sample,
-          LENGTH(regexes_extensive)*SIZEOF(*regexes_extensive_sample));
-
-    if (extensive_failed) {
-        printf(RED(
-            "\nSample failed; running full regexes_extensive array ...\n"));
-        srand((uint32)42);
-        extensive_failed = run_extensive_regex_tests(
-            regexes_extensive, LENGTH(regexes_extensive), "regexes_extensive");
-    }
-
-    printf("Exiting from %s...\n", __FILE__);
-
-    if (extensive_failed) {
-        exit(EXIT_FAILURE);
-    }
-
-    exit(EXIT_SUCCESS);
-}
-
-#undef RUN_KNOWN_PAIRS
 
 static void
 run_known_pairs(RegexTest *tests, int32 count, char *description,
@@ -845,3 +783,55 @@ random_regex_sample(MetaRegex **tests, int32 tests_len, int32 *sample_len) {
 
     return sample;
 }
+
+#define RUN_KNOWN_PAIRS(ARRAY) \
+    run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, true); \
+    run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, false)
+
+int32
+main(void) {
+    MetaRegex **regexes_extensive_sample;
+    int32 regexes_extensive_sample_len;
+    bool extensive_failed;
+
+    setlocale(LC_ALL, "C");
+    srand((uint32)42);
+
+    printf(RED("\nTests with known (input, regex) pairs ...\n"));
+    RUN_KNOWN_PAIRS(ascii_no_group_no_backref);
+    RUN_KNOWN_PAIRS(ascii_with_group_no_backref);
+    RUN_KNOWN_PAIRS(ascii_with_group_and_backref);
+    RUN_KNOWN_PAIRS(utf8_against_ascii);
+    RUN_KNOWN_PAIRS(utf8_against_utf8);
+    RUN_KNOWN_PAIRS(ascii_catastrophic_no_group_no_backref);
+    RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_no_backref);
+    RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_and_backref);
+
+    regexes_extensive_sample = random_regex_sample(
+        regexes_extensive, LENGTH(regexes_extensive),
+        &regexes_extensive_sample_len);
+
+    extensive_failed = run_extensive_regex_tests(
+        regexes_extensive_sample, regexes_extensive_sample_len,
+        "random half of regexes_extensive");
+    free2(regexes_extensive_sample,
+          LENGTH(regexes_extensive)*SIZEOF(*regexes_extensive_sample));
+
+    if (extensive_failed) {
+        printf(RED("\nSample failed; running full regexes_extensive array "
+                   "...\n"));
+        srand((uint32)42);
+        extensive_failed = run_extensive_regex_tests(
+            regexes_extensive, LENGTH(regexes_extensive), "regexes_extensive");
+    }
+
+    printf("Exiting from %s...\n", __FILE__);
+
+    if (extensive_failed) {
+        exit(EXIT_FAILURE);
+    }
+
+    exit(EXIT_SUCCESS);
+}
+
+#undef RUN_KNOWN_PAIRS

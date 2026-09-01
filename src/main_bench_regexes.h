@@ -30,24 +30,34 @@ typedef struct BenchRegexBucket {
 static char *
 bench_length_class_name(enum BenchRegexLengthClass c) {
     switch (c) {
-    case BENCH_LEN_1_8: return "1_8";
-    case BENCH_LEN_9_16: return "9_16";
-    case BENCH_LEN_17_32: return "17_32";
-    case BENCH_LEN_33_64: return "33_64";
+    case BENCH_LEN_1_8:
+        return "1_8";
+    case BENCH_LEN_9_16:
+        return "9_16";
+    case BENCH_LEN_17_32:
+        return "17_32";
+    case BENCH_LEN_33_64:
+        return "33_64";
     case BENCH_LEN_LAST:
-    default: return "unknown_length";
+    default:
+        return "unknown_length";
     }
 }
 
 static int32
 bench_length_class_max(enum BenchRegexLengthClass c) {
     switch (c) {
-    case BENCH_LEN_1_8: return 8;
-    case BENCH_LEN_9_16: return 16;
-    case BENCH_LEN_17_32: return 32;
-    case BENCH_LEN_33_64: return 64;
+    case BENCH_LEN_1_8:
+        return 8;
+    case BENCH_LEN_9_16:
+        return 16;
+    case BENCH_LEN_17_32:
+        return 32;
+    case BENCH_LEN_33_64:
+        return 64;
     case BENCH_LEN_LAST:
-    default: return 0;
+    default:
+        return 0;
     }
 }
 

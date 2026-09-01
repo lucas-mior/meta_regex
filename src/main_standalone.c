@@ -57,13 +57,13 @@ main(void) {
         for (int32 j = 0; j < test->expected_match_len; j += 1) {
             if (pmatch[j].rm_so != test->expected_match[j].rm_so
                 || pmatch[j].rm_eo != test->expected_match[j].rm_eo) {
+                int32 expected_so = test->expected_match[j].rm_so;
+                int32 expected_eo = test->expected_match[j].rm_eo;
+
                 failed = true;
-                error2("Standalone test failed: %s: match %d",
-                       test->name, j);
+                error2("Standalone test failed: %s: match %d", test->name, j);
                 error2(" [%d, %d]", pmatch[j].rm_so, pmatch[j].rm_eo);
-                error2(" expected [%d, %d]\n",
-                       test->expected_match[j].rm_so,
-                       test->expected_match[j].rm_eo);
+                error2(" expected [%d, %d]\n", expected_so, expected_eo);
             }
         }
     }

@@ -251,7 +251,7 @@ parse_source_code(char *buffer, int32 source_len) {
             regex->is_null_macro = true;
             regex->source_end_offset = (found_macro + 7) - buffer;
             cursor = found_macro + 7;
-            list.count++;
+            list.count += 1;
             continue;
         }
 
@@ -837,15 +837,14 @@ parse_source_code(char *buffer, int32 source_len) {
                           "{META_OP_LITERAL, %d, 0, 0, {0}},\n",
                           temp_ops[i].value);
             } else if (temp_ops[i].type == META_OP_CLASS) {
+                uint32 *mask = temp_ops[i].mask;
+
                 sb_printf(&op_buffer,
                           "{META_OP_CLASS, 0, 0, 0, "
                           "{%u, %u, %u, %u, ",
-                          temp_ops[i].mask[0], temp_ops[i].mask[1],
-                          temp_ops[i].mask[2], temp_ops[i].mask[3]);
-                sb_printf(&op_buffer,
-                          "%u, %u, %u, %u}},\n",
-                          temp_ops[i].mask[4], temp_ops[i].mask[5],
-                          temp_ops[i].mask[6], temp_ops[i].mask[7]);
+                          mask[0], mask[1], mask[2], mask[3]);
+                sb_printf(&op_buffer, "%u, %u, %u, %u}},\n",
+                          mask[4], mask[5], mask[6], mask[7]);
             } else if (temp_ops[i].type == META_OP_BOUNDED) {
                 sb_printf(&op_buffer,
                           "{META_OP_BOUNDED, 0, %d, %d, {0}},\n",
@@ -979,7 +978,7 @@ parse_source_code(char *buffer, int32 source_len) {
         regex->source_end_offset = (paren_end + 1) - buffer;
         cursor = paren_end + 1;
 
-        list.count++;
+        list.count += 1;
     }
 
     return list;

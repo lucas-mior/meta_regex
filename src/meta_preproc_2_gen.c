@@ -297,6 +297,7 @@ emit_tnfa(ExtractedRegex *regex, StrBuilder *out) {
         for (int32 i = 0; i < tnfa->num_transitions; i += 1) {
             MetaTnfaTransition *tr = &tnfa->transitions[i];
             char *kind = "META_TNFA_TRANS_EPSILON";
+            uint32 *mask = tr->mask;
             if (tr->kind == META_TNFA_TRANS_LITERAL) {
                 kind = "META_TNFA_TRANS_LITERAL";
             } else if (tr->kind == META_TNFA_TRANS_CLASS) {
@@ -316,10 +317,9 @@ emit_tnfa(ExtractedRegex *regex, StrBuilder *out) {
             sb_printf(out, "{ .kind = %s, .from = %d, .to = %d, ",
                       kind, tr->from, tr->to);
             sb_printf(out, ".value = %d, .mask = {%u, %u, %u, %u, ",
-                      tr->value, tr->mask[0], tr->mask[1], tr->mask[2],
-                      tr->mask[3]);
+                      tr->value, mask[0], mask[1], mask[2], mask[3]);
             sb_printf(out, "%u, %u, %u, %u}, ",
-                      tr->mask[4], tr->mask[5], tr->mask[6], tr->mask[7]);
+                      mask[4], mask[5], mask[6], mask[7]);
             sb_printf(out, ".priority = %d, .tag = %d },\n",
                       tr->priority, tr->tag);
         }
@@ -389,8 +389,7 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
                       state->is_accepting, state->first_transition);
             sb_printf(out, ".transition_count = %d, .first_final_op = %d, ",
                       state->transition_count, state->first_final_op);
-            sb_printf(out, ".final_op_count = %d },\n",
-                      state->final_op_count);
+            sb_printf(out, ".final_op_count = %d },\n", state->final_op_count);
         }
         SB_APPEND(out, "}");
     } else {
@@ -613,8 +612,7 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, StrBuilder *out) {
                   dfa_count);
         sb_printf(out, "}){ .num_states = %d, .start_state_w = %d, ",
                   dfa_count, start_dfa_w);
-        sb_printf(out, ".start_state_nw = %d, .states = { \n",
-                  start_dfa_nw);
+        sb_printf(out, ".start_state_nw = %d, .states = { \n", start_dfa_nw);
         for (int32 i = 0; i < dfa_count; i += 1) {
             bool has_accepts = false;
             bool has_transitions = false;
