@@ -249,9 +249,11 @@ emit_tnfa(ExtractedRegex *regex, StrBuilder *out) {
     }
 
     SB_APPEND(out, ", .tnfa = &(MetaTnfa){ ");
-    sb_printf(out, ".num_tags = %d, .num_states = %d, ",
+    sb_printf(out,
+              ".num_tags = %d, .num_states = %d, ",
               tnfa->num_tags, tnfa->num_states);
-    sb_printf(out, ".num_transitions = %d, .start_state = %d, ",
+    sb_printf(out,
+              ".num_transitions = %d, .start_state = %d, ",
               tnfa->num_transitions, tnfa->start_state);
     sb_printf(out, ".final_state = %d", tnfa->final_state);
 
@@ -267,9 +269,11 @@ emit_tnfa(ExtractedRegex *regex, StrBuilder *out) {
             } else if (tag->role == META_TNFA_TAG_POSIX_AUX) {
                 role = "META_TNFA_TAG_POSIX_AUX";
             }
-            sb_printf(out, "{ .id = %d, .group = %d, .role = %s, ",
+            sb_printf(out,
+                      "{ .id = %d, .group = %d, .role = %s, ",
                       tag->id, tag->group, role);
-            sb_printf(out, ".is_multivalued = %d, .fixed_base_tag = %d, ",
+            sb_printf(out,
+                      ".is_multivalued = %d, .fixed_base_tag = %d, ",
                       tag->is_multivalued, tag->fixed_base_tag);
             sb_printf(out, ".fixed_offset = %d },\n", tag->fixed_offset);
         }
@@ -314,13 +318,17 @@ emit_tnfa(ExtractedRegex *regex, StrBuilder *out) {
                 kind = "META_TNFA_TRANS_NON_WORD_BOUNDARY";
             }
 
-            sb_printf(out, "{ .kind = %s, .from = %d, .to = %d, ",
+            sb_printf(out,
+                      "{ .kind = %s, .from = %d, .to = %d, ",
                       kind, tr->from, tr->to);
-            sb_printf(out, ".value = %d, .mask = {%u, %u, %u, %u, ",
+            sb_printf(out,
+                      ".value = %d, .mask = {%u, %u, %u, %u, ",
                       tr->value, mask[0], mask[1], mask[2], mask[3]);
-            sb_printf(out, "%u, %u, %u, %u}, ",
+            sb_printf(out,
+                      "%u, %u, %u, %u}, ",
                       mask[4], mask[5], mask[6], mask[7]);
-            sb_printf(out, ".priority = %d, .tag = %d },\n",
+            sb_printf(out,
+                      ".priority = %d, .tag = %d },\n",
                       tr->priority, tr->tag);
         }
         SB_APPEND(out, "}");
@@ -342,19 +350,26 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
     }
 
     SB_APPEND(out, ", .tdfa = &(MetaTdfa){ ");
-    sb_printf(out, ".num_tags = %d, .num_states = %d, ",
+    sb_printf(out,
+              ".num_tags = %d, .num_states = %d, ",
               tdfa->num_tags, tdfa->num_states);
-    sb_printf(out, ".num_transitions = %d, .num_registers = %d, ",
+    sb_printf(out,
+              ".num_transitions = %d, .num_registers = %d, ",
               tdfa->num_transitions, tdfa->num_registers);
-    sb_printf(out, ".num_ops = %d, .start_state = %d, ",
+    sb_printf(out,
+              ".num_ops = %d, .start_state = %d, ",
               tdfa->num_ops, tdfa->start_state);
-    sb_printf(out, ".start_state_nw_nw = %d, .start_state_nw_w = %d, ",
+    sb_printf(out,
+              ".start_state_nw_nw = %d, .start_state_nw_w = %d, ",
               tdfa->start_state_nw_nw, tdfa->start_state_nw_w);
-    sb_printf(out, ".start_state_w_nw = %d, .start_state_w_w = %d, ",
+    sb_printf(out,
+              ".start_state_w_nw = %d, .start_state_w_w = %d, ",
               tdfa->start_state_w_nw, tdfa->start_state_w_w);
-    sb_printf(out, ".final_register_base = %d, .uses_context = %d, ",
+    sb_printf(out,
+              ".final_register_base = %d, .uses_context = %d, ",
               tdfa->final_register_base, tdfa->uses_context);
-    sb_printf(out, ".transition_index_stride = %d",
+    sb_printf(out,
+              ".transition_index_stride = %d",
               tdfa->transition_index_stride);
 
     if (tdfa->num_tags > 0) {
@@ -369,9 +384,11 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
             } else if (tag->role == META_TNFA_TAG_POSIX_AUX) {
                 role = "META_TNFA_TAG_POSIX_AUX";
             }
-            sb_printf(out, "{ .id = %d, .group = %d, .role = %s, ",
+            sb_printf(out,
+                      "{ .id = %d, .group = %d, .role = %s, ",
                       tag->id, tag->group, role);
-            sb_printf(out, ".is_multivalued = %d, .fixed_base_tag = %d, ",
+            sb_printf(out,
+                      ".is_multivalued = %d, .fixed_base_tag = %d, ",
                       tag->is_multivalued, tag->fixed_base_tag);
             sb_printf(out, ".fixed_offset = %d },\n", tag->fixed_offset);
         }
@@ -387,7 +404,8 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
             sb_printf(out,
                       "{ .is_accepting = %d, .first_transition = %d, ",
                       state->is_accepting, state->first_transition);
-            sb_printf(out, ".transition_count = %d, .first_final_op = %d, ",
+            sb_printf(out,
+                      ".transition_count = %d, .first_final_op = %d, ",
                       state->transition_count, state->first_final_op);
             sb_printf(out, ".final_op_count = %d },\n", state->final_op_count);
         }
@@ -400,9 +418,11 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
         SB_APPEND(out, ", .transitions = (MetaTdfaTransition[]){\n");
         for (int32 i = 0; i < tdfa->num_transitions; i += 1) {
             MetaTdfaTransition *tr = &tdfa->transitions[i];
-            sb_printf(out, "{ .from = %d, .to = %d, .symbol = %d, ",
+            sb_printf(out,
+                      "{ .from = %d, .to = %d, .symbol = %d, ",
                       tr->from, tr->to, tr->symbol);
-            sb_printf(out, ".next_is_word = %d, .first_op = %d, ",
+            sb_printf(out,
+                      ".next_is_word = %d, .first_op = %d, ",
                       tr->next_is_word, tr->first_op);
             sb_printf(out, ".op_count = %d },\n", tr->op_count);
         }
@@ -434,7 +454,8 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
             } else if (op->kind == META_TDFA_REGOP_SET_POS) {
                 kind = "META_TDFA_REGOP_SET_POS";
             }
-            sb_printf(out, "{ .kind = %s, .dst = %d, .src = %d },\n",
+            sb_printf(out,
+                      "{ .kind = %s, .dst = %d, .src = %d },\n",
                       kind, op->dst, op->src);
         }
         SB_APPEND(out, "}");
@@ -608,9 +629,11 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, StrBuilder *out) {
     } else {
         SB_APPEND(out, ", .static_dfa = (StaticDfa *)&(struct { ");
         SB_APPEND(out, "int32 num_states; int32 start_state_w; ");
-        sb_printf(out, "int32 start_state_nw; StaticDfaState states[%d]; ",
+        sb_printf(out,
+                  "int32 start_state_nw; StaticDfaState states[%d]; ",
                   dfa_count);
-        sb_printf(out, "}){ .num_states = %d, .start_state_w = %d, ",
+        sb_printf(out,
+                  "}){ .num_states = %d, .start_state_w = %d, ",
                   dfa_count, start_dfa_w);
         sb_printf(out, ".start_state_nw = %d, .states = { \n", start_dfa_nw);
         for (int32 i = 0; i < dfa_count; i += 1) {
@@ -678,9 +701,11 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
         }
 
         // Emulate original printing structure
-        sb_printf(&out, "&(MetaRegex){ .string = %.*s, ",
+        sb_printf(&out,
+                  "&(MetaRegex){ .string = %.*s, ",
                   regex->original_string_length, quote_start);
-        sb_printf(&out, ".ops = { %.*s }, ",
+        sb_printf(&out,
+                  ".ops = { %.*s }, ",
                   regex->op_buffer_len, regex->op_buffer);
         sb_printf(&out, ".has_start_anchor = %d, ", regex->has_start);
         sb_printf(&out, ".has_end_anchor = %d, ", regex->has_end);

@@ -843,7 +843,8 @@ parse_source_code(char *buffer, int32 source_len) {
                           "{META_OP_CLASS, 0, 0, 0, "
                           "{%u, %u, %u, %u, ",
                           mask[0], mask[1], mask[2], mask[3]);
-                sb_printf(&op_buffer, "%u, %u, %u, %u}},\n",
+                sb_printf(&op_buffer,
+                          "%u, %u, %u, %u}},\n",
                           mask[4], mask[5], mask[6], mask[7]);
             } else if (temp_ops[i].type == META_OP_BOUNDED) {
                 sb_printf(&op_buffer,
