@@ -550,8 +550,7 @@ parse_source_code(char *buffer, int64 source_len) {
 
                         if (temp_ops_count + m + (n == -1 ? 2 : (n - m)*2)
                             >= PREPROC_MAX_TEMP_OPS) {
-                            fprintf(stderr, "Error: Quantifier unrolling "
-                                            "exceeds max ops.\n");
+                            error2("Quantifier unrolling exceeds max ops.\n");
                             exit(EXIT_FAILURE);
                         }
                         temp_ops_count = target_start;
@@ -925,8 +924,8 @@ parse_source_code(char *buffer, int64 source_len) {
             regex->tnfa = malloc2(SIZEOF(*regex->tnfa));
             if (!build_tnfa_from_ops(regex->tnfa, temp_ops, temp_ops_count,
                                      group_counter)) {
-                fprintf(stderr, "Warning: TNFA construction failed for %.*s.\n",
-                        original_string_length, quote_start);
+                error2("Warning: TNFA construction failed for %.*s.\n",
+                       original_string_length, quote_start);
                 regex->tnfa = NULL;
             }
 
