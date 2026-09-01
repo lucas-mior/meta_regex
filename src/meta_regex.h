@@ -100,23 +100,29 @@ typedef struct MetaTnfaStateSet {
     uint32 bits[META_TNFA_STATE_WORDS];
 } MetaTnfaStateSet;
 
-enum MetaTnfaTransitionKind {
-    META_TNFA_TRANS_EPSILON,
-    META_TNFA_TRANS_LITERAL,
-    META_TNFA_TRANS_CLASS,
-    META_TNFA_TRANS_ANY,
-    META_TNFA_TRANS_WORD_START,
-    META_TNFA_TRANS_WORD_END,
-    META_TNFA_TRANS_WORD_BOUNDARY,
-    META_TNFA_TRANS_NON_WORD_BOUNDARY,
-};
+#define ENUM_PREFIX_ META_TNFA_TRANS_
+#define ENUM_NAME MetaTnfaTransitionKind
+#define ENUM_BITFLAGS 0
+#define ENUM_FIELDS                       \
+    XX(META_TNFA_TRANS_EPSILON)          \
+    XX(META_TNFA_TRANS_LITERAL)          \
+    XX(META_TNFA_TRANS_CLASS)            \
+    XX(META_TNFA_TRANS_ANY)              \
+    XX(META_TNFA_TRANS_WORD_START)       \
+    XX(META_TNFA_TRANS_WORD_END)         \
+    XX(META_TNFA_TRANS_WORD_BOUNDARY)    \
+    XX(META_TNFA_TRANS_NON_WORD_BOUNDARY)
+#include "xenums.c"
 
-enum MetaTnfaTagRole {
-    META_TNFA_TAG_GENERIC,
-    META_TNFA_TAG_GROUP_START,
-    META_TNFA_TAG_GROUP_END,
-    META_TNFA_TAG_POSIX_AUX,
-};
+#define ENUM_PREFIX_ META_TNFA_TAG_
+#define ENUM_NAME MetaTnfaTagRole
+#define ENUM_BITFLAGS 0
+#define ENUM_FIELDS               \
+    XX(META_TNFA_TAG_GENERIC)     \
+    XX(META_TNFA_TAG_GROUP_START) \
+    XX(META_TNFA_TAG_GROUP_END)   \
+    XX(META_TNFA_TAG_POSIX_AUX)
+#include "xenums.c"
 
 typedef struct MetaTnfaTag {
     /*
@@ -233,11 +239,14 @@ typedef struct MetaTnfa {
     SET_POS writes the current input offset.
     COPY copies another register.
 */
-enum MetaTdfaRegOpKind {
-    META_TDFA_REGOP_SET_NIL,
-    META_TDFA_REGOP_SET_POS,
-    META_TDFA_REGOP_COPY,
-};
+#define ENUM_PREFIX_ META_TDFA_REGOP_
+#define ENUM_NAME MetaTdfaRegOpKind
+#define ENUM_BITFLAGS 0
+#define ENUM_FIELDS             \
+    XX(META_TDFA_REGOP_SET_NIL) \
+    XX(META_TDFA_REGOP_SET_POS) \
+    XX(META_TDFA_REGOP_COPY)
+#include "xenums.c"
 
 typedef struct MetaTdfaRegOp {
     enum MetaTdfaRegOpKind kind;

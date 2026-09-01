@@ -85,18 +85,21 @@ static PreprocConfig preproc_config = {
     XX(PREPROC_FAIL_NO_BRANCHES)
 #include "xenums.c"
 
-enum NfaStateType {
-    NFA_STATE_ACCEPT,
-    NFA_STATE_LITERAL,
-    NFA_STATE_CLASS,
-    NFA_STATE_ANY,
-    NFA_STATE_SPLIT,
-    NFA_STATE_EMPTY,
-    NFA_STATE_WORD_BOUNDARY,
-    NFA_STATE_NON_WORD_BOUNDARY,
-    NFA_STATE_WORD_START,
-    NFA_STATE_WORD_END,
-};
+#define ENUM_PREFIX_ NFA_STATE_
+#define ENUM_NAME NfaStateType
+#define ENUM_BITFLAGS 0
+#define ENUM_FIELDS                 \
+    XX(NFA_STATE_ACCEPT)            \
+    XX(NFA_STATE_LITERAL)           \
+    XX(NFA_STATE_CLASS)             \
+    XX(NFA_STATE_ANY)               \
+    XX(NFA_STATE_SPLIT)             \
+    XX(NFA_STATE_EMPTY)             \
+    XX(NFA_STATE_WORD_BOUNDARY)     \
+    XX(NFA_STATE_NON_WORD_BOUNDARY) \
+    XX(NFA_STATE_WORD_START)        \
+    XX(NFA_STATE_WORD_END)
+#include "xenums.c"
 
 typedef struct ParsedOp {
     enum MetaOpType type;

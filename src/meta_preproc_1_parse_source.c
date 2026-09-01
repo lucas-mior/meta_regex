@@ -134,8 +134,8 @@ parse_source_code(char *buffer, int32 source_len) {
         char regex_string[PREPROC_MAX_STRING_LEN] = {0};
         int32 regex_string_len = 0;
         StrBuilder op_buffer = {0};
-        char flags_buffer[PREPROC_MAX_FLAGS_EXPR] = "META_RE_NONE";
-        int32 flags_buffer_len = STRLIT_LEN("META_RE_NONE");
+        char flags_buffer[PREPROC_MAX_FLAGS_EXPR] = {0};
+        int32 flags_buffer_len = 0;
         bool has_start = false;
         bool has_end = false;
         int32 regex_index = 0;
@@ -830,71 +830,30 @@ parse_source_code(char *buffer, int32 source_len) {
         }
 
         for (int32 i = 0; i <= temp_ops_count; i += 1) {
-            if (i == temp_ops_count) {
-                SB_APPEND(&op_buffer, "{META_OP_END, 0, 0, 0, {0}}\n");
-            } else if (temp_ops[i].type == META_OP_LITERAL) {
-                sb_printf(&op_buffer,
-                          "{META_OP_LITERAL, %d, 0, 0, {0}},\n",
-                          temp_ops[i].value);
-            } else if (temp_ops[i].type == META_OP_CLASS) {
-                uint32 *mask = temp_ops[i].mask;
+            ParsedOp end_op = { .type = META_OP_END };
+            ParsedOp *op = &end_op;
+            char *type_str;
+
+            if (i < temp_ops_count) {
+                op = &temp_ops[i];
+            }
+
+            type_str = META_OP_str(op->type);
+            if (op->type == META_OP_CLASS) {
+                uint32 *mask = op->mask;
 
                 sb_printf(&op_buffer,
-                          "{META_OP_CLASS, 0, 0, 0, "
-                          "{%u, %u, %u, %u, ",
-                          mask[0], mask[1], mask[2], mask[3]);
+                          "{%s, 0, 0, 0, {%u, %u, %u, %u, ",
+                          type_str, mask[0], mask[1], mask[2], mask[3]);
                 sb_printf(&op_buffer,
                           "%u, %u, %u, %u}},\n",
                           mask[4], mask[5], mask[6], mask[7]);
-            } else if (temp_ops[i].type == META_OP_BOUNDED) {
-                sb_printf(&op_buffer,
-                          "{META_OP_BOUNDED, 0, %d, %d, {0}},\n",
-                          temp_ops[i].min, temp_ops[i].max);
-            } else if (temp_ops[i].type == META_OP_GROUP_START) {
-                sb_printf(&op_buffer,
-                          "{META_OP_GROUP_START, %d, 0, 0, {0}},\n",
-                          temp_ops[i].value);
-            } else if (temp_ops[i].type == META_OP_GROUP_END) {
-                sb_printf(&op_buffer,
-                          "{META_OP_GROUP_END, %d, 0, 0, {0}},\n",
-                          temp_ops[i].value);
-            } else if (temp_ops[i].type == META_OP_SPLIT) {
-                sb_printf(&op_buffer,
-                          "{META_OP_SPLIT, %d, %d, 0, {0}},\n",
-                          temp_ops[i].value, temp_ops[i].min);
-            } else if (temp_ops[i].type == META_OP_JUMP) {
-                sb_printf(&op_buffer,
-                          "{META_OP_JUMP, %d, 0, 0, {0}},\n",
-                          temp_ops[i].value);
-            } else if (temp_ops[i].type == META_OP_WORD_START) {
-                SB_APPEND(&op_buffer, "{META_OP_WORD_START, 0, 0, 0, {0}},\n");
-            } else if (temp_ops[i].type == META_OP_WORD_END) {
-                SB_APPEND(&op_buffer, "{META_OP_WORD_END, 0, 0, 0, {0}},\n");
-            } else if (temp_ops[i].type == META_OP_WORD_BOUNDARY) {
-                SB_APPEND(&op_buffer,
-                          "{META_OP_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
-            } else if (temp_ops[i].type == META_OP_NON_WORD_BOUNDARY) {
-                SB_APPEND(&op_buffer,
-                          "{META_OP_NON_WORD_BOUNDARY, 0, 0, 0, {0}},\n");
-            } else if (temp_ops[i].type == META_OP_BACKREF) {
-                sb_printf(&op_buffer,
-                          "{META_OP_BACKREF, %d, 0, 0, {0}},\n",
-                          temp_ops[i].value);
             } else {
-                char *type_str = "META_OP_UNKNOWN";
-                if (temp_ops[i].type == META_OP_STAR) {
-                    type_str = "META_OP_STAR";
-                } else if (temp_ops[i].type == META_OP_PLUS) {
-                    type_str = "META_OP_PLUS";
-                } else if (temp_ops[i].type == META_OP_OPTIONAL) {
-                    type_str = "META_OP_OPTIONAL";
-                } else if (temp_ops[i].type == META_OP_ALTERNATION) {
-                    type_str = "META_OP_ALTERNATION";
-                } else if (temp_ops[i].type == META_OP_ANY) {
-                    type_str = "META_OP_ANY";
-                }
-                sb_printf(&op_buffer, "{%s, 0, 0, 0, {0}},\n", type_str);
+                sb_printf(&op_buffer,
+                          "{%s, %d, %d, %d, {0}},\n",
+                          type_str, op->value, op->min, op->max);
             }
+            META_OP_str_free(type_str);
         }
 
         flags_start = quote_end + 1;
@@ -910,14 +869,11 @@ parse_source_code(char *buffer, int32 source_len) {
                                                           SIZEOF(flags_buffer),
                                                           flags_start,
                                                           flags_end);
-            if (flags_buffer_len == 0) {
-                flags_buffer[0] = '0';
-                flags_buffer[1] = '\0';
-                flags_buffer_len = 1;
-            }
         }
 
-        flags = META_RE_parse(flags_buffer);
+        if (flags_buffer_len > 0) {
+            flags = META_RE_parse(flags_buffer);
+        }
         if ((flags & META_RE_YESSUB) && (flags & META_RE_NOSUB)) {
             error("R() flags cannot request both extract and no-submatch mode: "
                   "%s\n",
