@@ -946,7 +946,9 @@ parse_source_code(char *buffer, int64 source_len) {
         regex->can_be_null = can_be_null;
         regex->flags = flags;
         regex->extract_submatches = extract_submatches;
-        strncpy32(regex->flags_buffer, flags_buffer, PREPROC_MAX_FLAGS_EXPR);
+        strncpy32(regex->flags_buffer,
+                  flags_buffer,
+                  SIZEOF(regex->flags_buffer));
         regex->used_ops = used_ops;
         memcpy64(regex->fastmap, fastmap, META_FASTMAP_SIZE);
         memcpy64(regex->temp_ops, temp_ops,
