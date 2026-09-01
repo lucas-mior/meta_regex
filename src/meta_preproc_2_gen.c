@@ -601,7 +601,7 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, StrBuilder *out) {
         sb_printf(out, ".start_state_w = %d, ", start_dfa_w);
         sb_printf(out, ".start_state_nw = %d, ", start_dfa_nw);
 
-        SB_APPEND(out, ".states = { \n");
+        SB_APPEND(out, ".states = {\n");
         for (int32 i = 0; i < dfa_count; i += 1) {
             bool has_accepts = false;
             bool has_transitions = false;
