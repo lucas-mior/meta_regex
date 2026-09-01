@@ -113,8 +113,7 @@ usage(void) {
 
 int32
 main(int32 argc, char **argv) {
-    FILE *input_file = NULL;
-    int64 file_size = 0;
+    int32 file_size = 0;
     char *buffer = NULL;
     char *filename = NULL;
 
@@ -195,21 +194,9 @@ main(int32 argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    if ((input_file = fopen(filename, "rb")) == NULL) {
-        error("Error opening %s: %s.\n", filename, strerror(errno));
+    if ((file_size = read_entire_file(filename, &buffer)) < 0) {
         exit(EXIT_FAILURE);
     }
-
-    fseek(input_file, 0, SEEK_END);
-    file_size = ftell(input_file);
-    fseek(input_file, 0, SEEK_SET);
-
-    buffer = malloc2(file_size);
-    if (fread64(buffer, 1, file_size, input_file) != file_size) {
-        error("Error reading %s: %s.\n", filename, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    fclose(input_file);
 
     {
         RegexList parsed_list = parse_source_code(buffer, file_size);
@@ -218,7 +205,7 @@ main(int32 argc, char **argv) {
               parsed_list.capacity*SIZEOF(*parsed_list.items));
     }
 
-    free2(buffer, file_size);
+    free2(buffer, file_size + 1);
 
     exit(EXIT_SUCCESS);
 }

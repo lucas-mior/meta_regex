@@ -119,7 +119,7 @@ preproc_copy_trimmed_slice(char *dst, int32 dst_size, char *start, char *end) {
 }
 
 static RegexList
-parse_source_code(char *buffer, int64 source_len) {
+parse_source_code(char *buffer, int32 source_len) {
     RegexList list = {0};
     char *cursor = buffer;
     char *source_end = buffer + source_len;

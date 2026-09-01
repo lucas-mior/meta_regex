@@ -201,7 +201,7 @@ typedef struct RegexList {
     int32 capacity;
 } RegexList;
 
-static RegexList parse_source_code(char *buffer, int64 source_len);
+static RegexList parse_source_code(char *buffer, int32 source_len);
 static void generate_source_code(char *source, int64 source_len,
                                  RegexList *list, FILE *out);
 static int32 tnfa_tag_is_fixed(ParsedTnfa *tnfa, int32 tag);
