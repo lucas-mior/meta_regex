@@ -266,8 +266,8 @@ meta_regex_match(MetaRegex *regex, uint8 *input, int32 input_len,
         }
     }
 
-    if (regex->min_match_len > 0 && input_len >= 0
-        && input_len < regex->min_match_len) {
+    if ((regex->min_match_len > 0)
+        && (input_len >= 0) && (input_len < regex->min_match_len)) {
         return META_REG_NOMATCH;
     }
 
