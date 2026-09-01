@@ -587,6 +587,7 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, StrBuilder *out) {
         error2(" because of %s.\n", fail_reason_names);
         PREPROC_FAIL_str_free(fail_reason_names);
         error2("static dfa will not be available at runtime.\n");
+
         SB_APPEND(out, ", .static_dfa = NULL");
     } else {
         SB_APPEND(out, ", .static_dfa = &(StaticDfa){\n");
