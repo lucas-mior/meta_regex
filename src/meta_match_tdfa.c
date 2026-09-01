@@ -56,6 +56,7 @@ match_tdfa_exec_ops(MetaTdfa *tdfa, int32 *regs, int32 first_op, int32 op_count,
         case META_TDFA_REGOP_COPY:
             regs[op->dst] = regs[op->src];
             break;
+        case META_TDFA_REGOP_COUNT
         default:
             break;
         }
