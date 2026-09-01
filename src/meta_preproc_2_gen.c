@@ -617,7 +617,8 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, StrBuilder *out) {
             if (!has_accepts) {
                 SB_APPEND(out, "0");
             }
-            SB_APPEND(out, "}, .next = {");
+            SB_APPEND(out, "},\n");
+            SB_APPEND(out, ".next = {");
             for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                 if (dfa_transitions[i][c] != 0) {
                     sb_printf(out, "[%d]=%d,", c, dfa_transitions[i][c]);
