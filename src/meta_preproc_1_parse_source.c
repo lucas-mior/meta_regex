@@ -844,12 +844,10 @@ parse_source_code(char *buffer, int32 source_len) {
 
                 SB_APPEND(&op_buffer, "{");
                 sb_printf(&op_buffer, "%s, 0, 0, 0, ", type_str);
-                SB_APPEND(&op_buffer, "{");
-                sb_printf(&op_buffer, "%u, %u, %u, %u, ",
-                          mask[0], mask[1], mask[2], mask[3]);
-                sb_printf(&op_buffer, "%u, %u, %u, %u",
-                          mask[4], mask[5], mask[6], mask[7]);
-                SB_APPEND(&op_buffer, "}},\n");
+                sb_printf(&op_buffer, "{ %u, %u, %u, %u, %u, %u, %u, %u }",
+                                      mask[0], mask[1], mask[2], mask[3],
+                                      mask[4], mask[5], mask[6], mask[7]);
+                SB_APPEND(&op_buffer, "},\n");
             } else {
                 sb_printf(&op_buffer,
                           "{%s, %d, %d, %d, {0}},\n",
