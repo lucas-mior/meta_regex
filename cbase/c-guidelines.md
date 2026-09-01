@@ -262,8 +262,6 @@ In general, we must always know the lengths of our strings:
   - For receiving strings from external programs that are dumb and rely on nul
     terminated strings. This is very very very rare.
 
-
-
 In general, pass `char *string` and `int32 string_len` around. Also use this
 convention in struct definitions.
 
