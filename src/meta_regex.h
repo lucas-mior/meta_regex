@@ -16,7 +16,7 @@
 #define ENUM_PREFIX_ META_RE_
 #define ENUM_NAME MetaRegexFlags
 #define ENUM_BITFLAGS 1
-#define ENUM_FIELDS \
+#define ENUM_FIELDS    \
     XX(META_RE_YESSUB) \
     XX(META_RE_NOSUB)
 #include "xenums.c"
