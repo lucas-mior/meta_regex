@@ -650,9 +650,9 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
                      FILE *out) {
     int64 current_offset = 0;
 
-    fprintf(out, "#if defined(__clang__)\n");
-    fprintf(out, "#pragma clang diagnostic push\n");
-    fprintf(out, "#pragma clang diagnostic ignored "
+    fprintf(out, "#if defined(__clang__) || defined(__GNUC__)\n");
+    fprintf(out, "#pragma GCC diagnostic push\n");
+    fprintf(out, "#pragma GCC diagnostic ignored "
                  "\"-Wmissing-field-initializers\"\n");
     fprintf(out, "#endif\n");
 
@@ -732,7 +732,7 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
                 source + current_offset);
     }
 
-    fprintf(out, "\n#if defined(__clang__)\n");
-    fprintf(out, "#pragma clang diagnostic pop\n");
+    fprintf(out, "\n#if defined(__clang__) || defined(__GNUC__)\n");
+    fprintf(out, "#pragma GCC diagnostic pop\n");
     fprintf(out, "#endif\n");
 }
