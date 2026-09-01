@@ -233,7 +233,36 @@ typedef struct MyStruct {
 
 ## Strings and their lengths
 
-In general, we must always know the lengths of our strings.
+In general, we must always know the lengths of our strings:
+- Pass string length when we already know it (see below).
+- Use STRLIT("literal") when needed to pass a string and its length to a
+  function without repeating the literal itself.
+- Use `memchr64`, `memmem64`, or other function to parse whatever we are
+  parsing. Example:
+  ```c
+  char *content;
+  int32 content_len;
+  char *end;
+  content_len = some_function(&content);
+
+  if ((end = memchr64(content, '\n', content_len))) {
+      int32 len = (int32)(end - content);
+  }
+  ```
+- Use `strlen32`:
+  - for getting the length of a `char *`, when a function is used both with
+    literals and with variables and for some reason it does not receive the
+    length of the `char *`.
+  - for strings coming from code that we don't control but have a upper limit
+    * This is very very very rare. The only case I can even conceive is a file
+      with null terminated strings in it, and we know the size of the file, so
+      strlen32 may be used safely if we know that there is at least one byte 0
+      in the file.
+- Use `strnlen32`:
+  - For receiving strings from external programs that are dumb and rely on nul
+    terminated strings. This is very very very rare.
+
+
 
 In general, pass `char *string` and `int32 string_len` around. Also use this
 convention in struct definitions.
