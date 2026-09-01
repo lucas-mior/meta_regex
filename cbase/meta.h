@@ -9,7 +9,7 @@
 #include "primitives.h"
 #include "base_macros.h"
 
-#define TOKEN_KIND_FIELDS \
+#define TOKEN_KIND_FIELDS  \
     XX(TOKEN_UNKNOWN)      \
     XX(TOKEN_SPACE)        \
     XX(TOKEN_NEWLINE)      \
