@@ -352,13 +352,12 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
             MetaTnfaTag *tag = &tdfa->tags[i];
             char *role = META_TNFA_TAG_str(tag->role);
 
-            sb_printf(out,
-                      "{ .id = %d, .group = %d, .role = %s, ",
-                      tag->id, tag->group, role);
-            sb_printf(out,
-                      ".is_multivalued = %d, .fixed_base_tag = %d, ",
-                      tag->is_multivalued, tag->fixed_base_tag);
+            sb_printf(out, "{ .id = %d, .group = %d, .role = %s, ",
+                           tag->id, tag->group, role);
+            sb_printf(out, ".is_multivalued = %d, .fixed_base_tag = %d, ",
+                           tag->is_multivalued, tag->fixed_base_tag);
             sb_printf(out, ".fixed_offset = %d },\n", tag->fixed_offset);
+
             META_TNFA_TAG_str_free(role);
         }
         SB_APPEND(out, "}");
