@@ -240,7 +240,8 @@ parse_source_code(char *buffer, int64 source_len) {
             int64 old_capacity;
             old_capacity = list.capacity;
             list.capacity *= 2;
-            list.items = realloc2(list.items, old_capacity, list.capacity,
+            list.items = realloc2(list.items,
+                                  old_capacity, list.capacity,
                                   SIZEOF(*list.items));
         }
         regex = &list.items[list.count];
