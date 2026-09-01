@@ -32,28 +32,31 @@ preproc_parse_int32(char *name, char *value, int32 min_value, int32 max_value) {
 
 static bool
 preproc_parse_bool(char *name, char *value) {
+    int32 value_len;
+
     if (value == NULL) {
         error("Missing value for %s. Expected %s=true or %s=false.\n", name,
               name, name);
         exit(EXIT_FAILURE);
     }
 
-    if (strequal(value, "true")) {
+    value_len = strlen32(value);
+    if (STREQUAL(value, value_len, STRLIT("true"))) {
         return true;
     }
-    if (strequal(value, "on")) {
+    if (STREQUAL(value, value_len, STRLIT("on"))) {
         return true;
     }
-    if (strequal(value, "yes")) {
+    if (STREQUAL(value, value_len, STRLIT("yes"))) {
         return true;
     }
-    if (strequal(value, "false")) {
+    if (STREQUAL(value, value_len, STRLIT("false"))) {
         return false;
     }
-    if (strequal(value, "off")) {
+    if (STREQUAL(value, value_len, STRLIT("off"))) {
         return false;
     }
-    if (strequal(value, "no")) {
+    if (STREQUAL(value, value_len, STRLIT("no"))) {
         return false;
     }
 
@@ -138,6 +141,8 @@ main(int32 argc, char **argv) {
     }
 
     for (int32 i = 1; i < argc; i += 1) {
+        int32 arg_len = strlen32(argv[i]);
+
         PARSE_OPTION(argv[i], help)
         PARSE_OPTION(argv[i], emit_static_dfa)
         PARSE_OPTION(argv[i], emit_tnfa)
@@ -153,7 +158,7 @@ main(int32 argc, char **argv) {
         PARSE_OPTION(argv[i], max_tdfa_regops)
         PARSE_OPTION(argv[i], max_tdfa_transition_index_entries)
 
-        if (memchr64(argv[i], '=', strlen32(argv[i]))) {
+        if (memchr64(argv[i], '=', arg_len) != NULL) {
             error("Unknown preprocessor option: %s. Options must use exact "
                   "name=value form.\n",
                   argv[i]);
@@ -199,12 +204,11 @@ main(int32 argc, char **argv) {
     file_size = ftell(input_file);
     fseek(input_file, 0, SEEK_SET);
 
-    buffer = malloc2(file_size + 1);
+    buffer = malloc2(file_size);
     if (fread64(buffer, 1, file_size, input_file) != file_size) {
         error("Error reading %s: %s.\n", filename, strerror(errno));
         exit(EXIT_FAILURE);
     }
-    buffer[file_size] = '\0';
     fclose(input_file);
 
     {
@@ -214,7 +218,7 @@ main(int32 argc, char **argv) {
               parsed_list.capacity*SIZEOF(*parsed_list.items));
     }
 
-    free2(buffer, file_size + 1);
+    free2(buffer, file_size);
 
     exit(EXIT_SUCCESS);
 }

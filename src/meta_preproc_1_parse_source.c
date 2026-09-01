@@ -5,7 +5,7 @@
 /* Source scanner and R(...) extraction entry point. */
 
 static char *
-preproc_find_macro_end(char *macro_start) {
+preproc_find_macro_end(char *macro_start, char *source_end) {
     char *p = macro_start;
     int32 depth = 0;
     int32 in_string = 0;
@@ -13,7 +13,7 @@ preproc_find_macro_end(char *macro_start) {
     int32 in_line_comment = 0;
     int32 in_block_comment = 0;
 
-    while (*p != '\0') {
+    while (p < source_end) {
         if (in_line_comment) {
             if (*p == '\n') {
                 in_line_comment = 0;
@@ -22,7 +22,7 @@ preproc_find_macro_end(char *macro_start) {
             continue;
         }
         if (in_block_comment) {
-            if (p[0] == '*' && p[1] == '/') {
+            if (p + 1 < source_end && p[0] == '*' && p[1] == '/') {
                 in_block_comment = 0;
                 p += 2;
             } else {
@@ -31,7 +31,7 @@ preproc_find_macro_end(char *macro_start) {
             continue;
         }
         if (in_string) {
-            if (p[0] == '\\' && p[1] != '\0') {
+            if (p + 1 < source_end && p[0] == '\\') {
                 p += 2;
             } else if (p[0] == '"') {
                 in_string = 0;
@@ -42,7 +42,7 @@ preproc_find_macro_end(char *macro_start) {
             continue;
         }
         if (in_char) {
-            if (p[0] == '\\' && p[1] != '\0') {
+            if (p + 1 < source_end && p[0] == '\\') {
                 p += 2;
             } else if (p[0] == '\'') {
                 in_char = 0;
@@ -53,12 +53,12 @@ preproc_find_macro_end(char *macro_start) {
             continue;
         }
 
-        if (p[0] == '/' && p[1] == '/') {
+        if (p + 1 < source_end && p[0] == '/' && p[1] == '/') {
             in_line_comment = 1;
             p += 2;
             continue;
         }
-        if (p[0] == '/' && p[1] == '*') {
+        if (p + 1 < source_end && p[0] == '/' && p[1] == '*') {
             in_block_comment = 1;
             p += 2;
             continue;
@@ -88,12 +88,12 @@ preproc_find_macro_end(char *macro_start) {
     return NULL;
 }
 
-static void
+static int32
 preproc_copy_trimmed_slice(char *dst, int32 dst_size, char *start, char *end) {
     int32 len;
 
     if (dst_size <= 0) {
-        return;
+        return 0;
     }
 
     while (start < end
@@ -115,20 +115,14 @@ preproc_copy_trimmed_slice(char *dst, int32 dst_size, char *start, char *end) {
         memcpy64(dst, start, len);
     }
     dst[len] = '\0';
-    return;
-}
-
-static enum MetaRegexFlags
-preproc_parse_regex_flags(char *flags_expr) {
-    return META_RE_parse(flags_expr);
+    return len;
 }
 
 static RegexList
 parse_source_code(char *buffer, int64 source_len) {
     RegexList list = {0};
     char *cursor = buffer;
-    char *macro_start = "R(";
-    (void)source_len;
+    char *source_end = buffer + source_len;
 
     while (true) {
         char *found_macro = NULL;
@@ -137,10 +131,12 @@ parse_source_code(char *buffer, int64 source_len) {
         char *paren_end = NULL;
         char *flags_start = NULL;
         char *flags_end = NULL;
-        char raw_string[PREPROC_MAX_STRING_LEN] = {0};
         char regex_string[PREPROC_MAX_STRING_LEN] = {0};
+        int32 regex_string_len = 0;
         char op_buffer[PREPROC_OP_BUFFER_SIZE] = {0};
         char flags_buffer[PREPROC_MAX_FLAGS_EXPR] = "META_RE_NONE";
+        int32 flags_buffer_len = STRLIT_LEN("META_RE_NONE");
+        int32 op_buffer_len = 0;
         char *op_ptr = op_buffer;
         int32 space = SIZEOF(op_buffer);
         bool has_start = false;
@@ -167,7 +163,7 @@ parse_source_code(char *buffer, int64 source_len) {
             bool in_string = false;
             bool in_char = false;
 
-            while (*scan != '\0') {
+            while (scan < source_end) {
                 if (in_line_comment) {
                     if (*scan == '\n') {
                         in_line_comment = false;
@@ -176,7 +172,8 @@ parse_source_code(char *buffer, int64 source_len) {
                     continue;
                 }
                 if (in_block_comment) {
-                    if (scan[0] == '*' && scan[1] == '/') {
+                    if (scan + 1 < source_end
+                        && scan[0] == '*' && scan[1] == '/') {
                         in_block_comment = false;
                         scan += 2;
                     } else {
@@ -185,7 +182,7 @@ parse_source_code(char *buffer, int64 source_len) {
                     continue;
                 }
                 if (in_string) {
-                    if (scan[0] == '\\' && scan[1] != '\0') {
+                    if (scan + 1 < source_end && scan[0] == '\\') {
                         scan += 2;
                     } else if (scan[0] == '"') {
                         in_string = false;
@@ -196,7 +193,7 @@ parse_source_code(char *buffer, int64 source_len) {
                     continue;
                 }
                 if (in_char) {
-                    if (scan[0] == '\\' && scan[1] != '\0') {
+                    if (scan + 1 < source_end && scan[0] == '\\') {
                         scan += 2;
                     } else if (scan[0] == '\'') {
                         in_char = false;
@@ -206,10 +203,12 @@ parse_source_code(char *buffer, int64 source_len) {
                     }
                     continue;
                 }
-                if (scan[0] == '/' && scan[1] == '/') {
+                if (scan + 1 < source_end
+                    && scan[0] == '/' && scan[1] == '/') {
                     in_line_comment = true;
                     scan += 2;
-                } else if (scan[0] == '/' && scan[1] == '*') {
+                } else if (scan + 1 < source_end
+                           && scan[0] == '/' && scan[1] == '*') {
                     in_block_comment = true;
                     scan += 2;
                 } else if (scan[0] == '"') {
@@ -218,8 +217,8 @@ parse_source_code(char *buffer, int64 source_len) {
                 } else if (scan[0] == '\'') {
                     in_char = true;
                     scan += 1;
-                } else if (scan[0] == macro_start[0]
-                           && scan[1] == macro_start[1]) {
+                } else if (scan + 1 < source_end
+                           && scan[0] == 'R' && scan[1] == '(') {
                     found_macro = scan;
                     break;
                 } else {
@@ -249,9 +248,9 @@ parse_source_code(char *buffer, int64 source_len) {
 
         regex->source_start_offset = found_macro - buffer;
 
-        if (found_macro[2] == 'N' && found_macro[3] == 'U'
-            && found_macro[4] == 'L' && found_macro[5] == 'L'
-            && found_macro[6] == ')') {
+        if (source_end - found_macro >= STRLIT_LEN("R(NULL)")
+            && STREQUAL(found_macro, STRLIT_LEN("R(NULL)"),
+                        STRLIT("R(NULL)"))) {
             regex->is_null_macro = true;
             regex->source_end_offset = (found_macro + 7) - buffer;
             cursor = found_macro + 7;
@@ -259,16 +258,22 @@ parse_source_code(char *buffer, int64 source_len) {
             continue;
         }
 
-        if ((quote_start
-                = memchr64(found_macro, '"', strlen32(found_macro))) == NULL) {
+        paren_end = preproc_find_macro_end(found_macro, source_end);
+        if (paren_end == NULL) {
+            error("Error parsing regex: closing ')' not found.\n");
+            exit(EXIT_FAILURE);
+        }
+
+        quote_start = memchr64(found_macro, '"', paren_end - found_macro);
+        if (quote_start == NULL) {
             error("Error parsing regex: Quotes not found.\n");
             exit(EXIT_FAILURE);
         }
 
         quote_end = quote_start + 1;
-        while (*quote_end != '\0') {
+        while (quote_end < paren_end) {
             if (*quote_end == '\\') {
-                if (*(quote_end + 1) != '\0') {
+                if (quote_end + 1 < paren_end) {
                     quote_end += 2;
                     continue;
                 }
@@ -278,55 +283,64 @@ parse_source_code(char *buffer, int64 source_len) {
             }
             quote_end += 1;
         }
-
-        strncpy32(raw_string, quote_start + 1, quote_end - quote_start - 1);
+        if (quote_end >= paren_end || *quote_end != '"') {
+            error("Error parsing regex: closing quote not found.\n");
+            exit(EXIT_FAILURE);
+        }
 
         {
-            int32 u_idx = 0;
-            for (int32 i = 0; raw_string[i] != '\0'; i += 1) {
+            char *raw_string = quote_start + 1;
+            int32 raw_string_len = quote_end - raw_string;
+
+            for (int32 i = 0; i < raw_string_len; i += 1) {
+                if (regex_string_len >= SIZEOF(regex_string)) {
+                    error("Regex literal is too long.\n");
+                    exit(EXIT_FAILURE);
+                }
                 if (raw_string[i] == '\\') {
-                    if (raw_string[i + 1] != '\0') {
+                    if (i + 1 < raw_string_len) {
                         i += 1;
                         switch (raw_string[i]) {
                         case 'n':
-                            regex_string[u_idx] = '\n';
+                            regex_string[regex_string_len] = '\n';
                             break;
                         case 't':
-                            regex_string[u_idx] = '\t';
+                            regex_string[regex_string_len] = '\t';
                             break;
                         case 'r':
-                            regex_string[u_idx] = '\r';
+                            regex_string[regex_string_len] = '\r';
                             break;
                         case '\\':
-                            regex_string[u_idx] = '\\';
+                            regex_string[regex_string_len] = '\\';
                             break;
                         case '"':
-                            regex_string[u_idx] = '"';
+                            regex_string[regex_string_len] = '"';
                             break;
                         default:
-                            regex_string[u_idx] = raw_string[i];
+                            regex_string[regex_string_len] = raw_string[i];
                             break;
                         }
-                        u_idx += 1;
+                        regex_string_len += 1;
                     }
                 } else {
-                    regex_string[u_idx] = raw_string[i];
-                    u_idx += 1;
+                    regex_string[regex_string_len] = raw_string[i];
+                    regex_string_len += 1;
                 }
             }
         }
 
-        if (regex_string[regex_index] == '^') {
+        if (regex_index < regex_string_len
+            && regex_string[regex_index] == '^') {
             has_start = true;
             regex_index += 1;
         }
 
-        while (regex_string[regex_index] != '\0') {
+        while (regex_index < regex_string_len) {
             int32 cp = (uint8)regex_string[regex_index];
 
             switch (cp) {
             case '$': {
-                if (regex_string[regex_index + 1] == '\0') {
+                if (regex_index + 1 == regex_string_len) {
                     has_end = true;
                     regex_index += 1;
                     break;
@@ -459,18 +473,22 @@ parse_source_code(char *buffer, int64 source_len) {
                 int32 n = -1;
                 bool has_m = false;
                 bool valid = false;
-                while (regex_string[temp_idx] >= '0'
+                while (temp_idx < regex_string_len
+                       && regex_string[temp_idx] >= '0'
                        && regex_string[temp_idx] <= '9') {
                     m = m*10 + (regex_string[temp_idx] - '0');
                     has_m = true;
                     temp_idx += 1;
                 }
-                if (regex_string[temp_idx] == ',') {
+                if (temp_idx < regex_string_len
+                    && regex_string[temp_idx] == ',') {
                     temp_idx += 1;
-                    if (regex_string[temp_idx] >= '0'
+                    if (temp_idx < regex_string_len
+                        && regex_string[temp_idx] >= '0'
                         && regex_string[temp_idx] <= '9') {
                         n = 0;
-                        while (regex_string[temp_idx] >= '0'
+                        while (temp_idx < regex_string_len
+                               && regex_string[temp_idx] >= '0'
                                && regex_string[temp_idx] <= '9') {
                             n = n*10 + (regex_string[temp_idx] - '0');
                             temp_idx += 1;
@@ -479,7 +497,8 @@ parse_source_code(char *buffer, int64 source_len) {
                 } else {
                     n = m;
                 }
-                if (regex_string[temp_idx] == '}' && has_m) {
+                if (temp_idx < regex_string_len
+                    && regex_string[temp_idx] == '}' && has_m) {
                     valid = true;
                     temp_idx += 1;
                 }
@@ -619,11 +638,12 @@ parse_source_code(char *buffer, int64 source_len) {
                 uint32 mask[META_CHAR_BITMASK_WORDS] = {0};
                 bool first_char = true;
                 regex_index += 1;
-                if (regex_string[regex_index] == '^') {
+                if (regex_index < regex_string_len
+                    && regex_string[regex_index] == '^') {
                     is_negated = true;
                     regex_index += 1;
                 }
-                while (regex_string[regex_index] != '\0') {
+                while (regex_index < regex_string_len) {
                     int32 c1;
                     int32 c2;
 
@@ -631,12 +651,14 @@ parse_source_code(char *buffer, int64 source_len) {
                         break;
                     }
 
-                    if (regex_string[regex_index] == '['
+                    if (regex_index + 1 < regex_string_len
+                        && regex_string[regex_index] == '['
                         && regex_string[regex_index + 1] == ':') {
                         int32 colon_idx = regex_index + 2;
                         bool found_end = false;
-                        while (regex_string[colon_idx] != '\0') {
-                            if (regex_string[colon_idx] == ':'
+                        while (colon_idx < regex_string_len) {
+                            if (colon_idx + 1 < regex_string_len
+                                && regex_string[colon_idx] == ':'
                                 && regex_string[colon_idx + 1] == ']') {
                                 found_end = true;
                                 break;
@@ -644,13 +666,11 @@ parse_source_code(char *buffer, int64 source_len) {
                             colon_idx += 1;
                         }
                         if (found_end) {
-                            char class_name[PREPROC_MAX_CLASS_NAME] = {0};
                             int32 name_len = colon_idx - (regex_index + 2);
-                            if (name_len < SIZEOF(class_name)) {
-                                strncpy32(class_name,
-                                          &regex_string[regex_index + 2],
-                                          name_len);
-                                populate_posix_class_mask(class_name, mask);
+                            if (name_len < PREPROC_MAX_CLASS_NAME) {
+                                populate_posix_class_mask(
+                                    &regex_string[regex_index + 2],
+                                    name_len, mask);
                             }
                             regex_index = colon_idx + 2;
                             first_char = false;
@@ -667,9 +687,9 @@ parse_source_code(char *buffer, int64 source_len) {
 
                     c2 = c1;
                     regex_index += 1;
-                    if (regex_string[regex_index] == '-'
-                        && regex_string[regex_index + 1] != ']'
-                        && regex_string[regex_index + 1] != '\0') {
+                    if (regex_index + 1 < regex_string_len
+                        && regex_string[regex_index] == '-'
+                        && regex_string[regex_index + 1] != ']') {
                         c2 = (uint8)regex_string[regex_index + 1];
                         if (c2 >= 128) {
                             error2("Error: Non-ASCII character inside bracket "
@@ -683,7 +703,8 @@ parse_source_code(char *buffer, int64 source_len) {
                     }
                     first_char = false;
                 }
-                if (regex_string[regex_index] == ']') {
+                if (regex_index < regex_string_len
+                    && regex_string[regex_index] == ']') {
                     regex_index += 1;
                 }
                 if (is_negated) {
@@ -700,7 +721,7 @@ parse_source_code(char *buffer, int64 source_len) {
             }
             case '\\': {
                 regex_index += 1;
-                if (regex_string[regex_index] != '\0') {
+                if (regex_index < regex_string_len) {
                     int32 c_cp = (uint8)regex_string[regex_index];
                     if (c_cp == 's' || c_cp == 'S') {
                         temp_ops[temp_ops_count].type = META_OP_CLASS;
@@ -750,8 +771,8 @@ parse_source_code(char *buffer, int64 source_len) {
                         temp_ops[temp_ops_count].value = c_cp;
                         temp_ops_count += 1;
                     }
+                    regex_index += 1;
                 }
-                regex_index += 1;
                 break;
             }
             default: {
@@ -876,12 +897,7 @@ parse_source_code(char *buffer, int64 source_len) {
             op_ptr += w;
             space -= w;
         }
-
-        paren_end = preproc_find_macro_end(found_macro);
-        if (paren_end == NULL) {
-            error("Error parsing regex: closing ')' not found.\n");
-            exit(EXIT_FAILURE);
-        }
+        op_buffer_len = op_ptr - op_buffer;
 
         flags_start = quote_end + 1;
         while (flags_start < paren_end
@@ -892,14 +908,16 @@ parse_source_code(char *buffer, int64 source_len) {
         if (flags_start < paren_end && *flags_start == ',') {
             flags_start += 1;
             flags_end = paren_end;
-            preproc_copy_trimmed_slice(flags_buffer, SIZEOF(flags_buffer),
-                                       flags_start, flags_end);
-            if (flags_buffer[0] == '\0') {
-                memcpy64(flags_buffer, STRLIT("0") + 1);
+            flags_buffer_len = preproc_copy_trimmed_slice(
+                flags_buffer, SIZEOF(flags_buffer), flags_start, flags_end);
+            if (flags_buffer_len == 0) {
+                flags_buffer[0] = '0';
+                flags_buffer[1] = '\0';
+                flags_buffer_len = 1;
             }
         }
 
-        flags = preproc_parse_regex_flags(flags_buffer);
+        flags = META_RE_parse(flags_buffer);
         if ((flags & META_RE_YESSUB) && (flags & META_RE_NOSUB)) {
             error("R() flags cannot request both extract and no-submatch mode: "
                   "%s\n",
@@ -946,23 +964,18 @@ parse_source_code(char *buffer, int64 source_len) {
         regex->can_be_null = can_be_null;
         regex->flags = flags;
         regex->extract_submatches = extract_submatches;
-        strncpy32(regex->flags_buffer,
-                  flags_buffer,
-                  SIZEOF(regex->flags_buffer));
+        regex->flags_buffer_len = flags_buffer_len;
+        memcpy64(regex->flags_buffer, flags_buffer, flags_buffer_len + 1);
         regex->used_ops = used_ops;
         memcpy64(regex->fastmap, fastmap, META_FASTMAP_SIZE);
         memcpy64(regex->temp_ops, temp_ops,
                  temp_ops_count*SIZEOF(*regex->temp_ops));
         regex->temp_ops_count = temp_ops_count;
-        strncpy32(regex->op_buffer, op_buffer, SIZEOF(regex->op_buffer));
+        regex->op_buffer_len = op_buffer_len;
+        memcpy64(regex->op_buffer, op_buffer, op_buffer_len);
 
-        if (paren_end) {
-            regex->source_end_offset = (paren_end + 1) - buffer;
-            cursor = paren_end + 1;
-        } else {
-            regex->source_end_offset = (quote_end + 1) - buffer;
-            cursor = quote_end + 1;
-        }
+        regex->source_end_offset = (paren_end + 1) - buffer;
+        cursor = paren_end + 1;
 
         list.count++;
     }

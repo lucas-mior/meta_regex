@@ -658,6 +658,8 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
 
     for (int32 i = 0; i < list->count; i += 1) {
         ExtractedRegex *regex = &list->items[i];
+        char *submatch_flag = "META_RE_NOSUB";
+        int32 re_nsub = 0;
 
         // Print everything leading up to this macro natively
         int64 prefix_len = regex->source_start_offset - current_offset;
@@ -669,20 +671,30 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
             continue;
         }
 
+        if (regex->extract_submatches) {
+            submatch_flag = "META_RE_YESSUB";
+            re_nsub = regex->group_counter;
+        }
+
         // Emulate original printing structure
         fprintf(out, "&(MetaRegex){ .string = %.*s, ",
                 regex->original_string_length,
                 source + regex->quote_start_offset);
-        fprintf(out, ".ops = { %s }, ", regex->op_buffer);
+        fprintf(out, ".ops = { %.*s }, ",
+                regex->op_buffer_len, regex->op_buffer);
         fprintf(out, ".has_start_anchor = %d, ", regex->has_start);
         fprintf(out, ".has_end_anchor = %d, ", regex->has_end);
-        fprintf(out, ".re_nsub = %d, ",
-                regex->extract_submatches ? regex->group_counter : 0);
+        fprintf(out, ".re_nsub = %d, ", re_nsub);
         fprintf(out, ".can_be_null = %d, ", regex->can_be_null);
         fprintf(out, ".min_match_len = %d, ", regex->min_match_len);
-        fprintf(out, ".flags = (enum MetaRegexFlags)((%s) | %s), ",
-                regex->flags_buffer[0] ? regex->flags_buffer : "0",
-                regex->extract_submatches ? "META_RE_YESSUB" : "META_RE_NOSUB");
+        fprintf(out, ".flags = (enum MetaRegexFlags)((");
+        if (regex->flags_buffer_len > 0) {
+            fprintf(out, "%.*s",
+                    regex->flags_buffer_len, regex->flags_buffer);
+        } else {
+            fprintf(out, "0");
+        }
+        fprintf(out, ") | %s), ", submatch_flag);
         fprintf(out, ".used_ops = (enum MetaOpType)%u, ", regex->used_ops);
         fprintf(out, ".fastmap = {");
 

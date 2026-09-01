@@ -186,6 +186,8 @@ typedef struct ExtractedRegex {
     int32 min_match_len;
     enum MetaRegexFlags flags;
     bool extract_submatches;
+    int32 flags_buffer_len;
+    int32 op_buffer_len;
     char flags_buffer[PREPROC_MAX_FLAGS_EXPR];
     uint32 used_ops;
     uint8 fastmap[META_FASTMAP_SIZE];
@@ -200,7 +202,8 @@ typedef struct RegexList {
 } RegexList;
 
 static RegexList parse_source_code(char *buffer, int64 source_len);
-static void generate_source_code(char *source, int64 source_len, RegexList *list, FILE *out);
+static void generate_source_code(char *source, int64 source_len,
+                                 RegexList *list, FILE *out);
 static int32 tnfa_tag_is_fixed(ParsedTnfa *tnfa, int32 tag);
 
 #endif /* META_PREPROC_H */
