@@ -952,7 +952,7 @@ parse_source_code(char *buffer, int64 source_len) {
         memcpy64(regex->temp_ops, temp_ops,
                  temp_ops_count*SIZEOF(*regex->temp_ops));
         regex->temp_ops_count = temp_ops_count;
-        strncpy32(regex->op_buffer, op_buffer, PREPROC_OP_BUFFER_SIZE);
+        strncpy32(regex->op_buffer, op_buffer, SIZEOF(regex->op_buffer));
 
         if (paren_end) {
             regex->source_end_offset = (paren_end + 1) - buffer;
