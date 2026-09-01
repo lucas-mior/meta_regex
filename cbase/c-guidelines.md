@@ -284,7 +284,8 @@ That means to also avoid calling `strlen32`:
   only the string, or also passing the string length. See `cbase.h`.
 - Functions that in general only operate on short literals are allowed to
   receive only the `char *pointer` without the length. In this case it is
-  ok to let the function call `strlen32` inside.
+  ok to let the function call `strlen32` inside. But try to avoid it, prefer to
+  pass the `char *string` and `int32 string_len`.
 - `StrBuilder`: use this struct and its functions to build long, dynamic
   strings. Do not use it where a single
   `SNPRINTF(stack_array, "format_%s_string", args);` would be enough.
