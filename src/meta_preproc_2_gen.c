@@ -414,9 +414,8 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
             MetaTdfaRegOp *op = &tdfa->ops[i];
             char *kind = META_TDFA_REGOP_str(op->kind);
 
-            sb_printf(out,
-                      "{ .kind = %s, .dst = %d, .src = %d },\n",
-                      kind, op->dst, op->src);
+            sb_printf(out, "{ .kind = %s, .dst = %d, .src = %d },\n",
+                           kind, op->dst, op->src);
             META_TDFA_REGOP_str_free(kind);
         }
         SB_APPEND(out, "}");
