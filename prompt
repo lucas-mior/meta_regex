@@ -2,13 +2,6 @@ consider the meta_preproc* files.
 
 they frequently use the following pattern:
 
-sb_printf(&op_buffer,
-          "{%s, 0, 0, 0, {%u, %u, %u, %u, ",
-          type_str, mask[0], mask[1], mask[2], mask[3]);
-sb_printf(&op_buffer,
-          "%u, %u, %u, %u}},\n",
-          mask[4], mask[5], mask[6], mask[7]);
-
 which makes it kind of hard to see where a generated { has its matching }.
 Please try to make use of the following pattern (only where there are more than
 1 sb_printf() calls in a row):
