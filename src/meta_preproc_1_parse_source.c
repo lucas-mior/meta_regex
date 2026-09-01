@@ -849,9 +849,8 @@ parse_source_code(char *buffer, int32 source_len) {
                                       mask[4], mask[5], mask[6], mask[7]);
                 SB_APPEND(&op_buffer, "},\n");
             } else {
-                sb_printf(&op_buffer,
-                          "{%s, %d, %d, %d, {0}},\n",
-                          type_str, op->value, op->min, op->max);
+                sb_printf(&op_buffer, "{%s, %d, %d, %d, {0}},\n",
+                                      type_str, op->value, op->min, op->max);
             }
             META_OP_str_free(type_str);
         }
