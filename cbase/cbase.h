@@ -106,6 +106,32 @@ int32 utf8_suffix_width_position(char *string, int32 string_len,
 int32 utf8_validate(uint32 *u, int32 i);
 int32 utf8_width(char *string, int32 string_len);
 
+char *
+strncpy32(char *dest, char *source, int64 space) {
+    if (DEBUGGING) {
+        if (space <= 0) {
+            error("Error: string (%.*s ...) is too long.\n", 50, source);
+            fatal(EXIT_FAILURE);
+        }
+        if ((ullong)space >= SIZE_MAX) {
+            error("Error: space is too large.\n");
+            fatal(EXIT_FAILURE);
+        }
+    }
+
+    {
+        int32 source_len = strlen32(source);
+        int64 copy_len = MIN(source_len, space);
+
+        memcpy64(dest, source, copy_len);
+        if (copy_len < space) {
+            memset64(dest + copy_len, 0, space - copy_len);
+        }
+    }
+
+    return dest;
+}
+
 #if !defined(MAX_FILES_COPY)
 #define MAX_FILES_COPY 256
 #endif
