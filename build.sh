@@ -58,7 +58,7 @@ debug)
 debug-fast)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=1"
     CFLAGS="$CFLAGS -g2 -O2 -flto"
-    CFLAGS="$CFLAGS -fsanitize=undefined"
+    CFLAGS="$CFLAGS -fsanitize-trap=undefined"
     ;;
 build|preprocessor|standalone|test|bench|check)
     CPPFLAGS="$CPPFLAGS -DDEBUGGING=0"
