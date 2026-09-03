@@ -249,6 +249,10 @@ cross)
     trace_off
     ;;
 check)
-    common_build_run_analyzers debug
+    (
+        common_build_run_analyzers debug
+    )
+    echo "static analysis finished."
+    exit
     ;;
 esac
