@@ -14,3 +14,4 @@ tags
 *temp_delete_me*
 *.obj
 *.obj
+static-analyzers-warnings.txt
