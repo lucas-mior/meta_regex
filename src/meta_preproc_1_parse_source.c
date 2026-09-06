@@ -871,7 +871,7 @@ parse_source_code(char *buffer, int32 source_len) {
         }
 
         if (flags_buffer_len > 0) {
-            flags = META_RE_parse(flags_buffer);
+            flags = META_RE_parse(flags_buffer, flags_buffer_len);
         }
         if ((flags & META_RE_YESSUB) && (flags & META_RE_NOSUB)) {
             error("R() flags cannot request both extract and no-submatch mode: "
