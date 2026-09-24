@@ -249,11 +249,11 @@ emit_tnfa(ExtractedRegex *regex, String *out) {
     }
 
     STR_APPEND(out, ", .tnfa = &(MetaTnfa){ ");
-    sb_printf(out, ".num_tags = %d, .num_states = %d, ",
+    str_printf(out, ".num_tags = %d, .num_states = %d, ",
                    tnfa->num_tags, tnfa->num_states);
-    sb_printf(out, ".num_transitions = %d, .start_state = %d, ",
+    str_printf(out, ".num_transitions = %d, .start_state = %d, ",
                    tnfa->num_transitions, tnfa->start_state);
-    sb_printf(out, ".final_state = %d", tnfa->final_state);
+    str_printf(out, ".final_state = %d", tnfa->final_state);
 
     if (tnfa->num_tags > 0) {
         STR_APPEND(out, ", .tags = (MetaTnfaTag[]){\n");
@@ -261,11 +261,11 @@ emit_tnfa(ExtractedRegex *regex, String *out) {
             MetaTnfaTag *tag = &tnfa->tags[i];
             char *role = META_TNFA_TAG_str(tag->role);
 
-            sb_printf(out, "{ .id = %d, .group = %d, .role = %s, ",
+            str_printf(out, "{ .id = %d, .group = %d, .role = %s, ",
                            tag->id, tag->group, role);
-            sb_printf(out, ".is_multivalued = %d, .fixed_base_tag = %d, ",
+            str_printf(out, ".is_multivalued = %d, .fixed_base_tag = %d, ",
                            tag->is_multivalued, tag->fixed_base_tag);
-            sb_printf(out, ".fixed_offset = %d },\n", tag->fixed_offset);
+            str_printf(out, ".fixed_offset = %d },\n", tag->fixed_offset);
 
             META_TNFA_TAG_str_free(role);
         }
@@ -279,7 +279,7 @@ emit_tnfa(ExtractedRegex *regex, String *out) {
         for (int32 i = 0; i < tnfa->num_states; i += 1) {
             MetaTnfaState *state = &tnfa->states[i];
 
-            sb_printf(out,
+            str_printf(out,
                       "{ .first_transition = %d, .transition_count = %d },\n",
                       state->first_transition, state->transition_count);
         }
@@ -296,16 +296,16 @@ emit_tnfa(ExtractedRegex *regex, String *out) {
             uint32 *mask = tr->mask;
 
             STR_APPEND(out, "{ ");
-            sb_printf(out, ".kind = %s, .from = %d, .to = %d, ",
+            str_printf(out, ".kind = %s, .from = %d, .to = %d, ",
                       kind, tr->from, tr->to);
-            sb_printf(out, ".value = %d, .mask = ", tr->value);
+            str_printf(out, ".value = %d, .mask = ", tr->value);
             STR_APPEND(out, "{");
-            sb_printf(out, "%u, %u, %u, %u, ",
+            str_printf(out, "%u, %u, %u, %u, ",
                       mask[0], mask[1], mask[2], mask[3]);
-            sb_printf(out, "%u, %u, %u, %u",
+            str_printf(out, "%u, %u, %u, %u",
                       mask[4], mask[5], mask[6], mask[7]);
             STR_APPEND(out, "}, ");
-            sb_printf(out, ".priority = %d, .tag = %d ",
+            str_printf(out, ".priority = %d, .tag = %d ",
                       tr->priority, tr->tag);
             STR_APPEND(out, "},\n");
             META_TNFA_TRANS_str_free(kind);
@@ -329,19 +329,19 @@ emit_tdfa(ExtractedRegex *regex, String *out) {
     }
 
     STR_APPEND(out, ", .tdfa = &(MetaTdfa){ ");
-    sb_printf(out, ".num_tags = %d, .num_states = %d, ",
+    str_printf(out, ".num_tags = %d, .num_states = %d, ",
                    tdfa->num_tags, tdfa->num_states);
-    sb_printf(out, ".num_transitions = %d, .num_registers = %d, ",
+    str_printf(out, ".num_transitions = %d, .num_registers = %d, ",
                    tdfa->num_transitions, tdfa->num_registers);
-    sb_printf(out, ".num_ops = %d, .start_state = %d, ",
+    str_printf(out, ".num_ops = %d, .start_state = %d, ",
                    tdfa->num_ops, tdfa->start_state);
-    sb_printf(out, ".start_state_nw_nw = %d, .start_state_nw_w = %d, ",
+    str_printf(out, ".start_state_nw_nw = %d, .start_state_nw_w = %d, ",
                    tdfa->start_state_nw_nw, tdfa->start_state_nw_w);
-    sb_printf(out, ".start_state_w_nw = %d, .start_state_w_w = %d, ",
+    str_printf(out, ".start_state_w_nw = %d, .start_state_w_w = %d, ",
                    tdfa->start_state_w_nw, tdfa->start_state_w_w);
-    sb_printf(out, ".final_register_base = %d, .uses_context = %d, ",
+    str_printf(out, ".final_register_base = %d, .uses_context = %d, ",
                    tdfa->final_register_base, tdfa->uses_context);
-    sb_printf(out, ".transition_index_stride = %d",
+    str_printf(out, ".transition_index_stride = %d",
                    tdfa->transition_index_stride);
 
     if (tdfa->num_tags > 0) {
@@ -350,11 +350,11 @@ emit_tdfa(ExtractedRegex *regex, String *out) {
             MetaTnfaTag *tag = &tdfa->tags[i];
             char *role = META_TNFA_TAG_str(tag->role);
 
-            sb_printf(out, "{ .id = %d, .group = %d, .role = %s, ",
+            str_printf(out, "{ .id = %d, .group = %d, .role = %s, ",
                            tag->id, tag->group, role);
-            sb_printf(out, ".is_multivalued = %d, .fixed_base_tag = %d, ",
+            str_printf(out, ".is_multivalued = %d, .fixed_base_tag = %d, ",
                            tag->is_multivalued, tag->fixed_base_tag);
-            sb_printf(out, ".fixed_offset = %d },\n", tag->fixed_offset);
+            str_printf(out, ".fixed_offset = %d },\n", tag->fixed_offset);
 
             META_TNFA_TAG_str_free(role);
         }
@@ -368,11 +368,11 @@ emit_tdfa(ExtractedRegex *regex, String *out) {
         for (int32 i = 0; i < tdfa->num_states; i += 1) {
             MetaTdfaState *state = &tdfa->states[i];
             STR_APPEND(out, "{ ");
-            sb_printf(out, ".is_accepting = %d, .first_transition = %d, ",
+            str_printf(out, ".is_accepting = %d, .first_transition = %d, ",
                       state->is_accepting, state->first_transition);
-            sb_printf(out, ".transition_count = %d, .first_final_op = %d, ",
+            str_printf(out, ".transition_count = %d, .first_final_op = %d, ",
                       state->transition_count, state->first_final_op);
-            sb_printf(out, ".final_op_count = %d ", state->final_op_count);
+            str_printf(out, ".final_op_count = %d ", state->final_op_count);
             STR_APPEND(out, "},\n");
         }
         STR_APPEND(out, "}");
@@ -385,11 +385,11 @@ emit_tdfa(ExtractedRegex *regex, String *out) {
         for (int32 i = 0; i < tdfa->num_transitions; i += 1) {
             MetaTdfaTransition *tr = &tdfa->transitions[i];
             STR_APPEND(out, "{ ");
-            sb_printf(out, ".from = %d, .to = %d, .symbol = %d, ",
+            str_printf(out, ".from = %d, .to = %d, .symbol = %d, ",
                       tr->from, tr->to, tr->symbol);
-            sb_printf(out, ".next_is_word = %d, .first_op = %d, ",
+            str_printf(out, ".next_is_word = %d, .first_op = %d, ",
                       tr->next_is_word, tr->first_op);
-            sb_printf(out, ".op_count = %d ", tr->op_count);
+            str_printf(out, ".op_count = %d ", tr->op_count);
             STR_APPEND(out, "},\n");
         }
         STR_APPEND(out, "}");
@@ -400,7 +400,7 @@ emit_tdfa(ExtractedRegex *regex, String *out) {
     if (tdfa->transition_index_count > 0) {
         STR_APPEND(out, ", .transition_index = (int32[]){\n");
         for (int32 i = 0; i < tdfa->transition_index_count; i += 1) {
-            sb_printf(out, "%d,", tdfa->transition_index[i]);
+            str_printf(out, "%d,", tdfa->transition_index[i]);
             if ((i + 1) % 16 == 0) {
                 STR_APPEND(out, "\n");
             }
@@ -416,7 +416,7 @@ emit_tdfa(ExtractedRegex *regex, String *out) {
             MetaTdfaRegOp *op = &tdfa->ops[i];
             char *kind = META_TDFA_REGOP_str(op->kind);
 
-            sb_printf(out, "{ .kind = %s, .dst = %d, .src = %d },\n",
+            str_printf(out, "{ .kind = %s, .dst = %d, .src = %d },\n",
                            kind, op->dst, op->src);
             META_TDFA_REGOP_str_free(kind);
         }
@@ -594,12 +594,12 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, String *out) {
         STR_APPEND(out, "  int32 num_states;\n");
         STR_APPEND(out, "  int32 start_state_w;\n");
         STR_APPEND(out, "  int32 start_state_nw;\n");
-        sb_printf(out, "  StaticDfaState states[%d];\n", dfa_count);
+        str_printf(out, "  StaticDfaState states[%d];\n", dfa_count);
         STR_APPEND(out, "}){\n");
 
-        sb_printf(out, ".num_states = %d,", dfa_count);
-        sb_printf(out, ".start_state_w = %d, ", start_dfa_w);
-        sb_printf(out, ".start_state_nw = %d, ", start_dfa_nw);
+        str_printf(out, ".num_states = %d,", dfa_count);
+        str_printf(out, ".start_state_w = %d, ", start_dfa_w);
+        str_printf(out, ".start_state_nw = %d, ", start_dfa_nw);
 
         STR_APPEND(out, ".states = {\n");
         for (int32 i = 0; i < dfa_count; i += 1) {
@@ -610,7 +610,7 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, String *out) {
             STR_APPEND(out, ".is_accepting = {");
             for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                 if (dfa_accept[i][c] != 0) {
-                    sb_printf(out, "[%d]=1,", c);
+                    str_printf(out, "[%d]=1,", c);
                     has_accepts = true;
                 }
             }
@@ -621,7 +621,7 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, String *out) {
             STR_APPEND(out, ".next = {");
             for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                 if (dfa_transitions[i][c] != 0) {
-                    sb_printf(out, "[%d]=%d,", c, dfa_transitions[i][c]);
+                    str_printf(out, "[%d]=%d,", c, dfa_transitions[i][c]);
                     has_transitions = true;
                 }
             }
@@ -669,16 +669,16 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
         }
 
         STR_APPEND(&out, "&(MetaRegex){\n");
-        sb_printf(&out, ".string = %.*s,\n",
+        str_printf(&out, ".string = %.*s,\n",
                         regex->original_string_length, quote_start);
-        sb_printf(&out, ".ops = { %.*s },\n",
+        str_printf(&out, ".ops = { %.*s },\n",
                         regex->op_buffer_len, regex->op_buffer);
 
-        sb_printf(&out, ".has_start_anchor = %d, ", regex->has_start);
-        sb_printf(&out, ".has_end_anchor = %d, ", regex->has_end);
-        sb_printf(&out, ".re_nsub = %d, ", re_nsub);
-        sb_printf(&out, ".can_be_null = %d, ", regex->can_be_null);
-        sb_printf(&out, ".min_match_len = %d, ", regex->min_match_len);
+        str_printf(&out, ".has_start_anchor = %d, ", regex->has_start);
+        str_printf(&out, ".has_end_anchor = %d, ", regex->has_end);
+        str_printf(&out, ".re_nsub = %d, ", re_nsub);
+        str_printf(&out, ".can_be_null = %d, ", regex->can_be_null);
+        str_printf(&out, ".min_match_len = %d, ", regex->min_match_len);
 
         STR_APPEND(&out, ".flags = (enum MetaRegexFlags)((");
         if (regex->flags_buffer_len > 0) {
@@ -690,8 +690,8 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
             char *submatch_flag_str = META_RE_str(submatch_flag);
             char *used_ops = META_OP_str((enum MetaOpType)regex->used_ops);
 
-            sb_printf(&out, ") | %s), ", submatch_flag_str);
-            sb_printf(&out, ".used_ops = (enum MetaOpType)(%s), ", used_ops);
+            str_printf(&out, ") | %s), ", submatch_flag_str);
+            str_printf(&out, ".used_ops = (enum MetaOpType)(%s), ", used_ops);
             META_RE_str_free(submatch_flag_str);
             META_OP_str_free(used_ops);
         }
@@ -703,7 +703,7 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
             if (j == META_FASTMAP_SIZE - 1) {
                 sep = "";
             }
-            sb_printf(&out, "0x%02x%s", regex->fastmap[j], sep);
+            str_printf(&out, "0x%02x%s", regex->fastmap[j], sep);
         }
         STR_APPEND(&out, "}");
         emit_tnfa(regex, &out);
@@ -738,5 +738,5 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
         error("Error writing generated source.\n");
         exit(EXIT_FAILURE);
     }
-    sb_free(&out);
+    str_free(&out);
 }
