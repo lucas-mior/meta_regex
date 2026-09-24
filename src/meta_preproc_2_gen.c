@@ -244,11 +244,11 @@ emit_tnfa(ExtractedRegex *regex, String *out) {
     ParsedTnfa *tnfa = regex->tnfa;
 
     if (!preproc_config.emit_tnfa || tnfa == NULL) {
-        SB_APPEND(out, ", .tnfa = NULL");
+        STR_APPEND(out, ", .tnfa = NULL");
         return;
     }
 
-    SB_APPEND(out, ", .tnfa = &(MetaTnfa){ ");
+    STR_APPEND(out, ", .tnfa = &(MetaTnfa){ ");
     sb_printf(out, ".num_tags = %d, .num_states = %d, ",
                    tnfa->num_tags, tnfa->num_states);
     sb_printf(out, ".num_transitions = %d, .start_state = %d, ",
@@ -256,7 +256,7 @@ emit_tnfa(ExtractedRegex *regex, String *out) {
     sb_printf(out, ".final_state = %d", tnfa->final_state);
 
     if (tnfa->num_tags > 0) {
-        SB_APPEND(out, ", .tags = (MetaTnfaTag[]){\n");
+        STR_APPEND(out, ", .tags = (MetaTnfaTag[]){\n");
         for (int32 i = 0; i < tnfa->num_tags; i += 1) {
             MetaTnfaTag *tag = &tnfa->tags[i];
             char *role = META_TNFA_TAG_str(tag->role);
@@ -269,13 +269,13 @@ emit_tnfa(ExtractedRegex *regex, String *out) {
 
             META_TNFA_TAG_str_free(role);
         }
-        SB_APPEND(out, "}");
+        STR_APPEND(out, "}");
     } else {
-        SB_APPEND(out, ", .tags = NULL");
+        STR_APPEND(out, ", .tags = NULL");
     }
 
     if (tnfa->num_states > 0) {
-        SB_APPEND(out, ", .states = (MetaTnfaState[]){\n");
+        STR_APPEND(out, ", .states = (MetaTnfaState[]){\n");
         for (int32 i = 0; i < tnfa->num_states; i += 1) {
             MetaTnfaState *state = &tnfa->states[i];
 
@@ -283,39 +283,39 @@ emit_tnfa(ExtractedRegex *regex, String *out) {
                       "{ .first_transition = %d, .transition_count = %d },\n",
                       state->first_transition, state->transition_count);
         }
-        SB_APPEND(out, "}");
+        STR_APPEND(out, "}");
     } else {
-        SB_APPEND(out, ", .states = NULL");
+        STR_APPEND(out, ", .states = NULL");
     }
 
     if (tnfa->num_transitions > 0) {
-        SB_APPEND(out, ", .transitions = (MetaTnfaTransition[]){\n");
+        STR_APPEND(out, ", .transitions = (MetaTnfaTransition[]){\n");
         for (int32 i = 0; i < tnfa->num_transitions; i += 1) {
             MetaTnfaTransition *tr = &tnfa->transitions[i];
             char *kind = META_TNFA_TRANS_str(tr->kind);
             uint32 *mask = tr->mask;
 
-            SB_APPEND(out, "{ ");
+            STR_APPEND(out, "{ ");
             sb_printf(out, ".kind = %s, .from = %d, .to = %d, ",
                       kind, tr->from, tr->to);
             sb_printf(out, ".value = %d, .mask = ", tr->value);
-            SB_APPEND(out, "{");
+            STR_APPEND(out, "{");
             sb_printf(out, "%u, %u, %u, %u, ",
                       mask[0], mask[1], mask[2], mask[3]);
             sb_printf(out, "%u, %u, %u, %u",
                       mask[4], mask[5], mask[6], mask[7]);
-            SB_APPEND(out, "}, ");
+            STR_APPEND(out, "}, ");
             sb_printf(out, ".priority = %d, .tag = %d ",
                       tr->priority, tr->tag);
-            SB_APPEND(out, "},\n");
+            STR_APPEND(out, "},\n");
             META_TNFA_TRANS_str_free(kind);
         }
-        SB_APPEND(out, "}");
+        STR_APPEND(out, "}");
     } else {
-        SB_APPEND(out, ", .transitions = NULL");
+        STR_APPEND(out, ", .transitions = NULL");
     }
 
-    SB_APPEND(out, " }");
+    STR_APPEND(out, " }");
     return;
 }
 
@@ -324,11 +324,11 @@ emit_tdfa(ExtractedRegex *regex, String *out) {
     ParsedTdfa *tdfa = regex->tdfa;
 
     if (!preproc_config.emit_tdfa || tdfa == NULL) {
-        SB_APPEND(out, ", .tdfa = NULL");
+        STR_APPEND(out, ", .tdfa = NULL");
         return;
     }
 
-    SB_APPEND(out, ", .tdfa = &(MetaTdfa){ ");
+    STR_APPEND(out, ", .tdfa = &(MetaTdfa){ ");
     sb_printf(out, ".num_tags = %d, .num_states = %d, ",
                    tdfa->num_tags, tdfa->num_states);
     sb_printf(out, ".num_transitions = %d, .num_registers = %d, ",
@@ -345,7 +345,7 @@ emit_tdfa(ExtractedRegex *regex, String *out) {
                    tdfa->transition_index_stride);
 
     if (tdfa->num_tags > 0) {
-        SB_APPEND(out, ", .tags = (MetaTnfaTag[]){\n");
+        STR_APPEND(out, ", .tags = (MetaTnfaTag[]){\n");
         for (int32 i = 0; i < tdfa->num_tags; i += 1) {
             MetaTnfaTag *tag = &tdfa->tags[i];
             char *role = META_TNFA_TAG_str(tag->role);
@@ -358,60 +358,60 @@ emit_tdfa(ExtractedRegex *regex, String *out) {
 
             META_TNFA_TAG_str_free(role);
         }
-        SB_APPEND(out, "}");
+        STR_APPEND(out, "}");
     } else {
-        SB_APPEND(out, ", .tags = NULL");
+        STR_APPEND(out, ", .tags = NULL");
     }
 
     if (tdfa->num_states > 0) {
-        SB_APPEND(out, ", .states = (MetaTdfaState[]){\n");
+        STR_APPEND(out, ", .states = (MetaTdfaState[]){\n");
         for (int32 i = 0; i < tdfa->num_states; i += 1) {
             MetaTdfaState *state = &tdfa->states[i];
-            SB_APPEND(out, "{ ");
+            STR_APPEND(out, "{ ");
             sb_printf(out, ".is_accepting = %d, .first_transition = %d, ",
                       state->is_accepting, state->first_transition);
             sb_printf(out, ".transition_count = %d, .first_final_op = %d, ",
                       state->transition_count, state->first_final_op);
             sb_printf(out, ".final_op_count = %d ", state->final_op_count);
-            SB_APPEND(out, "},\n");
+            STR_APPEND(out, "},\n");
         }
-        SB_APPEND(out, "}");
+        STR_APPEND(out, "}");
     } else {
-        SB_APPEND(out, ", .states = NULL");
+        STR_APPEND(out, ", .states = NULL");
     }
 
     if (tdfa->num_transitions > 0) {
-        SB_APPEND(out, ", .transitions = (MetaTdfaTransition[]){\n");
+        STR_APPEND(out, ", .transitions = (MetaTdfaTransition[]){\n");
         for (int32 i = 0; i < tdfa->num_transitions; i += 1) {
             MetaTdfaTransition *tr = &tdfa->transitions[i];
-            SB_APPEND(out, "{ ");
+            STR_APPEND(out, "{ ");
             sb_printf(out, ".from = %d, .to = %d, .symbol = %d, ",
                       tr->from, tr->to, tr->symbol);
             sb_printf(out, ".next_is_word = %d, .first_op = %d, ",
                       tr->next_is_word, tr->first_op);
             sb_printf(out, ".op_count = %d ", tr->op_count);
-            SB_APPEND(out, "},\n");
+            STR_APPEND(out, "},\n");
         }
-        SB_APPEND(out, "}");
+        STR_APPEND(out, "}");
     } else {
-        SB_APPEND(out, ", .transitions = NULL");
+        STR_APPEND(out, ", .transitions = NULL");
     }
 
     if (tdfa->transition_index_count > 0) {
-        SB_APPEND(out, ", .transition_index = (int32[]){\n");
+        STR_APPEND(out, ", .transition_index = (int32[]){\n");
         for (int32 i = 0; i < tdfa->transition_index_count; i += 1) {
             sb_printf(out, "%d,", tdfa->transition_index[i]);
             if ((i + 1) % 16 == 0) {
-                SB_APPEND(out, "\n");
+                STR_APPEND(out, "\n");
             }
         }
-        SB_APPEND(out, "}");
+        STR_APPEND(out, "}");
     } else {
-        SB_APPEND(out, ", .transition_index = NULL");
+        STR_APPEND(out, ", .transition_index = NULL");
     }
 
     if (tdfa->num_ops > 0) {
-        SB_APPEND(out, ", .ops = (MetaTdfaRegOp[]){\n");
+        STR_APPEND(out, ", .ops = (MetaTdfaRegOp[]){\n");
         for (int32 i = 0; i < tdfa->num_ops; i += 1) {
             MetaTdfaRegOp *op = &tdfa->ops[i];
             char *kind = META_TDFA_REGOP_str(op->kind);
@@ -420,12 +420,12 @@ emit_tdfa(ExtractedRegex *regex, String *out) {
                            kind, op->dst, op->src);
             META_TDFA_REGOP_str_free(kind);
         }
-        SB_APPEND(out, "}");
+        STR_APPEND(out, "}");
     } else {
-        SB_APPEND(out, ", .ops = NULL");
+        STR_APPEND(out, ", .ops = NULL");
     }
 
-    SB_APPEND(out, " }");
+    STR_APPEND(out, " }");
     return;
 }
 
@@ -454,7 +454,7 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, String *out) {
     }
     if (!preproc_config.emit_static_dfa
         || preproc_config.max_static_dfa_states < min_start_state_count) {
-        SB_APPEND(out, ", .static_dfa = NULL");
+        STR_APPEND(out, ", .static_dfa = NULL");
         return;
     }
 
@@ -588,26 +588,26 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, String *out) {
         PREPROC_FAIL_str_free(fail_reason_names);
         error2("static dfa will not be available at runtime.\n");
 
-        SB_APPEND(out, ", .static_dfa = NULL");
+        STR_APPEND(out, ", .static_dfa = NULL");
     } else {
-        SB_APPEND(out, ", .static_dfa = (StaticDfa *)&(struct {\n");
-        SB_APPEND(out, "  int32 num_states;\n");
-        SB_APPEND(out, "  int32 start_state_w;\n");
-        SB_APPEND(out, "  int32 start_state_nw;\n");
+        STR_APPEND(out, ", .static_dfa = (StaticDfa *)&(struct {\n");
+        STR_APPEND(out, "  int32 num_states;\n");
+        STR_APPEND(out, "  int32 start_state_w;\n");
+        STR_APPEND(out, "  int32 start_state_nw;\n");
         sb_printf(out, "  StaticDfaState states[%d];\n", dfa_count);
-        SB_APPEND(out, "}){\n");
+        STR_APPEND(out, "}){\n");
 
         sb_printf(out, ".num_states = %d,", dfa_count);
         sb_printf(out, ".start_state_w = %d, ", start_dfa_w);
         sb_printf(out, ".start_state_nw = %d, ", start_dfa_nw);
 
-        SB_APPEND(out, ".states = {\n");
+        STR_APPEND(out, ".states = {\n");
         for (int32 i = 0; i < dfa_count; i += 1) {
             bool has_accepts = false;
             bool has_transitions = false;
 
-            SB_APPEND(out, "{\n");
-            SB_APPEND(out, ".is_accepting = {");
+            STR_APPEND(out, "{\n");
+            STR_APPEND(out, ".is_accepting = {");
             for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                 if (dfa_accept[i][c] != 0) {
                     sb_printf(out, "[%d]=1,", c);
@@ -615,10 +615,10 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, String *out) {
                 }
             }
             if (!has_accepts) {
-                SB_APPEND(out, "0");
+                STR_APPEND(out, "0");
             }
-            SB_APPEND(out, "},\n");
-            SB_APPEND(out, ".next = {");
+            STR_APPEND(out, "},\n");
+            STR_APPEND(out, ".next = {");
             for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
                 if (dfa_transitions[i][c] != 0) {
                     sb_printf(out, "[%d]=%d,", c, dfa_transitions[i][c]);
@@ -626,11 +626,11 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, String *out) {
                 }
             }
             if (!has_transitions) {
-                SB_APPEND(out, "0");
+                STR_APPEND(out, "0");
             }
-            SB_APPEND(out, "} },\n");
+            STR_APPEND(out, "} },\n");
         }
-        SB_APPEND(out, "} }");
+        STR_APPEND(out, "} }");
     }
     return;
 }
@@ -641,11 +641,11 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
     String out = {0};
     int64 current_offset = 0;
 
-    SB_APPEND(&out, "#if defined(__clang__) || defined(__GNUC__)\n");
-    SB_APPEND(&out, "#pragma GCC diagnostic push\n");
-    SB_APPEND(&out, "#pragma GCC diagnostic ignored "
+    STR_APPEND(&out, "#if defined(__clang__) || defined(__GNUC__)\n");
+    STR_APPEND(&out, "#pragma GCC diagnostic push\n");
+    STR_APPEND(&out, "#pragma GCC diagnostic ignored "
                     "\"-Wmissing-field-initializers\"\n");
-    SB_APPEND(&out, "#endif\n");
+    STR_APPEND(&out, "#endif\n");
 
     for (int32 i = 0; i < list->count; i += 1) {
         ExtractedRegex *regex = &list->items[i];
@@ -655,10 +655,10 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
 
         // Print everything leading up to this macro natively
         int64 prefix_len = regex->source_start_offset - current_offset;
-        SB_APPEND(&out, source + current_offset, prefix_len);
+        STR_APPEND(&out, source + current_offset, prefix_len);
 
         if (regex->is_null_macro) {
-            SB_APPEND(&out, "NULL");
+            STR_APPEND(&out, "NULL");
             current_offset = regex->source_end_offset;
             continue;
         }
@@ -668,7 +668,7 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
             re_nsub = regex->group_counter;
         }
 
-        SB_APPEND(&out, "&(MetaRegex){\n");
+        STR_APPEND(&out, "&(MetaRegex){\n");
         sb_printf(&out, ".string = %.*s,\n",
                         regex->original_string_length, quote_start);
         sb_printf(&out, ".ops = { %.*s },\n",
@@ -680,11 +680,11 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
         sb_printf(&out, ".can_be_null = %d, ", regex->can_be_null);
         sb_printf(&out, ".min_match_len = %d, ", regex->min_match_len);
 
-        SB_APPEND(&out, ".flags = (enum MetaRegexFlags)((");
+        STR_APPEND(&out, ".flags = (enum MetaRegexFlags)((");
         if (regex->flags_buffer_len > 0) {
-            SB_APPEND(&out, regex->flags_buffer, regex->flags_buffer_len);
+            STR_APPEND(&out, regex->flags_buffer, regex->flags_buffer_len);
         } else {
-            SB_APPEND(&out, "0");
+            STR_APPEND(&out, "0");
         }
         {
             char *submatch_flag_str = META_RE_str(submatch_flag);
@@ -695,7 +695,7 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
             META_RE_str_free(submatch_flag_str);
             META_OP_str_free(used_ops);
         }
-        SB_APPEND(&out, ".fastmap = {");
+        STR_APPEND(&out, ".fastmap = {");
 
         for (int32 j = 0; j < META_FASTMAP_SIZE; j += 1) {
             char *sep = ", ";
@@ -705,21 +705,21 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
             }
             sb_printf(&out, "0x%02x%s", regex->fastmap[j], sep);
         }
-        SB_APPEND(&out, "}");
+        STR_APPEND(&out, "}");
         emit_tnfa(regex, &out);
         emit_tdfa(regex, &out);
 
         if (!preproc_config.emit_static_dfa) {
-            SB_APPEND(&out, ", .static_dfa = NULL");
+            STR_APPEND(&out, ", .static_dfa = NULL");
         } else if (regex->used_ops & META_OP_BACKREF) {
             error2("Warning: Regex " BLUE("%.*s") " has backreferences.\n",
                    regex->original_string_length, quote_start);
             error2("static dfa will not be available at runtime.\n");
-            SB_APPEND(&out, ", .static_dfa = NULL");
+            STR_APPEND(&out, ", .static_dfa = NULL");
         } else {
             static_dfa_try_generate(regex, source, &out);
         }
-        SB_APPEND(&out, "}");
+        STR_APPEND(&out, "}");
 
         // Move trailing cursor
         current_offset = regex->source_end_offset;
@@ -727,12 +727,12 @@ generate_source_code(char *source, int64 source_len, RegexList *list,
 
     // Output any remaining trailing code from the original file
     if (current_offset < source_len) {
-        SB_APPEND(&out, source + current_offset, source_len - current_offset);
+        STR_APPEND(&out, source + current_offset, source_len - current_offset);
     }
 
-    SB_APPEND(&out, "\n#if defined(__clang__) || defined(__GNUC__)\n");
-    SB_APPEND(&out, "#pragma GCC diagnostic pop\n");
-    SB_APPEND(&out, "#endif\n");
+    STR_APPEND(&out, "\n#if defined(__clang__) || defined(__GNUC__)\n");
+    STR_APPEND(&out, "#pragma GCC diagnostic pop\n");
+    STR_APPEND(&out, "#endif\n");
 
     if (out.len > 0 && fwrite64(out.data, 1, out.len, out_file) != out.len) {
         error("Error writing generated source.\n");
