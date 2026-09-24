@@ -929,7 +929,7 @@ parse_source_code(char *buffer, int32 source_len) {
                  temp_ops_count*SIZEOF(*regex->temp_ops));
         regex->temp_ops_count = temp_ops_count;
 
-        regex->op_buffer = str_steal_exact(&op_buffer, &regex->op_buffer_len);
+        regex->op_buffer = str_steal(&op_buffer, &regex->op_buffer_len);
 
         regex->source_end_offset = (int32)((paren_end + 1) - buffer);
         cursor = paren_end + 1;
