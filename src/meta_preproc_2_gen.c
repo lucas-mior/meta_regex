@@ -240,7 +240,7 @@ compute_core_transitions(DfaSet *closed_set, ParsedOp *ops, int32 ops_count,
 }
 
 static void
-emit_tnfa(ExtractedRegex *regex, StrBuilder *out) {
+emit_tnfa(ExtractedRegex *regex, String *out) {
     ParsedTnfa *tnfa = regex->tnfa;
 
     if (!preproc_config.emit_tnfa || tnfa == NULL) {
@@ -320,7 +320,7 @@ emit_tnfa(ExtractedRegex *regex, StrBuilder *out) {
 }
 
 static void
-emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
+emit_tdfa(ExtractedRegex *regex, String *out) {
     ParsedTdfa *tdfa = regex->tdfa;
 
     if (!preproc_config.emit_tdfa || tdfa == NULL) {
@@ -430,7 +430,7 @@ emit_tdfa(ExtractedRegex *regex, StrBuilder *out) {
 }
 
 static void
-static_dfa_try_generate(ExtractedRegex *regex, char *source, StrBuilder *out) {
+static_dfa_try_generate(ExtractedRegex *regex, char *source, String *out) {
     ParsedOp *temp_ops = regex->temp_ops;
     int32 temp_ops_count = regex->temp_ops_count;
     int32 original_string_length = regex->original_string_length;
@@ -638,7 +638,7 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, StrBuilder *out) {
 static void
 generate_source_code(char *source, int64 source_len, RegexList *list,
                      FILE *out_file) {
-    StrBuilder out = {0};
+    String out = {0};
     int64 current_offset = 0;
 
     SB_APPEND(&out, "#if defined(__clang__) || defined(__GNUC__)\n");

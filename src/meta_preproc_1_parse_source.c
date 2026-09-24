@@ -133,7 +133,7 @@ parse_source_code(char *buffer, int32 source_len) {
         char *flags_end = NULL;
         char regex_string[PREPROC_MAX_STRING_LEN] = {0};
         int32 regex_string_len = 0;
-        StrBuilder op_buffer = {0};
+        String op_buffer = {0};
         char flags_buffer[PREPROC_MAX_FLAGS_EXPR] = {0};
         int32 flags_buffer_len = 0;
         bool has_start = false;
