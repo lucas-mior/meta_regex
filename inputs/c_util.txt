@@ -485,7 +485,7 @@ xpthread_join(pthread_t *thread, void **thread_return) {
 }
 
 static int32 __attribute__((format(printf, 3, 4)))
-snprintf2(char *buffer, int64 size, char *format, ...) {
+fmt_sprintf(char *buffer, int64 size, char *format, ...) {
     int n;
     va_list args;
 
@@ -1357,7 +1357,7 @@ bytes_pretty(char *buffer, int64 raw) {
     }
 
     if (raw <= 1023) {
-        n = snprintf2(buffer, 16, "%lldB", raw);
+        n = fmt_sprintf(buffer, 16, "%lldB", raw);
         return n;
     }
 
@@ -1369,13 +1369,13 @@ bytes_pretty(char *buffer, int64 raw) {
     }
 
     if (aux_pretty >= 1000) {
-        n = snprintf2(buffer, 16, "%.1f%s", aux_pretty, suffixes[i]);
+        n = fmt_sprintf(buffer, 16, "%.1f%s", aux_pretty, suffixes[i]);
     } else if (aux_pretty >= 100) {
-        n = snprintf2(buffer, 16, "%.2f%s", aux_pretty, suffixes[i]);
+        n = fmt_sprintf(buffer, 16, "%.2f%s", aux_pretty, suffixes[i]);
     } else if (aux_pretty >= 10) {
-        n = snprintf2(buffer, 16, "%.3f%s", aux_pretty, suffixes[i]);
+        n = fmt_sprintf(buffer, 16, "%.3f%s", aux_pretty, suffixes[i]);
     } else {
-        n = snprintf2(buffer, 16, "%.4f%s", aux_pretty, suffixes[i]);
+        n = fmt_sprintf(buffer, 16, "%.4f%s", aux_pretty, suffixes[i]);
     }
 
     if ((comma = memchr64(buffer, ',', n))) {
