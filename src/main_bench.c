@@ -777,7 +777,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
         regex_buckets[l].max_regex_len = bench_length_class_max(l);
         regex_buckets[l].cases = bucket_cases + (int32)l*array_len;
         regex_buckets[l].count = counts[l];
-        ASSERT_MORE(counts[l], 10);
+        ASSERT_GT(counts[l], 10);
 
         compiled = malloc2(SIZEOF(*compiled)*regex_buckets[l].count);
         for (int32 i = 0; i < regex_buckets[l].count; i += 1) {
