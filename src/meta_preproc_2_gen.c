@@ -266,8 +266,6 @@ emit_tnfa(ExtractedRegex *regex, String *out) {
             str_printf(out, ".is_multivalued = %d, .fixed_base_tag = %d, ",
                            tag->is_multivalued, tag->fixed_base_tag);
             str_printf(out, ".fixed_offset = %d },\n", tag->fixed_offset);
-
-            META_TNFA_TAG_str_free(role);
         }
         STR_APPEND(out, "}");
     } else {
@@ -308,7 +306,6 @@ emit_tnfa(ExtractedRegex *regex, String *out) {
             str_printf(out, ".priority = %d, .tag = %d ",
                       tr->priority, tr->tag);
             STR_APPEND(out, "},\n");
-            META_TNFA_TRANS_str_free(kind);
         }
         STR_APPEND(out, "}");
     } else {
@@ -355,8 +352,6 @@ emit_tdfa(ExtractedRegex *regex, String *out) {
             str_printf(out, ".is_multivalued = %d, .fixed_base_tag = %d, ",
                            tag->is_multivalued, tag->fixed_base_tag);
             str_printf(out, ".fixed_offset = %d },\n", tag->fixed_offset);
-
-            META_TNFA_TAG_str_free(role);
         }
         STR_APPEND(out, "}");
     } else {
@@ -418,7 +413,6 @@ emit_tdfa(ExtractedRegex *regex, String *out) {
 
             str_printf(out, "{ .kind = %s, .dst = %d, .src = %d },\n",
                            kind, op->dst, op->src);
-            META_TDFA_REGOP_str_free(kind);
         }
         STR_APPEND(out, "}");
     } else {
