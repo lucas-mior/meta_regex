@@ -1727,13 +1727,13 @@ util_functions_sink(void) {
 #define ENUM_BITFLAGS 0
 #define ENUM_PREFIX_ WEEK_DAY_
 #define ENUM_FIELDS \
-    XX(SUNDAY, 0)                   \
+    XX(SUNDAY)                      \
     XX(MONDAY)                      \
-    XX(TUESDAY, 10)                 \
+    XX(TUESDAY)                     \
     XX(WEDNESDAY)                   \
     XX(THURSDAY)                    \
-    XX(FRIDAY, 5)                   \
-    XX(SATURDAY, 20)
+    XX(FRIDAY)                      \
+    XX(SATURDAY)
 #include "xenums.c"
 
 
@@ -1827,7 +1827,7 @@ main(int argc, char **argv) {
         ASSERT_EQUAL(ALIGN16(7), 16);
     }
 
-    for (enum WeekDay day = WEEK_DAY_MONDAY; day <= WEEK_DAY_LAST; day += 1) {
+    for (enum WeekDay day = WEEK_DAY_MONDAY; day < WEEK_DAY_COUNT; day += 1) {
         printf("enum[%d] = %s\n", day, WEEK_DAY_str(day));
     }
 
