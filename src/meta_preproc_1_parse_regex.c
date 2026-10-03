@@ -18,33 +18,33 @@ populate_posix_class_mask(char *class_name, int32 class_name_len,
                           uint32 *mask) {
     for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
         bool match = false;
-        if (STREQUAL(class_name, class_name_len, STRLIT("alnum"))) {
+        if (STREQUAL(class_name, class_name_len, "alnum")) {
             match = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
                      || (c >= '0' && c <= '9'));
-        } else if (STREQUAL(class_name, class_name_len, STRLIT("alpha"))) {
+        } else if (STREQUAL(class_name, class_name_len, "alpha")) {
             match = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
-        } else if (STREQUAL(class_name, class_name_len, STRLIT("digit"))) {
+        } else if (STREQUAL(class_name, class_name_len, "digit")) {
             match = (c >= '0' && c <= '9');
-        } else if (STREQUAL(class_name, class_name_len, STRLIT("space"))) {
+        } else if (STREQUAL(class_name, class_name_len, "space")) {
             match = (c == ' ' || c == '\t' || c == '\n' || c == '\r'
                      || c == '\v' || c == '\f');
-        } else if (STREQUAL(class_name, class_name_len, STRLIT("lower"))) {
+        } else if (STREQUAL(class_name, class_name_len, "lower")) {
             match = (c >= 'a' && c <= 'z');
-        } else if (STREQUAL(class_name, class_name_len, STRLIT("upper"))) {
+        } else if (STREQUAL(class_name, class_name_len, "upper")) {
             match = (c >= 'A' && c <= 'Z');
-        } else if (STREQUAL(class_name, class_name_len, STRLIT("punct"))) {
+        } else if (STREQUAL(class_name, class_name_len, "punct")) {
             match = ((c >= 33 && c <= 47) || (c >= 58 && c <= 64)
                      || (c >= 91 && c <= 96) || (c >= 123 && c <= 126));
-        } else if (STREQUAL(class_name, class_name_len, STRLIT("xdigit"))) {
+        } else if (STREQUAL(class_name, class_name_len, "xdigit")) {
             match = ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')
                      || (c >= 'A' && c <= 'F'));
-        } else if (STREQUAL(class_name, class_name_len, STRLIT("print"))) {
+        } else if (STREQUAL(class_name, class_name_len, "print")) {
             match = (c >= 32 && c <= 126);
-        } else if (STREQUAL(class_name, class_name_len, STRLIT("graph"))) {
+        } else if (STREQUAL(class_name, class_name_len, "graph")) {
             match = (c >= 33 && c <= 126);
-        } else if (STREQUAL(class_name, class_name_len, STRLIT("blank"))) {
+        } else if (STREQUAL(class_name, class_name_len, "blank")) {
             match = (c == ' ' || c == '\t');
-        } else if (STREQUAL(class_name, class_name_len, STRLIT("cntrl"))) {
+        } else if (STREQUAL(class_name, class_name_len, "cntrl")) {
             match = ((c >= 0 && c <= 31) || (c == 127));
         }
         if (match) {
