@@ -129,6 +129,7 @@ parse_source_code(char *buffer, int32 source_len) {
         char *quote_start = NULL;
         char *quote_end = NULL;
         char *paren_end = NULL;
+        char *null_macro_end = NULL;
         char *flags_start = NULL;
         char *flags_end = NULL;
         char regex_string[PREPROC_MAX_STRING_LEN] = {0};
@@ -245,12 +246,12 @@ parse_source_code(char *buffer, int32 source_len) {
 
         regex->source_start_offset = (int32)(found_macro - buffer);
 
-        if (source_end - found_macro >= STRLIT_LEN("R(NULL)")
-            && STREQUAL(found_macro, STRLIT_LEN("R(NULL)"),
-                        STRLIT("R(NULL)"))) {
+        if ((null_macro_end = BEGINS_WITH(found_macro,
+                                          (int32)(source_end - found_macro),
+                                          "R(NULL)"))) {
             regex->is_null_macro = true;
-            regex->source_end_offset = (int32)((found_macro + 7) - buffer);
-            cursor = found_macro + 7;
+            regex->source_end_offset = (int32)(null_macro_end - buffer);
+            cursor = null_macro_end;
             list.count += 1;
             continue;
         }
