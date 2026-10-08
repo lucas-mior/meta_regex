@@ -501,9 +501,10 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
                                                     needs_extraction, enabled);
         int32 ref_result = bench_run_libc_one(&compiled[ri], ic->input, ref_pm,
                                               LENGTH(ref_pm), extract);
-        int32 actual_result = bench_run_meta_dispatch_one(
-            rc->regex, ic->input, input_len, enabled, actual_pm,
-            LENGTH(actual_pm), extract);
+        int32 actual_result =
+            bench_run_meta_dispatch_one(rc->regex, ic->input, input_len,
+                                        enabled, actual_pm, LENGTH(actual_pm),
+                                        extract);
 
         if (bench_result_mismatch(ref_result, actual_result, ref_pm, actual_pm,
                                   LENGTH(ref_pm), extract)) {
@@ -548,9 +549,10 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
             BenchRegexCase *rc = &regex_bucket->cases[ri];
             BenchInputCase *ic = &input_bucket->cases[ri];
             int32 input_len = strlen32(ic->input);
-            int32 result = bench_run_meta_dispatch_one(
-                rc->regex, ic->input, input_len, enabled, pmatch,
-                LENGTH(pmatch), extract);
+            int32 result =
+                bench_run_meta_dispatch_one(rc->regex, ic->input, input_len,
+                                            enabled, pmatch, LENGTH(pmatch),
+                                            extract);
             bench_absorb_result(result, pmatch, extract);
         }
     }
@@ -562,9 +564,10 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
             BenchRegexCase *rc = &regex_bucket->cases[ri];
             BenchInputCase *ic = &input_bucket->cases[ri];
             int32 input_len = strlen32(ic->input);
-            int32 result = bench_run_meta_dispatch_one(
-                rc->regex, ic->input, input_len, enabled, pmatch,
-                LENGTH(pmatch), extract);
+            int32 result =
+                bench_run_meta_dispatch_one(rc->regex, ic->input, input_len,
+                                            enabled, pmatch, LENGTH(pmatch),
+                                            extract);
             if (result == 0) {
                 matches += 1;
             }
@@ -597,18 +600,20 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
             input_len = strlen32(ic->input);
             ref_result = bench_run_libc_one(&compiled[ri], ic->input, ref_pm,
                                             LENGTH(ref_pm), extract);
-            actual_result = bench_run_meta_matcher_one(
-                rc->regex, ic->input, input_len, matcher, actual_pm,
-                LENGTH(actual_pm), extract);
+            actual_result =
+                bench_run_meta_matcher_one(rc->regex, ic->input, input_len,
+                                           matcher, actual_pm,
+                                           LENGTH(actual_pm), extract);
 
             if (bench_result_mismatch(ref_result, actual_result, ref_pm,
                                       actual_pm, LENGTH(ref_pm), extract)) {
                 char *matcher_name = MATCHER_str(matcher);
 
-                bench_report_mismatch(
-                    "meta_matchers_pairwise", regex_bucket, rc, input_bucket,
-                    ic, matcher_name, matcher, ref_result, actual_result,
-                    ref_pm, actual_pm, LENGTH(ref_pm), extract);
+                bench_report_mismatch("meta_matchers_pairwise", regex_bucket,
+                                      rc, input_bucket, ic, matcher_name,
+                                      matcher, ref_result, actual_result,
+                                      ref_pm, actual_pm, LENGTH(ref_pm),
+                                      extract);
                 MATCHER_str_free(matcher_name);
                 exit(EXIT_FAILURE);
             }
@@ -733,9 +738,9 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
                 regex_string = c.regex->string;
             }
             error2("Skipping regex at index %d from %s with %d ops; no "
-                   "benchmark length bucket exists above 64 ops: " BLUE(
-                       "\"%s\"") "\n",
-                   i, array_name, op_count, regex_string);
+                   "benchmark length bucket exists above 64 ops: "
+                   BLUE("\"%s\"") "\n", i, array_name, op_count,
+                   regex_string);
             continue;
         }
 

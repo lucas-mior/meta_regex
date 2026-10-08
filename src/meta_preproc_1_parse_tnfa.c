@@ -289,9 +289,10 @@ tnfa_add_choice_branches(ParsedTnfa *tnfa, ParsedOp *ops, int32 *branch_starts,
                          int32 tag) {
     for (int32 b = 0; b < branch_count; b += 1) {
         int32 negative_tags[PREPROC_MAX_TNFA_TAGS];
-        int32 negative_count = tnfa_collect_tags_except_branch(
-            ops, branch_starts, branch_ends, branch_count, b, negative_tags,
-            PREPROC_MAX_TNFA_TAGS);
+        int32 negative_count =
+            tnfa_collect_tags_except_branch(ops, branch_starts, branch_ends,
+                                            branch_count, b, negative_tags,
+                                            PREPROC_MAX_TNFA_TAGS);
         if (negative_count < 0) {
             return false;
         }
@@ -422,8 +423,9 @@ tnfa_fixed_length_range(ParsedOp *ops, int32 ops_count, int32 start,
                         int32 end) {
     int32 branch_starts[PREPROC_MAX_BRANCHES];
     int32 branch_ends[PREPROC_MAX_BRANCHES];
-    int32 branch_count = tnfa_collect_branches(
-        ops, start, end, branch_starts, branch_ends, PREPROC_MAX_BRANCHES);
+    int32 branch_count =
+        tnfa_collect_branches(ops, start, end, branch_starts, branch_ends,
+                              PREPROC_MAX_BRANCHES);
     int32 fixed_len = -2;
 
     if (branch_count <= 0) {
@@ -607,8 +609,9 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
             }
             if (t1 > pc && t2 > t1) {
                 int32 negative_tags[PREPROC_MAX_TNFA_TAGS];
-                int32 negative_count = tnfa_collect_tags_in_range(
-                    ops, t1, t2, negative_tags, PREPROC_MAX_TNFA_TAGS);
+                int32 negative_count =
+                    tnfa_collect_tags_in_range(ops, t1, t2, negative_tags,
+                                               PREPROC_MAX_TNFA_TAGS);
                 if (negative_count < 0) {
                     return false;
                 }
@@ -624,8 +627,10 @@ build_tnfa_from_ops(ParsedTnfa *tnfa, ParsedOp *ops, int32 ops_count,
                     preserves ordinary optional/alternative semantics for
                     captures that have never participated on the current path.
                 */
-                negative_count = tnfa_filter_tags_without_prior_occurrence(
-                    ops, 0, pc, negative_tags, negative_count);
+                negative_count =
+                    tnfa_filter_tags_without_prior_occurrence(ops, 0, pc,
+                                                              negative_tags,
+                                                              negative_count);
 
                 if (!tnfa_add_negative_tag_chain(tnfa, pc, t2, 2, negative_tags,
                                                  negative_count)) {

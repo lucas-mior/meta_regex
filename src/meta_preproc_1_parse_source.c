@@ -670,9 +670,10 @@ parse_source_code(char *buffer, int32 source_len) {
                         if (found_end) {
                             int32 name_len = colon_idx - (regex_index + 2);
                             if (name_len < PREPROC_MAX_CLASS_NAME) {
-                                populate_posix_class_mask(
-                                    &regex_string[regex_index + 2],
-                                    name_len, mask);
+                                char *class_name =
+                                    &regex_string[regex_index + 2];
+                                populate_posix_class_mask(class_name, name_len,
+                                                          mask);
                             }
                             regex_index = colon_idx + 2;
                             first_char = false;

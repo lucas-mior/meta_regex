@@ -214,10 +214,12 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
     closed_tags = tags_b;
     current_count = 1;
 
-    closed_count = match_tnfa_epsilon_closure(
-        tnfa, use_state_slices, input, input_len, pos, current, current_tags,
-        current_count, closed, closed_tags, stack, stack_tags, stack_cap,
-        closed_seen, edge_indices, work_tags, tag_count);
+    closed_count =
+        match_tnfa_epsilon_closure(tnfa, use_state_slices, input, input_len,
+                                   pos, current, current_tags, current_count,
+                                   closed, closed_tags, stack, stack_tags,
+                                   stack_cap, closed_seen, edge_indices,
+                                   work_tags, tag_count);
     if (closed_count < 0) {
         return META_REG_NOMATCH;
     }
@@ -230,9 +232,9 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
             accepted = 1;
             accepted_end = pos;
             if (track_tags) {
-                match_tnfa_save_accept(
-                    match_tnfa_tag_row(closed_tags, tag_count, accept_index),
-                    saved_tags, tag_count);
+                int32 *accept_tags =
+                    match_tnfa_tag_row(closed_tags, tag_count, accept_index);
+                match_tnfa_save_accept(accept_tags, saved_tags, tag_count);
             }
         }
     }
@@ -263,10 +265,12 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         current_tags = closed_tags;
         closed_tags = tmp_tags;
 
-        closed_count = match_tnfa_epsilon_closure(
-            tnfa, use_state_slices, input, input_len, pos, closed, closed_tags,
-            next_count, current, current_tags, stack, stack_tags, stack_cap,
-            closed_seen, edge_indices, work_tags, tag_count);
+        closed_count =
+            match_tnfa_epsilon_closure(tnfa, use_state_slices, input, input_len,
+                                       pos, closed, closed_tags, next_count,
+                                       current, current_tags, stack, stack_tags,
+                                       stack_cap, closed_seen, edge_indices,
+                                       work_tags, tag_count);
         if (closed_count < 0) {
             return META_REG_NOMATCH;
         }
@@ -286,9 +290,9 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
             accepted = 1;
             accepted_end = pos;
             if (track_tags) {
-                match_tnfa_save_accept(
-                    match_tnfa_tag_row(closed_tags, tag_count, accept_index),
-                    saved_tags, tag_count);
+                int32 *accept_tags =
+                    match_tnfa_tag_row(closed_tags, tag_count, accept_index);
+                match_tnfa_save_accept(accept_tags, saved_tags, tag_count);
             }
         }
     }
@@ -565,9 +569,10 @@ match_tnfa_epsilon_closure(MetaTnfa *tnfa, int32 use_state_slices, uint8 *input,
 
         stack_count -= 1;
         cfg = stack[stack_count];
-        match_tnfa_copy_tags(
-            work_tags, match_tnfa_tag_row(stack_tags, tag_count, stack_count),
-            tag_count);
+        match_tnfa_copy_tags(work_tags,
+                             match_tnfa_tag_row(stack_tags, tag_count,
+                                                stack_count),
+                             tag_count);
         cfg_tags = work_tags;
 
         if (cfg.state < 0 || cfg.state >= tnfa->num_states) {
@@ -582,14 +587,15 @@ match_tnfa_epsilon_closure(MetaTnfa *tnfa, int32 use_state_slices, uint8 *input,
             return -1;
         }
         output_configs[output_count] = cfg;
-        match_tnfa_copy_tags(
-            match_tnfa_tag_row(output_tags, tag_count, output_count), cfg_tags,
-            tag_count);
+        match_tnfa_copy_tags(match_tnfa_tag_row(output_tags, tag_count,
+                                                output_count),
+                             cfg_tags, tag_count);
         output_count += 1;
 
-        edge_count = match_tnfa_collect_zero_width_edges(
-            tnfa, use_state_slices, cfg.state, input, input_len, pos,
-            edge_indices);
+        edge_count =
+            match_tnfa_collect_zero_width_edges(tnfa, use_state_slices,
+                                                cfg.state, input, input_len,
+                                                pos, edge_indices);
 
         for (int32 i = 0; i < edge_count; i += 1) {
             MetaTnfaTransition *tr = &tnfa->transitions[edge_indices[i]];
@@ -693,9 +699,10 @@ match_tnfa_step(MetaTnfa *tnfa, int32 use_state_slices, uint8 *input,
             }
 
             next_configs[next_count].state = tr->to;
-            match_tnfa_copy_tags(
-                match_tnfa_tag_row(next_tags, tag_count, next_count),
-                match_tnfa_tag_row(closed_tags, tag_count, i), tag_count);
+            match_tnfa_copy_tags(match_tnfa_tag_row(next_tags, tag_count,
+                                                    next_count),
+                                 match_tnfa_tag_row(closed_tags, tag_count, i),
+                                 tag_count);
 
             next_count += 1;
             seen[tr->to] = 1;

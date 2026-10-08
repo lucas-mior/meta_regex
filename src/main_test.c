@@ -314,8 +314,7 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
                 bool extract) {
     RegexTest *reference = xmemdup(tests, count*SIZEOF(*reference));
     bool *libc_reference = malloc2(count*SIZEOF(*libc_reference));
-    bool *reference_submatches = malloc2(
-        count*SIZEOF(*reference_submatches));
+    bool *reference_submatches = malloc2(count*SIZEOF(*reference_submatches));
     bool failed = false;
     char *extract_name = "non-extracting";
 
@@ -339,19 +338,21 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
 
         if (compiled == 0) {
             libc_reference[i] = true;
-            reference_submatches[i] = libc_submatches_are_portable(
-                reference[i].meta_regex);
-            reference[i].result = run_libc_one(
-                &compiled_regex, reference[i].input, reference[i].pmatch,
-                LENGTH(reference[i].pmatch), extract);
+            reference_submatches[i] = libc_submatches_are_portable(meta_regex);
+            reference[i].result =
+                run_libc_one(&compiled_regex, reference[i].input,
+                             reference[i].pmatch, LENGTH(reference[i].pmatch),
+                             extract);
             regfree(&compiled_regex);
         } else {
             libc_reference[i] = false;
             reference_submatches[i] = true;
-            reference[i].result = run_fallback_reference_one(
-                reference[i].meta_regex, reference[i].input,
-                reference[i].input_len, reference[i].pmatch,
-                LENGTH(reference[i].pmatch), extract);
+            reference[i].result =
+                run_fallback_reference_one(meta_regex, reference[i].input,
+                                           reference[i].input_len,
+                                           reference[i].pmatch,
+                                           LENGTH(reference[i].pmatch),
+                                           extract);
         }
     }
     for (int32 mi = 0; mi < LENGTH(all_matchers); mi += 1) {
@@ -372,9 +373,10 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
                 continue;
             }
 
-            actual[i].result = run_meta_one(
-                meta_regex, actual[i].input, actual[i].input_len, matcher,
-                actual[i].pmatch, LENGTH(actual[i].pmatch), extract);
+            actual[i].result =
+                run_meta_one(meta_regex, actual[i].input, actual[i].input_len,
+                             matcher, actual[i].pmatch,
+                             LENGTH(actual[i].pmatch), extract);
         }
         for (int32 i = 0; i < count; i += 1) {
             if (!matcher_can_use_reference(libc_reference[i], matcher)) {
@@ -389,12 +391,13 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
                                 LENGTH(actual[i].pmatch), extract,
                                 reference_submatches[i])) {
                 failed = true;
-                report_match_mismatch(
-                    "Known-pair", description, matcher, tests[i].input,
-                    tests[i].meta_regex->string, reference[i].result,
-                    actual[i].result, reference[i].pmatch, actual[i].pmatch,
-                    LENGTH(actual[i].pmatch), extract,
-                    reference_submatches[i]);
+                report_match_mismatch("Known-pair", description, matcher,
+                                      tests[i].input,
+                                      tests[i].meta_regex->string,
+                                      reference[i].result, actual[i].result,
+                                      reference[i].pmatch, actual[i].pmatch,
+                                      LENGTH(actual[i].pmatch), extract,
+                                      reference_submatches[i]);
             }
         }
 
@@ -420,8 +423,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
 #if FUZZY_PRECOMPILE_LIBC
     regex_t *libc_regexes = malloc2(tests_len*SIZEOF(*libc_regexes));
     bool *libc_reference = malloc2(tests_len*SIZEOF(*libc_reference));
-    bool *reference_submatches = malloc2(
-        tests_len*SIZEOF(*reference_submatches));
+    bool *reference_submatches =
+        malloc2(tests_len*SIZEOF(*reference_submatches));
 #endif
 
     for (int32 i = 0; i < ninputs; i += 1) {
@@ -459,13 +462,17 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
         int32 idx = fuzzy[i].regex_idx;
 #if FUZZY_PRECOMPILE_LIBC
         if (libc_reference[idx]) {
-            fuzzy[i].result_libc = run_libc_one(
-                &libc_regexes[idx], fuzzy[i].input, fuzzy[i].pmatch_libc,
-                LENGTH(fuzzy[i].pmatch_libc), extract);
+            fuzzy[i].result_libc =
+                run_libc_one(&libc_regexes[idx], fuzzy[i].input,
+                             fuzzy[i].pmatch_libc,
+                             LENGTH(fuzzy[i].pmatch_libc), extract);
         } else {
-            fuzzy[i].result_libc = run_fallback_reference_one(
-                tests[idx], fuzzy[i].input, fuzzy[i].input_len,
-                fuzzy[i].pmatch_libc, LENGTH(fuzzy[i].pmatch_libc), extract);
+            fuzzy[i].result_libc =
+                run_fallback_reference_one(tests[idx], fuzzy[i].input,
+                                           fuzzy[i].input_len,
+                                           fuzzy[i].pmatch_libc,
+                                           LENGTH(fuzzy[i].pmatch_libc),
+                                           extract);
         }
 #else
         regex_t compiled;
@@ -478,9 +485,12 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
                                LENGTH(fuzzy[i].pmatch_libc), extract);
             regfree(&compiled);
         } else {
-            fuzzy[i].result_libc = run_fallback_reference_one(
-                tests[idx], fuzzy[i].input, fuzzy[i].input_len,
-                fuzzy[i].pmatch_libc, LENGTH(fuzzy[i].pmatch_libc), extract);
+            fuzzy[i].result_libc =
+                run_fallback_reference_one(tests[idx], fuzzy[i].input,
+                                           fuzzy[i].input_len,
+                                           fuzzy[i].pmatch_libc,
+                                           LENGTH(fuzzy[i].pmatch_libc),
+                                           extract);
         }
 #endif
     }
@@ -498,9 +508,10 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
                 continue;
             }
 
-            fuzzy[i].result_meta = run_meta_one(
-                meta_pattern, fuzzy[i].input, fuzzy[i].input_len, matcher,
-                fuzzy[i].pmatch_meta, LENGTH(fuzzy[i].pmatch_meta), extract);
+            fuzzy[i].result_meta =
+                run_meta_one(meta_pattern, fuzzy[i].input, fuzzy[i].input_len,
+                             matcher, fuzzy[i].pmatch_meta,
+                             LENGTH(fuzzy[i].pmatch_meta), extract);
         }
         for (int32 i = 0; i < fuzzy_len; i += 1) {
             MetaRegex *meta_pattern = tests[fuzzy[i].regex_idx];
@@ -521,12 +532,14 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
                                 LENGTH(fuzzy[i].pmatch_meta), extract,
                                 compare_submatches)) {
                 failed = true;
-                report_match_mismatch(
-                    "Fuzzy", tests_name, matcher, fuzzy[i].input,
-                    meta_pattern->string, fuzzy[i].result_libc,
-                    fuzzy[i].result_meta, fuzzy[i].pmatch_libc,
-                    fuzzy[i].pmatch_meta, LENGTH(fuzzy[i].pmatch_meta),
-                    extract, compare_submatches);
+                report_match_mismatch("Fuzzy", tests_name, matcher,
+                                      fuzzy[i].input, meta_pattern->string,
+                                      fuzzy[i].result_libc,
+                                      fuzzy[i].result_meta,
+                                      fuzzy[i].pmatch_libc,
+                                      fuzzy[i].pmatch_meta,
+                                      LENGTH(fuzzy[i].pmatch_meta), extract,
+                                      compare_submatches);
             }
         }
     }
@@ -560,8 +573,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
 #if FUZZY_PRECOMPILE_LIBC
     regex_t *libc_regexes = malloc2(tests_len*SIZEOF(*libc_regexes));
     bool *libc_reference = malloc2(tests_len*SIZEOF(*libc_reference));
-    bool *reference_submatches = malloc2(
-        tests_len*SIZEOF(*reference_submatches));
+    bool *reference_submatches =
+        malloc2(tests_len*SIZEOF(*reference_submatches));
 #endif
 
     if (dir == NULL) {
@@ -628,9 +641,11 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
                     = run_libc_one(&libc_regexes[j], (char *)input, curr_pm,
                                    LENGTH(dummy_test.pmatch), extract);
             } else {
-                results_libc[j] = run_fallback_reference_one(
-                    tests[j], (char *)input, input_len, curr_pm,
-                    LENGTH(dummy_test.pmatch), extract);
+                results_libc[j] =
+                    run_fallback_reference_one(tests[j], (char *)input,
+                                               input_len, curr_pm,
+                                               LENGTH(dummy_test.pmatch),
+                                               extract);
             }
 #else
             regex_t compiled;
@@ -641,9 +656,11 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
                                    LENGTH(dummy_test.pmatch), extract);
                 regfree(&compiled);
             } else {
-                results_libc[j] = run_fallback_reference_one(
-                    tests[j], (char *)input, input_len, curr_pm,
-                    LENGTH(dummy_test.pmatch), extract);
+                results_libc[j] =
+                    run_fallback_reference_one(tests[j], (char *)input,
+                                               input_len, curr_pm,
+                                               LENGTH(dummy_test.pmatch),
+                                               extract);
             }
 #endif
         }
@@ -671,9 +688,10 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
                     clear_pmatch(curr_m_pm, LENGTH(dummy_test.pmatch));
                 }
 
-                results_meta[j] = run_meta_one(
-                    meta_pattern, (char *)input, input_len, matcher, curr_m_pm,
-                    LENGTH(dummy_test.pmatch), extract);
+                results_meta[j] =
+                    run_meta_one(meta_pattern, (char *)input, input_len,
+                                 matcher, curr_m_pm, LENGTH(dummy_test.pmatch),
+                                 extract);
             }
             for (int32 j = 0; j < tests_len; j += 1) {
                 MetaRegex *meta_pattern = tests[j];
@@ -807,13 +825,14 @@ main(void) {
     RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_no_backref);
     RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_and_backref);
 
-    regexes_extensive_sample = random_regex_sample(
-        regexes_extensive, LENGTH(regexes_extensive),
-        &regexes_extensive_sample_len);
+    regexes_extensive_sample =
+        random_regex_sample(regexes_extensive, LENGTH(regexes_extensive),
+                            &regexes_extensive_sample_len);
 
-    extensive_failed = run_extensive_regex_tests(
-        regexes_extensive_sample, regexes_extensive_sample_len,
-        "random half of regexes_extensive");
+    extensive_failed =
+        run_extensive_regex_tests(regexes_extensive_sample,
+                                  regexes_extensive_sample_len,
+                                  "random half of regexes_extensive");
     free2(regexes_extensive_sample,
           LENGTH(regexes_extensive)*SIZEOF(*regexes_extensive_sample));
 
@@ -821,8 +840,10 @@ main(void) {
         printf(RED("\nSample failed; running full regexes_extensive array "
                    "...\n"));
         srand((uint32)42);
-        extensive_failed = run_extensive_regex_tests(
-            regexes_extensive, LENGTH(regexes_extensive), "regexes_extensive");
+        extensive_failed =
+            run_extensive_regex_tests(regexes_extensive,
+                                      LENGTH(regexes_extensive),
+                                      "regexes_extensive");
     }
 
     printf("Exiting from %s...\n", __FILE__);
