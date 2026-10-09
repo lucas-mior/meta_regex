@@ -445,10 +445,10 @@ bench_write_engine_row(FILE *csv, char *test_name, char *variant,
     fputc(',', csv);
     bench_csv_string(csv, selected_matcher_name);
     fprintf(csv, ",%d,%d,%d,",
-            regex_bucket->count, input_bucket->count, pair_count);
+                 regex_bucket->count, input_bucket->count, pair_count);
     fprintf(csv, "%d,%d,", run_pair_count, META_BENCH_ITERATIONS);
     fprintf(csv, "%lld,%f,%f,%d\n",
-            total_iterations, seconds, ns_per_match, matches);
+                 total_iterations, seconds, ns_per_match, matches);
     return;
 }
 
@@ -739,8 +739,8 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
             }
             error2("Skipping regex at index %d from %s with %d ops; no "
                    "benchmark length bucket exists above 64 ops: "
-                   BLUE("\"%s\"") "\n", i, array_name, op_count,
-                   regex_string);
+                   BLUE("\"%s\"") "\n",
+                   i, array_name, op_count, regex_string);
             continue;
         }
 
@@ -774,7 +774,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
         }
 
         SNPRINTF(regex_bucket_names[l], "%s_ops_%s",
-                 array_name, regex_len_name);
+                                        array_name, regex_len_name);
 
         regex_buckets[l].name = regex_bucket_names[l];
         regex_buckets[l].length_class = l;
@@ -855,7 +855,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
             input_bucket.count = regex_buckets[l].count;
 
             SNPRINTF(test_name, "%s_ops_%s_input_%s",
-                     array_name, regex_len_name, input_len_name);
+                                array_name, regex_len_name, input_len_name);
 
 #if 1
             bench_run_pairwise_variant(csv, test_name, &regex_buckets[l],

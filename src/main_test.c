@@ -297,8 +297,8 @@ static int32
 run_fallback_reference_one(MetaRegex *regex, char *input, int32 input_len,
                            MetaRegexMatch *pmatch, int32 pmatch_len,
                            bool extract) {
-    return run_meta_one(regex, input, input_len, MATCHER_BTNFA, pmatch,
-                        pmatch_len, extract);
+    return run_meta_one(regex, input, input_len, MATCHER_BTNFA,
+                        pmatch, pmatch_len, extract);
 }
 
 static bool
