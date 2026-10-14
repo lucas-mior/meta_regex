@@ -246,6 +246,11 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
         }
 
         while (1) {
+            int32 is_star;
+            int32 is_plus;
+            int32 is_opt;
+            int32 is_bound;
+
             if (is_catastrophic) {
                 int32 pc_idx = (int32)(pc - regex->ops);
                 if ((visited_empty[pc_idx / 32] & (1u << (pc_idx % 32))) != 0) {
@@ -532,112 +537,110 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                 continue;
             }
 
-            {
-                int32 is_star = (pc[1].type == META_OP_STAR);
-                int32 is_plus = (pc[1].type == META_OP_PLUS);
-                int32 is_opt = (pc[1].type == META_OP_OPTIONAL);
-                int32 is_bound = (pc[1].type == META_OP_BOUNDED);
+            is_star = (pc[1].type == META_OP_STAR);
+            is_plus = (pc[1].type == META_OP_PLUS);
+            is_opt = (pc[1].type == META_OP_OPTIONAL);
+            is_bound = (pc[1].type == META_OP_BOUNDED);
 
-                if (is_star || is_plus || is_opt || is_bound) {
-                    MetaOp token = pc[0];
-                    MetaOp *next_ops = pc + 2;
-                    uint8 *s = input;
-                    int32 min_req = 0;
-                    int32 max_req = -1;
-                    int32 count = 0;
+            if (is_star || is_plus || is_opt || is_bound) {
+                MetaOp token = pc[0];
+                MetaOp *next_ops = pc + 2;
+                uint8 *s = input;
+                int32 min_req = 0;
+                int32 max_req = -1;
+                int32 count = 0;
 
-                    if (is_star) {
-                        min_req = 0;
-                        max_req = -1;
-                    } else if (is_plus) {
-                        min_req = 1;
-                        max_req = -1;
-                    } else if (is_opt) {
-                        min_req = 0;
-                        max_req = 1;
-                    } else if (is_bound) {
-                        min_req = pc[1].min;
-                        max_req = pc[1].max;
+                if (is_star) {
+                    min_req = 0;
+                    max_req = -1;
+                } else if (is_plus) {
+                    min_req = 1;
+                    max_req = -1;
+                } else if (is_opt) {
+                    min_req = 0;
+                    max_req = 1;
+                } else if (is_bound) {
+                    min_req = pc[1].min;
+                    max_req = pc[1].max;
+                }
+
+                if (token.type == META_OP_ANY) {
+                    while (max_req == -1 || count < max_req) {
+                        if (s[count] == '\0') {
+                            break;
+                        }
+                        count += 1;
                     }
-
-                    if (token.type == META_OP_ANY) {
-                        while (max_req == -1 || count < max_req) {
-                            if (s[count] == '\0') {
-                                break;
-                            }
-                            count += 1;
+                } else if (token.type == META_OP_LITERAL) {
+                    while (max_req == -1 || count < max_req) {
+                        if (s[count] == '\0') {
+                            break;
                         }
-                    } else if (token.type == META_OP_LITERAL) {
-                        while (max_req == -1 || count < max_req) {
-                            if (s[count] == '\0') {
-                                break;
-                            }
-                            if ((int32)s[count] != token.value) {
-                                break;
-                            }
-                            count += 1;
+                        if ((int32)s[count] != token.value) {
+                            break;
                         }
-                    } else if (token.type == META_OP_CLASS) {
-                        while (max_req == -1 || count < max_req) {
-                            uint8 fb = s[count];
-
-                            if (fb == '\0') {
-                                break;
-                            }
-                            if ((token.mask[fb / 32] & (1u << (fb % 32)))
-                                == 0) {
-                                break;
-                            }
-                            count += 1;
-                        }
+                        count += 1;
                     }
+                } else if (token.type == META_OP_CLASS) {
+                    while (max_req == -1 || count < max_req) {
+                        uint8 fb = s[count];
 
-                    if (count >= min_req) {
-                        uint8 *min_s = s + min_req;
-                        uint8 *max_s_ptr = s + count;
+                        if (fb == '\0') {
+                            break;
+                        }
+                        if ((token.mask[fb / 32] & (1u << (fb % 32)))
+                            == 0) {
+                            break;
+                        }
+                        count += 1;
+                    }
+                }
 
-                        for (uint8 *p = min_s; p <= max_s_ptr; p += 1) {
-                            if (!btnfa_quick_lookahead_fails(next_ops, p)) {
-                                btnfa_stack_push(&stack, &stack_cap, &stack_ptr,
-                                                 next_ops, p, current_pmatch,
-                                                 visited_empty, is_catastrophic,
-                                                 p > input);
-                            }
+                if (count >= min_req) {
+                    uint8 *min_s = s + min_req;
+                    uint8 *max_s_ptr = s + count;
+
+                    for (uint8 *p = min_s; p <= max_s_ptr; p += 1) {
+                        if (!btnfa_quick_lookahead_fails(next_ops, p)) {
+                            btnfa_stack_push(&stack, &stack_cap, &stack_ptr,
+                                             next_ops, p, current_pmatch,
+                                             visited_empty, is_catastrophic,
+                                             p > input);
                         }
                     }
-                    break;
+                }
+                break;
+            } else {
+                int32 is_match = 0;
+                uint8 fb = input[0];
+                int32 consumed = 0;
+
+                if (fb == '\0') {
+                    is_match = 0;
                 } else {
-                    int32 is_match = 0;
-                    uint8 fb = input[0];
-                    int32 consumed = 0;
-
-                    if (fb == '\0') {
+                    consumed = 1;
+                    if (pc->type == META_OP_ANY) {
+                        is_match = 1;
+                    } else if (pc->type == META_OP_LITERAL) {
+                        is_match = ((int32)fb == pc->value);
+                    } else if (pc->type == META_OP_CLASS) {
+                        is_match = ((pc->mask[fb / 32] & (1u << (fb % 32)))
+                                    != 0);
+                    } else {
                         is_match = 0;
-                    } else {
-                        consumed = 1;
-                        if (pc->type == META_OP_ANY) {
-                            is_match = 1;
-                        } else if (pc->type == META_OP_LITERAL) {
-                            is_match = ((int32)fb == pc->value);
-                        } else if (pc->type == META_OP_CLASS) {
-                            is_match = ((pc->mask[fb / 32] & (1u << (fb % 32)))
-                                        != 0);
-                        } else {
-                            is_match = 0;
+                    }
+                }
+                if (is_match) {
+                    pc += 1;
+                    input += consumed;
+                    if (is_catastrophic && consumed > 0) {
+                        for (int32 w = 0; w < META_PC_WORDS; w += 1) {
+                            visited_empty[w] = 0;
                         }
                     }
-                    if (is_match) {
-                        pc += 1;
-                        input += consumed;
-                        if (is_catastrophic && consumed > 0) {
-                            for (int32 w = 0; w < META_PC_WORDS; w += 1) {
-                                visited_empty[w] = 0;
-                            }
-                        }
-                        continue;
-                    } else {
-                        break;
-                    }
+                    continue;
+                } else {
+                    break;
                 }
             }
         }
