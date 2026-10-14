@@ -490,10 +490,10 @@ tdfa_add_state(TdfaBuildState *states, ParsedTdfa *tdfa, ParsedTnfa *tnfa,
     build_state->regs = NULL;
 
     if (config_count > 0) {
-        build_state->configs
-            = malloc2(SIZEOF(*build_state->configs)*config_count);
-        build_state->regs
-            = malloc2(SIZEOF(*build_state->regs)*config_count * tag_count);
+        build_state->configs =
+            malloc2(SIZEOF(*build_state->configs)*config_count);
+        build_state->regs =
+            malloc2(SIZEOF(*build_state->regs)*config_count*tag_count);
         if (build_state->configs == NULL || build_state->regs == NULL) {
             return -1;
         }
@@ -660,8 +660,8 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
         return false;
     }
 
-    build_states
-        = malloc2(SIZEOF(*build_states)*preproc_config.max_tdfa_states);
+    build_states =
+        malloc2(SIZEOF(*build_states)*preproc_config.max_tdfa_states);
     work = malloc2(SIZEOF(*work)*work_capacity);
     closed = malloc2(SIZEOF(*closed)*work_capacity);
     stack = malloc2(SIZEOF(*stack)*work_capacity);
@@ -695,9 +695,9 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
                     return false;
                 }
 
-                state_id
-                    = tdfa_find_state(build_states, tdfa, closed, initial_count,
-                                      tag_count, prev, curr);
+                state_id = tdfa_find_state(build_states, tdfa, closed,
+                                           initial_count, tag_count,
+                                           prev, curr);
                 if (state_id < 0) {
                     state_id = tdfa_add_state(build_states, tdfa, tnfa, closed,
                                               initial_count, tag_count,
@@ -720,9 +720,9 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
         }
         tdfa->start_state = tdfa->start_state_nw_nw;
     } else {
-        int32 initial_count
-            = tdfa_epsilon_closure(tnfa, tag_count, &initial, 1, closed, stack,
-                                   edge_indices, work_capacity, 0, 0);
+        int32 initial_count = tdfa_epsilon_closure(tnfa, tag_count, &initial, 1,
+                                                   closed, stack, edge_indices,
+                                                   work_capacity, 0, 0);
         if (initial_count < 0) {
             return false;
         }
@@ -788,9 +788,9 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
                     return false;
                 }
 
-                target_id
-                    = tdfa_find_state(build_states, tdfa, closed, closed_count,
-                                      tag_count, prev, curr);
+                target_id = tdfa_find_state(build_states,
+                                            tdfa, closed, closed_count,
+                                            tag_count, prev, curr);
                 if (target_id < 0) {
                     target_id = tdfa_add_state(build_states, tdfa, tnfa, closed,
                                                closed_count, tag_count,
@@ -816,8 +816,8 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
             }
         }
 
-        state->transition_count
-            = tdfa->num_transitions - state->first_transition;
+        state->transition_count =
+            tdfa->num_transitions - state->first_transition;
         if (state->transition_count == 0) {
             state->first_transition = -1;
         }

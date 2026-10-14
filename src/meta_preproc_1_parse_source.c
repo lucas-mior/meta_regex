@@ -588,8 +588,8 @@ parse_source_code(char *buffer, int32 source_len) {
                             for (int32 k = m; k < n; k += 1) {
                                 temp_ops[temp_ops_count] = op_to_repeat;
                                 temp_ops_count += 1;
-                                temp_ops[temp_ops_count].type
-                                    = META_OP_OPTIONAL;
+                                temp_ops[temp_ops_count].type =
+                                    META_OP_OPTIONAL;
                                 temp_ops_count += 1;
                             }
                         }
@@ -747,8 +747,8 @@ parse_source_code(char *buffer, int32 source_len) {
                         if (c_cp == 'S') {
                             for (int32 i = 0; i < META_CHAR_BITMASK_WORDS;
                                  i += 1) {
-                                temp_ops[temp_ops_count].mask[i]
-                                    = ~temp_ops[temp_ops_count].mask[i];
+                                temp_ops[temp_ops_count].mask[i] =
+                                    ~temp_ops[temp_ops_count].mask[i];
                             }
                         }
                         temp_ops_count += 1;
@@ -766,8 +766,8 @@ parse_source_code(char *buffer, int32 source_len) {
                         temp_ops[temp_ops_count].type = META_OP_WORD_BOUNDARY;
                         temp_ops_count += 1;
                     } else if (c_cp == 'B') {
-                        temp_ops[temp_ops_count].type
-                            = META_OP_NON_WORD_BOUNDARY;
+                        temp_ops[temp_ops_count].type =
+                            META_OP_NON_WORD_BOUNDARY;
                         temp_ops_count += 1;
                     } else {
                         temp_ops[temp_ops_count].type = META_OP_LITERAL;

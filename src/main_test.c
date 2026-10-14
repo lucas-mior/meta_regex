@@ -449,8 +449,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
         libc_reference[i] = false;
         reference_submatches[i] = true;
         if (libc_regex_is_portable(tests[i])) {
-            libc_reference[i]
-                = regcomp(&libc_regexes[i], pattern_str, REG_EXTENDED) == 0;
+            libc_reference[i] = regcomp(&libc_regexes[i],
+                                        pattern_str, REG_EXTENDED) == 0;
         }
         if (libc_reference[i]) {
             reference_submatches[i] = libc_submatches_are_portable(tests[i]);
@@ -479,10 +479,10 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
         char *pattern_str = tests[idx]->string;
 
         if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
-            fuzzy[i].result_libc
-                = run_libc_one(&compiled, fuzzy[i].input,
-                               fuzzy[i].pmatch_libc,
-                               LENGTH(fuzzy[i].pmatch_libc), extract);
+            fuzzy[i].result_libc = run_libc_one(&compiled, fuzzy[i].input,
+                                                fuzzy[i].pmatch_libc,
+                                                LENGTH(fuzzy[i].pmatch_libc),
+                                                extract);
             regfree(&compiled);
         } else {
             fuzzy[i].result_libc =
@@ -589,8 +589,8 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         libc_reference[i] = false;
         reference_submatches[i] = true;
         if (libc_regex_is_portable(tests[i])) {
-            libc_reference[i]
-                = regcomp(&libc_regexes[i], pattern_str, REG_EXTENDED) == 0;
+            libc_reference[i] = regcomp(&libc_regexes[i],
+                                        pattern_str, REG_EXTENDED) == 0;
         }
         if (libc_reference[i]) {
             reference_submatches[i] = libc_submatches_are_portable(tests[i]);
@@ -637,9 +637,10 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             }
 #if FUZZY_PRECOMPILE_LIBC
             if (libc_reference[j]) {
-                results_libc[j]
-                    = run_libc_one(&libc_regexes[j], (char *)input, curr_pm,
-                                   LENGTH(dummy_test.pmatch), extract);
+                results_libc[j] = run_libc_one(&libc_regexes[j],
+                                               (char *)input, curr_pm,
+                                               LENGTH(dummy_test.pmatch),
+                                               extract);
             } else {
                 results_libc[j] =
                     run_fallback_reference_one(tests[j], (char *)input,
@@ -651,9 +652,10 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
             regex_t compiled;
             char *pattern_str = tests[j]->string;
             if (regcomp(&compiled, pattern_str, REG_EXTENDED) == 0) {
-                results_libc[j]
-                    = run_libc_one(&compiled, (char *)input, curr_pm,
-                                   LENGTH(dummy_test.pmatch), extract);
+                results_libc[j] = run_libc_one(&compiled,
+                                               (char *)input, curr_pm,
+                                               LENGTH(dummy_test.pmatch),
+                                               extract);
                 regfree(&compiled);
             } else {
                 results_libc[j] =

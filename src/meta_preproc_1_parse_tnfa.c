@@ -380,8 +380,8 @@ tnfa_fixed_length_branch(ParsedOp *ops, int32 ops_count, int32 start,
             if (group_end >= end) {
                 return -1;
             }
-            atom_len
-                = tnfa_fixed_length_range(ops, ops_count, i + 1, group_end);
+            atom_len = tnfa_fixed_length_range(ops, ops_count,
+                                               i + 1, group_end);
             if (atom_len < 0) {
                 return -1;
             }

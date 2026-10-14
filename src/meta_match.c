@@ -64,8 +64,8 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
     switch (matcher) {
     case MATCHER_BTNFA: {
         if (regex->has_start_anchor) {
-            result
-                = match_btnfa(regex, input, input_len, 0, pmatch, pmatch_len);
+            result = match_btnfa(regex, input, input_len, 0,
+                                 pmatch, pmatch_len);
             if (result == 0) {
                 return 0;
             }

@@ -789,8 +789,8 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
             int32 compiled_result;
             BenchRegexCase *c = &regex_buckets[l].cases[i];
 
-            compiled_result
-                = regcomp(&compiled[i], c->regex->string, REG_EXTENDED);
+            compiled_result = regcomp(&compiled[i],
+                                      c->regex->string, REG_EXTENDED);
             if (compiled_result != 0) {
                 char error_message[256];
                 regerror(compiled_result, &compiled[i], error_message,

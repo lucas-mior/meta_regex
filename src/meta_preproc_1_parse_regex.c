@@ -262,8 +262,8 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uint8 *fastmap,
         int32 depth = 0;
         int32 scan = pc + 1;
 
-        is_null
-            = compute_first_set(ops, pc + 1, temp_ops_count, fastmap, visited);
+        is_null = compute_first_set(ops, pc + 1, temp_ops_count,
+                                    fastmap, visited);
         while (scan < temp_ops_count) {
             if (ops[scan].type == META_OP_GROUP_START) {
                 depth += 1;
