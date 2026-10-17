@@ -625,7 +625,7 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
         SNPRINTF(case_name, "%s[%s]", entry->d_name, size_pretty);
 
         results_libc = malloc2(tests_len*SIZEOF(*results_libc));
-        pm_sz = tests_len*LENGTH(dummy_test.pmatch) * SIZEOF(MetaRegexMatch);
+        pm_sz = tests_len*LENGTH(dummy_test.pmatch)*SIZEOF(MetaRegexMatch);
         pm_libc = malloc2(pm_sz);
 
         for (int32 j = 0; j < tests_len; j += 1) {

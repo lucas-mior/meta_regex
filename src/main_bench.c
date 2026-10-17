@@ -700,7 +700,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
     memset64(regex_buckets, 0, SIZEOF(regex_buckets));
     memset64(regex_bucket_names, 0, SIZEOF(regex_bucket_names));
 
-    bucket_cases = malloc2(SIZEOF(*bucket_cases)*array_len * BENCH_LEN_LAST);
+    bucket_cases = malloc2(SIZEOF(*bucket_cases)*array_len*BENCH_LEN_LAST);
     input_cases = malloc2(SIZEOF(*input_cases)*array_len);
     input_names = malloc2(SIZEOF(*input_names)*array_len);
     input_storage = malloc2(SIZEOF(*input_storage)*array_len);
@@ -882,7 +882,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
     free2(input_storage, SIZEOF(*input_storage)*array_len);
     free2(input_names, SIZEOF(*input_names)*array_len);
     free2(input_cases, SIZEOF(*input_cases)*array_len);
-    free2(bucket_cases, SIZEOF(*bucket_cases)*array_len * BENCH_LEN_LAST);
+    free2(bucket_cases, SIZEOF(*bucket_cases)*array_len*BENCH_LEN_LAST);
     return;
 }
 
