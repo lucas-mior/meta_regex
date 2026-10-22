@@ -31,11 +31,7 @@ static const MatcherFeatures match_features_static_dfa = {
 };
 // clang-format on
 
-#if 0
-static int32
-#else
 static inline __attribute__((always_inline)) int32
-#endif
 match_static_dfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 offset,
                  MetaRegexMatch *pmatch, int32 pmatch_len) {
     StaticDfa *dfa = regex->static_dfa;
