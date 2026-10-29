@@ -72,6 +72,7 @@ main(void) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Standalone tests passed: %d\n", (int32)LENGTH(standalone_tests));
+    fmt_printf("Standalone tests passed: %d\n",
+               (int32)LENGTH(standalone_tests));
     exit(EXIT_SUCCESS);
 }

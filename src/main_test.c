@@ -321,7 +321,7 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
     if (extract) {
         extract_name = "extracting";
     }
-    printf("\n----- Running %s (%s) -----\n", description, extract_name);
+    fmt_printf("\n----- Running %s (%s) -----\n", description, extract_name);
 
     for (int32 i = 0; i < count; i += 1) {
         regex_t compiled_regex;
@@ -758,7 +758,7 @@ run_extensive_regex_tests(MetaRegex **tests, int32 tests_len,
                           char *tests_name) {
     bool failed = false;
 
-    printf(RED("\nTests with random inputs against %s ...\n"), tests_name);
+    fmt_printf(RED("\nTests with random inputs against %s ...\n"), tests_name);
     for (int32 max_input_len = 1; max_input_len <= 1024; max_input_len *= 2) {
         if (run_fuzzy_tests(tests, tests_len, tests_name, max_input_len, 100,
                             true)) {
@@ -770,7 +770,7 @@ run_extensive_regex_tests(MetaRegex **tests, int32 tests_len,
         }
     }
 
-    printf(RED("\nTests from inputs/ against %s ...\n"), tests_name);
+    fmt_printf(RED("\nTests from inputs/ against %s ...\n"), tests_name);
     if (run_file_fuzzy_tests(tests, tests_len, true)) {
         failed = true;
     }
@@ -817,7 +817,7 @@ main(void) {
     setlocale(LC_ALL, "C");
     srand((uint32)42);
 
-    printf(RED("\nTests with known (input, regex) pairs ...\n"));
+    fmt_printf(RED("\nTests with known (input, regex) pairs ...\n"));
     RUN_KNOWN_PAIRS(ascii_no_group_no_backref);
     RUN_KNOWN_PAIRS(ascii_with_group_no_backref);
     RUN_KNOWN_PAIRS(ascii_with_group_and_backref);
@@ -839,8 +839,8 @@ main(void) {
           LENGTH(regexes_extensive)*SIZEOF(*regexes_extensive_sample));
 
     if (extensive_failed) {
-        printf(RED("\nSample failed; running full regexes_extensive array "
-                   "...\n"));
+        fmt_printf(RED("\nSample failed; running full regexes_extensive array "
+                       "...\n"));
         srand((uint32)42);
         extensive_failed =
             run_extensive_regex_tests(regexes_extensive,
@@ -848,7 +848,7 @@ main(void) {
                                       "regexes_extensive");
     }
 
-    printf("Exiting from %s...\n", __FILE__);
+    fmt_printf("Exiting from %s...\n", __FILE__);
 
     if (extensive_failed) {
         exit(EXIT_FAILURE);

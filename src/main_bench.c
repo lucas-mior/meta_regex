@@ -167,23 +167,22 @@ bench_timediff(struct timespec a, struct timespec b) {
 }
 
 static void
-bench_csv_string(FILE *out, char *s) {
-    fputc('"', out);
+bench_csv_string(String *out, char *s) {
+    STR_APPEND(out, "\"");
     if (s) {
         for (char *p = s; *p != '\0'; p += 1) {
             if (*p == '"') {
-                fputc('"', out);
-                fputc('"', out);
+                STR_APPEND(out, "\"\"");
             } else if (*p == '\n') {
-                fputs("\\n", out);
+                STR_APPEND(out, "\\n");
             } else if (*p == '\t') {
-                fputs("\\t", out);
+                STR_APPEND(out, "\\t");
             } else {
-                fputc(*p, out);
+                str_append_byte(out, *p);
             }
         }
     }
-    fputc('"', out);
+    STR_APPEND(out, "\"");
     return;
 }
 
@@ -407,7 +406,7 @@ bench_absorb_result(int32 result, MetaRegexMatch *pmatch, bool extract) {
 }
 
 static void
-bench_write_engine_row(FILE *csv, char *test_name, char *variant,
+bench_write_engine_row(String *csv, char *test_name, char *variant,
                        BenchRegexBucket *regex_bucket,
                        BenchInputBucket *input_bucket, char *engine,
                        char *matcher_name, char *selected_matcher_name,
@@ -425,30 +424,44 @@ bench_write_engine_row(FILE *csv, char *test_name, char *variant,
     }
 
     bench_csv_string(csv, test_name);
-    fputc(',', csv);
+    STR_APPEND(csv, ",");
     bench_csv_string(csv, variant);
-    fputc(',', csv);
+    STR_APPEND(csv, ",");
     bench_csv_string(csv, bench_length_class_name(regex_bucket->length_class));
-    fprintf(csv, ",%d,", regex_bucket->max_regex_len);
+    STR_APPEND(csv, ",");
+    str_itoa(csv, regex_bucket->max_regex_len);
+    STR_APPEND(csv, ",");
     bench_csv_string(csv, feature_name);
-    fputc(',', csv);
+    STR_APPEND(csv, ",");
     bench_csv_string(csv, regex_bucket->name);
-    fputc(',', csv);
+    STR_APPEND(csv, ",");
     bench_csv_string(csv,
                      bench_input_length_class_name(input_bucket->length_class));
-    fprintf(csv, ",%d,", input_bucket->max_input_len);
+    STR_APPEND(csv, ",");
+    str_itoa(csv, input_bucket->max_input_len);
+    STR_APPEND(csv, ",");
     bench_csv_string(csv, input_bucket->name);
-    fputc(',', csv);
+    STR_APPEND(csv, ",");
     bench_csv_string(csv, engine);
-    fputc(',', csv);
+    STR_APPEND(csv, ",");
     bench_csv_string(csv, matcher_name);
-    fputc(',', csv);
+    STR_APPEND(csv, ",");
     bench_csv_string(csv, selected_matcher_name);
-    fprintf(csv, ",%d,%d,%d,",
-                 regex_bucket->count, input_bucket->count, pair_count);
-    fprintf(csv, "%d,%d,", run_pair_count, META_BENCH_ITERATIONS);
-    fprintf(csv, "%lld,%f,%f,%d\n",
-                 total_iterations, seconds, ns_per_match, matches);
+    STR_APPEND(csv, ",");
+    str_itoa(csv, regex_bucket->count);
+    STR_APPEND(csv, ",");
+    str_itoa(csv, input_bucket->count);
+    STR_APPEND(csv, ",");
+    str_itoa(csv, pair_count);
+    STR_APPEND(csv, ",");
+    str_itoa(csv, run_pair_count);
+    STR_APPEND(csv, ",");
+    str_itoa(csv, META_BENCH_ITERATIONS);
+    STR_APPEND(csv, ",");
+    str_itoa(csv, total_iterations);
+    str_printf(csv, ",%f,%f,", seconds, ns_per_match);
+    str_itoa(csv, matches);
+    STR_APPEND(csv, "\n");
     return;
 }
 
@@ -474,7 +487,7 @@ bench_generate_random_input(char *out, enum BenchInputLengthClass c) {
 }
 
 static void
-bench_run_pairwise_variant(FILE *csv, char *test_name,
+bench_run_pairwise_variant(String *csv, char *test_name,
                            BenchRegexBucket *regex_bucket,
                            BenchInputBucket *input_bucket, regex_t *compiled,
                            enum Matcher enabled, bool extract) {
@@ -488,7 +501,7 @@ bench_run_pairwise_variant(FILE *csv, char *test_name,
     if (extract) {
         variant = "extract";
     }
-    printf("\n== %s (%s) ==\n", test_name, variant);
+    fmt_printf("\n== %s (%s) ==\n", test_name, variant);
 
     for (int32 ri = 0; ri < regex_bucket->count; ri += 1) {
         BenchRegexCase *rc = &regex_bucket->cases[ri];
@@ -694,7 +707,8 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
     char (*input_names)[64];
     char (*input_storage)[BENCH_RANDOM_INPUT_MAX_LEN + 1];
     char csv_file[1024];
-    FILE *csv;
+    String csv = {0};
+    int32 csv_fd;
 
     memset64(counts, 0, SIZEOF(counts));
     memset64(regex_buckets, 0, SIZEOF(regex_buckets));
@@ -753,17 +767,17 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
     }
 
     SNPRINTF(csv_file, "benchmarks/%s-%lld.csv", array_name, now);
-    csv = fopen(csv_file, "w");
-    if (csv == NULL) {
+    csv_fd = open(csv_file, O_WRONLY |O_CREAT |O_TRUNC, 0666);
+    if (csv_fd < 0) {
         error("Error opening %s for writing: %s.\n", csv_file, strerror(errno));
         exit(EXIT_FAILURE);
     }
-    fprintf(csv,
-            "block,variant,regex_length_class,regex_max_len,feature_class,"
-            "regex_bucket,input_length_class,input_max_len,input_bucket,engine,"
-            "matcher,selected_matcher,regex_cases,input_cases,pair_count,"
-            "run_pair_count,iterations_per_pair,total_iterations,seconds,"
-            "ns_per_match,matches\n");
+    STR_APPEND(&csv,
+               "block,variant,regex_length_class,regex_max_len,feature_class,"
+               "regex_bucket,input_length_class,input_max_len,input_bucket,"
+               "engine,matcher,selected_matcher,regex_cases,input_cases,"
+               "pair_count,run_pair_count,iterations_per_pair,"
+               "total_iterations,seconds,ns_per_match,matches\n");
 
     for (enum BenchRegexLengthClass l = 0; l < BENCH_LEN_LAST; l += 1) {
         char *regex_len_name = bench_length_class_name(l);
@@ -844,9 +858,9 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
                 input_cases[ri].length_class = ii;
             }
 
-            printf("%s / %s: matching_inputs=%d",
-                   regex_buckets[l].name, input_len_name, yes_matched);
-            printf(" fallback_inputs=%d\n", not_matched);
+            fmt_printf("%s / %s: matching_inputs=%d",
+                       regex_buckets[l].name, input_len_name, yes_matched);
+            fmt_printf(" fallback_inputs=%d\n", not_matched);
 
             input_bucket.name = input_len_name;
             input_bucket.length_class = ii;
@@ -858,11 +872,11 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
                                 array_name, regex_len_name, input_len_name);
 
 #if 1
-            bench_run_pairwise_variant(csv, test_name, &regex_buckets[l],
+            bench_run_pairwise_variant(&csv, test_name, &regex_buckets[l],
                                        &input_bucket, compiled, enabled, false);
 #endif
 #if 1
-            bench_run_pairwise_variant(csv, test_name, &regex_buckets[l],
+            bench_run_pairwise_variant(&csv, test_name, &regex_buckets[l],
                                        &input_bucket, compiled, enabled, true);
 #endif
         }
@@ -873,11 +887,12 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
         free2(compiled, SIZEOF(*compiled)*regex_buckets[l].count);
     }
 
-    if (fclose(csv)) {
-        error("Error closing %s: %s.\n", csv_file, strerror(errno));
+    write_all(csv_fd, csv.data, csv.len);
+    if (XCLOSE(&csv_fd, csv_file) < 0) {
         exit(EXIT_FAILURE);
     }
-    printf("Wrote %s\n", csv_file);
+    str_free(&csv);
+    fmt_printf("Wrote %s\n", csv_file);
 
     free2(input_storage, SIZEOF(*input_storage)*array_len);
     free2(input_names, SIZEOF(*input_names)*array_len);
@@ -946,14 +961,14 @@ main(int32 argc, char **argv) {
         enabled = MATCHER_BTNFA;
     }
 
-    printf("bench_max_input_len=%d\n", max_input_len);
+    fmt_printf("bench_max_input_len=%d\n", max_input_len);
 
     now = time(NULL);
     BENCH_PROCESS_ARRAY(bench_regex_cases, 0);
     BENCH_PROCESS_ARRAY(bench_regex_backref_cases, 1);
 
-    printf("bench_sink_result=%d bench_sink_offsets=%lld\n",
-           bench_sink_result, bench_sink_offsets);
+    fmt_printf("bench_sink_result=%d bench_sink_offsets=%lld\n",
+               bench_sink_result, bench_sink_offsets);
 
     exit(EXIT_SUCCESS);
 }
