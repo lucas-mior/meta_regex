@@ -73,6 +73,6 @@ main(void) {
     }
 
     fmt_printf("Standalone tests passed: %d\n",
-               (int32)LENGTH(standalone_tests));
+               LENGTH(standalone_tests));
     exit(EXIT_SUCCESS);
 }
