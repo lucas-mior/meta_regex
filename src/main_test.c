@@ -375,8 +375,9 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
 
             actual[i].result =
                 run_meta_one(meta_regex, actual[i].input, actual[i].input_len,
-                             matcher, actual[i].pmatch,
-                             LENGTH(actual[i].pmatch), extract);
+                             matcher,
+                             actual[i].pmatch, LENGTH(actual[i].pmatch),
+                             extract);
         }
         for (int32 i = 0; i < count; i += 1) {
             if (!matcher_can_use_reference(libc_reference[i], matcher)) {
@@ -387,16 +388,19 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
                 continue;
             }
             if (result_mismatch(reference[i].result, actual[i].result,
-                                reference[i].pmatch, actual[i].pmatch,
-                                LENGTH(actual[i].pmatch), extract,
+                                reference[i].pmatch,
+                                actual[i].pmatch, LENGTH(actual[i].pmatch),
+                                extract,
                                 reference_submatches[i])) {
                 failed = true;
                 report_match_mismatch("Known-pair", description, matcher,
                                       tests[i].input,
                                       tests[i].meta_regex->string,
                                       reference[i].result, actual[i].result,
-                                      reference[i].pmatch, actual[i].pmatch,
-                                      LENGTH(actual[i].pmatch), extract,
+                                      reference[i].pmatch,
+                                      actual[i].pmatch,
+                                      LENGTH(actual[i].pmatch),
+                                      extract,
                                       reference_submatches[i]);
             }
         }
@@ -465,7 +469,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
             fuzzy[i].result_libc =
                 run_libc_one(&libc_regexes[idx], fuzzy[i].input,
                              fuzzy[i].pmatch_libc,
-                             LENGTH(fuzzy[i].pmatch_libc), extract);
+                             LENGTH(fuzzy[i].pmatch_libc),
+                             extract);
         } else {
             fuzzy[i].result_libc =
                 run_fallback_reference_one(tests[idx], fuzzy[i].input,
@@ -510,8 +515,9 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
 
             fuzzy[i].result_meta =
                 run_meta_one(meta_pattern, fuzzy[i].input, fuzzy[i].input_len,
-                             matcher, fuzzy[i].pmatch_meta,
-                             LENGTH(fuzzy[i].pmatch_meta), extract);
+                             matcher,
+                             fuzzy[i].pmatch_meta, LENGTH(fuzzy[i].pmatch_meta),
+                             extract);
         }
         for (int32 i = 0; i < fuzzy_len; i += 1) {
             MetaRegex *meta_pattern = tests[fuzzy[i].regex_idx];
@@ -528,8 +534,10 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
             }
 
             if (result_mismatch(fuzzy[i].result_libc, fuzzy[i].result_meta,
-                                fuzzy[i].pmatch_libc, fuzzy[i].pmatch_meta,
-                                LENGTH(fuzzy[i].pmatch_meta), extract,
+                                fuzzy[i].pmatch_libc,
+                                fuzzy[i].pmatch_meta,
+                                LENGTH(fuzzy[i].pmatch_meta),
+                                extract,
                                 compare_submatches)) {
                 failed = true;
                 report_match_mismatch("Fuzzy", tests_name, matcher,
@@ -538,7 +546,8 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
                                       fuzzy[i].result_meta,
                                       fuzzy[i].pmatch_libc,
                                       fuzzy[i].pmatch_meta,
-                                      LENGTH(fuzzy[i].pmatch_meta), extract,
+                                      LENGTH(fuzzy[i].pmatch_meta),
+                                      extract,
                                       compare_submatches);
             }
         }
