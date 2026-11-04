@@ -399,7 +399,7 @@ bench_run_meta_matcher_one(MetaRegex *regex, char *input, int32 input_len,
 static void
 bench_absorb_result(int32 result, MetaRegexMatch *pmatch, bool extract) {
     bench_sink_result += (result == 0);
-    if (extract && pmatch != NULL) {
+    if (extract && pmatch) {
         bench_sink_offsets += pmatch[0].rm_so + (int64)pmatch[0].rm_eo;
     }
     return;
