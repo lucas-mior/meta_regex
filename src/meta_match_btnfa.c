@@ -588,8 +588,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                         if (fb == '\0') {
                             break;
                         }
-                        if ((token.mask[fb / 32] & (1u << (fb % 32)))
-                            == 0) {
+                        if ((token.mask[fb / 32] & (1u << (fb % 32))) == 0) {
                             break;
                         }
                         count += 1;
