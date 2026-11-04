@@ -301,7 +301,7 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
         if (track_tags) {
             match_tnfa_fill_pmatch(regex, start_pos, accepted_end, saved_tags,
                                    pmatch, pmatch_len);
-        } else if (pmatch != NULL && pmatch_len > 0) {
+        } else if (pmatch && (pmatch_len > 0)) {
             pmatch[0].rm_so = start_pos;
             pmatch[0].rm_eo = accepted_end;
         }
