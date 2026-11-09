@@ -136,7 +136,7 @@ lazy_dfa_pc_words(int32 op_count) {
 
 static int32
 lazy_dfa_ctz32(uint32 word) {
-#if defined(__GNUC__) || defined(__clang__)
+#if CC_GCC || CC_CLANG
     return __builtin_ctz(word);
 #else
     int32 bit = 0;
