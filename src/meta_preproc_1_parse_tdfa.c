@@ -47,10 +47,9 @@ tdfa_copy_tag_vector(int32 *dst, int32 *src, int32 tag_count) {
     return;
 }
 
-static int32
-tdfa_state_reg(TdfaBuildState *state, int32 config, int32 tag_count,
-               int32 tag) {
-    return state->regs[config*tag_count + tag];
+static int32 *
+tdfa_state_regs(TdfaBuildState *state, int32 config, int32 tag_count) {
+    return state->regs + config*tag_count;
 }
 
 static int32
@@ -431,7 +430,7 @@ tdfa_add_final_ops(ParsedTdfa *tdfa, ParsedTnfa *tnfa,
                     return false;
                 }
             } else {
-                int32 src = tdfa_state_reg(build_state, i, tag_count, t);
+                int32 src = tdfa_state_regs(build_state, i, tag_count)[t];
                 if (!tdfa_add_regop(tdfa, META_TDFA_REGOP_COPY, dst, src)) {
                     return false;
                 }
@@ -500,18 +499,20 @@ tdfa_add_state(TdfaBuildState *states, ParsedTdfa *tdfa, ParsedTnfa *tnfa,
     }
 
     for (int32 i = 0; i < config_count; i += 1) {
+        int32 *regs = tdfa_state_regs(build_state, i, tag_count);
+
         build_state->configs[i].tnfa_state = configs[i].tnfa_state;
         tdfa_copy_tag_vector(build_state->configs[i].look, configs[i].look,
                              tag_count);
 
         for (int32 t = 0; t < tag_count; t += 1) {
             if (t == 0 || tdfa_tag_is_fixed(tdfa, t)) {
-                build_state->regs[i*tag_count + t] = 0;
+                regs[t] = 0;
             } else {
                 if (*next_register > preproc_config.max_tdfa_registers) {
                     return -1;
                 }
-                build_state->regs[i*tag_count + t] = *next_register;
+                regs[t] = *next_register;
                 *next_register += 1;
             }
         }
@@ -542,14 +543,15 @@ tdfa_emit_transition_ops(ParsedTdfa *tdfa, TdfaBuildState *source,
                 continue;
             }
 
-            dst = tdfa_state_reg(target, i, tag_count, t);
+            dst = tdfa_state_regs(target, i, tag_count)[t];
 
             if (closed[i].h[t] != -1 && closed[i].look[t] == -1) {
                 if (!tdfa_add_set_from_tag(tdfa, dst, closed[i].h[t])) {
                     return false;
                 }
             } else {
-                int32 src = tdfa_state_reg(source, source_config, tag_count, t);
+                int32 src =
+                    tdfa_state_regs(source, source_config, tag_count)[t];
                 if (src != dst) {
                     if (!tdfa_add_regop(tdfa, META_TDFA_REGOP_COPY, dst, src)) {
                         return false;
