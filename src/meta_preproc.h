@@ -30,7 +30,6 @@
 #define PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES \
     (PREPROC_MAX_TDFA_STATES*PREPROC_TDFA_TRANS_INDEX_MAX_STRIDE)
 
-
 typedef struct PreprocConfig {
     bool emit_static_dfa;
     bool emit_tnfa;

@@ -223,7 +223,6 @@ typedef struct MetaTnfa {
     MetaTnfaTransition *transitions;
 } MetaTnfa;
 
-
 /* Single-pass TDFA limits */
 #define META_MAX_TDFA_STATES 1024
 #define META_MAX_TDFA_TRANSITIONS 65536
