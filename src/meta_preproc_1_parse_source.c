@@ -337,7 +337,7 @@ parse_source_code(char *buffer, int32 source_len) {
             int32 cp = (uint8)regex_string[regex_index];
 
             switch (cp) {
-            case '$': {
+            case '$':
                 if (regex_index + 1 == regex_string_len) {
                     has_end = true;
                     regex_index += 1;
@@ -348,7 +348,6 @@ parse_source_code(char *buffer, int32 source_len) {
                 temp_ops_count += 1;
                 regex_index += 1;
                 break;
-            }
             case '*': {
                 bool is_group = (temp_ops_count > 0
                                  && temp_ops[temp_ops_count - 1].type
@@ -603,14 +602,13 @@ parse_source_code(char *buffer, int32 source_len) {
                 regex_index += 1;
                 break;
             }
-            case '|': {
+            case '|':
                 temp_ops[temp_ops_count].type = META_OP_ALTERNATION;
                 temp_ops_count += 1;
                 has_alternation = true;
                 regex_index += 1;
                 break;
-            }
-            case '(': {
+            case '(':
                 group_counter += 1;
                 group_stack[group_stack_ptr] = group_counter;
                 group_stack_ptr += 1;
@@ -619,7 +617,6 @@ parse_source_code(char *buffer, int32 source_len) {
                 temp_ops_count += 1;
                 regex_index += 1;
                 break;
-            }
             case ')': {
                 int32 current_group = group_stack[group_stack_ptr - 1];
                 group_stack_ptr -= 1;
@@ -629,12 +626,11 @@ parse_source_code(char *buffer, int32 source_len) {
                 regex_index += 1;
                 break;
             }
-            case '.': {
+            case '.':
                 temp_ops[temp_ops_count].type = META_OP_ANY;
                 temp_ops_count += 1;
                 regex_index += 1;
                 break;
-            }
             case '[': {
                 bool is_negated = false;
                 uint32 mask[META_CHAR_BITMASK_WORDS] = {0};
@@ -722,7 +718,7 @@ parse_source_code(char *buffer, int32 source_len) {
                 temp_ops_count += 1;
                 break;
             }
-            case '\\': {
+            case '\\':
                 regex_index += 1;
                 if (regex_index < regex_string_len) {
                     int32 c_cp = (uint8)regex_string[regex_index];
@@ -777,14 +773,12 @@ parse_source_code(char *buffer, int32 source_len) {
                     regex_index += 1;
                 }
                 break;
-            }
-            default: {
+            default:
                 temp_ops[temp_ops_count].type = META_OP_LITERAL;
                 temp_ops[temp_ops_count].value = cp;
                 temp_ops_count += 1;
                 regex_index += 1;
                 break;
-            }
             }
         }
 

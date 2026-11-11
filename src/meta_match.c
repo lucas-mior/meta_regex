@@ -62,7 +62,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
     }
 
     switch (matcher) {
-    case MATCHER_BTNFA: {
+    case MATCHER_BTNFA:
         if (regex->has_start_anchor) {
             result = match_btnfa(regex, input, input_len, 0,
                                  pmatch, pmatch_len);
@@ -89,8 +89,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
             }
         }
         break;
-    }
-    case MATCHER_TDFA: {
+    case MATCHER_TDFA:
         if (regex->has_start_anchor) {
             result = match_tdfa(regex, input, input_len, 0, pmatch, pmatch_len);
             if (result == 0) {
@@ -116,8 +115,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
             }
         }
         break;
-    }
-    case MATCHER_TNFA: {
+    case MATCHER_TNFA:
         if (regex->has_start_anchor) {
             result = match_tnfa(regex, input, input_len, 0, pmatch, pmatch_len);
             if (result == 0) {
@@ -143,8 +141,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
             }
         }
         break;
-    }
-    case MATCHER_LAZY_DFA: {
+    case MATCHER_LAZY_DFA:
         if (regex->has_start_anchor) {
             result = match_lazy_dfa(regex, input, input_len, 0,
                                     pmatch, pmatch_len);
@@ -171,8 +168,7 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
             }
         }
         break;
-    }
-    case MATCHER_STATIC_DFA: {
+    case MATCHER_STATIC_DFA:
         if (regex->has_start_anchor) {
             result = match_static_dfa(regex, input, input_len, 0,
                                       pmatch, pmatch_len);
@@ -199,13 +195,11 @@ meta_regex_match_with_algorithm(MetaRegex *regex, uint8 *input, int32 input_len,
             }
         }
         break;
-    }
     case MATCHER_LAST:
     case MATCHER_NONE:
-    default: {
+    default:
         error("Undefined matching matcher.\n");
         exit(EXIT_FAILURE);
-    }
     }
 
     return META_REG_NOMATCH;
