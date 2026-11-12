@@ -92,7 +92,7 @@ matcher_supports_regex(MetaRegex *regex, enum Matcher matcher, bool extract) {
     if (extract && !matchers[matcher]->extracts) {
         return 0;
     }
-    if ((regex->used_ops & ~matchers[matcher]->supports) != 0) {
+    if (regex->used_ops & ~matchers[matcher]->supports) {
         return 0;
     }
     return 1;

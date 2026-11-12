@@ -13,7 +13,7 @@ static_dfa_uses_word_context(ExtractedRegex *regex) {
         META_OP_WORD_START | META_OP_WORD_END | META_OP_WORD_BOUNDARY
         | META_OP_NON_WORD_BOUNDARY);
 
-    return (regex->used_ops & context_ops) != 0;
+    return (regex->used_ops & context_ops);
 }
 
 static void
@@ -23,7 +23,7 @@ compute_epsilon_closure(DfaSet *set, ParsedOp *ops, int32 ops_count,
     int32 stack_ptr = 0;
 
     for (int32 i = 0; i <= ops_count; i += 1) {
-        if ((set->bits[i / 32] & (1u << (i % 32))) != 0) {
+        if (set->bits[i / 32] & (1u << (i % 32))) {
             stack[stack_ptr] = i;
             stack_ptr += 1;
         }
@@ -190,7 +190,7 @@ compute_core_transitions(DfaSet *closed_set, ParsedOp *ops, int32 ops_count,
     }
 
     for (int32 i = 0; i < ops_count; i += 1) {
-        if ((closed_set->bits[i / 32] & (1u << (i % 32))) != 0) {
+        if (closed_set->bits[i / 32] & (1u << (i % 32))) {
             ParsedOp *op = &ops[i];
             int32 match = 0;
 
@@ -200,7 +200,7 @@ compute_core_transitions(DfaSet *closed_set, ParsedOp *ops, int32 ops_count,
                 }
             } else if (op->type == META_OP_CLASS) {
                 if (c >= 0 && c < META_ALPHABET_SIZE) {
-                    if ((op->mask[c / 32] & (1u << (c % 32))) != 0) {
+                    if (op->mask[c / 32] & (1u << (c % 32))) {
                         match = 1;
                     }
                 }

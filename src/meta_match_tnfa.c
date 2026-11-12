@@ -641,7 +641,7 @@ match_tnfa_symbol_transition_matches(MetaTnfaTransition *tr, int32 c) {
         return (c == tr->value);
     }
     if (tr->kind == META_TNFA_TRANS_CLASS) {
-        return ((tr->mask[c / 32] & (1u << (c % 32))) != 0);
+        return (tr->mask[c / 32] & (1u << (c % 32)));
     }
     if (tr->kind == META_TNFA_TRANS_ANY) {
         return (c != '\0');
@@ -684,7 +684,7 @@ match_tnfa_step(MetaTnfa *tnfa, int32 use_state_slices, uint8 *input,
             if (tr->kind == META_TNFA_TRANS_LITERAL) {
                 matched = ((int32)c == tr->value);
             } else if (tr->kind == META_TNFA_TRANS_CLASS) {
-                matched = ((tr->mask[c / 32] & (1u << (c % 32))) != 0);
+                matched = (tr->mask[c / 32] & (1u << (c % 32)));
             } else if (tr->kind == META_TNFA_TRANS_ANY) {
                 matched = 1;
             }

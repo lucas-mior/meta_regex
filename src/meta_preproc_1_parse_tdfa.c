@@ -180,7 +180,7 @@ tdfa_symbol_transition_matches(MetaTnfaTransition *tr, int32 c) {
         return c == tr->value;
     }
     if (tr->kind == META_TNFA_TRANS_CLASS) {
-        return ((tr->mask[c / 32] & (1u << (c % 32))) != 0);
+        return (tr->mask[c / 32] & (1u << (c % 32)));
     }
     if (tr->kind == META_TNFA_TRANS_ANY) {
         return c != '\0';

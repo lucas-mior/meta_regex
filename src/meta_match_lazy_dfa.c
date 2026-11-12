@@ -100,7 +100,7 @@ lazy_dfa_uses_context(MetaRegex *regex) {
         META_OP_WORD_START | META_OP_WORD_END | META_OP_WORD_BOUNDARY
         | META_OP_NON_WORD_BOUNDARY);
 
-    return ((regex->used_ops & context_ops) != 0);
+    return (regex->used_ops & context_ops);
 }
 
 static int32
@@ -269,7 +269,7 @@ lazy_dfa_compute_closure_from_key(MetaRegex *regex, LazyDfa *ldfa,
         stack_ptr -= 1;
         current_pc = stack[stack_ptr];
 
-        if ((set->bits[current_pc / 32] & (1u << (current_pc % 32))) != 0) {
+        if (set->bits[current_pc / 32] & (1u << (current_pc % 32))) {
             continue;
         }
 
@@ -524,7 +524,7 @@ compute_core_transitions(MetaOp *ops, NfaStateSet *current_closed_set,
                 }
             } else if (op->type == META_OP_CLASS) {
                 if (c >= 0 && c < META_ALPHABET_SIZE) {
-                    if ((op->mask[c / 32] & (1u << (c % 32))) != 0) {
+                    if (op->mask[c / 32] & (1u << (c % 32))) {
                         match = 1;
                     }
                 }

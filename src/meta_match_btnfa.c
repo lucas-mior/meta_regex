@@ -253,7 +253,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
 
             if (is_catastrophic) {
                 int32 pc_idx = (int32)(pc - regex->ops);
-                if ((visited_empty[pc_idx / 32] & (1u << (pc_idx % 32))) != 0) {
+                if (visited_empty[pc_idx / 32] & (1u << (pc_idx % 32))) {
                     break;
                 }
                 visited_empty[pc_idx / 32] |= (1u << (pc_idx % 32));
@@ -264,7 +264,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                         int32 word_idx = in_idx*META_PC_WORDS + (pc_idx / 32);
                         int32 bit_idx = pc_idx % 32;
 
-                        if ((memo[word_idx] & (1u << bit_idx)) != 0) {
+                        if (memo[word_idx] & (1u << bit_idx)) {
                             break;
                         }
                         memo[word_idx] |= (1u << bit_idx);
@@ -623,8 +623,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                     } else if (pc->type == META_OP_LITERAL) {
                         is_match = ((int32)fb == pc->value);
                     } else if (pc->type == META_OP_CLASS) {
-                        is_match = ((pc->mask[fb / 32] & (1u << (fb % 32)))
-                                    != 0);
+                        is_match = (pc->mask[fb / 32] & (1u << (fb % 32)));
                     } else {
                         is_match = 0;
                     }

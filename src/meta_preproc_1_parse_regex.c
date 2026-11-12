@@ -205,7 +205,7 @@ compute_first_set(ParsedOp *ops, int32 pc, int32 temp_ops_count, uint8 *fastmap,
         return 0;
     } else if (type == META_OP_CLASS) {
         for (int32 c = 0; c < META_ALPHABET_SIZE; c += 1) {
-            if ((ops[pc].mask[c / 32] & (1u << (c % 32))) != 0) {
+            if (ops[pc].mask[c / 32] & (1u << (c % 32))) {
                 set_fastmap_bit(fastmap, c);
             }
         }
