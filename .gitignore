@@ -19,3 +19,5 @@ cbase/csanecheck
 cmeta
 *.bin
 .cache/
+*.bin
+.cache
