@@ -385,7 +385,7 @@ match_tnfa_can_use_state_slices(MetaTnfa *tnfa) {
         MetaTnfaState *state = &tnfa->states[s];
 
         if (state->first_transition < 0) {
-            if (state->transition_count != 0) {
+            if (state->transition_count > 0) {
                 return 0;
             }
             continue;
