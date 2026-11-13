@@ -234,8 +234,7 @@ parse_source_code(char *buffer, int32 source_len) {
             list.capacity = 16;
             list.items = malloc2(list.capacity*SIZEOF(*list.items));
         } else if (list.count >= list.capacity) {
-            int64 old_capacity;
-            old_capacity = list.capacity;
+            int64 old_capacity = list.capacity;
             list.capacity *= 2;
             list.items = realloc2(list.items,
                                   old_capacity, list.capacity,
