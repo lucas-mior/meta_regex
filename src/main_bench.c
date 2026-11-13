@@ -839,8 +839,7 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
                 for (int32 k = 0; k < BENCH_RANDOM_INPUT_ATTEMPTS; k += 1) {
                     bench_generate_random_input(input_storage[ri], ii);
                     if (bench_run_libc_one(&compiled[ri], input_storage[ri],
-                                           NULL, 0, false)
-                        == 0) {
+                                           NULL, 0, false) == 0) {
                         matched = 1;
                         break;
                     }

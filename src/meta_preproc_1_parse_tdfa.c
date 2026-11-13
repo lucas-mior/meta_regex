@@ -729,8 +729,7 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
             return false;
         }
         if (tdfa_add_state(build_states, tdfa, tnfa, closed, initial_count,
-                           tag_count, &next_register, 0, 0)
-            != 0) {
+                           tag_count, &next_register, 0, 0) != 0) {
             return false;
         }
         tdfa->start_state = 0;
