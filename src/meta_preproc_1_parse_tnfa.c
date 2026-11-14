@@ -423,9 +423,9 @@ tnfa_fixed_length_range(ParsedOp *ops, int32 ops_count, int32 start,
                         int32 end) {
     int32 branch_starts[PREPROC_MAX_BRANCHES];
     int32 branch_ends[PREPROC_MAX_BRANCHES];
-    int32 branch_count =
-        tnfa_collect_branches(ops, start, end, branch_starts, branch_ends,
-                              PREPROC_MAX_BRANCHES);
+    int32 branch_count = tnfa_collect_branches(ops, start, end, branch_starts,
+                                               branch_ends,
+                                               PREPROC_MAX_BRANCHES);
     int32 fixed_len = -2;
 
     if (branch_count <= 0) {

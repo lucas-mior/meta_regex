@@ -288,9 +288,9 @@ tdfa_epsilon_closure(ParsedTnfa *tnfa, int32 tag_count,
         output_configs[output_count] = cfg;
         output_count += 1;
 
-        edge_count =
-            tdfa_collect_zero_width_edges(tnfa, cfg.tnfa_state, prev_is_w,
-                                          curr_is_w, edge_indices);
+        edge_count = tdfa_collect_zero_width_edges(tnfa, cfg.tnfa_state,
+                                                   prev_is_w, curr_is_w,
+                                                   edge_indices);
 
         for (int32 i = 0; i < edge_count; i += 1) {
             MetaTnfaTransition *tr = &tnfa->transitions[edge_indices[i]];
@@ -781,10 +781,10 @@ build_tdfa_from_tnfa(ParsedTdfa *tdfa, ParsedTnfa *tnfa) {
                     curr = next_curr;
                     next_is_word = next_curr;
                 }
-                closed_count =
-                    tdfa_epsilon_closure(tnfa, tag_count, work, work_count,
-                                         closed, stack, edge_indices,
-                                         work_capacity, prev, curr);
+                closed_count = tdfa_epsilon_closure(tnfa, tag_count,
+                                                    work, work_count, closed,
+                                                    stack, edge_indices,
+                                                    work_capacity, prev, curr);
                 if (closed_count < 0) {
                     return false;
                 }

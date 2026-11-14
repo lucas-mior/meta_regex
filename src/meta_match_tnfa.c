@@ -232,8 +232,8 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
             accepted = 1;
             accepted_end = pos;
             if (track_tags) {
-                int32 *accept_tags =
-                    match_tnfa_tag_row(closed_tags, tag_count, accept_index);
+                int32 *accept_tags = match_tnfa_tag_row(closed_tags, tag_count,
+                                                        accept_index);
                 match_tnfa_save_accept(accept_tags, saved_tags, tag_count);
             }
         }
@@ -290,8 +290,8 @@ match_tnfa(MetaRegex *regex, uint8 *input, int32 input_len, int32 start_pos,
             accepted = 1;
             accepted_end = pos;
             if (track_tags) {
-                int32 *accept_tags =
-                    match_tnfa_tag_row(closed_tags, tag_count, accept_index);
+                int32 *accept_tags = match_tnfa_tag_row(closed_tags, tag_count,
+                                                        accept_index);
                 match_tnfa_save_accept(accept_tags, saved_tags, tag_count);
             }
         }
@@ -592,10 +592,10 @@ match_tnfa_epsilon_closure(MetaTnfa *tnfa, int32 use_state_slices, uint8 *input,
                              cfg_tags, tag_count);
         output_count += 1;
 
-        edge_count =
-            match_tnfa_collect_zero_width_edges(tnfa, use_state_slices,
-                                                cfg.state, input, input_len,
-                                                pos, edge_indices);
+        edge_count = match_tnfa_collect_zero_width_edges(tnfa, use_state_slices,
+                                                        cfg.state, input,
+                                                        input_len, pos,
+                                                        edge_indices);
 
         for (int32 i = 0; i < edge_count; i += 1) {
             MetaTnfaTransition *tr = &tnfa->transitions[edge_indices[i]];

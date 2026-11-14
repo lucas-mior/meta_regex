@@ -373,11 +373,10 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
                 continue;
             }
 
-            actual[i].result =
-                run_meta_one(meta_regex, actual[i].input, actual[i].input_len,
-                             matcher,
-                             actual[i].pmatch, LENGTH(actual[i].pmatch),
-                             extract);
+            actual[i].result = run_meta_one(meta_regex, actual[i].input,
+                                            actual[i].input_len, matcher,
+                                            actual[i].pmatch,
+                                            LENGTH(actual[i].pmatch), extract);
         }
         for (int32 i = 0; i < count; i += 1) {
             if (!matcher_can_use_reference(libc_reference[i], matcher)) {
@@ -466,11 +465,11 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
         int32 idx = fuzzy[i].regex_idx;
 #if FUZZY_PRECOMPILE_LIBC
         if (libc_reference[idx]) {
-            fuzzy[i].result_libc =
-                run_libc_one(&libc_regexes[idx], fuzzy[i].input,
-                             fuzzy[i].pmatch_libc,
-                             LENGTH(fuzzy[i].pmatch_libc),
-                             extract);
+            fuzzy[i].result_libc = run_libc_one(&libc_regexes[idx],
+                                                fuzzy[i].input,
+                                                fuzzy[i].pmatch_libc,
+                                                LENGTH(fuzzy[i].pmatch_libc),
+                                                extract);
         } else {
             fuzzy[i].result_libc =
                 run_fallback_reference_one(tests[idx], fuzzy[i].input,
@@ -513,11 +512,11 @@ run_fuzzy_tests(MetaRegex **tests, int32 tests_len, char *tests_name,
                 continue;
             }
 
-            fuzzy[i].result_meta =
-                run_meta_one(meta_pattern, fuzzy[i].input, fuzzy[i].input_len,
-                             matcher,
-                             fuzzy[i].pmatch_meta, LENGTH(fuzzy[i].pmatch_meta),
-                             extract);
+            fuzzy[i].result_meta = run_meta_one(meta_pattern, fuzzy[i].input,
+                                                fuzzy[i].input_len, matcher,
+                                                fuzzy[i].pmatch_meta,
+                                                LENGTH(fuzzy[i].pmatch_meta),
+                                                extract);
         }
         for (int32 i = 0; i < fuzzy_len; i += 1) {
             MetaRegex *meta_pattern = tests[fuzzy[i].regex_idx];
@@ -699,10 +698,10 @@ run_file_fuzzy_tests(MetaRegex **tests, int32 tests_len, bool extract) {
                     clear_pmatch(curr_m_pm, LENGTH(dummy_test.pmatch));
                 }
 
-                results_meta[j] =
-                    run_meta_one(meta_pattern, (char *)input, input_len,
-                                 matcher, curr_m_pm, LENGTH(dummy_test.pmatch),
-                                 extract);
+                results_meta[j] = run_meta_one(meta_pattern, (char *)input,
+                                               input_len, matcher, curr_m_pm,
+                                               LENGTH(dummy_test.pmatch),
+                                               extract);
             }
             for (int32 j = 0; j < tests_len; j += 1) {
                 MetaRegex *meta_pattern = tests[j];
