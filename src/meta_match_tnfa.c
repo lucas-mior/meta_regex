@@ -593,9 +593,9 @@ match_tnfa_epsilon_closure(MetaTnfa *tnfa, int32 use_state_slices, uint8 *input,
         output_count += 1;
 
         edge_count = match_tnfa_collect_zero_width_edges(tnfa, use_state_slices,
-                                                        cfg.state, input,
-                                                        input_len, pos,
-                                                        edge_indices);
+                                                        cfg.state,
+                                                        input, input_len,
+                                                        pos, edge_indices);
 
         for (int32 i = 0; i < edge_count; i += 1) {
             MetaTnfaTransition *tr = &tnfa->transitions[edge_indices[i]];

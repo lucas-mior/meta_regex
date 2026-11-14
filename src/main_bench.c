@@ -564,8 +564,9 @@ bench_run_pairwise_variant(String *csv, char *test_name,
             int32 input_len = strlen32(ic->input);
             int32 result = bench_run_meta_dispatch_one(rc->regex,
                                                        ic->input, input_len,
-                                                       enabled, pmatch,
-                                                       LENGTH(pmatch), extract);
+                                                       enabled,
+                                                       pmatch, LENGTH(pmatch),
+                                                       extract);
             bench_absorb_result(result, pmatch, extract);
         }
     }
@@ -579,8 +580,9 @@ bench_run_pairwise_variant(String *csv, char *test_name,
             int32 input_len = strlen32(ic->input);
             int32 result = bench_run_meta_dispatch_one(rc->regex,
                                                        ic->input, input_len,
-                                                       enabled, pmatch,
-                                                       LENGTH(pmatch), extract);
+                                                       enabled,
+                                                       pmatch, LENGTH(pmatch),
+                                                       extract);
             if (result == 0) {
                 matches += 1;
             }
@@ -615,7 +617,8 @@ bench_run_pairwise_variant(String *csv, char *test_name,
                                             ref_pm, LENGTH(ref_pm), extract);
             actual_result = bench_run_meta_matcher_one(rc->regex,
                                                        ic->input, input_len,
-                                                       matcher, actual_pm,
+                                                       matcher,
+                                                       actual_pm,
                                                        LENGTH(actual_pm),
                                                        extract);
 

@@ -376,7 +376,8 @@ run_known_pairs(RegexTest *tests, int32 count, char *description,
             actual[i].result = run_meta_one(meta_regex, actual[i].input,
                                             actual[i].input_len, matcher,
                                             actual[i].pmatch,
-                                            LENGTH(actual[i].pmatch), extract);
+                                            LENGTH(actual[i].pmatch),
+                                            extract);
         }
         for (int32 i = 0; i < count; i += 1) {
             if (!matcher_can_use_reference(libc_reference[i], matcher)) {
