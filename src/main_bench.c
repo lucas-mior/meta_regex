@@ -906,8 +906,8 @@ bench_process_regex_array(BenchRegexCase *array, int32 array_len,
     return;
 }
 
-#define BENCH_PROCESS_ARRAY(arr, is_backref) \
-    bench_process_regex_array((arr), LENGTH(arr), #arr, (is_backref), now, \
+#define BENCH_PROCESS_ARRAY(arr, is_backref)                                \
+    bench_process_regex_array((arr), LENGTH(arr), #arr, (is_backref), now,  \
                               max_input_len, enabled)
 
 static int32
