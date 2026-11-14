@@ -24,10 +24,10 @@
 #define PREPROC_MAX_TDFA_TRANSITIONS META_MAX_TDFA_TRANSITIONS
 #define PREPROC_MAX_TDFA_REGOPS META_MAX_TDFA_REGOPS
 #define PREPROC_MAX_TDFA_REGISTERS META_MAX_TDFA_REGISTERS
-#define PREPROC_MAX_TDFA_WORK_CONFIGS \
+#define PREPROC_MAX_TDFA_WORK_CONFIGS                                          \
     (PREPROC_MAX_TNFA_STATES + PREPROC_MAX_TNFA_TRANSITIONS + 1)
 #define PREPROC_TDFA_TRANS_INDEX_MAX_STRIDE (META_ALPHABET_SIZE*2)
-#define PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES \
+#define PREPROC_MAX_TDFA_TRANS_INDEX_ENTRIES                                   \
     (PREPROC_MAX_TDFA_STATES*PREPROC_TDFA_TRANS_INDEX_MAX_STRIDE)
 
 typedef struct PreprocConfig {
@@ -69,34 +69,34 @@ static PreprocConfig preproc_config = {
 #define ENUM_PREFIX_ PREPROC_FAIL_
 #define ENUM_NAME PreprocFailReason
 #define ENUM_BITFLAGS 1
-#define ENUM_FIELDS \
-    XX(PREPROC_FAIL_ITEMS_EXCEEDED) \
-    XX(PREPROC_FAIL_STATES_EXCEEDED) \
-    XX(PREPROC_FAIL_BRANCHES_EXCEEDED) \
-    XX(PREPROC_FAIL_DFA_STATES_EXCEEDED) \
-    XX(PREPROC_FAIL_TNFA_TAGS_EXCEEDED) \
-    XX(PREPROC_FAIL_TNFA_TRANSITIONS_EXCEEDED) \
-    XX(PREPROC_FAIL_TDFA_STATES_EXCEEDED) \
-    XX(PREPROC_FAIL_TDFA_TRANSITIONS_EXCEEDED) \
-    XX(PREPROC_FAIL_TDFA_REGISTERS_EXCEEDED) \
-    XX(PREPROC_FAIL_TDFA_REGOPS_EXCEEDED) \
-    XX(PREPROC_FAIL_TDFA_UNSUPPORTED_ASSERTION) \
+#define ENUM_FIELDS                                 \
+    XX(PREPROC_FAIL_ITEMS_EXCEEDED)                 \
+    XX(PREPROC_FAIL_STATES_EXCEEDED)                \
+    XX(PREPROC_FAIL_BRANCHES_EXCEEDED)              \
+    XX(PREPROC_FAIL_DFA_STATES_EXCEEDED)            \
+    XX(PREPROC_FAIL_TNFA_TAGS_EXCEEDED)             \
+    XX(PREPROC_FAIL_TNFA_TRANSITIONS_EXCEEDED)      \
+    XX(PREPROC_FAIL_TDFA_STATES_EXCEEDED)           \
+    XX(PREPROC_FAIL_TDFA_TRANSITIONS_EXCEEDED)      \
+    XX(PREPROC_FAIL_TDFA_REGISTERS_EXCEEDED)        \
+    XX(PREPROC_FAIL_TDFA_REGOPS_EXCEEDED)           \
+    XX(PREPROC_FAIL_TDFA_UNSUPPORTED_ASSERTION)     \
     XX(PREPROC_FAIL_NO_BRANCHES)
 #include "xenums.c"
 
 #define ENUM_PREFIX_ NFA_STATE_
 #define ENUM_NAME NfaStateType
 #define ENUM_BITFLAGS 0
-#define ENUM_FIELDS                 \
-    XX(NFA_STATE_ACCEPT)            \
-    XX(NFA_STATE_LITERAL)           \
-    XX(NFA_STATE_CLASS)             \
-    XX(NFA_STATE_ANY)               \
-    XX(NFA_STATE_SPLIT)             \
-    XX(NFA_STATE_EMPTY)             \
-    XX(NFA_STATE_WORD_BOUNDARY)     \
-    XX(NFA_STATE_NON_WORD_BOUNDARY) \
-    XX(NFA_STATE_WORD_START)        \
+#define ENUM_FIELDS                                 \
+    XX(NFA_STATE_ACCEPT)                            \
+    XX(NFA_STATE_LITERAL)                           \
+    XX(NFA_STATE_CLASS)                             \
+    XX(NFA_STATE_ANY)                               \
+    XX(NFA_STATE_SPLIT)                             \
+    XX(NFA_STATE_EMPTY)                             \
+    XX(NFA_STATE_WORD_BOUNDARY)                     \
+    XX(NFA_STATE_NON_WORD_BOUNDARY)                 \
+    XX(NFA_STATE_WORD_START)                        \
     XX(NFA_STATE_WORD_END)
 #include "xenums.c"
 
