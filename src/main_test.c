@@ -813,8 +813,8 @@ random_regex_sample(MetaRegex **tests, int32 tests_len, int32 *sample_len) {
     return sample;
 }
 
-#define RUN_KNOWN_PAIRS(ARRAY) \
-    run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, true); \
+#define RUN_KNOWN_PAIRS(ARRAY)                               \
+    run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, true);     \
     run_known_pairs(ARRAY, LENGTH(ARRAY), #ARRAY, false)
 
 int32

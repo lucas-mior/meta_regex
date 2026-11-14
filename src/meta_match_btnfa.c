@@ -405,21 +405,23 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                 int32 backref_len;
                 uint8 *backref_ptr;
 
-                if (btnfa_get_backref(current_pmatch, group_id, string,
-                                      &backref_ptr, &backref_len)) {
-                    if (btnfa_backref_matches_at(input, backref_ptr,
-                                                 backref_len)) {
-                        input += backref_len;
-                        pc += 1;
-                        if (is_catastrophic && backref_len > 0) {
-                            for (int32 w = 0; w < META_PC_WORDS; w += 1) {
-                                visited_empty[w] = 0;
-                            }
-                        }
-                        continue;
+                if (!btnfa_get_backref(current_pmatch, group_id, string,
+                                       &backref_ptr, &backref_len)) {
+                    break;
+                }
+                if (!btnfa_backref_matches_at(input, backref_ptr,
+                                              backref_len)) {
+                    break;
+                }
+
+                input += backref_len;
+                pc += 1;
+                if (is_catastrophic && backref_len > 0) {
+                    for (int32 w = 0; w < META_PC_WORDS; w += 1) {
+                        visited_empty[w] = 0;
                     }
                 }
-                break;
+                continue;
             }
 
             if (pc->type == META_OP_ALTERNATION) {
@@ -499,12 +501,12 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                     depth = 0;
                     scan = pc + 1;
                     while (scan->type != META_OP_END) {
+                        if (scan->type == META_OP_GROUP_END && depth == 0) {
+                            break;
+                        }
                         if (scan->type == META_OP_GROUP_START) {
                             depth += 1;
                         } else if (scan->type == META_OP_GROUP_END) {
-                            if (depth == 0) {
-                                break;
-                            }
                             depth -= 1;
                         } else if (scan->type == META_OP_ALTERNATION
                                    && depth == 0) {

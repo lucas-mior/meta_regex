@@ -118,6 +118,23 @@ preproc_copy_trimmed_slice(char *dst, int32 dst_size, char *start, char *end) {
     return len;
 }
 
+static int32
+preproc_find_group_start(ParsedOp *ops, int32 group_end) {
+    int32 depth = 0;
+
+    for (int32 i = group_end; i >= 0; i -= 1) {
+        if (ops[i].type == META_OP_GROUP_END) {
+            depth += 1;
+        } else if (ops[i].type == META_OP_GROUP_START) {
+            depth -= 1;
+            if (depth == 0) {
+                return i;
+            }
+        }
+    }
+    return group_end;
+}
+
 static RegexList
 parse_source_code(char *buffer, int32 source_len) {
     RegexList list = {0};
@@ -352,23 +369,10 @@ parse_source_code(char *buffer, int32 source_len) {
                                  && temp_ops[temp_ops_count - 1].type
                                         == META_OP_GROUP_END);
                 if (is_group) {
-                    int32 target_start = temp_ops_count - 1;
-                    int32 depth = 0;
-                    int32 group_len;
+                    int32 target_start =
+                        preproc_find_group_start(temp_ops, temp_ops_count - 1);
+                    int32 group_len = temp_ops_count - target_start;
 
-                    for (int32 i = target_start; i >= 0; i -= 1) {
-                        if (temp_ops[i].type == META_OP_GROUP_END) {
-                            depth += 1;
-                        } else if (temp_ops[i].type == META_OP_GROUP_START) {
-                            depth -= 1;
-                            if (depth == 0) {
-                                target_start = i;
-                                break;
-                            }
-                        }
-                    }
-
-                    group_len = temp_ops_count - target_start;
                     for (int32 i = temp_ops_count - 1; i >= target_start;
                          i -= 1) {
                         temp_ops[i + 1] = temp_ops[i];
@@ -395,23 +399,10 @@ parse_source_code(char *buffer, int32 source_len) {
                                  && temp_ops[temp_ops_count - 1].type
                                         == META_OP_GROUP_END);
                 if (is_group) {
-                    int32 target_start = temp_ops_count - 1;
-                    int32 depth = 0;
-                    int32 group_len;
+                    int32 target_start =
+                        preproc_find_group_start(temp_ops, temp_ops_count - 1);
+                    int32 group_len = temp_ops_count - target_start;
 
-                    for (int32 i = target_start; i >= 0; i -= 1) {
-                        if (temp_ops[i].type == META_OP_GROUP_END) {
-                            depth += 1;
-                        } else if (temp_ops[i].type == META_OP_GROUP_START) {
-                            depth -= 1;
-                            if (depth == 0) {
-                                target_start = i;
-                                break;
-                            }
-                        }
-                    }
-
-                    group_len = temp_ops_count - target_start;
                     temp_ops[temp_ops_count].type = META_OP_SPLIT;
                     temp_ops[temp_ops_count].value = -group_len;
                     temp_ops[temp_ops_count].min = 1;
@@ -429,23 +420,10 @@ parse_source_code(char *buffer, int32 source_len) {
                                  && temp_ops[temp_ops_count - 1].type
                                         == META_OP_GROUP_END);
                 if (is_group) {
-                    int32 target_start = temp_ops_count - 1;
-                    int32 depth = 0;
-                    int32 group_len;
+                    int32 target_start =
+                        preproc_find_group_start(temp_ops, temp_ops_count - 1);
+                    int32 group_len = temp_ops_count - target_start;
 
-                    for (int32 i = target_start; i >= 0; i -= 1) {
-                        if (temp_ops[i].type == META_OP_GROUP_END) {
-                            depth += 1;
-                        } else if (temp_ops[i].type == META_OP_GROUP_START) {
-                            depth -= 1;
-                            if (depth == 0) {
-                                target_start = i;
-                                break;
-                            }
-                        }
-                    }
-
-                    group_len = temp_ops_count - target_start;
                     for (int32 i = temp_ops_count - 1; i >= target_start;
                          i -= 1) {
                         temp_ops[i + 1] = temp_ops[i];
@@ -467,6 +445,9 @@ parse_source_code(char *buffer, int32 source_len) {
                 int32 temp_idx = regex_index + 1;
                 int32 m = 0;
                 int32 n = -1;
+                int32 target_start;
+                int32 extra_ops;
+                ParsedOp op_to_repeat;
                 bool has_m = false;
                 bool valid = false;
                 while (temp_idx < regex_string_len
@@ -483,12 +464,12 @@ parse_source_code(char *buffer, int32 source_len) {
                         && regex_string[temp_idx] >= '0'
                         && regex_string[temp_idx] <= '9') {
                         n = 0;
-                        while (temp_idx < regex_string_len
-                               && regex_string[temp_idx] >= '0'
-                               && regex_string[temp_idx] <= '9') {
-                            n = n*10 + (regex_string[temp_idx] - '0');
-                            temp_idx += 1;
-                        }
+                    }
+                    while (n >= 0 && temp_idx < regex_string_len
+                           && regex_string[temp_idx] >= '0'
+                           && regex_string[temp_idx] <= '9') {
+                        n = n*10 + (regex_string[temp_idx] - '0');
+                        temp_idx += 1;
                     }
                 } else {
                     n = m;
@@ -499,106 +480,88 @@ parse_source_code(char *buffer, int32 source_len) {
                     temp_idx += 1;
                 }
 
-                if (valid && temp_ops_count > 0) {
-                    bool is_group = (temp_ops[temp_ops_count - 1].type
-                                     == META_OP_GROUP_END);
-                    if (is_group) {
-                        int32 target_start = temp_ops_count - 1;
-                        int32 depth = 0;
-                        int32 group_len;
-                        ParsedOp group_buf[PREPROC_MAX_STRING_LEN];
+                if (!valid || temp_ops_count <= 0) {
+                    temp_ops[temp_ops_count].type = META_OP_LITERAL;
+                    temp_ops[temp_ops_count].value = cp;
+                    temp_ops_count += 1;
+                    regex_index += 1;
+                    break;
+                }
 
-                        for (int32 i = target_start; i >= 0; i -= 1) {
-                            if (temp_ops[i].type == META_OP_GROUP_END) {
-                                depth += 1;
-                            } else if (temp_ops[i].type
-                                       == META_OP_GROUP_START) {
-                                depth -= 1;
-                                if (depth == 0) {
-                                    target_start = i;
-                                    break;
-                                }
-                            }
-                        }
+                target_start = temp_ops_count - 1;
+                if (temp_ops[target_start].type == META_OP_GROUP_END) {
+                    int32 group_len;
+                    ParsedOp group_buf[PREPROC_MAX_STRING_LEN];
 
-                        group_len = temp_ops_count - target_start;
+                    target_start = preproc_find_group_start(temp_ops,
+                                                            target_start);
+                    group_len = temp_ops_count - target_start;
 
-                        for (int32 i = 0; i < group_len; i += 1) {
-                            group_buf[i] = temp_ops[target_start + i];
-                        }
-                        temp_ops_count = target_start;
-                        for (int32 k = 0; k < m; k += 1) {
-                            for (int32 i = 0; i < group_len; i += 1) {
-                                temp_ops[temp_ops_count] = group_buf[i];
-                                temp_ops_count += 1;
-                            }
-                        }
-                        if (n == -1) {
-                            temp_ops[temp_ops_count].type = META_OP_SPLIT;
-                            temp_ops[temp_ops_count].value = 1;
-                            temp_ops[temp_ops_count].min = group_len + 2;
-                            temp_ops_count += 1;
-                            for (int32 i = 0; i < group_len; i += 1) {
-                                temp_ops[temp_ops_count] = group_buf[i];
-                                temp_ops_count += 1;
-                            }
-                            temp_ops[temp_ops_count].type = META_OP_JUMP;
-                            temp_ops[temp_ops_count].value = -(group_len + 1);
-                            temp_ops_count += 1;
-                        } else {
-                            for (int32 k = m; k < n; k += 1) {
-                                temp_ops[temp_ops_count].type = META_OP_SPLIT;
-                                temp_ops[temp_ops_count].value = 1;
-                                temp_ops[temp_ops_count].min = group_len + 1;
-                                temp_ops_count += 1;
-                                for (int32 i = 0; i < group_len; i += 1) {
-                                    temp_ops[temp_ops_count] = group_buf[i];
-                                    temp_ops_count += 1;
-                                }
-                            }
-                        }
-                        regex_index = temp_idx;
-                        break;
-                    } else {
-                        int32 target_start = temp_ops_count - 1;
-                        ParsedOp op_to_repeat = temp_ops[target_start];
-                        int32 extra_ops = (n - m)*2;
-
-                        if (n == -1) {
-                            extra_ops = 2;
-                        }
-                        if (temp_ops_count + m + extra_ops
-                            >= PREPROC_MAX_TEMP_OPS) {
-                            error2("Quantifier unrolling exceeds max ops.\n");
-                            exit(EXIT_FAILURE);
-                        }
-                        temp_ops_count = target_start;
-                        for (int32 k = 0; k < m; k += 1) {
-                            temp_ops[temp_ops_count] = op_to_repeat;
-                            temp_ops_count += 1;
-                        }
-                        if (n == -1) {
-                            temp_ops[temp_ops_count] = op_to_repeat;
-                            temp_ops_count += 1;
-                            temp_ops[temp_ops_count].type = META_OP_STAR;
-                            temp_ops_count += 1;
-                        } else {
-                            for (int32 k = m; k < n; k += 1) {
-                                temp_ops[temp_ops_count] = op_to_repeat;
-                                temp_ops_count += 1;
-                                temp_ops[temp_ops_count].type =
-                                    META_OP_OPTIONAL;
-                                temp_ops_count += 1;
-                            }
-                        }
+                    for (int32 i = 0; i < group_len; i += 1) {
+                        group_buf[i] = temp_ops[target_start + i];
+                    }
+                    temp_ops_count = target_start;
+                    for (int32 k = 0; k < m; k += 1) {
+                        memcpy64(&temp_ops[temp_ops_count], group_buf,
+                                 group_len*SIZEOF(*group_buf));
+                        temp_ops_count += group_len;
+                    }
+                    if (n == -1) {
+                        temp_ops[temp_ops_count].type = META_OP_SPLIT;
+                        temp_ops[temp_ops_count].value = 1;
+                        temp_ops[temp_ops_count].min = group_len + 2;
+                        temp_ops_count += 1;
+                        memcpy64(&temp_ops[temp_ops_count], group_buf,
+                                 group_len*SIZEOF(*group_buf));
+                        temp_ops_count += group_len;
+                        temp_ops[temp_ops_count].type = META_OP_JUMP;
+                        temp_ops[temp_ops_count].value = -(group_len + 1);
+                        temp_ops_count += 1;
                         regex_index = temp_idx;
                         break;
                     }
+                    for (int32 k = m; k < n; k += 1) {
+                        temp_ops[temp_ops_count].type = META_OP_SPLIT;
+                        temp_ops[temp_ops_count].value = 1;
+                        temp_ops[temp_ops_count].min = group_len + 1;
+                        temp_ops_count += 1;
+                        memcpy64(&temp_ops[temp_ops_count], group_buf,
+                                 group_len*SIZEOF(*group_buf));
+                        temp_ops_count += group_len;
+                    }
+                    regex_index = temp_idx;
+                    break;
                 }
-                temp_ops[temp_ops_count].type = META_OP_LITERAL;
-                temp_ops[temp_ops_count].value = cp;
-                temp_ops_count += 1;
-                regex_index += 1;
+
+                op_to_repeat = temp_ops[target_start];
+                extra_ops = (n - m)*2;
+
+                if (n == -1) {
+                    extra_ops = 2;
+                }
+                if (temp_ops_count + m + extra_ops >= PREPROC_MAX_TEMP_OPS) {
+                    error2("Quantifier unrolling exceeds max ops.\n");
+                    exit(EXIT_FAILURE);
+                }
+                temp_ops_count = target_start;
+                for (int32 k = 0; k < m; k += 1) {
+                    temp_ops[temp_ops_count] = op_to_repeat;
+                    temp_ops_count += 1;
+                }
+                if (n == -1) {
+                    temp_ops[temp_ops_count] = op_to_repeat;
+                    temp_ops_count += 1;
+                    temp_ops[temp_ops_count].type = META_OP_STAR;
+                    temp_ops_count += 1;
+                } else {
+                    for (int32 k = m; k < n; k += 1) {
+                        temp_ops[temp_ops_count] = op_to_repeat;
+                        temp_ops_count += 1;
+                        temp_ops[temp_ops_count].type = META_OP_OPTIONAL;
+                        temp_ops_count += 1;
+                    }
+                }
+                regex_index = temp_idx;
                 break;
             }
             case '|':
@@ -641,6 +604,9 @@ parse_source_code(char *buffer, int32 source_len) {
                     regex_index += 1;
                 }
                 while (regex_index < regex_string_len) {
+                    char *class_name = NULL;
+                    char *class_end = NULL;
+                    int32 class_name_len = PREPROC_MAX_CLASS_NAME;
                     int32 c1;
                     int32 c2;
 
@@ -651,29 +617,24 @@ parse_source_code(char *buffer, int32 source_len) {
                     if (regex_index + 1 < regex_string_len
                         && regex_string[regex_index] == '['
                         && regex_string[regex_index + 1] == ':') {
-                        int32 colon_idx = regex_index + 2;
-                        bool found_end = false;
-                        while (colon_idx < regex_string_len) {
-                            if (colon_idx + 1 < regex_string_len
-                                && regex_string[colon_idx] == ':'
-                                && regex_string[colon_idx + 1] == ']') {
-                                found_end = true;
-                                break;
-                            }
-                            colon_idx += 1;
-                        }
-                        if (found_end) {
-                            int32 name_len = colon_idx - (regex_index + 2);
-                            if (name_len < PREPROC_MAX_CLASS_NAME) {
-                                char *class_name =
-                                    &regex_string[regex_index + 2];
-                                populate_posix_class_mask(class_name, name_len,
-                                                          mask);
-                            }
-                            regex_index = colon_idx + 2;
-                            first_char = false;
-                            continue;
-                        }
+                        class_name = &regex_string[regex_index + 2];
+                        class_end = memmem64(class_name,
+                                             regex_string_len - regex_index - 2,
+                                             SL(":]"));
+                    }
+                    if (class_end) {
+                        class_name_len =
+                            (int32)(class_end
+                                    - &regex_string[regex_index + 2]);
+                    }
+                    if (class_name_len < PREPROC_MAX_CLASS_NAME) {
+                        populate_posix_class_mask(class_name, class_name_len,
+                                                  mask);
+                    }
+                    if (class_end) {
+                        regex_index = (int32)(class_end - regex_string) + 2;
+                        first_char = false;
+                        continue;
                     }
 
                     c1 = (uint8)regex_string[regex_index];
@@ -689,12 +650,12 @@ parse_source_code(char *buffer, int32 source_len) {
                         && regex_string[regex_index] == '-'
                         && regex_string[regex_index + 1] != ']') {
                         c2 = (uint8)regex_string[regex_index + 1];
-                        if (c2 >= 128) {
-                            error2("Error: Non-ASCII character inside bracket "
-                                   "expression is not supported.\n");
-                            exit(EXIT_FAILURE);
-                        }
                         regex_index += 2;
+                    }
+                    if (c2 >= 128) {
+                        error2("Error: Non-ASCII character inside bracket "
+                               "expression is not supported.\n");
+                        exit(EXIT_FAILURE);
                     }
                     for (int32 c = c1; c <= c2; c += 1) {
                         mask[c / 32] |= (1u << (c % 32));
@@ -721,6 +682,11 @@ parse_source_code(char *buffer, int32 source_len) {
                 regex_index += 1;
                 if (regex_index < regex_string_len) {
                     int32 c_cp = (uint8)regex_string[regex_index];
+                    uint32 negate_mask = 0;
+
+                    if (c_cp == 'S') {
+                        negate_mask = UINT32_MAX;
+                    }
                     if (c_cp == 's' || c_cp == 'S') {
                         temp_ops[temp_ops_count].type = META_OP_CLASS;
                         for (int32 i = 0; i < META_CHAR_BITMASK_WORDS; i += 1) {
@@ -739,12 +705,8 @@ parse_source_code(char *buffer, int32 source_len) {
                         temp_ops[temp_ops_count].mask['\v' / 32]
                             |= (1u << ('\v' % 32));
 
-                        if (c_cp == 'S') {
-                            for (int32 i = 0; i < META_CHAR_BITMASK_WORDS;
-                                 i += 1) {
-                                temp_ops[temp_ops_count].mask[i] =
-                                    ~temp_ops[temp_ops_count].mask[i];
-                            }
+                        for (int32 i = 0; i < META_CHAR_BITMASK_WORDS; i += 1) {
+                            temp_ops[temp_ops_count].mask[i] ^= negate_mask;
                         }
                         temp_ops_count += 1;
                     } else if (c_cp >= '1' && c_cp <= '9') {

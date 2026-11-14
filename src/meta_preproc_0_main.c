@@ -99,12 +99,12 @@ usage(void) {
         }                                                                      \
     } while (0)
 
-#define APPLY_INT_OPTION(name, min_value, max_value)                           \
-    do {                                                                       \
-        if (name) {                                                            \
-            preproc_config.name = preproc_parse_int32(#name, name,             \
-                                                      min_value, max_value);   \
-        } \
+#define APPLY_INT_OPTION(name, min_value, max_value)                         \
+    do {                                                                     \
+        if (name) {                                                          \
+            preproc_config.name = preproc_parse_int32(#name, name,           \
+                                                      min_value, max_value); \
+        }                                                                    \
     } while (0)
 
 int32
