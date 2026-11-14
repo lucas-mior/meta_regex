@@ -16,8 +16,8 @@
 #define ENUM_PREFIX_ META_RE_
 #define ENUM_NAME MetaRegexFlags
 #define ENUM_BITFLAGS 1
-#define ENUM_FIELDS    \
-    XX(META_RE_YESSUB) \
+#define ENUM_FIELDS                                                            \
+    XX(META_RE_YESSUB)                                                         \
     XX(META_RE_NOSUB)
 #include "xenums.c"
 
@@ -51,24 +51,24 @@ typedef struct MetaRegexMatch {
 #define ENUM_PREFIX_ META_OP_
 #define ENUM_NAME MetaOpType
 #define ENUM_BITFLAGS 1
-#define ENUM_FIELDS                     \
-    XX(META_OP_END)                     \
-    XX(META_OP_LITERAL)                 \
-    XX(META_OP_ANY)                     \
-    XX(META_OP_CLASS)                   \
-    XX(META_OP_GROUP_START)             \
-    XX(META_OP_GROUP_END)               \
-    XX(META_OP_STAR)                    \
-    XX(META_OP_PLUS)                    \
-    XX(META_OP_OPTIONAL)                \
-    XX(META_OP_ALTERNATION)             \
-    XX(META_OP_BOUNDED)                 \
-    XX(META_OP_SPLIT)                   \
-    XX(META_OP_JUMP)                    \
-    XX(META_OP_WORD_START)              \
-    XX(META_OP_WORD_END)                \
-    XX(META_OP_WORD_BOUNDARY)           \
-    XX(META_OP_NON_WORD_BOUNDARY)       \
+#define ENUM_FIELDS                                                            \
+    XX(META_OP_END)                                                            \
+    XX(META_OP_LITERAL)                                                        \
+    XX(META_OP_ANY)                                                            \
+    XX(META_OP_CLASS)                                                          \
+    XX(META_OP_GROUP_START)                                                    \
+    XX(META_OP_GROUP_END)                                                      \
+    XX(META_OP_STAR)                                                           \
+    XX(META_OP_PLUS)                                                           \
+    XX(META_OP_OPTIONAL)                                                       \
+    XX(META_OP_ALTERNATION)                                                    \
+    XX(META_OP_BOUNDED)                                                        \
+    XX(META_OP_SPLIT)                                                          \
+    XX(META_OP_JUMP)                                                           \
+    XX(META_OP_WORD_START)                                                     \
+    XX(META_OP_WORD_END)                                                       \
+    XX(META_OP_WORD_BOUNDARY)                                                  \
+    XX(META_OP_NON_WORD_BOUNDARY)                                              \
     XX(META_OP_BACKREF)
 #include "xenums.c"
 
@@ -103,24 +103,24 @@ typedef struct MetaTnfaStateSet {
 #define ENUM_PREFIX_ META_TNFA_TRANS_
 #define ENUM_NAME MetaTnfaTransitionKind
 #define ENUM_BITFLAGS 0
-#define ENUM_FIELDS                       \
-    XX(META_TNFA_TRANS_EPSILON)          \
-    XX(META_TNFA_TRANS_LITERAL)          \
-    XX(META_TNFA_TRANS_CLASS)            \
-    XX(META_TNFA_TRANS_ANY)              \
-    XX(META_TNFA_TRANS_WORD_START)       \
-    XX(META_TNFA_TRANS_WORD_END)         \
-    XX(META_TNFA_TRANS_WORD_BOUNDARY)    \
+#define ENUM_FIELDS                                                            \
+    XX(META_TNFA_TRANS_EPSILON)                                                \
+    XX(META_TNFA_TRANS_LITERAL)                                                \
+    XX(META_TNFA_TRANS_CLASS)                                                  \
+    XX(META_TNFA_TRANS_ANY)                                                    \
+    XX(META_TNFA_TRANS_WORD_START)                                             \
+    XX(META_TNFA_TRANS_WORD_END)                                               \
+    XX(META_TNFA_TRANS_WORD_BOUNDARY)                                          \
     XX(META_TNFA_TRANS_NON_WORD_BOUNDARY)
 #include "xenums.c"
 
 #define ENUM_PREFIX_ META_TNFA_TAG_
 #define ENUM_NAME MetaTnfaTagRole
 #define ENUM_BITFLAGS 0
-#define ENUM_FIELDS               \
-    XX(META_TNFA_TAG_GENERIC)     \
-    XX(META_TNFA_TAG_GROUP_START) \
-    XX(META_TNFA_TAG_GROUP_END)   \
+#define ENUM_FIELDS                                                            \
+    XX(META_TNFA_TAG_GENERIC)                                                  \
+    XX(META_TNFA_TAG_GROUP_START)                                              \
+    XX(META_TNFA_TAG_GROUP_END)                                                \
     XX(META_TNFA_TAG_POSIX_AUX)
 #include "xenums.c"
 
@@ -241,9 +241,9 @@ typedef struct MetaTnfa {
 #define ENUM_PREFIX_ META_TDFA_REGOP_
 #define ENUM_NAME MetaTdfaRegOpKind
 #define ENUM_BITFLAGS 0
-#define ENUM_FIELDS             \
-    XX(META_TDFA_REGOP_SET_NIL) \
-    XX(META_TDFA_REGOP_SET_POS) \
+#define ENUM_FIELDS                                                            \
+    XX(META_TDFA_REGOP_SET_NIL)                                                \
+    XX(META_TDFA_REGOP_SET_POS)                                                \
     XX(META_TDFA_REGOP_COPY)
 #include "xenums.c"
 
@@ -362,7 +362,7 @@ typedef struct MatcherFeatures {
 
 #define META_R_SELECT(_1, _2, NAME, ...) NAME
 #define META_R_1(STR) (&(MetaRegex){ .string = (STR), .flags = META_RE_NONE })
-#define META_R_2(STR, FLAGS) \
+#define META_R_2(STR, FLAGS)                                                   \
     (&(MetaRegex){ .string = (STR), .flags = (enum MetaRegexFlags)(FLAGS) })
 #define R(...) META_R_SELECT(__VA_ARGS__, META_R_2, META_R_1)(__VA_ARGS__)
 
