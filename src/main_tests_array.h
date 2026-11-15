@@ -224,7 +224,7 @@ static RegexTest ascii_with_group_and_backref[] = {
     {"1111",               R("([0-9])\\1\\1\\1")},
 };
 
-static RegexTest ascii_catastrophic_no_group_no_backref[] = {
+static RegexTest ascii_catastrophic_plain[] = {
     {"aaaaaaaaaaaaaaaaaX",           R("a*a*a*b")},
     {"12345678901234560X",           R("[0-9]+[0-9]+a")},
     {"xxxxxxxxxxxxxxxxxX",           R(".*.*b")},
@@ -236,7 +236,7 @@ static RegexTest ascii_catastrophic_no_group_no_backref[] = {
     {"abababababababababX",          R("(ab)*(ab)*c")},
 };
 
-static RegexTest ascii_catastrophic_with_group_no_backref[] = {
+static RegexTest ascii_catastrophic_grouped[] = {
     {"aaX",                R("(a*)")},
     {"aX",                 R("(a*)*b")},
     {"aaaaaaaaaaaaaaaX",   R("(a+)+b")},
@@ -248,7 +248,7 @@ static RegexTest ascii_catastrophic_with_group_no_backref[] = {
     {"aaaaaaaaaaaaaaaX",   R("(a*a*)*b")},
 };
 
-static RegexTest ascii_catastrophic_with_group_and_backref[] = {
+static RegexTest ascii_catastrophic_backref[] = {
     {"aaaxxxxxxxxxxxxX", R("(a)\\1*\\1*b")},
     {"aaaxxxxxxxxxxxxX", R("(a*)*\\1b")},
     {"aaaxxxxxxxxxxxxX", R("(a+)+\\1b")},

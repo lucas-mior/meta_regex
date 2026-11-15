@@ -832,9 +832,9 @@ main(void) {
     RUN_KNOWN_PAIRS(ascii_with_group_and_backref);
     RUN_KNOWN_PAIRS(utf8_against_ascii);
     RUN_KNOWN_PAIRS(utf8_against_utf8);
-    RUN_KNOWN_PAIRS(ascii_catastrophic_no_group_no_backref);
-    RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_no_backref);
-    RUN_KNOWN_PAIRS(ascii_catastrophic_with_group_and_backref);
+    RUN_KNOWN_PAIRS(ascii_catastrophic_plain);
+    RUN_KNOWN_PAIRS(ascii_catastrophic_grouped);
+    RUN_KNOWN_PAIRS(ascii_catastrophic_backref);
 
     regexes_extensive_sample =
         random_regex_sample(regexes_extensive, LENGTH(regexes_extensive),
