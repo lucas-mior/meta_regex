@@ -625,7 +625,7 @@ match_btnfa(MetaRegex *regex, uint8 *string, int32 string_len, int32 offset,
                     } else if (pc->type == META_OP_LITERAL) {
                         is_match = ((int32)fb == pc->value);
                     } else if (pc->type == META_OP_CLASS) {
-                        is_match = (pc->mask[fb / 32] & (1u << (fb % 32)));
+                        is_match = !!(pc->mask[fb / 32] & (1u << (fb % 32)));
                     } else {
                         is_match = 0;
                     }
