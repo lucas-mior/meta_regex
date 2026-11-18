@@ -7,7 +7,7 @@ is_word_char(int32 c) {
             || (c >= '0' && c <= '9') || c == '_');
 }
 
-static int32
+static uint32
 static_dfa_uses_word_context(ExtractedRegex *regex) {
     enum MetaOpType context_ops = (enum MetaOpType)(
         META_OP_WORD_START | META_OP_WORD_END | META_OP_WORD_BOUNDARY
@@ -440,7 +440,7 @@ static_dfa_try_generate(ExtractedRegex *regex, char *source, String *out) {
     int32 dfa_count = 1;
     int32 start_dfa_w = 0;
     int32 start_dfa_nw = 0;
-    int32 uses_word_context = static_dfa_uses_word_context(regex);
+    uint32 uses_word_context = static_dfa_uses_word_context(regex);
     int32 min_start_state_count = 2;
 
     if (uses_word_context) {

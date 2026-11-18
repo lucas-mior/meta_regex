@@ -66,7 +66,7 @@ typedef struct LazyDfa {
     int32 num_states;
     int32 op_count;
     int32 pc_words;
-    int32 uses_context;
+    uint32 uses_context;
     int32 start_state_nw;
     int32 start_state_w;
     LazyDfaKey start_key_base;
@@ -88,13 +88,12 @@ static void lazy_dfa_push_pc(int32 *stack, int32 *stack_ptr, int32 pc,
                              int32 op_count);
 static int32 lazy_dfa_get_or_add_state(LazyDfa *ldfa, LazyDfaKey *key);
 static void lazy_dfa_init_start_states(MetaRegex *regex, LazyDfa *ldfa);
-static int32 lazy_dfa_uses_context(MetaRegex *regex);
 static int32 lazy_dfa_op_count(MetaRegex *regex);
 static int32 lazy_dfa_pc_words(int32 op_count);
 static int32 lazy_dfa_ctz32(uint32 word);
 static int32 lazy_dfa_set_is_empty(NfaStateSet *set, int32 pc_words);
 
-static int32
+static uint32
 lazy_dfa_uses_context(MetaRegex *regex) {
     enum MetaOpType context_ops = (enum MetaOpType)(
         META_OP_WORD_START | META_OP_WORD_END | META_OP_WORD_BOUNDARY
